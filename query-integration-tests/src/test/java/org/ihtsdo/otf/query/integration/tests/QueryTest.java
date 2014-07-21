@@ -68,7 +68,7 @@ import org.junit.runner.RunWith;
 public class QueryTest extends JerseyTest {
 
     private static final String DIR = System.getProperty("user.dir");
-    private static final JSONToReport REPORTS = new JSONToReport(DIR + "/target/test-resources/reports.json");
+    private static final JSONToReport REPORTS = new JSONToReport(DIR + "/target/test-resources/OTFReports.json");
     private static final Logger LOGGER = Logger.getLogger(QueryTest.class.getName());
     private static ViewCoordinate VC_LATEST_ACTIVE_AND_INACTIVE;
     private static ViewCoordinate VC_LATEST_ACTIVE_ONLY;
