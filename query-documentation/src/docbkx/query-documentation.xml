@@ -1,0 +1,492 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://docbook.org/xml/5.0/rng/docbook.rng" schematypens="http://relaxng.org/ns/structure/1.0"?>
+<?xml-model href="http://docbook.org/xml/5.0/rng/docbook.rng" type="application/xml" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<article version="5.0" xml:id="org.ihtsdo.otf.query_query-documentation"
+  xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink"
+  xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:ns5="http://www.w3.org/1998/Math/MathML"
+  xmlns:ns4="http://www.w3.org/2000/svg" xmlns:ns3="http://www.w3.org/1999/xhtml"
+  xmlns:ns="http://docbook.org/ns/docbook">
+  <info>
+    <title>Query Service</title>
+
+    <author>
+      <orgname>IHTSDO</orgname>
+
+      <address>
+                <city>Copenhagen K</city>
+                <street>Gammeltorv 4, 1.</street>
+                <postcode>1457</postcode>
+                <country>Denmark</country>
+            </address>
+    </author>
+  </info>
+
+  <section>
+    <title>Project overview</title>
+
+    <para>The OTF-Query-Services module is a component of the IHTSDO Open Terminology Tooling
+      Framework that implements queries that can be conducted against a Berkeley SNOMED database.
+      The project illustrates examples of how queries can be executed from within Java or from a
+      REST client server. The input parameters and syntax of the queries is derived from <link
+        xlink:href="http://en.wikipedia.org/wiki/FLWOR">XQuery FLWOR expressions</link>.</para>
+  </section>
+
+  <section>
+    <title>Project requirements</title>
+
+    <para>A working knowledge of Maven is a prerequisite to understanding how to build and work with
+      the query service. More information on Maven is available at the <link
+        xlink:href="http://maven.apache.org">Apache Maven</link> site. Maven supports project
+      aggregation in addition to project inheritance through its module structure. See <link
+        xlink:href="http://maven.apache.org/guides/mini/guide-multiple-modules.html">Maven's Guide
+        to Working with Multiple Modules</link> and <link
+        xlink:href="http://maven.apache.org/guides/introduction/introduction-to-the-pom.html"
+        >Maven's Introduction to the POM</link> for more information about Maven modules, project
+      inheritance, and project aggregation.</para>
+
+    <para>The minimum software requirements for the project are as follows: <orderedlist>
+        <listitem>
+          <para><link xlink:href="http://maven.apache.org/download.cgi">Apache Maven
+            3.1.0</link></para>
+        </listitem>
+
+        <listitem>
+          <para><link
+              xlink:href="http://www.oracle.com/technetwork/java/javase/downloads/java-se-jre-7-download-432155.html"
+              >Java 1.7</link> or higher</para>
+        </listitem>
+      </orderedlist>If you plan to perform queries using the REST service, you will need to install
+      an <link xlink:href="http://tomcat.apache.org/download-70.cgi">Apache Tomcat 7.0
+      server</link>.</para>
+  </section>
+
+  <section>
+    <title>Setup</title>
+
+    <section>
+      <title>Maven</title>
+
+      <para>In order to build the Query Service project, developers must either install Maven 3.1.0
+        to use from the command line, use an IDE that has Maven 3.1.0 already integrated (IntelliJ
+        IDEA, Netbeans), or add a plugin to their IDE that adds Maven 3.1.0 support. Instructions on
+        installing Maven for use from the command line are available at Maven's <link
+          xlink:href="http://maven.apache.org/download.cgi">download site</link>. Integration
+        information for IntelliJ IDEA is available from the Jetbrains wiki for <link
+          xlink:href="http://wiki.jetbrains.net/intellij/Creating_and_importing_Maven_projects"
+          >creating and importing maven projects</link>. Integration information for Netbeans is
+        available from Netbean's <link xlink:href="http://wiki.netbeans.org/Maven">Maven wiki
+          page</link>.</para>
+
+      <para>Please note that the project build requires the most recent version of Maven, 3.1.0, and
+        Java 1.7 or higher. Ensure that you are running the minimum requirements for Maven and Java
+        by entering the command <code>mvn --version</code>, which will output the Maven and Java
+        versions running on your machine. If the output displays a Java version earlier than 1.7,
+        download it <link
+          xlink:href="http://www.oracle.com/technetwork/java/javase/downloads/java-se-jre-7-download-432155.html"
+          >here</link> and ensure that JAVA_HOME and PATH variables are set to point at JDK 1.7 or
+        higher.</para>
+
+      <para>Once Maven is configured, you will need to download JavaFX artifacts to your local
+        repository by running the command <code>$ mvn
+          org.codeartisans.javafx:javafx-deployer-maven-plugin:1.2:install</code> from a directory
+        that is not a Maven project.</para>
+
+      <para>To access the artifact dependencies necessary to build the project, the Maven
+          <code>settings.xml</code> file must be appropriately configured. More information about
+        the <code>settings.xml</code> file and its location is available on Maven's <link
+          xlink:href="http://maven.apache.org/settings.html">Settings Reference</link> web page. As
+        noted in the Settings Reference page, locate and edit the settings.xml in the directory
+          <code>{user.home}/.m2/</code> .</para>
+
+      <para>For build profiles other than the default build, developers will need an account to
+        download a SNOMED CT berkeley database in the IHTSDO's repository. Credentials can be
+        requested from Rory Davidson. All of the other artifacts required for the project are open
+        source resources from Apache. Below is a copy of a <code>settings.xml</code> file that
+        allows a user to conduct the default build. In order to perform build profiles other than
+        the default build, enter IHTSDO Maestro credentials into the username and password
+        fields.</para>
+
+      <example>
+        <title>Example settings.xml file</title>
+
+        <para><programlistingco>
+            <areaspec>
+              <area coords="12,12" units="linecolumn" xml:id="ex.plco.ret"/>
+
+              <area coords="13,13" units="linecolumn" xml:id="ex.plco.dest"/>
+            </areaspec>
+
+            <programlisting>                    
+&lt;?xml version="1.0" encoding="UTF-8"?&gt; 
+&lt;settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation=
+"http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd"&gt;&gt; 
+     &lt;servers&gt; 
+         &lt;server&gt;
+             &lt;id&gt;maestro&lt;/id&gt; 
+             &lt;username&gt;username&lt;/username&gt;
+             &lt;password&gt;password&lt;/password&gt; 
+          &lt;/server&gt; 
+      &lt;/servers&gt; 
+      &lt;mirrors&gt;
+         &lt;mirror&gt; 
+             &lt;id&gt;maestro&lt;/id&gt; 
+             &lt;mirrorOf&gt;external:*&lt;/mirrorOf&gt;
+             &lt;name&gt;IHTSDO Maestro&lt;/name&gt;
+ &lt;url&gt;https://mgr.servers.aceworkspace.net/apps/ihtsdo-archiva/repository/all/&lt;/url&gt;
+         &lt;/mirror&gt; 
+     &lt;/mirrors&gt; 
+&lt;/settings&gt; 
+                    </programlisting>
+          </programlistingco></para>
+      </example>
+    </section>
+
+    <section>
+      <title>Java</title>
+
+      <para>The Query service project requires Java 1.7 or higher. To give Java more heap space, you
+        should set the following JAVA_OPTS: <code>-J-Xss2m -J-Xms1g -J-Xmx2g
+          -J-XX:PermSize=1600m</code>. If you're using the command line, these options can be set
+        with the command <code>JAVA_OPTS set -J-Xss2m -J-Xms1g -J-Xmx2g -J-XX:PermSize=1600m</code>.
+        Within Netbeans, these options should be added to the <code>netbeans_default_options</code>
+        in the <code>netbeans.conf</code> file.</para>
+    </section>
+
+    <section label="tomcatsetup">
+      <title>Tomcat setup</title>
+
+      <para>Apache Tomcat 7.0 can be downloaded <link
+          xlink:href="http://tomcat.apache.org/download-70.cgi">here</link>. Configure the following
+        properties in
+        <code>.bash_profile</code>:<programlisting>export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.7.0_45.jdk/Contents/Home/
+export CATALINA_HOME="/Applications/apache-tomcat-7.0.42"
+export CATALINA_OPTS="-Xms4g -Xmx6g -XX:MaxPermSize=512m -Dorg.ihtsdo.otf.tcc.repository.username=admin -Dorg.ihtsdo.otf.tcc.repository.password=password;
+-Duser.home=${CATALINA_HOME}/temp/bdb"</programlisting></para>
+
+      <para>Ensure that you replace <code></code>This <link xlink:href="http://wolfpaulus.com/jounal/mac/tomcat7">link</link> gives
+        explicit instructions on how to configure your machine to launch Tomcat from the command
+        line with <code>startup.sh</code> and <code>shutdown.sh</code> scripts in OS X.</para>
+
+      <para>If you want to run Tomcat within Netbeans, this <link
+          xlink:href="http://technology.amis.nl/2012/01/02/installing-tomcat-7-and-configuring-as-server-in-netbeans/"
+          >link</link> gives directions on how to download Apache 7.0 and configure it to run within
+        Netbeans.</para>
+
+      <para>In order to gain access to the Tomcat Web Application Manager, you need to configure a
+        Tomcat user with the appropriate privileges by editing the <code>tomcat-users.xml</code>
+        file that is stored in <code>CATALINA_HOME/conf/</code>. Here is a sample
+          <code>tomcat-users.xml</code> file that will setup a user named "admin" with a password
+        "password" and privileges to access the Tomcat Web Application Manager:<example>
+          <title>Sample tomcat-users.xml</title>
+          <programlistingco>
+            <areaspec>
+              <area coords="12,12" units="linecolumn" xml:id="ex.tu.l"/>
+              <area coords="13,13" units="linecolumn" xml:id="ex.tu.w"/>
+            </areaspec>
+            <programlisting>&lt;?xml version='1.0' encoding='utf-8'?&gt;
+&lt;tomcat-users&gt;
+  &lt;role rolename="tomcat"/&gt;
+  &lt;role rolename="role1"/&gt;
+  
+  &lt;role rolename="manager"/&gt;
+  &lt;user username="admin" password="password" roles="tomcat,manager,manager-gui,manager-script,manager-jmx,manger-status"/&gt;
+  
+  &lt;user username="tomcat" password="tomcat" roles="tomcat"/&gt;
+  &lt;user username="role1" password="tomcat" roles="role1"/&gt;
+  &lt;user username="both" password="tomcat" roles="tomcat,role1"/&gt;
+&lt;/tomcat-users&gt; </programlisting>
+          </programlistingco>
+        </example></para>
+
+      <para>If you want to perform REST queries longer than 9000 characters, then edit the
+          <code>maxHttpHeaderSize</code> parameter by conducting the following two changes:</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Edit the <code>server.xml</code> file in the directory
+                <code>CATALINA_HOME/conf</code> to include your desired
+                <code>maxHttpHeaderSize</code>as follows:
+              <programlisting>  &lt;Connector port="8080" protocol="HTTP/1.1"
+              connectionTimeout="20000"
+              redirectPort="8443"
+              maxHttpHeaderSize="15000"/&gt;</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Edit the <code>param-value</code> for the <code>httpMaxHeaderSize</code> in the
+                <code>web.xml</code> file in the directory
+                <code>OTF-Query-Services/query-service/src/main/webapps/WEB-INF</code> as
+              shown:<programlisting>        &lt;init-param&gt;
+            &lt;param-name&gt;httpMaxHeaderSize&lt;/param-name&gt;
+            &lt;param-value&gt;15000&lt;/param-value&gt;
+        &lt;/init-param&gt; </programlisting></para>
+          </listitem>
+        </orderedlist></para>
+    </section>
+  </section>
+
+  <section>
+    <title>Project checkout</title>
+
+    <para>The Query service project can be checked out anonymously from GIT by entering the prompt
+        <code>$ git clone https://github.com/IHTSDO/OTF-Query-Services.git</code> in an empty
+      directory folder.</para>
+  </section>
+
+  <section>
+    <title>Query service build profiles</title>
+
+    <para>The query service defines five build profiles described in the following sections. For
+      more information on build profiles, see Maven's <link
+        xlink:href="http://maven.apache.org/guides/introduction/introduction-to-profiles.html"
+        >Introduction to build profiles</link>. The default build is the only build profile that can
+      be conducted without acquiring IHTSDO Maestro credentials.</para>
+
+    <para>A developer can execute the builds from the command line, using the appropriate command
+      described below, or from an IDE that supports Maven by selecting the desired build
+      profile.</para>
+
+    <section>
+      <title>Default build profile</title>
+
+      <para>The default build profile consists of the modules that build when no profile is
+        specified. By default the following modules are built:<orderedlist>
+          <listitem>
+            <para>Client</para>
+          </listitem>
+
+          <listitem>
+            <para>JAXB objects</para>
+          </listitem>
+        </orderedlist></para>
+
+      <para>This profile will provide a sufficient build to test the query client with the provided
+        settings.xml file.</para>
+
+      <para>The artifacts required for the default build are located in the IHTSDO public Maven
+        repository, and a user can perform the default build without IHTSDO Maestro
+        credentials.</para>
+
+      <para>The default build can be conducted from the console with the command <code>$ mvn clean
+          install</code> .</para>
+    </section>
+
+    <section>
+      <title>Query Service build profile</title>
+
+      <para>This profile will build the query service and dependent modules. This project has more
+        dependencies, including dependencies in the IHTSDO Maven repository, which require a user
+        account.</para>
+
+      <para>The command for this build is <code>$ mvn clean install -P query-service</code> .</para>
+    </section>
+
+    <section>
+      <title>Integration tests build profile</title>
+
+      <para>The integration tests build profile adds the integration tests module to the build. The
+        integration tests are not part of the default build profile because they have an external
+        dependency on a Berkeley SNOMED database that is rather large, and downloading and opening
+        this database may not be necessary for all types of development. Omitting this module from
+        the default build profile makes the default build rapid.</para>
+
+      <para>Assuming all of the required dependencies are installed, the build time for the
+        integration tests module takes about 1 min 20 sec on a high-spec developers laptop, while
+        the other modules in this project take between 0.5 and 5 seconds. To build this from the
+        console, use the command <code>$ mvn clean install -P integration-tests</code> .</para>
+    </section>
+
+    <section>
+      <title>Documentation build profile</title>
+
+      <para>The documentation build profile adds the integration tests module and the documentation
+        module to the build when the build profile id <emphasis role="italic"
+          >documentation</emphasis> is activated. Generation of documentation depends of proper
+        execution of the integration tests module, and therefore is removed from the default build
+        profile secondary to the resource requirements and build time of the integration tests
+        module.</para>
+
+      <para>Execute the documentation profile build with the command <code>$ mvn clean install -P
+          documentation</code> .</para>
+    </section>
+
+    <section>
+      <title>All build profile</title>
+
+      <para>Perform all of the goals listed in the above build profiles with the command <code>$ mvn
+          clean install -P all</code> .</para>
+    </section>
+  </section>
+
+  <xi:include href="../../target/generated-resources/org.ihtsdo.otf/query-parent/query-parent.xml"/>
+
+  <section>
+    <title>Deploy to app server</title>
+
+    <para>The default build command generates a <code>.war</code> file that can be deployed to an
+      app server. Please see the Tomcat Setup section for instructions on how to configure your
+      Tomcat server. In order to avoid causing lock errors when opening the berkeley database,
+      undeploy the otf app before redeploying. In order to undeploy the app, choose "undeploy" from
+      the Mananger App (http://localhost:8080/manager/html) or from within the Tomcat server in your
+      IDE. Here is a <link xlink:href="http://tomcat.apache.org/tomcat-7.0-doc/manager-howto.html"
+        >link</link> to more information about the Tomcat 7 Manager App. Based upon how you're using
+      Tomcat, these are the instructions for deploying the <code>.war</code> file to your Tomcat
+      server: <orderedlist>
+        <listitem>
+          <para>From the command line: once you have built the project from the command line: save
+            the following xml file in the directory
+              <code>{CATALINA_HOME}/conf/Catalina/localhost/</code> as <code>otf.xml</code> and
+            replace the text {OTF Query Service Home} with the directory where you saved the
+            OTF-Query-Service project on your machine.<programlistingco>
+              <areaspec>
+                <area coords="12,12" units="linecolumn" xml:id="ex.otf.l"/>
+                <area coords="13,13" units="linecolumn" xml:id="ex.otf.w"/>
+              </areaspec>
+              <programlisting>                    
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;Context
+antiJARLocking="true" docBase="{OTF Query Service Home}/query-service/target/query-service-1.1-SNAPSHOT"
+path="/otf"/&gt;
+                            </programlisting>
+            </programlistingco>Then, execute the <code>startup.bat</code> or <code>startup.sh</code>
+            file, depending on your operating system. In OS X, in order to execute<code> $ bash
+              startup.sh</code>, you must first enter the command <code>$ chmod +x /bin/*.sh</code>
+            from the CATALINA_HOME directory to make all of the <code>.sh</code> files executable.
+            Test the deployment of the war with the following command with the following command
+            from the query-client folder <code>$ mvn exec:java
+              -Dexec.mainClass="org.ihtsdo.otf.query.rest.client.examples.HelloExample"
+              package</code> or type the url http://localhost:8080/otf/query-service/hello/frank
+            into a browser.</para>
+        </listitem>
+
+        <listitem>
+          <para>From Netbeans: right-click the query-service project, click "Run," and select the
+            Tomcat 7 server.</para>
+        </listitem>
+      </orderedlist></para>
+
+    <para>Deploying the app creates a folder at <code>{user.home}/app-server</code> and ensures that
+      you have the updated version of the berkeley database. You should see the following in the
+      Tomcat localhost log when the Maven build is successful and the database has been opened:
+      <programlisting>Oct 28, 2013 11:43:05 AM org.apache.catalina.core.ApplicationContext log
+INFO: Embedded maven build succeeded: 0
+Oct 28, 2013 11:43:05 AM org.apache.catalina.core.ApplicationContext log
+INFO: Finised database dependency setup: 0 min, 20 sec
+Oct 28, 2013 11:43:09 AM org.apache.catalina.core.ApplicationContext log
+INFO: Released storeSemaphore for init. 
+Oct 28, 2013 11:43:09 AM org.apache.catalina.core.ApplicationContext log
+INFO: Finised database startup: 0 min, 24 sec</programlisting>
+      Then, it will open the berkeley database at the configured location. Please see the Tomcat
+      Setup section for more information on how to set this location. It can take up to a couple
+      minutes to open the database, then you will see the following output in the Tomcat Catalina
+      log
+      file:<programlisting>Index: /Users/dylangrald/app-server/berkeley-db/lucene/descriptions
+Oct 28, 2013 11:43:05 AM org.ihtsdo.otf.tcc.datastore.BdbTerminologyStore &lt;init&gt;
+INFO: org.ihtsdo.otf.tcc.datastore.bdb-location set. Starting from location: /Users/dylangrald/app-server/berkeley-db
+Index: /Users/dylangrald/app-server/berkeley-db/lucene/refex
+!## maxMem: 6174015488 heapSize: HEAP_6000
+setup dbRoot: /Users/dylangrald/app-server/berkeley-db
+absolute dbRoot: /Users/dylangrald/app-server/berkeley-db
+Oct 28, 2013 11:43:05 AM org.ihtsdo.otf.tcc.datastore.temp.LogWithAlerts info
+INFO: NidCidMap readOnlyRecords: 952
+Oct 28, 2013 11:43:05 AM org.ihtsdo.otf.tcc.datastore.temp.LogWithAlerts info
+INFO: NidCidMap mutableRecords: 0
+Oct 28, 2013 11:43:09 AM org.ihtsdo.otf.tcc.datastore.temp.LogWithAlerts info
+INFO: mutable maxMem: 4224000
+Oct 28, 2013 11:43:09 AM org.ihtsdo.otf.tcc.datastore.temp.LogWithAlerts info
+INFO: mutable shared cache: true
+Oct 28, 2013 11:43:09 AM org.ihtsdo.otf.tcc.datastore.temp.LogWithAlerts info
+INFO: readOnly maxMem: 4224000
+Oct 28, 2013 11:43:09 AM org.ihtsdo.otf.tcc.datastore.temp.LogWithAlerts info
+INFO: readOnly shared cache: true
+Oct 28, 2013 11:43:09 AM org.ihtsdo.otf.tcc.datastore.BdbTerminologyStore &lt;init&gt;
+INFO: Database setup complete</programlisting>
+      Test the deployment of the <code>.war</code> by running the <code>HelloExample</code> in a web
+      browser at the URL <code>{default host}/otf/query-service/hello/frank</code> . Please see the
+      Query Client section below for instructions on how to run the <code>HelloExample</code> and
+        <code>KindOfQueryExample</code>.</para>
+  </section>
+
+  <section>
+    <title>Module overview</title>
+
+    <xi:include href="../../target/generated-resources/org.ihtsdo.otf/query-client/query-client.xml"/>
+
+    <xi:include
+      href="../../target/generated-resources/org.ihtsdo.otf/query-implementation/query-implementaton.xml"/>
+
+    <xi:include
+      href="../../target/generated-resources/org.ihtsdo.otf/query-integration-tests/query-integration-tests.xml"/>
+
+    <xi:include
+      href="../../target/generated-resources/org.ihtsdo.otf/query-service/query-service.xml"/>
+
+    <xi:include
+      href="../../target/generated-resources/org.ihtsdo.otf/query-jaxb-objects/data-display-objects.xml"/>
+
+    <xi:include href="documentation-strategy.xml"/>
+  </section>
+
+  <section>
+    <title>Troubleshooting Tomcat</title>
+
+    <para>You may receive an ENV_LOCKED error when trying to start the Tomcat server. This occurs if
+      you try to redeploy the <code>.war</code> when the database has not yet been initialized. The
+      best fix for this is to undeploy the "otf" application, shutdown Tomcat, ensure that
+        <code>Released shutdown permit</code> prints to the console, and restart Tomcat. If
+      restarting Tomcat doesn't solve the issue, the ENV_LOCKED error may be resolved by restarting
+      your computer.</para>
+  </section>
+
+  <section>
+    <title>Tomcat Shutdown</title>
+
+    <para>When you shutdown your Tomcat server, you should see the following output in the Tomcat
+      Catalina log
+      file:<programlisting>Interrupting: Nid data service 4
+Interrupting: Nid data service 1
+Interrupting: Nid data service 3
+Interrupting: Nid data service 2
+Oct 28, 2013 11:50:15 AM org.ihtsdo.otf.tcc.datastore.temp.LogWithAlerts info
+INFO: Database sync to disk...
+Oct 28, 2013 11:50:15 AM org.ihtsdo.otf.tcc.datastore.temp.LogWithAlerts info
+INFO: Database sync complete.
+Oct 28, 2013 11:50:15 AM org.ihtsdo.otf.tcc.datastore.temp.LogWithAlerts info
+INFO: Shutting down dbWriterService.
+Oct 28, 2013 11:50:15 AM org.ihtsdo.otf.tcc.datastore.temp.LogWithAlerts info
+Interrupting: Nid data service 6
+Interrupting: Nid data service 5
+Interrupting: Nid data service 4
+Interrupting: Nid data service 4
+INFO: Awaiting termination of dbWriterService.
+Oct 28, 2013 11:50:15 AM org.ihtsdo.otf.tcc.datastore.temp.LogWithAlerts info
+INFO: Shutting down changeSetWriterService.
+Oct 28, 2013 11:50:15 AM org.ihtsdo.otf.tcc.datastore.temp.LogWithAlerts info
+INFO: Awaiting termination of changeSetWriterService.
+Oct 28, 2013 11:50:15 AM org.ihtsdo.otf.tcc.datastore.temp.LogWithAlerts info
+INFO: BdbCommitManager is shutdown.
+Oct 28, 2013 11:50:15 AM org.ihtsdo.otf.tcc.datastore.temp.LogWithAlerts info
+INFO: Shutting down NidDataFromBdb executor pool.
+Oct 28, 2013 11:50:15 AM org.ihtsdo.otf.tcc.datastore.temp.LogWithAlerts info
+INFO: Awaiting termination of NidDataFromBdb executor pool.
+Oct 28, 2013 11:50:15 AM org.ihtsdo.otf.tcc.datastore.temp.LogWithAlerts info
+INFO: Termination NidDataFromBdb executor pool.
+Oct 28, 2013 11:50:15 AM org.ihtsdo.otf.tcc.datastore.temp.LogWithAlerts warning
+WARNING: org.apache.lucene.store.AlreadyClosedException: this IndexWriter is closed
+Oct 28, 2013 11:50:15 AM org.ihtsdo.otf.tcc.datastore.temp.LogWithAlerts info
+INFO: bdb close finished.
+Oct 28, 2013 11:50:16 AM org.apache.catalina.startup.HostConfig deleteRedeployResources
+INFO: Undeploying context [/otf]</programlisting></para>
+
+    <para>And you should see the following in the Tomcat localhost log file:</para>
+
+    <programlisting>Oct 28, 2013 11:50:15 AM org.apache.catalina.core.ApplicationContext log
+INFO: Destroy ChronicleServletContainer
+Oct 28, 2013 11:50:15 AM org.apache.catalina.core.ApplicationContext log
+INFO: Aquired storeSemaphore for destroy. 
+Oct 28, 2013 11:50:15 AM org.apache.catalina.core.ApplicationContext log
+INFO: Released storeSemaphore for destroy. </programlisting>
+  </section>
+</article>

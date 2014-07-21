@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section version="5.0" xml:id="org.ihtsdo.otf.query_query-lucene"
+         xmlns="http://docbook.org/ns/docbook"
+         xmlns:xlink="http://www.w3.org/1999/xlink"
+         xmlns:ns5="http://www.w3.org/1999/xhtml"
+         xmlns:ns4="http://www.w3.org/1998/Math/MathML"
+         xmlns:ns3="http://www.w3.org/2000/svg"
+         xmlns:ns="http://docbook.org/ns/docbook">
+  <title>Query Lucene</title>
+
+  <para>The Query Lucene module handles the indexing of descriptions to enable<link linkend="http://lucene.apache.org">Apache Lucene Core</link>
+  searches of the descriptions within the berkeley database. Please see the query-client for more information
+  about how to perform Lucene queries using the REST client and the query integration tests for examples of pure Java queries that utilize Lucene.</para>
+</section>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+        <action>
+            <actionName>CUSTOM-Debug integration tests</actionName>
+            <displayName>Debug integration tests</displayName>
+            <goals>
+                <goal>-Dmaven.surefire.debug</goal>
+                <goal>test</goal>
+            </goals>
+            <properties>
+                <Env.MAVEN_OPTS>-ea -d64 -XX:+UseCompressedOops -Xmx4g -Xms4g -Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address}</Env.MAVEN_OPTS>
+            </properties>
+        </action>
+        <action>
+            <actionName>CUSTOM-Clean install skip tests</actionName>
+            <displayName>Clean install skip tests</displayName>
+            <goals>
+                <goal>clean</goal>
+                <goal>install</goal>
+                <goal>-DskipTests</goal>
+            </goals>
+        </action>
+        <action>
+            <actionName>CUSTOM-Run QueryTests 4g</actionName>
+            <displayName>Run QueryTests 4g</displayName>
+            <goals>
+                <goal>-Dtest=org.ihtsdo.otf.query.integration.tests.QueryTest</goal>
+                <goal>-Pall</goal>
+                <goal>surefire:test</goal>
+            </goals>
+            <properties>
+                <Xmx4g></Xmx4g>
+            </properties>
+        </action>
+    </actions>

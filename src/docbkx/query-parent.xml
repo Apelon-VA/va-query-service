@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section xmlns="http://docbook.org/ns/docbook" version="5.0"
+    xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Query service repository structure</title>
+    <para>The query service top-level project is the query-parent project that defines the root of
+        the repository structure. The query service repository holds a maven multi-module project,
+        which manages the sources and documents for the project.</para>
+    <section>
+        <title>Maven Modules</title>
+        <para>Within the top level project are six maven modules (subprojects), some of which are
+            only built when a particular build profile is activated.<orderedlist>
+                <listitem>
+                    <para><link linkend="org.ihtsdo.otf.query_query-client">Client</link><itemizedlist>
+                            <listitem>
+                                <para>demonstrates how to connect to the query service REST server
+                                    using a <link xlink:href="http://tomcat.apache.org">Tomcat
+                                        7.0</link> REST client</para>
+                            </listitem>
+                            <listitem>
+                                <para>group id: org.ihtsdo.otf</para>
+                            </listitem>
+                            <listitem>
+                                <para>artifact id: query-client</para>
+                            </listitem>
+                            <listitem>
+                                <para>directory: query-client</para>
+                            </listitem>
+                            <listitem>
+                                <para>build profiles: default, all, query-service,
+                                    integration-tests, documentation</para>
+                            </listitem>
+                        </itemizedlist></para>
+                </listitem>
+                <listitem>
+                    <para><link linkend="org.ihtsdo.otf.query_query-service">Service</link><itemizedlist>
+                            <listitem>
+                                <para>implements a <link xlink:href="http://tomcat.apache.org"
+                                        >Tomcat 7.0</link> REST service for querying</para>
+                            </listitem>
+                            <listitem>
+                                <para>group id: org.ihtsdo.otf</para>
+                            </listitem>
+                            <listitem>
+                                <para>artifact id: query-service</para>
+                            </listitem>
+                            <listitem>
+                                <para>directory: query-service</para>
+                            </listitem>
+                            <listitem>
+                                <para>build profiles: all, query-service, integration-tests,
+                                    documentation</para>
+                            </listitem>
+                        </itemizedlist></para>
+                </listitem>
+                <listitem>
+                    <para><link linkend="org.ihtsdo.otf.query_query-implementation"
+                            >Implementation</link><itemizedlist>
+                            <listitem>
+                                <para>implementation of queries against Terminology Component
+                                    Chronicle service</para>
+                            </listitem>
+                            <listitem>
+                                <para>group id: org.ihtsdo.otf</para>
+                            </listitem>
+                            <listitem>
+                                <para>artifact id: query-implementation</para>
+                            </listitem>
+                            <listitem>
+                                <para>directory: query-implementation</para>
+                            </listitem>
+                            <listitem>
+                                <para>build profiles: all, query-service, integration-tests,
+                                    documentation</para>
+                            </listitem>
+                        </itemizedlist></para>
+                </listitem>
+                <listitem>
+                    <para><link linkend="org.ihtsdo.otf.query_data-display-objects_jaxb">JAXB
+                            objects</link><itemizedlist>
+                            <listitem>
+                                <para>generates Java data display objects derived from running the
+                                    JAXB xjc against the the underlying implementation</para>
+                            </listitem>
+                            <listitem>
+                                <para>group id: org.ihtsdo.otf</para>
+                            </listitem>
+                            <listitem>
+                                <para>artifact id: query-jaxb-objects</para>
+                            </listitem>
+                            <listitem>
+                                <para>directory: query-jaxb-objects</para>
+                            </listitem>
+                            <listitem>
+                                <para>build profiles: all, query-service, integration-tests,
+                                    documentation</para>
+                            </listitem>
+                        </itemizedlist></para>
+                </listitem>
+                <listitem>
+                    <para><link linkend="org.ihtsdo.otf.query_query-integration-tests">Integration
+                            tests</link><itemizedlist>
+                            <listitem>
+                                <para>conducts tests of queries against a SNOMED CT database</para>
+                            </listitem>
+                            <listitem>
+                                <para>group id: org.ihtsdo.otf</para>
+                            </listitem>
+                            <listitem>
+                                <para>artifact id: query-integration-tests</para>
+                            </listitem>
+                            <listitem>
+                                <para>directory: query-integration-tests</para>
+                            </listitem>
+                            <listitem>
+                                <para>build profiles: all, integration-tests, documentation</para>
+                            </listitem>
+                        </itemizedlist></para>
+                </listitem>
+                <listitem>
+                    <para><link linkend="org.ihtsdo.otf.query_documentation-strategy"
+                            >Documentation</link><itemizedlist>
+                            <listitem>
+                                <para>handles compilation of documentation fir Query Services
+                                    project</para>
+                            </listitem>
+                            <listitem>
+                                <para>group id: org.ihtsdo.otf</para>
+                            </listitem>
+                            <listitem>
+                                <para>artifact id: query-documentation</para>
+                            </listitem>
+                            <listitem>
+                                <para>directory: query-documentation</para>
+                            </listitem>
+                            <listitem>
+                                <para>build profiles: all, documentation</para>
+                            </listitem>
+                        </itemizedlist></para>
+                </listitem>
+            </orderedlist></para>
+    </section>
+</section>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section xml:id="org.ihtsdo.otf.query_query-implementation" xmlns="http://docbook.org/ns/docbook"
+    version="5.0" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Query Implementation</title>
+    <para>This query implementation module implements queries against the Terminology Component
+        Chronicle service, which can be forked <link
+            xlink:href="https://github.com/IHTSDO/OTF-Versioning-Service">here</link>. The pure Java
+        implementation of query capabilities is demonstrated in the integration tests and may be
+        called independently of the REST service. The query implementation is called by the REST
+        service to perform queries.</para>
+</section>

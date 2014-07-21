@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section xml:id="org.ihtsdo.otf.query_documentation-strategy" xmlns="http://docbook.org/ns/docbook"
+    version="5.0" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Documentation</title>
+    <para>This project uses <link xlink:href="http://www.docbook.org">Docbook 5</link> for
+        generating documentation. Docbook generation is integrated with Maven using <link
+            xlink:href="http://code.google.com/p/docbkx-tools/">Docbkx Tools</link>, and follows in
+        the footsteps of other development projects such as <link
+            xlink:href="http://blog.sonatype.com/people/2008/04/writing-a-book-with-maven-part-i/"
+            >Sonatype's Maven book</link> and <link xlink:href="https://www.jboss.org/pressgang/jdg"
+            >JBoss's community documentation</link>. More details on how to contribute documentation
+        will come in subsequent versions of this documentation. </para>
+</section>

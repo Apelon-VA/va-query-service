@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section version="5.0" xml:id="org.ihtsdo.otf.query_query-client"
+         xmlns="http://docbook.org/ns/docbook"
+         xmlns:xlink="http://www.w3.org/1999/xlink"
+         xmlns:ns5="http://www.w3.org/2000/svg"
+         xmlns:ns4="http://www.w3.org/1998/Math/MathML"
+         xmlns:ns3="http://www.w3.org/1999/xhtml"
+         xmlns:ns="http://docbook.org/ns/docbook">
+  <title>Query Client</title>
+
+  <para>This query client module demonstrates how to connect to the query
+  service REST server using an <link
+  xlink:href="http://tomcat.apache.org">Apache Tomcat 7.0</link> REST client
+  and provides examples of queries that can be constructed in Java.</para>
+
+  <para>There are several example programs, including the
+  <code>HelloExample</code>, <code>KindOfQueryExample</code>, and
+  <code>LuceneExample</code>.</para>
+
+  <section>
+    <title>HelloExample</title>
+
+    <para>The <code>HelloExample</code> program, located in package,
+    <code>org.ihtsdo.otf.query.rest.client.examples</code> is a simple program
+    that sends a hello request to the rest server. If you haven't deployed the
+    war to your Tomcat server, you can still run the <code>HelloExample</code>
+    with the url
+    <code>http://api.snomedtools.com/query-service/hello/frank</code>. If you
+    deployed the war to your Tomcat server, you can run the hello example in
+    the following ways:</para>
+
+    <orderedlist>
+      <listitem>
+        <para>Enter the url
+        <code>http://localhost:8080/otf/query-service/hello/frank</code> in a
+        browser</para>
+      </listitem>
+
+      <listitem>
+        <para>Run the command <code>$ mvn exec:java
+        -Dexec.mainClass="org.ihtsdo.otf.query.rest.client.examples.HelloExample"
+        package</code> from the query-client folder</para>
+      </listitem>
+
+      <listitem>
+        <para>Run the main method of <code>HelloExample.java</code>, located
+        in the query-client module, in an IDE</para>
+      </listitem>
+    </orderedlist>
+
+    <para>Running the hello example should produce the output:</para>
+
+    <para><code>200</code></para>
+
+    <para><code>hello frank.</code></para>
+  </section>
+
+  <section>
+    <title>KindOfQueryExample</title>
+
+    <para>The <code>KindOfQueryExample</code> program, located in package
+    <code>org.ihtsdo.otf.query.rest.client.examples</code>, performs a simple
+    "kind of" query using the rest server and returns data display objects
+    with the results. This example demonstrates the parameters required for a
+    query and how to run queries using the REST service.</para>
+
+    <para>The structure of a query is defined by:<itemizedlist>
+        <listitem>
+          <para>a <code>ViewCoordinate</code> that defines what version of the
+          terminology to query against, as well as other information such as
+          the preferred language for results.</para>
+        </listitem>
+
+        <listitem>
+          <para>a FOR that defines the set of components to iterate
+          over</para>
+        </listitem>
+
+        <listitem>
+          <para>a LET that defines references to concept specifications or
+          other view coordinates used by where clauses.</para>
+        </listitem>
+
+        <listitem>
+          <para>a WHERE that defines the where clauses for the query</para>
+        </listitem>
+
+        <listitem>
+          <para>a RETURN that defines that type of components to return
+          (concepts, descriptions, etc).</para>
+        </listitem>
+      </itemizedlist>The following parameters are required for a query:
+    <orderedlist>
+        <listitem>
+          <para>Let declarations</para>
+        </listitem>
+
+        <listitem>
+          <para>Where clauses</para>
+        </listitem>
+      </orderedlist>If a ViewCoordinate is not specified, then the Snomed
+    inferred latest will be used. The default FOR set is all concepts. And the
+    default RETURN value is the fully specified description version of the
+    components in the result set.</para>
+
+    <para>This KindOfQueryExample's main method will setup a kind-of query
+    that will return concepts that are a kind-of SNOMED concept "allergic
+    asthma." If a server is not specified, a default server is chosen from the
+    QueryProcessorForRestXml class, located in the package:
+    <code>org.ihtsdo.otf.query.rest.client</code>.</para>
+
+    <para>Run this example in the following ways:</para>
+
+    <orderedlist>
+      <listitem>
+        <para>If you haven't deployed the war to a Tomcat server, you can
+        still run the example with the command <code>$ java -cp
+        query-client/target/query-client-1.1-SNAPSHOT-jar-with-dependencies.jar
+        org.ihtsdo.otf.query.rest.client.examples.KindOfQueryExample
+        http://api.snomedtools.com</code> from the top level directory of the
+        OTF-Query-Service.</para>
+      </listitem>
+
+      <listitem>
+        <para>If you're running Tomcat from the command line, navigate to the
+        query-client folder and enter the command <code>$ mvn exec:java
+        -Dexec.mainClass="org.ihtsdo.otf.query.rest.client.examples.KindOfQueryExample"
+        package</code></para>
+      </listitem>
+
+      <listitem>
+        <para>If you're running Tomcat from an IDE, such as Netbeans, then run
+        the main method of <code>KindOfQueryExample.java</code> in the
+        <code>org.ihtsdo.otf.query.rest.client.examples package</code>.</para>
+      </listitem>
+    </orderedlist>
+
+    <para>Below is an example output that is generated by a successful run
+    (xml formatting was added after the fact to make the results display
+    better in this document).</para>
+
+    <para><example>
+        <title><code>KindOfQueryExample</code> output</title>
+
+        <para><programlisting>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;ns4:result-list xmlns:ns4="http://display.object.jaxb.otf.ihtsdo.org" xmlns:ns2="http://query.jaxb.otf.ihtsdo.org" xmlns:ns3="http://api.chronicle.jaxb.otf.ihtsdo.org"&gt;
+   &lt;theResults xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ns4:conceptChronicleDdo"&gt;
+      &lt;descriptionList /&gt;
+      &lt;destinationRelationshipList /&gt;
+      &lt;mediaList /&gt;
+      &lt;refsetMemberList /&gt;
+      &lt;conceptAttributes&gt;
+         &lt;additionalIdList /&gt;
+         &lt;annotationList /&gt;
+         &lt;versionList /&gt;
+         &lt;componentNid&gt;-2145791879&lt;/componentNid&gt;
+         &lt;primordialComponentUuid&gt;8981e7b8-c195-3548-a877-57505fcc1ec0&lt;/primordialComponentUuid&gt;
+      &lt;/conceptAttributes&gt;
+      &lt;conceptReference&gt;
+         &lt;definitionalState&gt;UNDETERMINED&lt;/definitionalState&gt;
+         &lt;nid&gt;-2145791879&lt;/nid&gt;
+         &lt;text&gt;Extrinsic asthma with status asthmaticus (disorder)&lt;/text&gt;
+         &lt;uuid&gt;8981e7b8-c195-3548-a877-57505fcc1ec0&lt;/uuid&gt;
+      &lt;/conceptReference&gt;
+      &lt;primordialUuid&gt;8981e7b8-c195-3548-a877-57505fcc1ec0&lt;/primordialUuid&gt;
+      &lt;viewCoordinateUuid&gt;7dcb2c4a-fdb7-4b1b-bd50-a1e981837326&lt;/viewCoordinateUuid&gt;
+      &lt;refexPolicy&gt;REFEX_MEMBERS_AND_REFSET_MEMBERS&lt;/refexPolicy&gt;
+      &lt;relationshipPolicy&gt;DESTINATION_RELATIONSHIPS&lt;/relationshipPolicy&gt;
+      &lt;versionPolicy&gt;ACTIVE_VERSIONS&lt;/versionPolicy&gt;
+   &lt;/theResults&gt;
+   &lt;theResults xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ns4:conceptChronicleDdo"&gt;
+      &lt;descriptionList /&gt;
+      &lt;destinationRelationshipList /&gt;
+      &lt;mediaList /&gt;
+      &lt;refsetMemberList /&gt;
+      &lt;conceptAttributes&gt;
+         &lt;additionalIdList /&gt;
+         &lt;annotationList /&gt;
+         &lt;versionList /&gt;
+         &lt;componentNid&gt;-2145791857&lt;/componentNid&gt;
+         &lt;primordialComponentUuid&gt;904794b3-1536-382f-9323-f7eb3c7e343f&lt;/primordialComponentUuid&gt;
+      &lt;/conceptAttributes&gt;
+      &lt;conceptReference&gt;
+         &lt;definitionalState&gt;UNDETERMINED&lt;/definitionalState&gt;
+         &lt;nid&gt;-2145791857&lt;/nid&gt;
+         &lt;text&gt;Extrinsic asthma&lt;/text&gt;
+         &lt;uuid&gt;904794b3-1536-382f-9323-f7eb3c7e343f&lt;/uuid&gt;
+      &lt;/conceptReference&gt;
+      &lt;primordialUuid&gt;904794b3-1536-382f-9323-f7eb3c7e343f&lt;/primordialUuid&gt;
+      &lt;viewCoordinateUuid&gt;7dcb2c4a-fdb7-4b1b-bd50-a1e981837326&lt;/viewCoordinateUuid&gt;
+      &lt;refexPolicy&gt;REFEX_MEMBERS_AND_REFSET_MEMBERS&lt;/refexPolicy&gt;
+      &lt;relationshipPolicy&gt;DESTINATION_RELATIONSHIPS&lt;/relationshipPolicy&gt;
+      &lt;versionPolicy&gt;ACTIVE_VERSIONS&lt;/versionPolicy&gt;
+   &lt;/theResults&gt;
+   &lt;theResults xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ns4:conceptChronicleDdo"&gt;
+      &lt;descriptionList /&gt;
+      &lt;destinationRelationshipList /&gt;
+      &lt;mediaList /&gt;
+      &lt;refsetMemberList /&gt;
+      &lt;conceptAttributes&gt;
+         &lt;additionalIdList /&gt;
+         &lt;annotationList /&gt;
+         &lt;versionList /&gt;
+         &lt;componentNid&gt;-2145791576&lt;/componentNid&gt;
+         &lt;primordialComponentUuid&gt;531abe20-8324-3db9-9104-8bcdbf251ac7&lt;/primordialComponentUuid&gt;
+      &lt;/conceptAttributes&gt;
+      &lt;conceptReference&gt;
+         &lt;definitionalState&gt;UNDETERMINED&lt;/definitionalState&gt;
+         &lt;nid&gt;-2145791576&lt;/nid&gt;
+         &lt;text&gt;Atopic asthma&lt;/text&gt;
+         &lt;uuid&gt;531abe20-8324-3db9-9104-8bcdbf251ac7&lt;/uuid&gt;
+      &lt;/conceptReference&gt;
+      &lt;primordialUuid&gt;531abe20-8324-3db9-9104-8bcdbf251ac7&lt;/primordialUuid&gt;
+      &lt;viewCoordinateUuid&gt;7dcb2c4a-fdb7-4b1b-bd50-a1e981837326&lt;/viewCoordinateUuid&gt;
+      &lt;refexPolicy&gt;REFEX_MEMBERS_AND_REFSET_MEMBERS&lt;/refexPolicy&gt;
+      &lt;relationshipPolicy&gt;DESTINATION_RELATIONSHIPS&lt;/relationshipPolicy&gt;
+      &lt;versionPolicy&gt;ACTIVE_VERSIONS&lt;/versionPolicy&gt;
+   &lt;/theResults&gt;
+   &lt;theResults xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ns4:conceptChronicleDdo"&gt;
+      &lt;descriptionList /&gt;
+      &lt;destinationRelationshipList /&gt;
+      &lt;mediaList /&gt;
+      &lt;refsetMemberList /&gt;
+      &lt;conceptAttributes&gt;
+         &lt;additionalIdList /&gt;
+         &lt;annotationList /&gt;
+         &lt;versionList /&gt;
+         &lt;componentNid&gt;-2145526765&lt;/componentNid&gt;
+         &lt;primordialComponentUuid&gt;e3fc10f9-641d-3d01-8fac-07e52ded5e49&lt;/primordialComponentUuid&gt;
+      &lt;/conceptAttributes&gt;
+      &lt;conceptReference&gt;
+         &lt;definitionalState&gt;UNDETERMINED&lt;/definitionalState&gt;
+         &lt;nid&gt;-2145526765&lt;/nid&gt;
+         &lt;text&gt;Intrinsic asthma with status asthmaticus (disorder)&lt;/text&gt;
+         &lt;uuid&gt;e3fc10f9-641d-3d01-8fac-07e52ded5e49&lt;/uuid&gt;
+      &lt;/conceptReference&gt;
+      &lt;primordialUuid&gt;e3fc10f9-641d-3d01-8fac-07e52ded5e49&lt;/primordialUuid&gt;
+      &lt;viewCoordinateUuid&gt;7dcb2c4a-fdb7-4b1b-bd50-a1e981837326&lt;/viewCoordinateUuid&gt;
+      &lt;refexPolicy&gt;REFEX_MEMBERS_AND_REFSET_MEMBERS&lt;/refexPolicy&gt;
+      &lt;relationshipPolicy&gt;DESTINATION_RELATIONSHIPS&lt;/relationshipPolicy&gt;
+      &lt;versionPolicy&gt;ACTIVE_VERSIONS&lt;/versionPolicy&gt;
+   &lt;/theResults&gt;
+   &lt;theResults xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ns4:conceptChronicleDdo"&gt;
+      &lt;descriptionList /&gt;
+      &lt;destinationRelationshipList /&gt;
+      &lt;mediaList /&gt;
+      &lt;refsetMemberList /&gt;
+      &lt;conceptAttributes&gt;
+         &lt;additionalIdList /&gt;
+         &lt;annotationList /&gt;
+         &lt;versionList /&gt;
+         &lt;componentNid&gt;-2145526668&lt;/componentNid&gt;
+         &lt;primordialComponentUuid&gt;b714e0a9-33f0-30ad-a795-8fb9437b4af6&lt;/primordialComponentUuid&gt;
+      &lt;/conceptAttributes&gt;
+      &lt;conceptReference&gt;
+         &lt;definitionalState&gt;UNDETERMINED&lt;/definitionalState&gt;
+         &lt;nid&gt;-2145526668&lt;/nid&gt;
+         &lt;text&gt;Non-IgE mediated allergic asthma&lt;/text&gt;
+         &lt;uuid&gt;b714e0a9-33f0-30ad-a795-8fb9437b4af6&lt;/uuid&gt;
+      &lt;/conceptReference&gt;
+      &lt;primordialUuid&gt;b714e0a9-33f0-30ad-a795-8fb9437b4af6&lt;/primordialUuid&gt;
+      &lt;viewCoordinateUuid&gt;7dcb2c4a-fdb7-4b1b-bd50-a1e981837326&lt;/viewCoordinateUuid&gt;
+      &lt;refexPolicy&gt;REFEX_MEMBERS_AND_REFSET_MEMBERS&lt;/refexPolicy&gt;
+      &lt;relationshipPolicy&gt;DESTINATION_RELATIONSHIPS&lt;/relationshipPolicy&gt;
+      &lt;versionPolicy&gt;ACTIVE_VERSIONS&lt;/versionPolicy&gt;
+   &lt;/theResults&gt;
+   &lt;theResults xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ns4:conceptChronicleDdo"&gt;
+      &lt;descriptionList /&gt;
+      &lt;destinationRelationshipList /&gt;
+      &lt;mediaList /&gt;
+      &lt;refsetMemberList /&gt;
+      &lt;conceptAttributes&gt;
+         &lt;additionalIdList /&gt;
+         &lt;annotationList /&gt;
+         &lt;versionList /&gt;
+         &lt;componentNid&gt;-2141503191&lt;/componentNid&gt;
+         &lt;primordialComponentUuid&gt;1a630c84-d723-309f-88ca-3a0bc0e0ab17&lt;/primordialComponentUuid&gt;
+      &lt;/conceptAttributes&gt;
+      &lt;conceptReference&gt;
+         &lt;definitionalState&gt;UNDETERMINED&lt;/definitionalState&gt;
+         &lt;nid&gt;-2141503191&lt;/nid&gt;
+         &lt;text&gt;Extrinsic asthma without status asthmaticus (disorder)&lt;/text&gt;
+         &lt;uuid&gt;1a630c84-d723-309f-88ca-3a0bc0e0ab17&lt;/uuid&gt;
+      &lt;/conceptReference&gt;
+      &lt;primordialUuid&gt;1a630c84-d723-309f-88ca-3a0bc0e0ab17&lt;/primordialUuid&gt;
+      &lt;viewCoordinateUuid&gt;7dcb2c4a-fdb7-4b1b-bd50-a1e981837326&lt;/viewCoordinateUuid&gt;
+      &lt;refexPolicy&gt;REFEX_MEMBERS_AND_REFSET_MEMBERS&lt;/refexPolicy&gt;
+      &lt;relationshipPolicy&gt;DESTINATION_RELATIONSHIPS&lt;/relationshipPolicy&gt;
+      &lt;versionPolicy&gt;ACTIVE_VERSIONS&lt;/versionPolicy&gt;
+   &lt;/theResults&gt;
+   &lt;theResults xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ns4:conceptChronicleDdo"&gt;
+      &lt;descriptionList /&gt;
+      &lt;destinationRelationshipList /&gt;
+      &lt;mediaList /&gt;
+      &lt;refsetMemberList /&gt;
+      &lt;conceptAttributes&gt;
+         &lt;additionalIdList /&gt;
+         &lt;annotationList /&gt;
+         &lt;versionList /&gt;
+         &lt;componentNid&gt;-2141449681&lt;/componentNid&gt;
+         &lt;primordialComponentUuid&gt;ccdd5b1e-74f6-35f6-bf93-3385348f7912&lt;/primordialComponentUuid&gt;
+      &lt;/conceptAttributes&gt;
+      &lt;conceptReference&gt;
+         &lt;definitionalState&gt;UNDETERMINED&lt;/definitionalState&gt;
+         &lt;nid&gt;-2141449681&lt;/nid&gt;
+         &lt;text&gt;Intrinsic asthma with asthma attack (disorder)&lt;/text&gt;
+         &lt;uuid&gt;ccdd5b1e-74f6-35f6-bf93-3385348f7912&lt;/uuid&gt;
+      &lt;/conceptReference&gt;
+      &lt;primordialUuid&gt;ccdd5b1e-74f6-35f6-bf93-3385348f7912&lt;/primordialUuid&gt;
+      &lt;viewCoordinateUuid&gt;7dcb2c4a-fdb7-4b1b-bd50-a1e981837326&lt;/viewCoordinateUuid&gt;
+      &lt;refexPolicy&gt;REFEX_MEMBERS_AND_REFSET_MEMBERS&lt;/refexPolicy&gt;
+      &lt;relationshipPolicy&gt;DESTINATION_RELATIONSHIPS&lt;/relationshipPolicy&gt;
+      &lt;versionPolicy&gt;ACTIVE_VERSIONS&lt;/versionPolicy&gt;
+   &lt;/theResults&gt;
+   &lt;theResults xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ns4:conceptChronicleDdo"&gt;
+      &lt;descriptionList /&gt;
+      &lt;destinationRelationshipList /&gt;
+      &lt;mediaList /&gt;
+      &lt;refsetMemberList /&gt;
+      &lt;conceptAttributes&gt;
+         &lt;additionalIdList /&gt;
+         &lt;annotationList /&gt;
+         &lt;versionList /&gt;
+         &lt;componentNid&gt;-2140794649&lt;/componentNid&gt;
+         &lt;primordialComponentUuid&gt;dba55554-caa3-34bc-9ce8-b788f3a787ce&lt;/primordialComponentUuid&gt;
+      &lt;/conceptAttributes&gt;
+      &lt;conceptReference&gt;
+         &lt;definitionalState&gt;UNDETERMINED&lt;/definitionalState&gt;
+         &lt;nid&gt;-2140794649&lt;/nid&gt;
+         &lt;text&gt;Allergic-infective asthma (disorder)&lt;/text&gt;
+         &lt;uuid&gt;dba55554-caa3-34bc-9ce8-b788f3a787ce&lt;/uuid&gt;
+      &lt;/conceptReference&gt;
+      &lt;primordialUuid&gt;dba55554-caa3-34bc-9ce8-b788f3a787ce&lt;/primordialUuid&gt;
+      &lt;viewCoordinateUuid&gt;7dcb2c4a-fdb7-4b1b-bd50-a1e981837326&lt;/viewCoordinateUuid&gt;
+      &lt;refexPolicy&gt;REFEX_MEMBERS_AND_REFSET_MEMBERS&lt;/refexPolicy&gt;
+      &lt;relationshipPolicy&gt;DESTINATION_RELATIONSHIPS&lt;/relationshipPolicy&gt;
+      &lt;versionPolicy&gt;ACTIVE_VERSIONS&lt;/versionPolicy&gt;
+   &lt;/theResults&gt;
+   &lt;theResults xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ns4:conceptChronicleDdo"&gt;
+      &lt;descriptionList /&gt;
+      &lt;destinationRelationshipList /&gt;
+      &lt;mediaList /&gt;
+      &lt;refsetMemberList /&gt;
+      &lt;conceptAttributes&gt;
+         &lt;additionalIdList /&gt;
+         &lt;annotationList /&gt;
+         &lt;versionList /&gt;
+         &lt;componentNid&gt;-2139389896&lt;/componentNid&gt;
+         &lt;primordialComponentUuid&gt;2eb77f24-816b-30b8-82a7-26fb04be352f&lt;/primordialComponentUuid&gt;
+      &lt;/conceptAttributes&gt;
+      &lt;conceptReference&gt;
+         &lt;definitionalState&gt;UNDETERMINED&lt;/definitionalState&gt;
+         &lt;nid&gt;-2139389896&lt;/nid&gt;
+         &lt;text&gt;Intrinsic asthma without status asthmaticus (disorder)&lt;/text&gt;
+         &lt;uuid&gt;2eb77f24-816b-30b8-82a7-26fb04be352f&lt;/uuid&gt;
+      &lt;/conceptReference&gt;
+      &lt;primordialUuid&gt;2eb77f24-816b-30b8-82a7-26fb04be352f&lt;/primordialUuid&gt;
+      &lt;viewCoordinateUuid&gt;7dcb2c4a-fdb7-4b1b-bd50-a1e981837326&lt;/viewCoordinateUuid&gt;
+      &lt;refexPolicy&gt;REFEX_MEMBERS_AND_REFSET_MEMBERS&lt;/refexPolicy&gt;
+      &lt;relationshipPolicy&gt;DESTINATION_RELATIONSHIPS&lt;/relationshipPolicy&gt;
+      &lt;versionPolicy&gt;ACTIVE_VERSIONS&lt;/versionPolicy&gt;
+   &lt;/theResults&gt;
+   &lt;theResults xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ns4:conceptChronicleDdo"&gt;
+      &lt;descriptionList /&gt;
+      &lt;destinationRelationshipList /&gt;
+      &lt;mediaList /&gt;
+      &lt;refsetMemberList /&gt;
+      &lt;conceptAttributes&gt;
+         &lt;additionalIdList /&gt;
+         &lt;annotationList /&gt;
+         &lt;versionList /&gt;
+         &lt;componentNid&gt;-2135975835&lt;/componentNid&gt;
+         &lt;primordialComponentUuid&gt;7ddc3edc-d49d-3f0f-b5ab-81efb44e5e62&lt;/primordialComponentUuid&gt;
+      &lt;/conceptAttributes&gt;
+      &lt;conceptReference&gt;
+         &lt;definitionalState&gt;UNDETERMINED&lt;/definitionalState&gt;
+         &lt;nid&gt;-2135975835&lt;/nid&gt;
+         &lt;text&gt;Extrinsic asthma with asthma attack (disorder)&lt;/text&gt;
+         &lt;uuid&gt;7ddc3edc-d49d-3f0f-b5ab-81efb44e5e62&lt;/uuid&gt;
+      &lt;/conceptReference&gt;
+      &lt;primordialUuid&gt;7ddc3edc-d49d-3f0f-b5ab-81efb44e5e62&lt;/primordialUuid&gt;
+      &lt;viewCoordinateUuid&gt;7dcb2c4a-fdb7-4b1b-bd50-a1e981837326&lt;/viewCoordinateUuid&gt;
+      &lt;refexPolicy&gt;REFEX_MEMBERS_AND_REFSET_MEMBERS&lt;/refexPolicy&gt;
+      &lt;relationshipPolicy&gt;DESTINATION_RELATIONSHIPS&lt;/relationshipPolicy&gt;
+      &lt;versionPolicy&gt;ACTIVE_VERSIONS&lt;/versionPolicy&gt;
+   &lt;/theResults&gt;
+   &lt;theResults xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ns4:conceptChronicleDdo"&gt;
+      &lt;descriptionList /&gt;
+      &lt;destinationRelationshipList /&gt;
+      &lt;mediaList /&gt;
+      &lt;refsetMemberList /&gt;
+      &lt;conceptAttributes&gt;
+         &lt;additionalIdList /&gt;
+         &lt;annotationList /&gt;
+         &lt;versionList /&gt;
+         &lt;componentNid&gt;-2135452099&lt;/componentNid&gt;
+         &lt;primordialComponentUuid&gt;7aa5d3d5-97a5-349e-b2f0-9a1638e8a176&lt;/primordialComponentUuid&gt;
+      &lt;/conceptAttributes&gt;
+      &lt;conceptReference&gt;
+         &lt;definitionalState&gt;UNDETERMINED&lt;/definitionalState&gt;
+         &lt;nid&gt;-2135452099&lt;/nid&gt;
+         &lt;text&gt;Saw dust asthma&lt;/text&gt;
+         &lt;uuid&gt;7aa5d3d5-97a5-349e-b2f0-9a1638e8a176&lt;/uuid&gt;
+      &lt;/conceptReference&gt;
+      &lt;primordialUuid&gt;7aa5d3d5-97a5-349e-b2f0-9a1638e8a176&lt;/primordialUuid&gt;
+      &lt;viewCoordinateUuid&gt;7dcb2c4a-fdb7-4b1b-bd50-a1e981837326&lt;/viewCoordinateUuid&gt;
+      &lt;refexPolicy&gt;REFEX_MEMBERS_AND_REFSET_MEMBERS&lt;/refexPolicy&gt;
+      &lt;relationshipPolicy&gt;DESTINATION_RELATIONSHIPS&lt;/relationshipPolicy&gt;
+      &lt;versionPolicy&gt;ACTIVE_VERSIONS&lt;/versionPolicy&gt;
+   &lt;/theResults&gt;
+&lt;/ns4:result-list&gt;
+Oct 16, 2013 11:38:10 AM org.ihtsdo.otf.query.rest.client.examples.KindOfQueryExample main
+INFO: Returned concept: Extrinsic asthma with status asthmaticus (disorder)
+Oct 16, 2013 11:38:10 AM org.ihtsdo.otf.query.rest.client.examples.KindOfQueryExample main
+INFO: Returned concept: Extrinsic asthma
+Oct 16, 2013 11:38:10 AM org.ihtsdo.otf.query.rest.client.examples.KindOfQueryExample main
+INFO: Returned concept: Atopic asthma
+Oct 16, 2013 11:38:10 AM org.ihtsdo.otf.query.rest.client.examples.KindOfQueryExample main
+INFO: Returned concept: Intrinsic asthma with status asthmaticus (disorder)
+Oct 16, 2013 11:38:10 AM org.ihtsdo.otf.query.rest.client.examples.KindOfQueryExample main
+INFO: Returned concept: Non-IgE mediated allergic asthma
+Oct 16, 2013 11:38:10 AM org.ihtsdo.otf.query.rest.client.examples.KindOfQueryExample main
+INFO: Returned concept: Extrinsic asthma without status asthmaticus (disorder)
+Oct 16, 2013 11:38:10 AM org.ihtsdo.otf.query.rest.client.examples.KindOfQueryExample main
+INFO: Returned concept: Intrinsic asthma with asthma attack (disorder)
+Oct 16, 2013 11:38:10 AM org.ihtsdo.otf.query.rest.client.examples.KindOfQueryExample main
+INFO: Returned concept: Allergic-infective asthma (disorder)
+Oct 16, 2013 11:38:10 AM org.ihtsdo.otf.query.rest.client.examples.KindOfQueryExample main
+INFO: Returned concept: Intrinsic asthma without status asthmaticus (disorder)
+Oct 16, 2013 11:38:10 AM org.ihtsdo.otf.query.rest.client.examples.KindOfQueryExample main
+INFO: Returned concept: Extrinsic asthma with asthma attack (disorder)
+Oct 16, 2013 11:38:10 AM org.ihtsdo.otf.query.rest.client.examples.KindOfQueryExample main
+INFO: Returned concept: Saw dust asthma
+        
+                    </programlisting></para>
+      </example></para>
+  </section>
+</section>
