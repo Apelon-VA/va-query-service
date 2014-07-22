@@ -5,11 +5,11 @@
     <parent>
         <groupId>org.ihtsdo.otf</groupId>
         <artifactId>query-parent</artifactId>
-        <version>1.1-SNAPSHOT</version>
+        <version>1.1-informatics-SNAPSHOT</version>
     </parent>
     <groupId>org.ihtsdo.otf</groupId>
     <artifactId>query-jaxb-objects</artifactId>
-    <name>${branch}: Query jaxb objects</name>
+    <name>OTF Query Service: Query jaxb objects</name>
     <description>Java data display objects generated from a JAXB generated XSD.</description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

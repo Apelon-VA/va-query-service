@@ -6,11 +6,11 @@
     <parent>
         <groupId>org.ihtsdo.otf</groupId>
         <artifactId>query-parent</artifactId>
-        <version>1.1-SNAPSHOT</version>
+        <version>1.1-informatics-SNAPSHOT</version>
     </parent>
     <groupId>org.ihtsdo.otf</groupId>
     <artifactId>query-implementation</artifactId>
-    <name>${branch}: Query implementation</name>
+    <name>OTF Query Service: Query implementation</name>
     <description>Query clauses used for the construction and computation of queries.</description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

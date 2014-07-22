@@ -6,14 +6,14 @@
     <parent>
         <groupId>org.ihtsdo.otf</groupId>
         <artifactId>query-parent</artifactId>
-        <version>1.1-SNAPSHOT</version>
+        <version>1.1-informatics-SNAPSHOT</version>
     </parent>
     <artifactId>query-service</artifactId>
     <packaging>war</packaging>
 
-    <name>${branch}: Query rest service</name>
+    <name>OTF Query Service: Query rest service</name>
     <description>Representational State Transfer (REST) server connectivity and query execution.</description>
-       <properties>
+    <properties>
         <netbeans.hint.deploy.server>gfv3ee6</netbeans.hint.deploy.server>
         <tomcat.catalina.home>/Applications/apache-tomcat-7.0.47</tomcat.catalina.home>
     </properties>
@@ -46,7 +46,7 @@
             <version>2.2</version>
         </dependency>
         <!-- Not used directly, but we need to ensure the right version is
-             used for Jersey as it conflicts with mahout-math -->
+        used for Jersey as it conflicts with mahout-math -->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
@@ -109,6 +109,6 @@
                     <update>true</update>
                 </configuration>
             </plugin>
-       </plugins>
+        </plugins>
     </build>
 </project>

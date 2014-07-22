@@ -2,15 +2,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.ihtsdo</groupId>
-        <artifactId>ihtsdo-otf-parent</artifactId>
-        <version>3</version>
+        <groupId>com.informatics</groupId>
+        <artifactId>informatics-parent-pom</artifactId>
+        <version>1.19</version>
     </parent>
     <groupId>org.ihtsdo.otf</groupId>
     <artifactId>query-parent</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <version>1.1-informatics-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>${branch}: (MMP) Query service parent</name>
+    <name>OTF Query Service: (MMP) Query service parent</name>
     <description>Parent project of modules that support query services.</description>
     <developers>
         <developer>
@@ -68,10 +68,7 @@
         </contributor>
     </contributors>
     <scm>
-        <connection>scm:git:https://github.com/IHTSDO/OTF-Query-Services.git</connection>
-        <developerConnection>scm:git:git@github.com:IHTSDO/OTF-Query-Services.git</developerConnection>
-        <url>https://github.com/IHTSDO/OTF-Query-Services</url>
-        <tag>sprint2</tag>
+        <developerConnection>scm:git:http://informatics.com/stash/scm/otqstd/otf-query-services.git</developerConnection>
     </scm>
     <distributionManagement>
         <site>
@@ -85,7 +82,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jersey-version>2.2</jersey-version>
         <junit.version>4.11</junit.version>
-        <terminology-component-chronicle.version>1.1-SNAPSHOT</terminology-component-chronicle.version>
+        <terminology-component-chronicle.version>1.1-informatics-SNAPSHOT</terminology-component-chronicle.version>
         <org.apache.lucene.version>4.3.1</org.apache.lucene.version>
         <hk2.version>2.2.0-b14</hk2.version>
         <maven-plugin-plugin.version>2.6</maven-plugin-plugin.version>

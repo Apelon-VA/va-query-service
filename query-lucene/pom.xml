@@ -6,11 +6,11 @@
     <parent>
         <groupId>org.ihtsdo.otf</groupId>
         <artifactId>query-parent</artifactId>
-        <version>1.1-SNAPSHOT</version>
+        <version>1.1-informatics-SNAPSHOT</version>
     </parent>
     <groupId>org.ihtsdo.otf</groupId>
     <artifactId>query-lucene</artifactId>
-    <name>${branch}: Query Lucene</name>
+    <name>OTF Query Service: Query Lucene</name>
     <description>Lucene search functionality.</description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

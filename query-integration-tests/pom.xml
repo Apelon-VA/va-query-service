@@ -6,11 +6,11 @@
     <parent>
         <groupId>org.ihtsdo.otf</groupId>
         <artifactId>query-parent</artifactId>
-        <version>1.1-SNAPSHOT</version>
+        <version>1.1-informatics-SNAPSHOT</version>
     </parent>
     <groupId>org.ihtsdo.otf</groupId>
     <artifactId>query-integration-tests</artifactId>
-    <name>${branch}: Query integration tests</name>
+    <name>OTF Query Service: Query integration tests</name>
     <description>Performs integration tests for query clauses. Provides examples of query structure to demonstrate how queries can be constructed.</description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
