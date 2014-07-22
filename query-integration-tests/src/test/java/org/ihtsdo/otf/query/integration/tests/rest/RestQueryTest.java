@@ -102,7 +102,7 @@ import org.junit.runner.RunWith;
 public class RestQueryTest extends JerseyTest {
 
     private static final Logger LOGGER = Logger.getLogger(RestQueryTest.class.getName());
-    private static final JSONToReport REPORTS = new JSONToReport(System.getProperty("user.dir") + "/target/test-resources/OTFReports.json");
+    private static final JSONToReport REPORTS = new JSONToReport(System.getProperty("user.dir") + "/target/test-resources/reports.json");
 
     public RestQueryTest() {
     }

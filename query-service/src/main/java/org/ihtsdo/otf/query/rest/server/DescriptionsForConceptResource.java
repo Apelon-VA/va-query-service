@@ -106,14 +106,14 @@ public class DescriptionsForConceptResource {
         System.out.println("result: " + result);
 
         if (!result.isEmpty()) {
-            ViewCoordinate vc = StandardViewCoordinates.getSnomedInferredLatest();
+            ViewCoordinate vc = StandardViewCoordinates.getSnomedInferredLatestActiveOnly();
             ComponentChronicleBI cc = Ts.get().getComponent(result.get(0).nid);
             UUID uuid = Ts.get().getUuidPrimordialForNid(cc.getNid());
             ConceptChronicleBI concept = Ts.get().getComponent(uuid).getEnclosingConcept();
             ConceptVersionBI cv = concept.getVersion(vc);
 
             ArrayList<Object> list = new ArrayList<>();
-            
+
             for (DescriptionChronicleBI dc : concept.getVersion(vc).getDescriptions()) {
                 if (dc.getVersion(vc) != null) {
                     DescriptionVersionBI dv = dc.getVersion(vc);

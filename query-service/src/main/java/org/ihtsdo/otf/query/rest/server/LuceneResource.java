@@ -106,7 +106,7 @@ public class LuceneResource {
             }
             ArrayList<Object> objectList = Query.returnDisplayObjects(resultSet,
                     ReturnTypes.DESCRIPTION_FOR_COMPONENT,
-                    StandardViewCoordinates.getSnomedInferredLatest());
+                    StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
 
             if (objectList.isEmpty()) {
                 return "No results found for " + queryString;
