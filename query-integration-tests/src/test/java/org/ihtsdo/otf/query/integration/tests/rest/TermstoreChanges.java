@@ -18,6 +18,7 @@ package org.ihtsdo.otf.query.integration.tests.rest;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.query.integration.tests.QueryTest;
 import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
 import org.ihtsdo.otf.tcc.api.blueprint.DescriptionCAB;
@@ -70,7 +71,7 @@ public class TermstoreChanges {
             int authorNid = TermAux.USER.getLenient().getConceptNid();
             int editPathNid = TermAux.WB_AUX_PATH.getLenient().getConceptNid();
             EditCoordinate ec = new EditCoordinate(authorNid, Snomed.CORE_MODULE.getLenient().getNid(), editPathNid);
-            TerminologyBuilderBI tb = Ts.get().getTerminologyBuilder(ec, org.ihtsdo.otf.tcc.api.coordinate.StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
+            TerminologyBuilderBI tb = Ts.get().getTerminologyBuilder(ec, StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
             RefexChronicleBI rc = tb.construct(refex);
             Ts.get().addUncommitted(Snomed.SEVERITY_REFSET.getLenient());
             Ts.get().commit();

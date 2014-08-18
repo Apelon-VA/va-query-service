@@ -15,7 +15,6 @@
  */
 package org.ihtsdo.otf.query.integration.tests.rest;
 
-import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.query.integration.tests.ExampleQuery;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -49,6 +48,7 @@ import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.ReturnTypes;
 import org.ihtsdo.otf.query.implementation.Where;
 import org.ihtsdo.otf.query.implementation.WhereClause;
+import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.query.integration.tests.ConceptForComponentTest;
 import org.ihtsdo.otf.query.integration.tests.ConceptIsTest;
 import org.ihtsdo.otf.query.integration.tests.DescriptionActiveLuceneMatchTest;
@@ -149,7 +149,7 @@ public class RestQueryTest extends JerseyTest {
             JAXBContext ctx = JaxbForQuery.get();
 
             String viewCoordinateXml = getXmlString(ctx,
-                    StandardViewCoordinates.getSnomedInferredLatest());
+                    StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
 
             String forXml = getXmlString(ctx, new ForCollection());
 
@@ -302,7 +302,7 @@ public class RestQueryTest extends JerseyTest {
     @Test
     public void RefsetContainsConceptTest() throws IOException, JAXBException {
         LOGGER.log(Level.INFO, "RefsetContainsConcept test");
-        TermstoreChanges tc = new TermstoreChanges(org.ihtsdo.otf.tcc.api.coordinate.StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
+        TermstoreChanges tc = new TermstoreChanges(StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
         tc.addRefsetMember();
         RefsetContainsConceptTest test = new RefsetContainsConceptTest();
         String resultString = returnResultString(test.getQuery());
@@ -312,7 +312,7 @@ public class RestQueryTest extends JerseyTest {
     @Test
     public void RefsetContainsKindOfConceptTest() throws JAXBException, IOException {
         LOGGER.log(Level.INFO, "RefsetContainsKindOfConcept test");
-        TermstoreChanges tc = new TermstoreChanges(org.ihtsdo.otf.tcc.api.coordinate.StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
+        TermstoreChanges tc = new TermstoreChanges(StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
         tc.addRefsetMember();
         RefsetContainsKindOfConceptTest test = new RefsetContainsKindOfConceptTest();
         String resultString = returnResultString(test.getQuery());
@@ -322,7 +322,7 @@ public class RestQueryTest extends JerseyTest {
     @Test
     public void RefsetContainsStringTest() throws JAXBException, IOException {
         LOGGER.log(Level.INFO, "RefsetContainsString test");
-        TermstoreChanges tc = new TermstoreChanges(org.ihtsdo.otf.tcc.api.coordinate.StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
+        TermstoreChanges tc = new TermstoreChanges(StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
         tc.addRefsetMember();
         RefsetContainsStringTest test = new RefsetContainsStringTest();
         String resultString = returnResultString(test.getQuery());
@@ -434,15 +434,15 @@ public class RestQueryTest extends JerseyTest {
         NativeIdSetBI results1 = q1.compute();
         assertEquals(1, results1.size());
 
-        TermstoreChanges tc = new TermstoreChanges(org.ihtsdo.otf.tcc.api.coordinate.StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
+        TermstoreChanges tc = new TermstoreChanges(StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
 
-        for (DescriptionVersionBI desc : Ts.get().getConceptVersion(org.ihtsdo.otf.tcc.api.coordinate.StandardViewCoordinates.getSnomedInferredLatestActiveOnly(), Snomed.BARANYS_SIGN.getNid()).getDescriptionsActive()) {
+        for (DescriptionVersionBI desc : Ts.get().getConceptVersion(StandardViewCoordinates.getSnomedInferredLatestActiveOnly(), Snomed.BARANYS_SIGN.getNid()).getDescriptionsActive()) {
             tc.setActiveStatus(desc, Status.INACTIVE);
         }
         DescriptionActiveLuceneMatchTest test = new DescriptionActiveLuceneMatchTest();
         String resultString = returnResultString(test.getQuery());
-        for (DescriptionChronicleBI desc : Ts.get().getConceptVersion(org.ihtsdo.otf.tcc.api.coordinate.StandardViewCoordinates.getSnomedInferredLatestActiveAndInactive(), Snomed.BARANYS_SIGN.getNid()).getDescriptions()) {
-            DescriptionVersionBI descVersion = desc.getVersion(org.ihtsdo.otf.tcc.api.coordinate.StandardViewCoordinates.getSnomedInferredLatestActiveAndInactive());
+        for (DescriptionChronicleBI desc : Ts.get().getConceptVersion(StandardViewCoordinates.getSnomedInferredLatestActiveAndInactive(), Snomed.BARANYS_SIGN.getNid()).getDescriptions()) {
+            DescriptionVersionBI descVersion = desc.getVersion(StandardViewCoordinates.getSnomedInferredLatestActiveAndInactive());
             tc.setActiveStatus(descVersion, Status.ACTIVE);
         }
         assertEquals(0, getNidSet(resultString).size());
@@ -569,8 +569,8 @@ public class RestQueryTest extends JerseyTest {
     @Test
     public void DescriptionActiveRegexMatchTest() throws IOException, ContradictionException, InvalidCAB, Exception {
         LOGGER.log(Level.INFO, "Description active regex match test");
-        TermstoreChanges tc = new TermstoreChanges(org.ihtsdo.otf.tcc.api.coordinate.StandardViewCoordinates.getSnomedInferredLatestActiveAndInactive());
-        for (DescriptionVersionBI desc : Ts.get().getConceptVersion(org.ihtsdo.otf.tcc.api.coordinate.StandardViewCoordinates.getSnomedInferredLatestActiveOnly(), Snomed.ACCELERATION.getNid()).getDescriptionsActive()) {
+        TermstoreChanges tc = new TermstoreChanges(StandardViewCoordinates.getSnomedInferredLatestActiveAndInactive());
+        for (DescriptionVersionBI desc : Ts.get().getConceptVersion(StandardViewCoordinates.getSnomedInferredLatestActiveOnly(), Snomed.ACCELERATION.getNid()).getDescriptionsActive()) {
             tc.setActiveStatus(desc, Status.INACTIVE);
         }
 
@@ -579,8 +579,8 @@ public class RestQueryTest extends JerseyTest {
 
         NativeIdSetBI resultSet = this.getNidSet(results);
 
-        for (DescriptionChronicleBI desc : Ts.get().getConceptVersion(org.ihtsdo.otf.tcc.api.coordinate.StandardViewCoordinates.getSnomedInferredLatestActiveAndInactive(), Snomed.ACCELERATION.getNid()).getDescriptions()) {
-            DescriptionVersionBI descVersion = desc.getVersion(org.ihtsdo.otf.tcc.api.coordinate.StandardViewCoordinates.getSnomedInferredLatestActiveAndInactive());
+        for (DescriptionChronicleBI desc : Ts.get().getConceptVersion(StandardViewCoordinates.getSnomedInferredLatestActiveAndInactive(), Snomed.ACCELERATION.getNid()).getDescriptions()) {
+            DescriptionVersionBI descVersion = desc.getVersion(StandardViewCoordinates.getSnomedInferredLatestActiveAndInactive());
             tc.setActiveStatus(descVersion, Status.ACTIVE);
         }
 
@@ -669,7 +669,7 @@ public class RestQueryTest extends JerseyTest {
     public String returnResultString(Query q, ReturnTypes returnType) throws JAXBException, IOException {
         JAXBContext ctx = JaxbForQuery.get();
         String viewCoordinateXml = getXmlString(ctx,
-                StandardViewCoordinates.getSnomedInferredLatest());
+                StandardViewCoordinates.getSnomedInferredLatestActiveAndInactive());
 
         String forXml = getXmlString(ctx, new ForCollection());
 

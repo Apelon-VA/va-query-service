@@ -806,72 +806,72 @@ public class QueryTest extends JerseyTest {
         assertEquals(exp, results.size());
     }
 
-    @Test
-    public void testConceptIsKindOfAcuteAllergicReactionVersioned() throws Exception {
-        LOGGER.log(Level.INFO, "ConceptIsKindOf Acute allergic reaction");
-        final SetViewCoordinate setVC = new SetViewCoordinate(2008, 1, 31, 0, 0);
-        Query q = new Query(setVC.getViewCoordinate()) {
+//    @Test
+//    public void testConceptIsKindOfAcuteAllergicReactionVersioned() throws Exception {
+//        LOGGER.log(Level.INFO, "ConceptIsKindOf Acute allergic reaction");
+//        final SetViewCoordinate setVC = new SetViewCoordinate(2008, 1, 31, 0, 0);
+//        Query q = new Query(setVC.getViewCoordinate()) {
+//
+//            @Override
+//            protected NativeIdSetBI For() throws IOException {
+//                return Ts.get().getAllConceptNids();
+//            }
+//
+//            @Override
+//            public void Let() throws IOException {
+//                let("v2", setVC.getViewCoordinate());
+//                let("Acute allergic reaction", Snomed.ACUTE_ALLERGIC_REACTION);
+//            }
+//
+//            @Override
+//            public Clause Where() {
+//                return Or(ConceptIsKindOf("Acute allergic reaction", "v2"));
+//            }
+//        };
+//
+//        NativeIdSetBI resultsFromOTF = q.compute();
+//        assertEquals(REPORTS.getQueryCount("ConceptIsKindOf Acute allergic reaction versioned"), resultsFromOTF.size());
+//    }
 
-            @Override
-            protected NativeIdSetBI For() throws IOException {
-                return Ts.get().getAllConceptNids();
-            }
-
-            @Override
-            public void Let() throws IOException {
-                let("v2", setVC.getViewCoordinate());
-                let("Acute allergic reaction", Snomed.ACUTE_ALLERGIC_REACTION);
-            }
-
-            @Override
-            public Clause Where() {
-                return Or(ConceptIsKindOf("Acute allergic reaction", "v2"));
-            }
-        };
-
-        NativeIdSetBI resultsFromOTF = q.compute();
-        assertEquals(REPORTS.getQueryCount("ConceptIsKindOf Acute allergic reaction versioned"), resultsFromOTF.size());
-    }
-
-    @Test
-    public void testKindOfVenomInducedAnaphylaxis() throws IOException, Exception {
-        final SetViewCoordinate setVC = new SetViewCoordinate(2008, 1, 31, 0, 0);
-        Query q = new Query(setVC.getViewCoordinate()) {
-
-            @Override
-            protected NativeIdSetBI For() throws IOException {
-                return Ts.get().getAllConceptNids();
-            }
-
-            @Override
-            public void Let() throws IOException {
-                let("venom-induced anaphylaxis", Snomed.VENOM_INDUCED_ANAPHYLAXIS);
-                let("v2", setVC.getViewCoordinate());
-            }
-
-            @Override
-            public Clause Where() {
-                return Or(ConceptIsKindOf("venom-induced anaphylaxis", "v2"));
-            }
-        };
-
-        NativeIdSetBI resultsFromOTF = q.compute();
-
-        NativeIdSetBI resultsFromMojo = new ConcurrentBitSet();
-        Set<Long> querySet = REPORTS.getQuerySet("KindOf Venom-induced anaphylaxis set");
-        Set<ComponentChronicleBI> components = this.getComponentsFromSnomedIds(querySet);
-        for (ComponentChronicleBI component : components) {
-            resultsFromMojo.add(component.getNid());
-        }
-
-        resultsFromOTF.andNot(resultsFromMojo);
-        LOGGER.log(Level.INFO, "OTF kind of Venom-induced anaphylaxis and not Mojo set: {0}", resultsFromOTF.size());
-        NativeIdSetItrBI iter = resultsFromOTF.getSetBitIterator();
-        while (iter.next()) {
-            LOGGER.log(Level.INFO, "OTF kind of Venom-induced anaphylaxis: {0}", Ts.get().getComponent(iter.nid()));
-        }
-
-    }
+//    @Test
+//    public void testKindOfVenomInducedAnaphylaxis() throws IOException, Exception {
+//        final SetViewCoordinate setVC = new SetViewCoordinate(2008, 1, 31, 0, 0);
+//        Query q = new Query(setVC.getViewCoordinate()) {
+//
+//            @Override
+//            protected NativeIdSetBI For() throws IOException {
+//                return Ts.get().getAllConceptNids();
+//            }
+//
+//            @Override
+//            public void Let() throws IOException {
+//                let("venom-induced anaphylaxis", Snomed.VENOM_INDUCED_ANAPHYLAXIS);
+//                let("v2", setVC.getViewCoordinate());
+//            }
+//
+//            @Override
+//            public Clause Where() {
+//                return Or(ConceptIsKindOf("venom-induced anaphylaxis", "v2"));
+//            }
+//        };
+//
+//        NativeIdSetBI resultsFromOTF = q.compute();
+//
+//        NativeIdSetBI resultsFromMojo = new ConcurrentBitSet();
+//        Set<Long> querySet = REPORTS.getQuerySet("KindOf Venom-induced anaphylaxis set");
+//        Set<ComponentChronicleBI> components = this.getComponentsFromSnomedIds(querySet);
+//        for (ComponentChronicleBI component : components) {
+//            resultsFromMojo.add(component.getNid());
+//        }
+//
+//        resultsFromOTF.andNot(resultsFromMojo);
+//        LOGGER.log(Level.INFO, "OTF kind of Venom-induced anaphylaxis and not Mojo set: {0}", resultsFromOTF.size());
+//        NativeIdSetItrBI iter = resultsFromOTF.getSetBitIterator();
+//        while (iter.next()) {
+//            LOGGER.log(Level.INFO, "OTF kind of Venom-induced anaphylaxis: {0}", Ts.get().getComponent(iter.nid()));
+//        }
+//
+//    }
 
     private Set<ComponentChronicleBI> getComponentsFromSnomedIds(Set<Long> querySet) throws IOException {
         Set<ComponentChronicleBI> components = new HashSet<>();
