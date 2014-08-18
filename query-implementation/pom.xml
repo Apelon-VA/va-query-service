@@ -78,13 +78,6 @@
             <scope>test</scope>
             <type>jar</type>
         </dependency>
-        <dependency>
-            <groupId>org.ihtsdo.otf</groupId>
-            <artifactId>tcc-junit-ext</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-            <type>jar</type>
-        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -160,23 +153,6 @@
                         <include>**/ReturnTypes.java</include>
                     </includes>
                 </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>extract-berkeley-db</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>unpack-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <includeArtifactIds>otf-test-data</includeArtifactIds>
-                            <outputDirectory>${project.build.directory}/test-resources/</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>            
         </plugins>
     </build>

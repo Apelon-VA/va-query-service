@@ -15,6 +15,7 @@
  */
 package org.ihtsdo.otf.query.integration.tests.rest;
 
+import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.query.integration.tests.ExampleQuery;
 import java.io.IOException;
 import java.io.StringWriter;

@@ -15,13 +15,13 @@
  */
 package org.ihtsdo.otf.query.implementation;
 
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.ihtsdo.otf.tcc.api.store.Ts;
-import org.ihtsdo.otf.tcc.api.coordinate.StandardViewCoordinates;
+import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
+import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
+import org.ihtsdo.otf.tcc.api.store.Ts;
 
 /**
  * Demonstrates the syntax to construct and compute a
