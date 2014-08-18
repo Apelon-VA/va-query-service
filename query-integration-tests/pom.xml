@@ -112,7 +112,7 @@
                             <goal>unpack-dependencies</goal>
                         </goals>
                         <configuration>
-                            <includeArtifactIds>otf-test-data,otf-query-services-reports</includeArtifactIds>
+                            <includeArtifactIds>otf-integration-test-data,otf-query-services-reports</includeArtifactIds>
                             <outputDirectory>${project.build.directory}/test-resources/</outputDirectory>
                         </configuration>
                     </execution>
