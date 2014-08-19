@@ -15,19 +15,13 @@ package org.ihtsdo.otf.query.integration.tests;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import com.informatics.bdb.junit.ext.BdbTestRunner;
-import com.informatics.bdb.junit.ext.BdbTestRunnerConfig;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.MediaType;
-import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.test.JerseyTest;
+import org.glassfish.hk2.runlevel.RunLevelController;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.QueryExample;
@@ -35,7 +29,6 @@ import org.ihtsdo.otf.query.implementation.ReturnTypes;
 import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.query.integration.tests.rest.TermstoreChanges;
 import org.ihtsdo.otf.tcc.api.blueprint.InvalidCAB;
-import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
 import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
@@ -49,12 +42,13 @@ import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetItrBI;
 import org.ihtsdo.otf.tcc.api.relationship.RelationshipVersionBI;
 import org.ihtsdo.otf.tcc.api.store.Ts;
+import org.ihtsdo.otf.tcc.datastore.BdbTerminologyStore;
 import org.ihtsdo.otf.tcc.ddo.concept.component.description.DescriptionVersionDdo;
+import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.junit.AfterClass;
 import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /**
  * Class that handles integration tests for
@@ -62,8 +56,6 @@ import org.junit.runner.RunWith;
  *
  * @author kec
  */
-@RunWith(BdbTestRunner.class)
-@BdbTestRunnerConfig()
 public class QueryTest {
 
     private static final String DIR = System.getProperty("user.dir");
@@ -77,6 +69,15 @@ public class QueryTest {
 
     @BeforeClass
     public static void setUpClass() {
+
+        LOGGER.log(Level.INFO, "oneTimeSetUp");
+        System.setProperty(BdbTerminologyStore.BDB_LOCATION_PROPERTY, DIR + "/target/test-resources/berkeley-db");
+        RunLevelController runLevelController = Hk2Looker.get().getService(RunLevelController.class);
+        LOGGER.log(Level.INFO, "going to run level 1");
+        runLevelController.proceedTo(1);
+        LOGGER.log(Level.INFO, "going to run level 2");
+        runLevelController.proceedTo(2);
+
         REPORTS.parseFile();
         try {
             VC_LATEST_ACTIVE_AND_INACTIVE = StandardViewCoordinates.getSnomedInferredLatestActiveAndInactive();
@@ -88,15 +89,14 @@ public class QueryTest {
 
     @AfterClass
     public static void tearDownClass() {
+        LOGGER.log(Level.INFO, "oneTimeTearDown");
+        RunLevelController runLevelController = Hk2Looker.get().getService(RunLevelController.class);
+        LOGGER.log(Level.INFO, "going to run level 1");
+        runLevelController.proceedTo(1);
+        LOGGER.log(Level.INFO, "going to run level 0");
+        runLevelController.proceedTo(0);
     }
-
-//    @Before
-//    public void setUp() throws ValidationException, IOException {
-//    }
-//    
-//    @After
-//    public void tearDown() {
-//    }
+    
     @Test
     public void testSimpleQuery() throws IOException, Exception {
         LOGGER.log(Level.INFO, "Simple query: ");
@@ -805,7 +805,6 @@ public class QueryTest {
 //        NativeIdSetBI resultsFromOTF = q.compute();
 //        assertEquals(REPORTS.getQueryCount("ConceptIsKindOf Acute allergic reaction versioned"), resultsFromOTF.size());
 //    }
-
 //    @Test
 //    public void testKindOfVenomInducedAnaphylaxis() throws IOException, Exception {
 //        final SetViewCoordinate setVC = new SetViewCoordinate(2008, 1, 31, 0, 0);
@@ -845,5 +844,4 @@ public class QueryTest {
 //        }
 //
 //    }
-
 }

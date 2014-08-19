@@ -17,8 +17,6 @@ package org.ihtsdo.otf.query.integration.tests.lucene;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import com.informatics.bdb.junit.ext.BdbTestRunner;
-import com.informatics.bdb.junit.ext.BdbTestRunnerConfig;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
@@ -26,6 +24,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.glassfish.hk2.runlevel.RunLevelController;
 import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
 import org.ihtsdo.otf.tcc.api.blueprint.DescriptionCAB;
 import org.ihtsdo.otf.tcc.api.blueprint.IdDirective;
@@ -40,6 +39,7 @@ import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.metadata.binding.SnomedMetadataRf2;
 import org.ihtsdo.otf.tcc.api.metadata.binding.TermAux;
 import org.ihtsdo.otf.tcc.api.store.Ts;
+import org.ihtsdo.otf.tcc.datastore.BdbTerminologyStore;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.index.service.IndexedGenerationCallable;
 import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
@@ -50,7 +50,6 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 /**
  * Class that handles integration tests for <code>Lucene</code> index
@@ -58,9 +57,9 @@ import org.junit.runner.RunWith;
  *
  * @author aimeefurber
  */
-@RunWith(BdbTestRunner.class)
-@BdbTestRunnerConfig()
 public class LuceneTest {
+
+    private static final Logger LOGGER = Logger.getLogger(LuceneTest.class.getName());
 
     static File buildDirFile = null;
     EditCoordinate ec;
@@ -71,10 +70,14 @@ public class LuceneTest {
 
     @BeforeClass
     public static void setUpClass() {
-    }
 
-    @AfterClass
-    public static void tearDownClass() {
+        LOGGER.log(Level.INFO, "oneTimeSetUp");
+        System.setProperty(BdbTerminologyStore.BDB_LOCATION_PROPERTY, "target/test-resources/berkeley-db");
+        RunLevelController runLevelController = Hk2Looker.get().getService(RunLevelController.class);
+        LOGGER.log(Level.INFO, "going to run level 1");
+        runLevelController.proceedTo(1);
+        LOGGER.log(Level.INFO, "going to run level 2");
+        runLevelController.proceedTo(2);
     }
 
     @Before
@@ -94,6 +97,16 @@ public class LuceneTest {
     public void tearDown() {
     }
 
+    @AfterClass
+    public static void tearDownClass() {
+        LOGGER.log(Level.INFO, "oneTimeTearDown");
+        RunLevelController runLevelController = Hk2Looker.get().getService(RunLevelController.class);
+        LOGGER.log(Level.INFO, "going to run level 1");
+        runLevelController.proceedTo(1);
+        LOGGER.log(Level.INFO, "going to run level 0");
+        runLevelController.proceedTo(0);
+    }
+
     @Test
     public void testLuceneDescriptionIndex() throws IOException, Exception {
 
@@ -109,7 +122,7 @@ public class LuceneTest {
         IndexerBI descriptionIndexer = null;
 
         for (IndexerBI li : lookers) {
-            System.out.println("Found indexer: " + li.getIndexerName());
+            LOGGER.log(Level.INFO, "Found indexer: {0}", li.getIndexerName());
 
             if (li.getIndexerName().equals("descriptions")) {
                 descriptionIndexer = li;
