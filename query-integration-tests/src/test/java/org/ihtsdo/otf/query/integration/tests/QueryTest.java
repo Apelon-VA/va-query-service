@@ -34,7 +34,6 @@ import org.ihtsdo.otf.query.implementation.QueryExample;
 import org.ihtsdo.otf.query.implementation.ReturnTypes;
 import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.query.integration.tests.rest.TermstoreChanges;
-import org.ihtsdo.otf.query.rest.server.AlternativeIdResource;
 import org.ihtsdo.otf.tcc.api.blueprint.InvalidCAB;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
@@ -65,7 +64,7 @@ import org.junit.runner.RunWith;
  */
 @RunWith(BdbTestRunner.class)
 @BdbTestRunnerConfig()
-public class QueryTest extends JerseyTest {
+public class QueryTest {
 
     private static final String DIR = System.getProperty("user.dir");
     private static final JSONToReport REPORTS = new JSONToReport(DIR + "/target/test-resources/OTFReports.json");
@@ -74,11 +73,6 @@ public class QueryTest extends JerseyTest {
     private static ViewCoordinate VC_LATEST_ACTIVE_ONLY;
 
     public QueryTest() {
-    }
-
-    @Override
-    protected Application configure() {
-        return new ResourceConfig(AlternativeIdResource.class);
     }
 
     @BeforeClass
@@ -187,27 +181,6 @@ public class QueryTest extends JerseyTest {
     public void testDescriptionLuceneMatch() throws IOException, Exception {
         DescriptionLuceneMatchTest descLuceneMatch = new DescriptionLuceneMatchTest();
         NativeIdSetBI results = descLuceneMatch.computeQuery();
-
-        Set<Long> longIds = QueryTest.REPORTS.getQuerySet("DescriptionLuceneMatch test");
-        Set<ComponentChronicleBI> components = this.getComponentsFromSnomedIds(longIds);
-        NativeIdSetBI reportSet = new ConcurrentBitSet();
-        for (ComponentChronicleBI c : components) {
-            reportSet.add(c.getNid());
-            DescriptionVersionBI dv = (DescriptionVersionBI) c;
-            LOGGER.log(Level.INFO, "DescriptionLuceneMatch report set: {0}", dv.getText());
-            LOGGER.log(Level.INFO, "Description status: {0}", dv.getStatus());
-        }
-
-        NativeIdSetBI resultsCopy = new ConcurrentBitSet();
-        resultsCopy.or(results);
-
-        resultsCopy.xor(reportSet);
-        NativeIdSetItrBI iter = resultsCopy.getSetBitIterator();
-        while (iter.next()) {
-            LOGGER.log(Level.INFO, "DescriptionLuceneMatch xor: {0}", Ts.get().getComponentVersion(VC_LATEST_ACTIVE_AND_INACTIVE, iter.nid()).toUserString());
-            LOGGER.log(Level.INFO, "The nid is in the OTF set: {0}", results.contains(iter.nid()));
-            LOGGER.log(Level.INFO, "The nid is in the mojo set: {0}", reportSet.contains(iter.nid()));
-        }
 
         LOGGER.log(Level.INFO, "Description Lucene match test size: {0}", results.size());
         assertEquals(REPORTS.getQueryCount("DescriptionLuceneMatch('Oligophrenia')"), results.size());
@@ -873,17 +846,4 @@ public class QueryTest extends JerseyTest {
 //
 //    }
 
-    private Set<ComponentChronicleBI> getComponentsFromSnomedIds(Set<Long> querySet) throws IOException {
-        Set<ComponentChronicleBI> components = new HashSet<>();
-        ComponentChronicleBI component;
-        String resultUUIDString;
-        for (Long l : querySet) {
-            resultUUIDString = target("alternate-id/uuid/" + l).request(MediaType.TEXT_PLAIN).get(String.class);
-            if (resultUUIDString != null) {
-                component = Ts.get().getComponent(UUID.fromString(resultUUIDString));
-                components.add(component);
-            }
-        }
-        return components;
-    }
 }

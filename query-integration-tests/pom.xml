@@ -29,14 +29,6 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>query-service</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-            <classifier>classes</classifier>
-            <type>jar</type>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
             <artifactId>query-implementation</artifactId>
             <version>${project.version}</version>
             <type>jar</type>
