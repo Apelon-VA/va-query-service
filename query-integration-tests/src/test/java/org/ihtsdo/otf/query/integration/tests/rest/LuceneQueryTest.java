@@ -15,16 +15,16 @@
  */
 package org.ihtsdo.otf.query.integration.tests.rest;
 
+import com.informatics.bdb.junit.ext.BdbTestRunner;
+import com.informatics.bdb.junit.ext.BdbTestRunnerConfig;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
-import junit.framework.Assert;
+import static org.junit.Assert.*;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.test.JerseyTest;
 import org.ihtsdo.otf.query.rest.server.LuceneResource;
 import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.junit.BdbTestRunner;
-import org.ihtsdo.otf.tcc.junit.BdbTestRunnerConfig;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -69,22 +69,22 @@ public class LuceneQueryTest extends JerseyTest {
     @Test
     public void nullLuceneTest() {
         String resultString = target("lucene").request(MediaType.TEXT_PLAIN).get(String.class);
-        Assert.assertEquals("Put url encoded lucene query at the end of the url", resultString);
+        assertEquals("Put url encoded lucene query at the end of the url", resultString);
     }
-    
+
     @Test
-    public void testLucene(){
+    public void testLucene() {
         String resultString = target("lucene/oligophrenia").request(MediaType.TEXT_PLAIN).get(String.class);
         System.out.println(resultString);
         NativeIdSetBI results = this.getNidSet(resultString);
-        Assert.assertEquals(6, results.size());
-        
+        assertEquals(6, results.size());
+
     }
-    
-    public NativeIdSetBI getNidSet(String resultString){
+
+    public NativeIdSetBI getNidSet(String resultString) {
         NativeIdSetBI results = new ConcurrentBitSet();
-        for(String s : resultString.split("<[/]*componentNid>")){
-            if(s.matches("[-]*[0-9]*")){
+        for (String s : resultString.split("<[/]*componentNid>")) {
+            if (s.matches("[-]*[0-9]*")) {
                 results.add(Integer.parseInt(s));
             }
         }

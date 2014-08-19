@@ -15,6 +15,8 @@
  */
 package org.ihtsdo.otf.query.integration.tests.jaxb;
 
+import com.informatics.bdb.junit.ext.BdbTestRunner;
+import com.informatics.bdb.junit.ext.BdbTestRunnerConfig;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -28,11 +30,9 @@ import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.tcc.api.store.TerminologyStoreDI;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 import org.ihtsdo.otf.tcc.datastore.Bdb;
-import org.ihtsdo.otf.tcc.junit.BdbTestRunner;
-import org.ihtsdo.otf.tcc.junit.BdbTestRunnerConfig;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Assert;
+import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -94,8 +94,8 @@ public class ForTest {
         forCollection.setForCollection(ForCollection.ForCollectionContents.COMPONENT);
         NativeIdSetBI forSet = forCollection.getCollection();
         System.out.println(forSet.size());
-        Assert.assertTrue(forSet.contiguous());
-        Assert.assertEquals(Bdb.getUuidsToNidMap().getCurrentMaxNid() - Integer.MIN_VALUE, forSet.size());
+        assertTrue(forSet.contiguous());
+        assertEquals(Bdb.getUuidsToNidMap().getCurrentMaxNid() - Integer.MIN_VALUE, forSet.size());
     }
 
     @Test
@@ -103,12 +103,13 @@ public class ForTest {
         ForCollection forCollection = new ForCollection();
         forCollection.setForCollection(ForCollection.ForCollectionContents.CONCEPT);
         NativeIdSetBI forSet = forCollection.getCollection();
-        Assert.assertEquals(ts.getConceptCount(), forSet.size());
+        assertEquals(ts.getConceptCount(), forSet.size());
     }
 
     /**
      * TODO: enable ability write custom FOR sets
-     * @throws IOException 
+     *
+     * @throws IOException
      */
     @Ignore
     @Test

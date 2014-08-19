@@ -15,15 +15,15 @@
  */
 package org.ihtsdo.otf.query.integration.tests.rest;
 
+import com.informatics.bdb.junit.ext.BdbTestRunner;
+import com.informatics.bdb.junit.ext.BdbTestRunnerConfig;
 import java.util.StringTokenizer;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.MediaType;
-import junit.framework.Assert;
+import static org.junit.Assert.*;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.test.JerseyTest;
 import org.ihtsdo.otf.query.rest.server.DescriptionsForConceptResource;
-import org.ihtsdo.otf.tcc.junit.BdbTestRunner;
-import org.ihtsdo.otf.tcc.junit.BdbTestRunnerConfig;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -69,14 +69,14 @@ public class DescriptionsForConceptTest extends JerseyTest {
     public void nullParamsTest() {
         String resultString = target("descriptions").
                 request(MediaType.TEXT_PLAIN).get(String.class);
-        Assert.assertEquals("Please enter SCTID.", resultString);
+        assertEquals("Please enter SCTID.", resultString);
     }
 
     @Test
     public void getDescForConceptTest() {
         String resultString = target("descriptions/195500007").
                 request(MediaType.TEXT_PLAIN).get(String.class);
-        Assert.assertEquals(2, getResultCount(resultString));
+        assertEquals(2, getResultCount(resultString));
 
     }
 
@@ -84,7 +84,7 @@ public class DescriptionsForConceptTest extends JerseyTest {
     public void tooLongIDTest() {
         String resultString = target("descriptions/1955000070000000000000").
                 request(MediaType.TEXT_PLAIN).get(String.class);
-        Assert.assertEquals("Incorrect SNOMED id.", resultString);
+        assertEquals("Incorrect SNOMED id.", resultString);
 
     }
 

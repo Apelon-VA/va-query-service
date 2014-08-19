@@ -82,7 +82,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jersey-version>2.2</jersey-version>
         <junit.version>4.11</junit.version>
-        <terminology-component-chronicle.version>1.3-TT</terminology-component-chronicle.version>
+        <terminology-component-chronicle.version>1.5-TT</terminology-component-chronicle.version>
+        <bdb-store.version>1.0-SNAPSHOT</bdb-store.version>
         <org.apache.lucene.version>4.3.1</org.apache.lucene.version>
         <hk2.version>2.2.0-b14</hk2.version>
         <maven-plugin-plugin.version>2.6</maven-plugin-plugin.version>
@@ -186,7 +187,6 @@
     </build>
     <modules>
         <module>query-client</module>
-        <module>query-jaxb-objects</module>
     </modules>
     <profiles>
         <profile>
@@ -219,6 +219,9 @@
                 <module>query-integration-tests</module>
                 <module>query-documentation</module>
             </modules>
+        </profile>
+        <profile>
+            <id></id>
         </profile>
     </profiles>
     <reporting>

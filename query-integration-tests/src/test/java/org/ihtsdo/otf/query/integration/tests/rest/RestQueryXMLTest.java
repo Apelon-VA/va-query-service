@@ -15,6 +15,8 @@
  */
 package org.ihtsdo.otf.query.integration.tests.rest;
 
+import com.informatics.bdb.junit.ext.BdbTestRunner;
+import com.informatics.bdb.junit.ext.BdbTestRunnerConfig;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -34,8 +36,6 @@ import org.ihtsdo.otf.jaxb.query.WhereClause;
 import org.ihtsdo.otf.query.implementation.JaxbForQuery;
 import org.ihtsdo.otf.query.rest.server.QueryResource;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
-import org.ihtsdo.otf.tcc.junit.BdbTestRunner;
-import org.ihtsdo.otf.tcc.junit.BdbTestRunnerConfig;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

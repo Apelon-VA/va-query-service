@@ -40,12 +40,6 @@
         </dependency>
         <dependency>
             <groupId>org.ihtsdo.otf</groupId>
-            <artifactId>tcc-datastore</artifactId>
-            <version>${terminology-component-chronicle.version}</version>
-            <type>jar</type>
-        </dependency>
-        <dependency>
-            <groupId>org.ihtsdo.otf</groupId>
             <artifactId>tcc-model-impl</artifactId>
             <version>${terminology-component-chronicle.version}</version> <!-- shouldn't this be ${terminology-component-chronicle.version} ? -->
             <type>jar</type>
@@ -78,82 +72,19 @@
             <scope>test</scope>
             <type>jar</type>
         </dependency>
+        <dependency>
+            <groupId>com.informatics</groupId>
+            <artifactId>bdb-store-implementation</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>com.informatics</groupId>
+            <artifactId>bdb-store</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <type>jar</type>
+        </dependency>
     </dependencies>
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>attach-xsd</id>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>src/main/assembly/xsd.xml</descriptor>
-                            </descriptors>
-                        </configuration>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <phase>package</phase>
-                    </execution>
-                </executions>
-            </plugin>
-         <plugin>              
-             <!-- 
-                TODO: Consider this alternative:
-                http://schrepfler.blogspot.com/2013/03/generating-xml-schema-documentation.html
-                https://github.com/whummer/jaxb-facets
-             -->
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>jaxb2-maven-plugin</artifactId>
-                <version>1.5</version>
-                <executions>
-                    <execution>
-                        <id>schemagen</id>
-                        <goals>
-                            <goal>schemagen</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <transformSchemas>
-                        
-<!--                            Each schema element defines:
-
-                            a) A <<namespace uri>> for one of your namespaces.
-                               This namespace uri must be unique within the schemas element.
-
-                            b) A <<toPrefix>> that you want to use for the namespace.
-                               Should not contain whitespace or exotic characters.
-                               This yields a namespace definition on the form
-                               <xs:schema ... xmlns:[toPrefix]="[uri]" ... />
-
-                               (I.e: <xs:schema ... xmlns:some="http://some/namespace" xmlns:xs="http://www.w3.org/2001/XMLSchema"> )
-
-                               ... and transforms relevant xml schema elements to use the provided namespace prefix:
-
-                               <some:elementName ... />
-
-                     c) The desired <<toFile>> name of the generated XML schema definition file,
-                        excluding the ".xsd" suffix (which will be added automatically).-->
-                        
-                        <transformSchema>
-                            <uri>http://query.jaxb.otf.ihtsdo.org</uri>
-                            <toFile>query_schema.xsd</toFile>
-                        </transformSchema>
-                    </transformSchemas>
-                    <includes>
-                        <include>**/package-info.java</include>
-                        <include>**/ForCollection.java</include>
-                        <include>**/LetMap.java</include>
-                        <include>**/ClauseSemantic.java</include>
-                        <include>**/Where.java</include>
-                        <include>**/WhereClause.java</include>
-                        <include>**/ReturnTypes.java</include>
-                    </includes>
-                </configuration>
-            </plugin>            
-        </plugins>
     </build>
 </project>

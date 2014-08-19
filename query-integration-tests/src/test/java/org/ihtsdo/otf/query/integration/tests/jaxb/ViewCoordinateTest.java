@@ -15,6 +15,8 @@
  */
 package org.ihtsdo.otf.query.integration.tests.jaxb;
 
+import com.informatics.bdb.junit.ext.BdbTestRunner;
+import com.informatics.bdb.junit.ext.BdbTestRunnerConfig;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -22,11 +24,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
+import org.ihtsdo.otf.query.implementation.JaxbForQuery;
 import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
-import org.ihtsdo.otf.query.implementation.JaxbForQuery;
-import org.ihtsdo.otf.tcc.junit.BdbTestRunner;
-import org.ihtsdo.otf.tcc.junit.BdbTestRunnerConfig;
 import org.junit.After;
 import org.junit.AfterClass;
 import static org.junit.Assert.*;
