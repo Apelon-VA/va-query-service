@@ -185,9 +185,6 @@
             </plugin>
         </plugins>
     </build>
-    <modules>
-        <module>query-client</module>
-    </modules>
     <profiles>
         <profile>
             <id>all</id>
@@ -211,6 +208,8 @@
             <id>integration-tests</id>
             <modules>
                 <module>query-integration-tests</module>
+                <module>query-implementation</module>
+                <module>query-lucene</module>
             </modules>
         </profile>
         <profile>

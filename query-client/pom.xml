@@ -20,12 +20,6 @@
             <type>jar</type>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>query-jaxb-objects</artifactId>
-            <version>${project.version}</version>
-            <type>jar</type>
-        </dependency>
-        <dependency>
             <groupId>org.ihtsdo.otf</groupId>
             <artifactId>tcc-api</artifactId>
             <version>${terminology-component-chronicle.version}</version>
