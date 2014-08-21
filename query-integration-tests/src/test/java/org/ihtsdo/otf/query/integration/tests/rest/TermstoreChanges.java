@@ -37,7 +37,8 @@ import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.metadata.binding.TermAux;
 import org.ihtsdo.otf.tcc.api.refex.RefexChronicleBI;
 import org.ihtsdo.otf.tcc.api.refex.RefexType;
-import org.ihtsdo.otf.tcc.api.store.Ts;
+import org.ihtsdo.otf.tcc.datastore.concept.ConceptDataManager;
+import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
 /**
  *
@@ -46,7 +47,7 @@ import org.ihtsdo.otf.tcc.api.store.Ts;
 public class TermstoreChanges {
 
     public ViewCoordinate vc;
-    
+
     public TermstoreChanges(ViewCoordinate vc) {
         this.vc = vc;
     }
@@ -57,10 +58,10 @@ public class TermstoreChanges {
         int authorNid = TermAux.USER.getLenient().getConceptNid();
         int editPathNid = TermAux.SNOMED_CORE.getLenient().getConceptNid();
         EditCoordinate ec = new EditCoordinate(authorNid, Snomed.CORE_MODULE.getLenient().getNid(), editPathNid);
-        TerminologyBuilderBI tb = Ts.get().getTerminologyBuilder(ec, vc);
+        TerminologyBuilderBI tb = PersistentStore.get().getTerminologyBuilder(ec, vc);
         DescriptionChronicleBI descChronicle = tb.construct(descCAB);
-        Ts.get().addUncommitted(desc.getEnclosingConcept().getVersion(vc));
-        Ts.get().commit();
+//        PersistentStore.get().addUncommitted(desc.getEnclosingConcept().getVersion(vc));
+        PersistentStore.get().commit();
         System.out.println(descChronicle.getVersion(vc));
     }
 
@@ -71,10 +72,10 @@ public class TermstoreChanges {
             int authorNid = TermAux.USER.getLenient().getConceptNid();
             int editPathNid = TermAux.WB_AUX_PATH.getLenient().getConceptNid();
             EditCoordinate ec = new EditCoordinate(authorNid, Snomed.CORE_MODULE.getLenient().getNid(), editPathNid);
-            TerminologyBuilderBI tb = Ts.get().getTerminologyBuilder(ec, StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
+            TerminologyBuilderBI tb = PersistentStore.get().getTerminologyBuilder(ec, StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
             RefexChronicleBI rc = tb.construct(refex);
-            Ts.get().addUncommitted(Snomed.SEVERITY_REFSET.getLenient());
-            Ts.get().commit();
+            PersistentStore.get().addUncommitted(Snomed.SEVERITY_REFSET.getLenient());
+            PersistentStore.get().commit();
 
         } catch (InvalidCAB ex) {
             Logger.getLogger(QueryTest.class
@@ -86,16 +87,15 @@ public class TermstoreChanges {
     }
 
     public void modifyDesc(String text, int nid) throws IOException, ContradictionException, InvalidCAB {
-        DescriptionVersionBI desc = Ts.get().getConceptVersion(vc, nid).getPreferredDescription();
+        DescriptionVersionBI desc = PersistentStore.get().getConceptVersion(vc, nid).getPreferredDescription();
         DescriptionCAB descCAB = desc.makeBlueprint(vc, IdDirective.PRESERVE, RefexDirective.EXCLUDE);
         descCAB.setText(text);
         int authorNid = TermAux.USER.getLenient().getConceptNid();
         int editPathNid = TermAux.SNOMED_CORE.getLenient().getConceptNid();
         EditCoordinate ec = new EditCoordinate(authorNid, Snomed.CORE_MODULE.getLenient().getNid(), editPathNid);
-        TerminologyBuilderBI tb = Ts.get().getTerminologyBuilder(ec, vc);
+        TerminologyBuilderBI tb = PersistentStore.get().getTerminologyBuilder(ec, vc);
         DescriptionChronicleBI descChronicle = tb.construct(descCAB);
-        Ts.get().addUncommitted(desc.getEnclosingConcept().getVersion(vc));
-        Ts.get().commit();
+        PersistentStore.get().commit();
     }
 
 }

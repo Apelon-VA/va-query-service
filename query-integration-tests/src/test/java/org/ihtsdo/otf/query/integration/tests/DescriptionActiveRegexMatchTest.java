@@ -22,7 +22,7 @@ import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetItrBI;
-import org.ihtsdo.otf.tcc.api.store.Ts;
+import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
 /**
  *
@@ -35,17 +35,17 @@ public class DescriptionActiveRegexMatchTest extends QueryClauseTest {
 
             @Override
             protected NativeIdSetBI For() throws IOException {
-                return Ts.get().isKindOfSet(Snomed.MOTION.getNid(), StandardViewCoordinates.getSnomedInferredLatestActiveAndInactive());
+                return PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), StandardViewCoordinates.getSnomedInferredLatestActiveAndInactive());
             }
 
             @Override
             public void Let() throws IOException {
                 let("regex", ".*tion.*");
-                NativeIdSetBI kindOfSet = Ts.get().isKindOfSet(Snomed.MOTION.getNid(), StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
+                NativeIdSetBI kindOfSet = PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
                 NativeIdSetItrBI iter = kindOfSet.getSetBitIterator();
                 StringBuilder forSet = new StringBuilder("");
                 while (iter.next()) {
-                    forSet.append(Ts.get().getComponent(iter.nid()).getPrimordialUuid().toString()).append(",");
+                    forSet.append(PersistentStore.get().getComponent(iter.nid()).getPrimordialUuid().toString()).append(",");
                 }
                 let("Custom FOR set", forSet.toString());
             }

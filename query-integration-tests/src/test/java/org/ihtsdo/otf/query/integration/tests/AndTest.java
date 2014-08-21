@@ -21,11 +21,10 @@ import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.api.store.Ts;
+import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
 /**
- * Creates a test for the
- * <code>And</code> clause.
+ * Creates a test for the <code>And</code> clause.
  *
  * @author dylangrald
  */
@@ -35,7 +34,7 @@ public class AndTest extends QueryClauseTest {
         this.q = new Query(StandardViewCoordinates.getSnomedInferredLatestActiveOnly()) {
             @Override
             protected NativeIdSetBI For() throws IOException {
-                return Ts.get().getAllConceptNids();
+                return PersistentStore.get().getAllConceptNids();
             }
 
             @Override
@@ -47,7 +46,7 @@ public class AndTest extends QueryClauseTest {
             @Override
             public Clause Where() {
                 return And(ConceptIsKindOf("Physical force"),
-                            Xor(ConceptIsKindOf("Motion"),
+                        Xor(ConceptIsKindOf("Motion"),
                                 ConceptIsDescendentOf("Motion")));
             }
         };

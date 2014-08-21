@@ -54,7 +54,7 @@ public class LetMapTest {
     public static void setUpClass() {
 
         LOGGER.log(Level.INFO, "oneTimeSetUp");
-        System.setProperty(BdbTerminologyStore.BDB_LOCATION_PROPERTY, DIR + "target/test-resources/berkeley-db");
+        System.setProperty(BdbTerminologyStore.BDB_LOCATION_PROPERTY, DIR + "/target/test-resources/berkeley-db");
         RunLevelController runLevelController = Hk2Looker.get().getService(RunLevelController.class);
         LOGGER.log(Level.INFO, "going to run level 1");
         runLevelController.proceedTo(1);

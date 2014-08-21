@@ -21,7 +21,7 @@ import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.api.store.Ts;
+import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
 /**
  * Creates a test for the {@link org.ihtsdo.otf.query.implementation.Or} clause.
@@ -34,7 +34,7 @@ public class OrTest extends QueryClauseTest {
         this.q = new Query(StandardViewCoordinates.getSnomedInferredLatestActiveOnly()) {
             @Override
             protected NativeIdSetBI For() throws IOException {
-                return Ts.get().getAllConceptNids();
+                return PersistentStore.get().getAllConceptNids();
             }
 
             @Override

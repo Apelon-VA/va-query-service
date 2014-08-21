@@ -22,7 +22,7 @@ import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
-import org.ihtsdo.otf.tcc.api.store.Ts;
+import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
 /**
  * Creates a test for <code>ChangedFromPreviousVersion</code> clause.
@@ -38,7 +38,7 @@ public class ChangedFromPreviousVersionTest extends QueryClauseTest {
             @Override
             protected NativeIdSetBI For() throws IOException {
                 forSet = new ConcurrentBitSet();
-                forSet.or(Ts.get().isChildOfSet(Snomed.CLINICAL_FINDING.getNid(), StandardViewCoordinates.getSnomedInferredLatestActiveOnly()));
+                forSet.or(PersistentStore.get().isChildOfSet(Snomed.CLINICAL_FINDING.getNid(), StandardViewCoordinates.getSnomedInferredLatestActiveOnly()));
                 forSet.add(Snomed.CLINICAL_FINDING.getNid());
                 return forSet;
             }

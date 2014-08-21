@@ -252,7 +252,7 @@ public abstract class Query {
                     ComponentVersionBI cv = Ts.get().getComponent(componentNid).getVersion(vc);
                     if (cv != null) {
                         if (!(cv instanceof ConceptVersionBI)) {
-                            componentNid = Ts.get().getComponent(componentNid).getEnclosingConcept().getConceptNid();
+                            componentNid = Ts.get().getComponent(componentNid).getConceptNid();
                         }
                         DescriptionChronicleBI desc = Ts.get().getConceptVersion(vc, componentNid).getPreferredDescription();
                         ConceptChronicleDdo cc = new ConceptChronicleDdo(Ts.get().getSnapshot(vc), Ts.get().getConcept(componentNid), VersionPolicy.ACTIVE_VERSIONS,
@@ -284,7 +284,7 @@ public abstract class Query {
                             } else if (cv instanceof DescriptionVersionBI) {
                                 desc = (DescriptionChronicleBI) Ts.get().getComponent(iter.nid());
                                 descVersionBI = (DescriptionVersionBI) cv;
-                                cc = new ConceptChronicleDdo(Ts.get().getSnapshot(vc), Ts.get().getComponent(iter.nid()).getEnclosingConcept(), VersionPolicy.ACTIVE_VERSIONS,
+                                cc = new ConceptChronicleDdo(Ts.get().getSnapshot(vc), Ts.get().getConcept(iter.nid()), VersionPolicy.ACTIVE_VERSIONS,
                                         RefexPolicy.REFEX_MEMBERS_AND_REFSET_MEMBERS, RelationshipPolicy.DESTINATION_RELATIONSHIPS);
                             } else {
                                 throw new UnsupportedOperationException("This component type is not yet supported");

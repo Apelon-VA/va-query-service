@@ -38,7 +38,7 @@ import org.ihtsdo.otf.tcc.api.lang.LanguageCode;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.metadata.binding.SnomedMetadataRf2;
 import org.ihtsdo.otf.tcc.api.metadata.binding.TermAux;
-import org.ihtsdo.otf.tcc.api.store.Ts;
+import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 import org.ihtsdo.otf.tcc.datastore.BdbTerminologyStore;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.index.service.IndexedGenerationCallable;
@@ -72,7 +72,7 @@ public class LuceneTest {
     public static void setUpClass() {
 
         LOGGER.log(Level.INFO, "oneTimeSetUp");
-        System.setProperty(BdbTerminologyStore.BDB_LOCATION_PROPERTY, "target/test-resources/berkeley-db");
+        System.setProperty(BdbTerminologyStore.BDB_LOCATION_PROPERTY, "/target/test-resources/berkeley-db");
         RunLevelController runLevelController = Hk2Looker.get().getService(RunLevelController.class);
         LOGGER.log(Level.INFO, "going to run level 1");
         runLevelController.proceedTo(1);
@@ -87,7 +87,7 @@ public class LuceneTest {
             int editPathNid = TermAux.WB_AUX_PATH.getLenient().getConceptNid();
 
             ec = new EditCoordinate(authorNid, Snomed.CORE_MODULE.getLenient().getNid(), editPathNid);
-            vc = Ts.get().getMetadataVC();
+            vc = PersistentStore.get().getMetadataVC();
         } catch (IOException ex) {
             Logger.getLogger(LuceneTest.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -111,12 +111,12 @@ public class LuceneTest {
     public void testLuceneDescriptionIndex() throws IOException, Exception {
 
         // add test description to concept
-        ConceptChronicleBI concept = Ts.get().getConcept(Snomed.BODY_STRUCTURE.getLenient().getNid());
+        ConceptChronicleBI concept = PersistentStore.get().getConcept(Snomed.BODY_STRUCTURE.getLenient().getNid());
         String testDescription = "Test description lucene index";
         DescriptionCAB descBp = new DescriptionCAB(concept.getPrimordialUuid(),
                 SnomedMetadataRf2.SYNONYM_RF2.getLenient().getPrimordialUuid(),
                 LanguageCode.EN, testDescription, false, IdDirective.GENERATE_HASH);
-        TerminologyBuilderBI builder = Ts.get().getTerminologyBuilder(ec, vc);
+        TerminologyBuilderBI builder = PersistentStore.get().getTerminologyBuilder(ec, vc);
         int descNid = descBp.getComponentNid();
         List<IndexerBI> lookers = Hk2Looker.get().getAllServices(IndexerBI.class);
         IndexerBI descriptionIndexer = null;
@@ -135,8 +135,8 @@ public class LuceneTest {
         DescriptionChronicleBI newDesc = builder.construct(descBp);
 
         assertEquals(descNid, newDesc.getNid());
-        Ts.get().addUncommitted(concept);
-        Ts.get().commit();
+        PersistentStore.get().addUncommitted(concept);
+        PersistentStore.get().commit();
 
         long indexGeneration = indexed.call();
 
@@ -168,7 +168,7 @@ public class LuceneTest {
         for (SearchResult r : results) {
             if (r.nid == newDesc.getNid()) {
                 DescriptionVersionBI description
-                        = (DescriptionVersionBI) Ts.get().getComponentVersion(Ts.get().getMetadataVC(), r.nid);
+                        = (DescriptionVersionBI) PersistentStore.get().getComponentVersion(PersistentStore.get().getMetadataVC(), r.nid);
 
                 if (description.getText().equals(testDescription)) {
                     found = true;

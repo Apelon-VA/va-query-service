@@ -28,11 +28,6 @@
             <type>jar</type>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>tcc-api</artifactId>
-            <version>${terminology-component-chronicle.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.ihtsdo.otf</groupId>
             <artifactId>tcc-dto-ddo</artifactId>
             <version>${terminology-component-chronicle.version}</version>

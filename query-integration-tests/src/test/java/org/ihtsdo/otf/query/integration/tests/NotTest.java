@@ -22,7 +22,7 @@ import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetItrBI;
-import org.ihtsdo.otf.tcc.api.store.Ts;
+import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
 /**
  * Creates a test for the
@@ -38,7 +38,7 @@ public class NotTest extends QueryClauseTest {
         this.q = new Query(StandardViewCoordinates.getSnomedInferredLatestActiveOnly()) {
             @Override
             protected NativeIdSetBI For() throws IOException {
-                return Ts.get().isKindOfSet(Snomed.MOTION.getNid(), StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
+                return PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
 
             }
 
@@ -46,11 +46,11 @@ public class NotTest extends QueryClauseTest {
             public void Let() throws IOException {
                 let("motion", Snomed.MOTION);
                 let("regex", "[Vv]ibration.*");
-                NativeIdSetBI kindOfSet = Ts.get().isKindOfSet(Snomed.MOTION.getNid(), StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
+                NativeIdSetBI kindOfSet = PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
                 NativeIdSetItrBI iter = kindOfSet.getSetBitIterator();
                 StringBuilder forSet = new StringBuilder("");
                 while(iter.next()){
-                    forSet.append(Ts.get().getComponent(iter.nid()).getPrimordialUuid().toString()).append(",");
+                    forSet.append(PersistentStore.get().getComponent(iter.nid()).getPrimordialUuid().toString()).append(",");
                 }
                 let("Custom FOR set", forSet.toString());
             }

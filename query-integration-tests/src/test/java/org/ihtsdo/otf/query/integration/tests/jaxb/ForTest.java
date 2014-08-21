@@ -27,7 +27,7 @@ import org.ihtsdo.otf.query.implementation.ForCollection;
 import org.ihtsdo.otf.query.implementation.JaxbForQuery;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.tcc.api.store.TerminologyStoreDI;
-import org.ihtsdo.otf.tcc.api.store.Ts;
+import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 import org.ihtsdo.otf.tcc.datastore.Bdb;
 import org.ihtsdo.otf.tcc.datastore.BdbTerminologyStore;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
@@ -45,7 +45,7 @@ import org.junit.Test;
  */
 public class ForTest {
 
-    static final TerminologyStoreDI ts = Ts.get();
+    static final TerminologyStoreDI ts = PersistentStore.get();
 
     private static final Logger LOGGER = Logger.getLogger(ForTest.class.getName());
     private static final String DIR = System.getProperty("user.dir");
@@ -129,7 +129,7 @@ public class ForTest {
     @Ignore
     @Test
     public void getCustomForSetTest() throws IOException {
-//        ForCollection forCollection = new ForCollection(Ts.get().isKindOfSet(Snomed.MOTION.getNid(), StandardViewCoordinates.getSnomedInferredLatest()));
+//        ForCollection forCollection = new ForCollection(PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), StandardViewCoordinates.getSnomedInferredLatest()));
 //        NativeIdSetBI forSet = forCollection.getCollection();
 //        Assert.assertEquals(7, forSet.size());
 
