@@ -82,7 +82,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jersey-version>2.2</jersey-version>
         <junit.version>4.11</junit.version>
-        <terminology-component-chronicle.version>1.5-TT</terminology-component-chronicle.version>
+        <terminology-component-chronicle.version>1.4-TT-wdi-SNAPSHOT</terminology-component-chronicle.version>
         <bdb-store.version>1.0-SNAPSHOT</bdb-store.version>
         <org.apache.lucene.version>4.3.1</org.apache.lucene.version>
         <hk2.version>2.2.0-b14</hk2.version>
