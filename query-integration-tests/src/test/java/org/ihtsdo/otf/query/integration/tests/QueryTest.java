@@ -560,7 +560,6 @@ public class QueryTest {
     }
 
     @Test
-    @Ignore
     public void refsetContainsConceptTest() throws IOException, Exception {
         LOGGER.log(Level.INFO, "RefsetContainsConcept test");
         TermstoreChanges tc = new TermstoreChanges(VC_LATEST_ACTIVE_ONLY);
@@ -572,7 +571,6 @@ public class QueryTest {
     }
 
     @Test
-    @Ignore
     public void refsetContainsStringTest() throws Exception {
         LOGGER.log(Level.INFO, "RefsetContainsString test");
         TermstoreChanges tc = new TermstoreChanges(VC_LATEST_ACTIVE_ONLY);
@@ -583,7 +581,6 @@ public class QueryTest {
     }
 
     @Test
-    @Ignore
     public void refsetContainsKindOfConceptTest() throws Exception {
         LOGGER.log(Level.INFO, "RefsetContainsKindOfConcept test");
         TermstoreChanges tc = new TermstoreChanges(VC_LATEST_ACTIVE_ONLY);
@@ -618,7 +615,6 @@ public class QueryTest {
     }
 
     @Test
-    @Ignore
     public void descriptionActiveLuceneMatchTest() throws Exception {
         LOGGER.log(Level.INFO, "DescriptionActiveLuceneMatch test");
         Query q1 = new Query(VC_LATEST_ACTIVE_AND_INACTIVE) {
@@ -656,7 +652,6 @@ public class QueryTest {
     }
 
     @Test
-    @Ignore
     public void ChangeFromPreviousVersionTest() throws IOException, Exception {
         LOGGER.log(Level.INFO, "Changed from previous version test");
         ChangedFromPreviousVersionTest test = new ChangedFromPreviousVersionTest();
@@ -686,11 +681,6 @@ public class QueryTest {
             while (iter.next()) {
                 LOGGER.log(Level.INFO, "DescriptionActiveRegexMatch test: {0}", PersistentStore.get().getComponentVersion(VC_LATEST_ACTIVE_ONLY, iter.nid()));
             }
-
-//            Set<ComponentChronicleBI> concepts = this.getComponentsFromSnomedIds(REPORTS.getQuerySet("DescriptionActiveRegexMatchTest set"));
-//            for (ComponentChronicleBI c : concepts) {
-//                LOGGER.log(Level.INFO, "DescriptionActiveRegexMatch set: {0}", c.toUserString());
-//            }
             //Since the reports doesn't account for the fact that descriptions for "Accleration" have been made inactive within the tests,
             //the result set from the report will still include "Acceleration"
             int expectedCardinality = REPORTS.getQueryCount("DescriptionActiveRegexMatchTest") - 1;
@@ -730,30 +720,6 @@ public class QueryTest {
         };
 
         NativeIdSetBI results = q.compute();
-
-//        Set<Long> querySet = REPORTS.getQuerySet("ConceptIsKindOf disease v2");
-//        Set<ComponentChronicleBI> componentsFromSnomedIds = this.getComponentsFromSnomedIds(querySet);
-//        NativeIdSetBI resultsFromMojo = new ConcurrentBitSet();
-//        for (ComponentChronicleBI c : componentsFromSnomedIds) {
-//            resultsFromMojo.add(c.getVersion(setVC.getViewCoordinate()).getNid());
-//        }
-//
-//        results.andNot(resultsFromMojo);
-//        LOGGER.log(Level.INFO, "Size of the result set from Mojo: {0}", resultsFromMojo.size());
-//        LOGGER.log(Level.INFO, "Size of the result set from OTF and not Mojo set: {0}", results.size());
-//        iter = results.getSetBitIterator();
-//        int count = 0;
-//        while (iter.next() && count < 100) {
-//            if (resultsFromMojo.contains(iter.nid())) {
-//                fail("AndNot operation not performed successfully.");
-//            }
-//            ConceptChronicleBI concept = PersistentStore.get().getConcept(iter.nid());
-//            ConceptVersionBI version = concept.getVersion(setVC.getViewCoordinate());
-//            LOGGER.log(Level.INFO, version.toLongString());
-//            assertTrue(version.isActive());
-//            assertTrue(version.isKindOf(disease));
-//            count++;
-//        }
         int exp = REPORTS.getQueryCount("ConceptIsKindOf('disease', 'v2')");
         assertEquals(exp, results.size());
     }
