@@ -66,6 +66,8 @@ public class QueryTest {
     private static ViewCoordinate VC_LATEST_ACTIVE_AND_INACTIVE;
     private static ViewCoordinate VC_LATEST_ACTIVE_ONLY;
 
+    private static int cementSize;
+
     public QueryTest() {
     }
 
@@ -82,6 +84,7 @@ public class QueryTest {
 
         REPORTS.parseFile();
         CEMENT_REPORT.parseFile();
+        cementSize = CEMENT_REPORT.getQuerySet("Cement concept set").size();
         try {
             VC_LATEST_ACTIVE_AND_INACTIVE = StandardViewCoordinates.getSnomedInferredLatestActiveAndInactive();
             VC_LATEST_ACTIVE_ONLY = StandardViewCoordinates.getSnomedInferredLatestActiveOnly();
@@ -533,7 +536,7 @@ public class QueryTest {
 
         NativeIdSetBI results = q.compute();
         LOGGER.log(Level.INFO, "Not test result size: {0}", results.size());
-        assertEquals(REPORTS.getQueryCount("NotTest"), results.size());
+        assertEquals(REPORTS.getQueryCount("NotTest") + cementSize, results.size());
     }
 
     @Test
