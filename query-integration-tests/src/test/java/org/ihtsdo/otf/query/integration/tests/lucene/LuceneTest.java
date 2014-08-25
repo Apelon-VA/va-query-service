@@ -44,12 +44,9 @@ import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.index.service.IndexedGenerationCallable;
 import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
 import org.ihtsdo.otf.tcc.model.index.service.SearchResult;
-import org.junit.After;
-import org.junit.AfterClass;
-import static org.junit.Assert.*;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+
+import static org.testng.Assert.*;
+import org.testng.annotations.*;
 
 /**
  * Class that handles integration tests for <code>Lucene</code> index
@@ -68,19 +65,7 @@ public class LuceneTest {
     public LuceneTest() {
     }
 
-    @BeforeClass
-    public static void setUpClass() {
-
-        LOGGER.log(Level.INFO, "oneTimeSetUp");
-        System.setProperty(BdbTerminologyStore.BDB_LOCATION_PROPERTY, "/target/test-resources/berkeley-db");
-        RunLevelController runLevelController = Hk2Looker.get().getService(RunLevelController.class);
-        LOGGER.log(Level.INFO, "going to run level 1");
-        runLevelController.proceedTo(1);
-        LOGGER.log(Level.INFO, "going to run level 2");
-        runLevelController.proceedTo(2);
-    }
-
-    @Before
+    @BeforeMethod
     public void setUp() {
         try {
             int authorNid = TermAux.USER.getLenient().getConceptNid();
@@ -93,21 +78,11 @@ public class LuceneTest {
         }
     }
 
-    @After
+    @AfterMethod
     public void tearDown() {
     }
 
-    @AfterClass
-    public static void tearDownClass() {
-        LOGGER.log(Level.INFO, "oneTimeTearDown");
-        RunLevelController runLevelController = Hk2Looker.get().getService(RunLevelController.class);
-        LOGGER.log(Level.INFO, "going to run level 1");
-        runLevelController.proceedTo(1);
-        LOGGER.log(Level.INFO, "going to run level 0");
-        runLevelController.proceedTo(0);
-    }
-
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testLuceneDescriptionIndex() throws IOException, Exception {
 
         // add test description to concept

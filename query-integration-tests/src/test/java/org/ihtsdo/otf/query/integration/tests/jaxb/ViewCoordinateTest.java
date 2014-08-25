@@ -20,6 +20,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javafx.embed.swing.JFXPanel;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import org.glassfish.hk2.runlevel.RunLevelController;
@@ -28,12 +29,9 @@ import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.tcc.datastore.BdbTerminologyStore;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
-import org.junit.After;
-import org.junit.AfterClass;
-import static org.junit.Assert.*;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+
+import static org.testng.Assert.*;
+import org.testng.annotations.*;
 
 /**
  *
@@ -49,7 +47,7 @@ public class ViewCoordinateTest {
 
     @BeforeClass
     public static void setUpClass() {
-
+        JFXPanel panel = new JFXPanel();
         LOGGER.log(Level.INFO, "oneTimeSetUp");
         System.setProperty(BdbTerminologyStore.BDB_LOCATION_PROPERTY, DIR + "/target/test-resources/berkeley-db");
         RunLevelController runLevelController = Hk2Looker.get().getService(RunLevelController.class);
@@ -69,11 +67,11 @@ public class ViewCoordinateTest {
         runLevelController.proceedTo(0);
     }
 
-    @Before
+    @BeforeMethod
     public void setUp() {
     }
 
-    @After
+    @AfterMethod
     public void tearDown() {
     }
 

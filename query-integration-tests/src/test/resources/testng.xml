@@ -1,0 +1,16 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+ 
+<suite name="TestQueryServices">
+ 
+    <test name="QueryServiceTests">
+        <classes>
+            <class name="org.ihtsdo.otf.query.integration.tests.QueryTest" />
+           
+        </classes>
+        <package> 
+            <package name="org.ihtsdo.otf.query.integration.tests.jaxb.*" />
+            <package name="org.ihtsdo.otf.query.integration.tests.lucene.*"/>
+        </package>
+    </test>
+ 
+</suite>

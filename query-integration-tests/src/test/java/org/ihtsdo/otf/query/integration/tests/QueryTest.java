@@ -19,8 +19,10 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javafx.embed.swing.JFXPanel;
 import org.glassfish.hk2.runlevel.RunLevelController;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.Query;
@@ -45,11 +47,10 @@ import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 import org.ihtsdo.otf.tcc.datastore.BdbTerminologyStore;
 import org.ihtsdo.otf.tcc.ddo.concept.component.description.DescriptionVersionDdo;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
-import org.junit.AfterClass;
-import static org.junit.Assert.*;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.ihtsdo.otf.tcc.model.cc.termstore.PersistentStoreI;
+
+import static org.testng.Assert.*;
+import org.testng.annotations.*;
 
 /**
  * Class that handles integration tests for
@@ -66,14 +67,16 @@ public class QueryTest {
     private static ViewCoordinate VC_LATEST_ACTIVE_AND_INACTIVE;
     private static ViewCoordinate VC_LATEST_ACTIVE_ONLY;
 
+    private static PersistentStoreI ps;
+
     private static int cementSize;
 
     public QueryTest() {
     }
 
-    @BeforeClass
-    public static void setUpClass() {
-
+    @BeforeSuite
+    public static void setUpSuite() {
+        JFXPanel panel = new JFXPanel();
         LOGGER.log(Level.INFO, "oneTimeSetUp");
         System.setProperty(BdbTerminologyStore.BDB_LOCATION_PROPERTY, DIR + "/target/test-resources/berkeley-db");
         RunLevelController runLevelController = Hk2Looker.get().getService(RunLevelController.class);
@@ -81,6 +84,15 @@ public class QueryTest {
         runLevelController.proceedTo(1);
         LOGGER.log(Level.INFO, "going to run level 2");
         runLevelController.proceedTo(2);
+        ps = Hk2Looker.get().getService(PersistentStoreI.class);
+
+        ConceptChronicleBI concept;
+        try {
+            concept = ps.getConcept(UUID.fromString("2faa9260-8fb2-11db-b606-0800200c9a66"));
+            LOGGER.log(Level.INFO, "WB concept: {0}", concept.toLongString());
+        } catch (IOException ex) {
+            Logger.getLogger(QueryTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
 
         REPORTS.parseFile();
         CEMENT_REPORT.parseFile();
@@ -93,8 +105,8 @@ public class QueryTest {
         }
     }
 
-    @AfterClass
-    public static void tearDownClass() {
+    @AfterSuite
+    public void tearDownSuite() throws Exception {
         LOGGER.log(Level.INFO, "oneTimeTearDown");
         RunLevelController runLevelController = Hk2Looker.get().getService(RunLevelController.class);
         LOGGER.log(Level.INFO, "going to run level 1");
@@ -103,7 +115,7 @@ public class QueryTest {
         runLevelController.proceedTo(0);
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testSimpleQuery() throws IOException, Exception {
         LOGGER.log(Level.INFO, "Simple query: ");
         Query q = new Query() {
@@ -125,14 +137,14 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("ConceptIs(Motion)"), q.returnResults().size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testRegexQuery() throws IOException, Exception {
         DescriptionRegexMatchTest regexTest = new DescriptionRegexMatchTest();
         NativeIdSetBI results = regexTest.getQuery().compute();
         assertEquals(REPORTS.getQueryCount("DescriptionRegexMatchTest"), results.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testDifferenceQuery() throws IOException, Exception {
         XorVersionTest xorTest = new XorVersionTest();
         NativeIdSetBI results = xorTest.computeQuery();
@@ -140,7 +152,7 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("Xor(ConceptIsKindOf('disease'), ConceptIsKindOf('disease', 'v2'))"), results.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testConceptIsKindOfVersioned() throws IOException, Exception {
         LOGGER.log(Level.INFO, "Test ConceptIsKindOf versioned");
         final SetViewCoordinate d = new SetViewCoordinate(2002, 1, 31, 0, 0);
@@ -171,7 +183,7 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("ConceptIsKindOfVersionedTest"), results.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testConceptIs() throws IOException, Exception {
         ConceptIsTest test = new ConceptIsTest();
         NativeIdSetBI results = test.computeQuery();
@@ -183,7 +195,7 @@ public class QueryTest {
         }
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testDescriptionLuceneMatch() throws IOException, Exception {
         DescriptionLuceneMatchTest descLuceneMatch = new DescriptionLuceneMatchTest();
         NativeIdSetBI results = descLuceneMatch.computeQuery();
@@ -192,7 +204,7 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("DescriptionLuceneMatch('Oligophrenia')"), results.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testOr() throws IOException, Exception {
         Query q = new Query() {
             @Override
@@ -217,7 +229,7 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("OrTest"), results.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testXor() throws IOException, Exception {
 
         Query q = new Query(VC_LATEST_ACTIVE_ONLY) {
@@ -244,7 +256,7 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("XorTest"), results.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testPreferredTerm() throws IOException, Exception {
         LOGGER.log(Level.INFO, "Sequence: {0}", PersistentStore.get().getSequence());
         PreferredNameForConceptTest preferredNameTest = new PreferredNameForConceptTest();
@@ -256,7 +268,7 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("PreferredTermTest"), results.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testRelType() throws IOException, Exception {
 
         RelTypeTest relTest = new RelTypeTest();
@@ -265,7 +277,7 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("RelType('Finding site', 'Structure of endocrine system')"), results.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testRelTypeVersioning() throws IOException, Exception {
         final SetViewCoordinate setViewCoordinate = new SetViewCoordinate(2002, 1, 31, 0, 0);
         Query q = new Query(VC_LATEST_ACTIVE_ONLY) {
@@ -291,7 +303,7 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("RelType versioning test"), results.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testRelRestrictionSubsumptionTrue() throws IOException, Exception {
         LOGGER.log(Level.INFO, "Rel restriction subsumption true");
         RelRestrictionTest rrTest = new RelRestrictionTest();
@@ -354,7 +366,7 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("RelRestriction test"), results.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testRelRestrictionSubsumptionFalse() throws IOException, Exception {
         LOGGER.log(Level.INFO, "RelRestriction subsumption false test");
         RelRestriction2Test test = new RelRestriction2Test();
@@ -362,7 +374,7 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("RelRestrictionTest2"), results.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testRelRestrictionSubsumptionNull() throws IOException, Exception {
         Query q = new Query(VC_LATEST_ACTIVE_ONLY) {
             @Override
@@ -394,7 +406,7 @@ public class QueryTest {
 
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testFullySpecifiedName() throws IOException, Exception {
         FullySpecifiedNameForConceptTest fsnTest = new FullySpecifiedNameForConceptTest();
         NativeIdSetBI results = fsnTest.computeQuery();
@@ -407,7 +419,7 @@ public class QueryTest {
         assertEquals(queryResultSize, fsnTest.getQuery().returnDisplayObjects(results, ReturnTypes.NIDS).size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testAnd() throws IOException, Exception {
         AndTest andTest = new AndTest();
         NativeIdSetBI results = andTest.computeQuery();
@@ -415,7 +427,7 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("AndTest"), results.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void isChildOfTest() throws IOException, Exception {
         IsChildOfTest isChildOfTest = new IsChildOfTest();
         Query q3 = isChildOfTest.getQuery();
@@ -454,7 +466,7 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("ConceptIsChildOfTest"), results3.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void isDescendentOfTest() throws IOException, Exception {
         IsDescendentOfTest isDescendent = new IsDescendentOfTest();
         Query q4 = isDescendent.getQuery();
@@ -463,7 +475,7 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("ConceptIsDescendentOfTest"), results4.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void isKindOfTest() throws IOException, Exception {
         IsKindOfTest kindOf = new IsKindOfTest();
         Query kindOfQuery = kindOf.getQuery();
@@ -476,7 +488,7 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("IsKindOfTest"), kindOfResults.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void queryTest() throws IOException, Exception {
         Query q = new Query(VC_LATEST_ACTIVE_AND_INACTIVE) {
             @Override
@@ -514,7 +526,7 @@ public class QueryTest {
 
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void notTest() throws IOException, Exception {
         Query q = new Query() {
             @Override
@@ -539,7 +551,7 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("NotTest") + cementSize, results.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void conceptForComponentTest() throws IOException, Exception {
         LOGGER.log(Level.INFO, "ConceptForComponentTest");
         ConceptForComponentTest cfcTest = new ConceptForComponentTest();
@@ -547,7 +559,7 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("ConceptForComponentTest"), results.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void refsetLuceneMatchTest() throws IOException, Exception {
         LOGGER.log(Level.INFO, "RefsetLuceneMatch test");
         RefsetLuceneMatchTest rlmTest = new RefsetLuceneMatchTest();
@@ -559,7 +571,7 @@ public class QueryTest {
         assertEquals(1, ids.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void refsetContainsConceptTest() throws IOException, Exception {
         LOGGER.log(Level.INFO, "RefsetContainsConcept test");
         TermstoreChanges tc = new TermstoreChanges(VC_LATEST_ACTIVE_ONLY);
@@ -570,7 +582,7 @@ public class QueryTest {
 
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void refsetContainsStringTest() throws Exception {
         LOGGER.log(Level.INFO, "RefsetContainsString test");
         TermstoreChanges tc = new TermstoreChanges(VC_LATEST_ACTIVE_ONLY);
@@ -580,7 +592,7 @@ public class QueryTest {
         assertEquals(1, ids.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void refsetContainsKindOfConceptTest() throws Exception {
         LOGGER.log(Level.INFO, "RefsetContainsKindOfConcept test");
         TermstoreChanges tc = new TermstoreChanges(VC_LATEST_ACTIVE_ONLY);
@@ -590,7 +602,7 @@ public class QueryTest {
         assertEquals(1, nids.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testOr2() throws IOException, Exception {
         LOGGER.log(Level.INFO, "Or test");
         OrTest orTest = new OrTest();
@@ -598,7 +610,7 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("OrTest2"), results.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void notTest2() throws IOException, Exception {
         LOGGER.log(Level.INFO, "Not test2");
         NotTest notTest = new NotTest();
@@ -606,7 +618,7 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("NotTest2"), results.size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void ExampleTest() throws Exception {
         LOGGER.log(Level.INFO, "Example test");
         QueryExample test = new QueryExample();
@@ -614,7 +626,7 @@ public class QueryTest {
         assertEquals(REPORTS.getQueryCount("ExampleQueryTest"), test.getResults().size());
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void descriptionActiveLuceneMatchTest() throws Exception {
         LOGGER.log(Level.INFO, "DescriptionActiveLuceneMatch test");
         Query q1 = new Query(VC_LATEST_ACTIVE_AND_INACTIVE) {
@@ -651,7 +663,7 @@ public class QueryTest {
         }
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void ChangeFromPreviousVersionTest() throws IOException, Exception {
         LOGGER.log(Level.INFO, "Changed from previous version test");
         ChangedFromPreviousVersionTest test = new ChangedFromPreviousVersionTest();
@@ -666,8 +678,7 @@ public class QueryTest {
         assertEquals(1, results2.size());
     }
 
-    @Test
-    @Ignore
+    @Test(enabled = false)
     public void DescriptionActiveRegexMatchTest() throws IOException, ContradictionException, InvalidCAB, Exception {
         LOGGER.log(Level.INFO, "Description active regex match test");
         TermstoreChanges tc = new TermstoreChanges(VC_LATEST_ACTIVE_AND_INACTIVE);
@@ -697,7 +708,7 @@ public class QueryTest {
         }
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testKindOfDiseaseVersioned() throws Exception {
         final SetViewCoordinate setVC = new SetViewCoordinate(2002, 1, 31, 0, 0);
         Query q = new Query(setVC.getViewCoordinate()) {
@@ -724,7 +735,7 @@ public class QueryTest {
         assertEquals(exp, results.size());
     }
 
-//    @Test
+//    @Test(groups = "QueryServiceTests")
 //    public void testConceptIsKindOfAcuteAllergicReactionVersioned() throws Exception {
 //        LOGGER.log(Level.INFO, "ConceptIsKindOf Acute allergic reaction");
 //        final SetViewCoordinate setVC = new SetViewCoordinate(2008, 1, 31, 0, 0);
@@ -750,7 +761,7 @@ public class QueryTest {
 //        NativeIdSetBI resultsFromOTF = q.compute();
 //        assertEquals(REPORTS.getQueryCount("ConceptIsKindOf Acute allergic reaction versioned"), resultsFromOTF.size());
 //    }
-//    @Test
+//    @Test(groups = "QueryServiceTests")
 //    public void testKindOfVenomInducedAnaphylaxis() throws IOException, Exception {
 //        final SetViewCoordinate setVC = new SetViewCoordinate(2008, 1, 31, 0, 0);
 //        Query q = new Query(setVC.getViewCoordinate()) {
