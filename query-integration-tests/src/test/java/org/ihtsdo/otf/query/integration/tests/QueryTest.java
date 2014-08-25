@@ -19,11 +19,8 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javafx.embed.swing.JFXPanel;
-import org.glassfish.hk2.runlevel.RunLevelController;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.QueryExample;
@@ -44,9 +41,7 @@ import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetItrBI;
 import org.ihtsdo.otf.tcc.api.relationship.RelationshipVersionBI;
 import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
-import org.ihtsdo.otf.tcc.datastore.BdbTerminologyStore;
 import org.ihtsdo.otf.tcc.ddo.concept.component.description.DescriptionVersionDdo;
-import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.cc.termstore.PersistentStoreI;
 
 import static org.testng.Assert.*;
@@ -74,26 +69,8 @@ public class QueryTest {
     public QueryTest() {
     }
 
-    @BeforeSuite
-    public static void setUpSuite() {
-        JFXPanel panel = new JFXPanel();
-        LOGGER.log(Level.INFO, "oneTimeSetUp");
-        System.setProperty(BdbTerminologyStore.BDB_LOCATION_PROPERTY, DIR + "/target/test-resources/berkeley-db");
-        RunLevelController runLevelController = Hk2Looker.get().getService(RunLevelController.class);
-        LOGGER.log(Level.INFO, "going to run level 1");
-        runLevelController.proceedTo(1);
-        LOGGER.log(Level.INFO, "going to run level 2");
-        runLevelController.proceedTo(2);
-        ps = Hk2Looker.get().getService(PersistentStoreI.class);
-
-        ConceptChronicleBI concept;
-        try {
-            concept = ps.getConcept(UUID.fromString("2faa9260-8fb2-11db-b606-0800200c9a66"));
-            LOGGER.log(Level.INFO, "WB concept: {0}", concept.toLongString());
-        } catch (IOException ex) {
-            Logger.getLogger(QueryTest.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
+    @BeforeClass
+    public static void setUpClass() {
         REPORTS.parseFile();
         CEMENT_REPORT.parseFile();
         cementSize = CEMENT_REPORT.getQuerySet("Cement concept set").size();
@@ -103,16 +80,6 @@ public class QueryTest {
         } catch (IOException ex) {
             LOGGER.log(Level.SEVERE, null, ex);
         }
-    }
-
-    @AfterSuite
-    public void tearDownSuite() throws Exception {
-        LOGGER.log(Level.INFO, "oneTimeTearDown");
-        RunLevelController runLevelController = Hk2Looker.get().getService(RunLevelController.class);
-        LOGGER.log(Level.INFO, "going to run level 1");
-        runLevelController.proceedTo(1);
-        LOGGER.log(Level.INFO, "going to run level 0");
-        runLevelController.proceedTo(0);
     }
 
     @Test(groups = "QueryServiceTests")
