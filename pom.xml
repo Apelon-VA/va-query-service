@@ -70,19 +70,13 @@
     <scm>
         <developerConnection>scm:git:http://informatics.com/stash/scm/otqstd/otf-query-services.git</developerConnection>
     </scm>
-    <distributionManagement>
-        <site>
-            <id>site</id>
-            <url>scm:git:git@github.com:IHTSDO/OTF-Query-Services.git</url>
-        </site>
-    </distributionManagement>
     <properties>
         <branch>QS ${project.scm.tag}</branch>
         <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jersey-version>2.2</jersey-version>
         <junit.version>4.11</junit.version>
-        <terminology-component-chronicle.version>1.4-TT-wdi-SNAPSHOT</terminology-component-chronicle.version>
+        <terminology-component-chronicle.version>1.6-TT</terminology-component-chronicle.version>
         <bdb-store.version>1.0-SNAPSHOT</bdb-store.version>
         <org.apache.lucene.version>4.3.1</org.apache.lucene.version>
         <hk2.version>2.2.0-b14</hk2.version>
