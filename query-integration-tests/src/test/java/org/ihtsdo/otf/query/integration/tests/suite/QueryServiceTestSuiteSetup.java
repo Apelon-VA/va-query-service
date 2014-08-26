@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 International Health Terminology Standards Development Organisation.
+ * Copyright 2014 Informatics, Inc..
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,40 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.ihtsdo.otf.query.integration.tests.jaxb;
+package org.ihtsdo.otf.query.integration.tests.suite;
 
 import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.embed.swing.JFXPanel;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
 import org.glassfish.hk2.runlevel.RunLevelController;
-import org.ihtsdo.otf.query.implementation.JaxbForQuery;
-import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
-import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
+import org.ihtsdo.otf.query.integration.tests.QueryTest;
+import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
 import org.ihtsdo.otf.tcc.datastore.BdbTerminologyStore;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
-
-import static org.testng.Assert.*;
+import org.ihtsdo.otf.tcc.model.cc.termstore.PersistentStoreI;
+import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
 import org.testng.annotations.*;
 
 /**
+ * A test suite that establishes resources for use in tests that require the
+ * setup of the {@link org.ihtsdo.otf.tcc.model.cc.termstore.PersistentStoreI}.
  *
- * @author kec
+ * @author dylangrald
  */
-public class ViewCoordinateTest {
+public class QueryServiceTestSuiteSetup {
 
-    private static final Logger LOGGER = Logger.getLogger(ViewCoordinateTest.class.getName());
     private static final String DIR = System.getProperty("user.dir");
 
-    public ViewCoordinateTest() {
-    }
+    public static PersistentStoreI PS;
+    private static final Logger LOGGER = Logger.getLogger(QueryServiceTestSuiteSetup.class.getName());
 
-    @BeforeClass
-    public static void setUpClass() {
+    @BeforeSuite
+    public static void setUpSuite() {
         JFXPanel panel = new JFXPanel();
         LOGGER.log(Level.INFO, "oneTimeSetUp");
         System.setProperty(BdbTerminologyStore.BDB_LOCATION_PROPERTY, DIR + "/target/test-resources/berkeley-db");
@@ -55,47 +52,25 @@ public class ViewCoordinateTest {
         runLevelController.proceedTo(1);
         LOGGER.log(Level.INFO, "going to run level 2");
         runLevelController.proceedTo(2);
+        PS = Hk2Looker.get().getService(PersistentStoreI.class);
+
+        ConceptChronicleBI concept;
+        try {
+            concept = PS.getConcept(UUID.fromString("2faa9260-8fb2-11db-b606-0800200c9a66"));
+            LOGGER.log(Level.INFO, "WB concept: {0}", concept.toLongString());
+        } catch (IOException ex) {
+            Logger.getLogger(QueryTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
     }
 
-    @AfterClass
-    public static void tearDownClass() {
+    @AfterSuite
+    public void tearDownSuite() throws Exception {
         LOGGER.log(Level.INFO, "oneTimeTearDown");
         RunLevelController runLevelController = Hk2Looker.get().getService(RunLevelController.class);
         LOGGER.log(Level.INFO, "going to run level 1");
         runLevelController.proceedTo(1);
         LOGGER.log(Level.INFO, "going to run level 0");
         runLevelController.proceedTo(0);
-    }
-
-    @BeforeMethod
-    public void setUp() {
-    }
-
-    @AfterMethod
-    public void tearDown() {
-    }
-
-    @Test
-    public void testJaxb() {
-        try {
-
-            ViewCoordinate originalViewCoordinate = StandardViewCoordinates.getSnomedInferredLatestActiveOnly();
-            JAXBContext ctx = JaxbForQuery.get();
-            StringWriter writer = new StringWriter();
-
-            ctx.createMarshaller().marshal(originalViewCoordinate, writer);
-
-            String viewCoordinateXml = writer.toString();
-            System.out.println("ViewCoordinate: " + viewCoordinateXml);
-
-            ViewCoordinate unmarshalledViewCoordinate = (ViewCoordinate) ctx.createUnmarshaller()
-                    .unmarshal(new StringReader(viewCoordinateXml));
-
-            assertEquals(originalViewCoordinate, unmarshalledViewCoordinate);
-        } catch (JAXBException | IOException ex) {
-            Logger.getLogger(ViewCoordinateTest.class.getName()).log(Level.SEVERE, null, ex);
-            fail(ex.toString());
-        }
-
     }
 }

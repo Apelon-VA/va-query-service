@@ -1,16 +1,14 @@
 <?xml version="1.0"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" 
-         xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.ihtsdo.otf</groupId>
         <artifactId>query-parent</artifactId>
-        <version>1.1-SNAPSHOT</version>
+        <version>1.1-informatics</version>
     </parent>
     <groupId>org.ihtsdo.otf</groupId>
     <artifactId>query-implementation</artifactId>
-    <name>${branch}: Query implementation</name>
+    <name>OTF Query Service: Query implementation</name>
     <description>Query clauses used for the construction and computation of queries.</description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -28,19 +26,8 @@
             <type>jar</type>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>tcc-api</artifactId>
-            <version>${terminology-component-chronicle.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.ihtsdo.otf</groupId>
             <artifactId>tcc-dto-ddo</artifactId>
-            <version>${terminology-component-chronicle.version}</version>
-            <type>jar</type>
-        </dependency>
-        <dependency>
-            <groupId>org.ihtsdo.otf</groupId>
-            <artifactId>tcc-datastore</artifactId>
             <version>${terminology-component-chronicle.version}</version>
             <type>jar</type>
         </dependency>
@@ -49,12 +36,6 @@
             <artifactId>tcc-model-impl</artifactId>
             <version>${terminology-component-chronicle.version}</version> <!-- shouldn't this be ${terminology-component-chronicle.version} ? -->
             <type>jar</type>
-        </dependency>
-        <dependency>
-            <groupId>org.ihtsdo.otf</groupId>
-            <artifactId>otf-test-data</artifactId>
-            <version>1.1-SNAPSHOT</version>     
-            <type>zip</type>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>
@@ -85,105 +66,12 @@
             <type>jar</type>
         </dependency>
         <dependency>
-            <groupId>org.ihtsdo.otf</groupId>
-            <artifactId>tcc-junit-ext</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
+            <groupId>com.informatics</groupId>
+            <artifactId>bdb-store-implementation</artifactId>
+            <version>1.0</version>
             <type>jar</type>
         </dependency>
     </dependencies>
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>attach-xsd</id>
-                        <configuration>
-                            <descriptors>
-                                <descriptor>src/main/assembly/xsd.xml</descriptor>
-                            </descriptors>
-                        </configuration>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <phase>package</phase>
-                    </execution>
-                </executions>
-            </plugin>
-         <plugin>              
-             <!-- 
-                TODO: Consider this alternative:
-                http://schrepfler.blogspot.com/2013/03/generating-xml-schema-documentation.html
-                https://github.com/whummer/jaxb-facets
-             -->
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>jaxb2-maven-plugin</artifactId>
-                <version>1.5</version>
-                <executions>
-                    <execution>
-                        <id>schemagen</id>
-                        <goals>
-                            <goal>schemagen</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <transformSchemas>
-                        
-<!--                            Each schema element defines:
-
-                            a) A <<namespace uri>> for one of your namespaces.
-                               This namespace uri must be unique within the schemas element.
-
-                            b) A <<toPrefix>> that you want to use for the namespace.
-                               Should not contain whitespace or exotic characters.
-                               This yields a namespace definition on the form
-                               <xs:schema ... xmlns:[toPrefix]="[uri]" ... />
-
-                               (I.e: <xs:schema ... xmlns:some="http://some/namespace" xmlns:xs="http://www.w3.org/2001/XMLSchema"> )
-
-                               ... and transforms relevant xml schema elements to use the provided namespace prefix:
-
-                               <some:elementName ... />
-
-                     c) The desired <<toFile>> name of the generated XML schema definition file,
-                        excluding the ".xsd" suffix (which will be added automatically).-->
-                        
-                        <transformSchema>
-                            <uri>http://query.jaxb.otf.ihtsdo.org</uri>
-                            <toFile>query_schema.xsd</toFile>
-                        </transformSchema>
-                    </transformSchemas>
-                    <includes>
-                        <include>**/package-info.java</include>
-                        <include>**/ForCollection.java</include>
-                        <include>**/LetMap.java</include>
-                        <include>**/ClauseSemantic.java</include>
-                        <include>**/Where.java</include>
-                        <include>**/WhereClause.java</include>
-                        <include>**/ReturnTypes.java</include>
-                    </includes>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>extract-berkeley-db</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>unpack-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <includeArtifactIds>otf-test-data</includeArtifactIds>
-                            <outputDirectory>${project.build.directory}/test-resources/</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>            
-        </plugins>
     </build>
 </project>

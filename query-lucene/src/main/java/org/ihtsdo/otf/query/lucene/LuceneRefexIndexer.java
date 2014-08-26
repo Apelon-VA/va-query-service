@@ -31,6 +31,7 @@ import org.ihtsdo.otf.tcc.api.refex.RefexChronicleBI;
 import org.ihtsdo.otf.tcc.api.refex.type_long.RefexLongVersionBI;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
 
+import org.ihtsdo.otf.tcc.model.cc.refex.RefexMemberVersion;
 import org.jvnet.hk2.annotations.Service;
 
 
@@ -82,8 +83,7 @@ public class LuceneRefexIndexer extends LuceneIndexer {
     protected void addFields(ComponentChronicleBI chronicle, Document doc) {
         RefexMember rxc = (RefexMember) chronicle;
         for (Iterator it = rxc.getVersions().iterator(); it.hasNext(); ) {
-            RefexMember.Version rxv = (RefexMember.Version) it.next();
-
+            RefexMemberVersion rxv = (RefexMemberVersion) it.next();
             if (rxv instanceof RefexLongVersionBI) {
                 RefexLongVersionBI rxvl = (RefexLongVersionBI) rxv;
 

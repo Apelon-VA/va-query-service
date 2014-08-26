@@ -16,12 +16,12 @@ package org.ihtsdo.otf.query.integration.tests;
  * limitations under the License.
  */
 import java.io.IOException;
-import org.ihtsdo.otf.tcc.api.coordinate.StandardViewCoordinates;
+import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.Query;
-import org.ihtsdo.otf.tcc.api.store.Ts;
+import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
 /**
  * Creates a test for ConceptIsDescendentOf
@@ -36,7 +36,7 @@ public class IsDescendentOfTest extends QueryClauseTest {
         q = new Query(StandardViewCoordinates.getSnomedInferredLatestActiveOnly()) {
             @Override
             protected NativeIdSetBI For() throws IOException {
-                return Ts.get().getAllConceptNids();
+                return PersistentStore.get().getAllConceptNids();
             }
 
             @Override

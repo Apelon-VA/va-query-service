@@ -15,27 +15,18 @@
  */
 package org.ihtsdo.otf.query.implementation;
 
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.query.implementation.clauses.ConceptIsKindOf;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.ihtsdo.otf.tcc.api.concept.ConceptFetcherBI;
-import org.ihtsdo.otf.tcc.api.concept.ProcessUnfetchedConceptDataBI;
-import org.ihtsdo.otf.tcc.api.store.Ts;
-import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
-import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
-import org.ihtsdo.otf.tcc.api.coordinate.StandardViewCoordinates;
-import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetItrBI;
 import org.ihtsdo.otf.query.implementation.clauses.ChangedFromPreviousVersion;
 import org.ihtsdo.otf.query.implementation.clauses.ConceptForComponent;
 import org.ihtsdo.otf.query.implementation.clauses.ConceptIs;
 import org.ihtsdo.otf.query.implementation.clauses.ConceptIsChildOf;
 import org.ihtsdo.otf.query.implementation.clauses.ConceptIsDescendentOf;
+import org.ihtsdo.otf.query.implementation.clauses.ConceptIsKindOf;
 import org.ihtsdo.otf.query.implementation.clauses.DescriptionActiveLuceneMatch;
 import org.ihtsdo.otf.query.implementation.clauses.DescriptionActiveRegexMatch;
 import org.ihtsdo.otf.query.implementation.clauses.DescriptionLuceneMatch;
@@ -48,10 +39,19 @@ import org.ihtsdo.otf.query.implementation.clauses.RefsetContainsString;
 import org.ihtsdo.otf.query.implementation.clauses.RefsetLuceneMatch;
 import org.ihtsdo.otf.query.implementation.clauses.RelRestriction;
 import org.ihtsdo.otf.query.implementation.clauses.RelType;
+import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentVersionBI;
+import org.ihtsdo.otf.tcc.api.concept.ConceptFetcherBI;
+import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
+import org.ihtsdo.otf.tcc.api.concept.ProcessUnfetchedConceptDataBI;
+import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
+import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.tcc.api.description.DescriptionChronicleBI;
 import org.ihtsdo.otf.tcc.api.description.DescriptionVersionBI;
+import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
+import org.ihtsdo.otf.tcc.api.nid.NativeIdSetItrBI;
+import org.ihtsdo.otf.tcc.api.store.Ts;
 import org.ihtsdo.otf.tcc.ddo.ComponentReference;
 import org.ihtsdo.otf.tcc.ddo.concept.ConceptChronicleDdo;
 import org.ihtsdo.otf.tcc.ddo.concept.component.description.DescriptionChronicleDdo;
@@ -252,7 +252,7 @@ public abstract class Query {
                     ComponentVersionBI cv = Ts.get().getComponent(componentNid).getVersion(vc);
                     if (cv != null) {
                         if (!(cv instanceof ConceptVersionBI)) {
-                            componentNid = Ts.get().getComponent(componentNid).getEnclosingConcept().getConceptNid();
+                            componentNid = Ts.get().getComponent(componentNid).getConceptNid();
                         }
                         DescriptionChronicleBI desc = Ts.get().getConceptVersion(vc, componentNid).getPreferredDescription();
                         ConceptChronicleDdo cc = new ConceptChronicleDdo(Ts.get().getSnapshot(vc), Ts.get().getConcept(componentNid), VersionPolicy.ACTIVE_VERSIONS,
@@ -284,7 +284,7 @@ public abstract class Query {
                             } else if (cv instanceof DescriptionVersionBI) {
                                 desc = (DescriptionChronicleBI) Ts.get().getComponent(iter.nid());
                                 descVersionBI = (DescriptionVersionBI) cv;
-                                cc = new ConceptChronicleDdo(Ts.get().getSnapshot(vc), Ts.get().getComponent(iter.nid()).getEnclosingConcept(), VersionPolicy.ACTIVE_VERSIONS,
+                                cc = new ConceptChronicleDdo(Ts.get().getSnapshot(vc), Ts.get().getConcept(iter.nid()), VersionPolicy.ACTIVE_VERSIONS,
                                         RefexPolicy.REFEX_MEMBERS_AND_REFSET_MEMBERS, RelationshipPolicy.DESTINATION_RELATIONSHIPS);
                             } else {
                                 throw new UnsupportedOperationException("This component type is not yet supported");

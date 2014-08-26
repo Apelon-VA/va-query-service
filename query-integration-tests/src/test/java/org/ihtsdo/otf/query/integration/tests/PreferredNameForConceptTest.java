@@ -18,9 +18,10 @@ package org.ihtsdo.otf.query.integration.tests;
 import java.io.IOException;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.Query;
-import org.ihtsdo.otf.tcc.api.coordinate.StandardViewCoordinates;
+import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
+import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.api.store.Ts;
+import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
 /**
  * Creates a test for the
@@ -36,17 +37,17 @@ public class PreferredNameForConceptTest extends QueryClauseTest {
         this.q = new Query(StandardViewCoordinates.getSnomedInferredLatestActiveOnly()) {
             @Override
             protected NativeIdSetBI For() throws IOException {
-                return Ts.get().getAllComponentNids();
+                return PersistentStore.get().getAllComponentNids();
             }
 
             @Override
             public void Let() throws IOException {
-                let("oligophrenia", "oligophrenia");
+                let("vibration", Snomed.VIBRATION);
             }
 
             @Override
             public Clause Where() {
-                return PreferredNameForConcept(ConceptForComponent(DescriptionLuceneMatch("oligophrenia")));
+                return PreferredNameForConcept(ConceptIs("vibration"));
             }
         };
     }

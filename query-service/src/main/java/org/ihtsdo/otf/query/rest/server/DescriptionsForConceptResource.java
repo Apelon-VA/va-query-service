@@ -31,11 +31,11 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.xml.bind.JAXBException;
 import org.ihtsdo.otf.query.implementation.JaxbForQuery;
+import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
 import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
-import org.ihtsdo.otf.tcc.api.coordinate.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.tcc.api.description.DescriptionChronicleBI;
 import org.ihtsdo.otf.tcc.api.description.DescriptionVersionBI;
@@ -106,14 +106,14 @@ public class DescriptionsForConceptResource {
         System.out.println("result: " + result);
 
         if (!result.isEmpty()) {
-            ViewCoordinate vc = StandardViewCoordinates.getSnomedInferredLatest();
+            ViewCoordinate vc = StandardViewCoordinates.getSnomedInferredLatestActiveOnly();
             ComponentChronicleBI cc = Ts.get().getComponent(result.get(0).nid);
             UUID uuid = Ts.get().getUuidPrimordialForNid(cc.getNid());
             ConceptChronicleBI concept = Ts.get().getComponent(uuid).getEnclosingConcept();
             ConceptVersionBI cv = concept.getVersion(vc);
 
             ArrayList<Object> list = new ArrayList<>();
-            
+
             for (DescriptionChronicleBI dc : concept.getVersion(vc).getDescriptions()) {
                 if (dc.getVersion(vc) != null) {
                     DescriptionVersionBI dv = dc.getVersion(vc);

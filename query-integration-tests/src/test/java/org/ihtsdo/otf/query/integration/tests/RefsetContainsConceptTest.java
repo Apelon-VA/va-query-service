@@ -20,7 +20,7 @@ import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.api.store.Ts;
+import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
 /**
  *
@@ -33,7 +33,7 @@ public class RefsetContainsConceptTest extends QueryClauseTest {
 
             @Override
             protected NativeIdSetBI For() throws IOException {
-                return Ts.get().getAllConceptNids();
+                return PersistentStore.get().getAllConceptNids();
             }
 
             @Override

@@ -24,48 +24,37 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
-import static org.junit.Assert.*;
-import org.ihtsdo.otf.tcc.api.coordinate.StandardViewCoordinates;
-import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.query.implementation.JaxbForQuery;
 import org.ihtsdo.otf.query.implementation.LetMap;
-import org.ihtsdo.otf.tcc.junit.BdbTestRunner;
-import org.ihtsdo.otf.tcc.junit.BdbTestRunnerConfig;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
+import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
+import org.ihtsdo.otf.tcc.model.cc.termstore.PersistentStoreI;
+
+import static org.testng.Assert.*;
+import org.testng.annotations.*;
 
 /**
  *
  * @author kec
  */
-@RunWith(BdbTestRunner.class)
-@BdbTestRunnerConfig()
 public class LetMapTest {
+
+    private static final Logger LOGGER = Logger.getLogger(LetMapTest.class.getName());
+    private static final String DIR = System.getProperty("user.dir");
+    private static PersistentStoreI ps;
 
     public LetMapTest() {
     }
 
-    @BeforeClass
-    public static void setUpClass() {
-    }
-
-    @AfterClass
-    public static void tearDownClass() {
-    }
-
-    @Before
+    @BeforeMethod
     public void setUp() {
     }
 
-    @After
+    @AfterMethod
     public void tearDown() {
     }
 
-    @Test
+    @Test(groups = "QueryServiceTests")
     public void testForMap() {
         try {
             Map<String, Object> map = new HashMap<>();

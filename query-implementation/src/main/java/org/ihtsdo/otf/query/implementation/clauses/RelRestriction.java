@@ -34,7 +34,6 @@ import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
 import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 import org.ihtsdo.otf.tcc.datastore.Bdb;
-
 /**
  * Allows the user to define a restriction on the destination set of a
  * relationship query. Also allows the user to specify subsumption on the

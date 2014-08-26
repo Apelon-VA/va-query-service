@@ -6,18 +6,32 @@
     <parent>
         <groupId>org.ihtsdo.otf</groupId>
         <artifactId>query-parent</artifactId>
-        <version>1.1-SNAPSHOT</version>
+        <version>1.1-informatics-SNAPSHOT</version>
     </parent>
     <artifactId>query-service</artifactId>
     <packaging>war</packaging>
 
-    <name>${branch}: Query rest service</name>
+    <name>OTF Query Service: Query rest service</name>
     <description>Representational State Transfer (REST) server connectivity and query execution.</description>
-       <properties>
+    <properties>
         <netbeans.hint.deploy.server>gfv3ee6</netbeans.hint.deploy.server>
         <tomcat.catalina.home>/Applications/apache-tomcat-7.0.47</tomcat.catalina.home>
     </properties>
     <dependencies>
+        <dependency>
+            <groupId>com.informatics</groupId>
+            <artifactId>bdb-junit-ext</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>test</scope>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jersey.test-framework</groupId>
+            <artifactId>jersey-test-framework-core</artifactId>
+            <version>2.2</version>
+            <scope>test</scope>
+            <type>jar</type>
+        </dependency>
         <dependency>
             <groupId>javax</groupId>
             <artifactId>javaee-api</artifactId>
@@ -31,11 +45,6 @@
             <type>jar</type>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <version>${terminology-component-chronicle.version}</version>
-            <artifactId>tcc-datastore</artifactId>
-        </dependency>
-        <dependency>
             <groupId>javax.ws.rs</groupId>
             <artifactId>javax.ws.rs-api</artifactId>
             <version>2.0</version>
@@ -46,7 +55,7 @@
             <version>2.2</version>
         </dependency>
         <!-- Not used directly, but we need to ensure the right version is
-             used for Jersey as it conflicts with mahout-math -->
+        used for Jersey as it conflicts with mahout-math -->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
@@ -62,12 +71,6 @@
             <groupId>org.glassfish.distributions</groupId>
             <artifactId>web-all</artifactId>
             <version>10.0-build-20080430</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.embedded</groupId>
-            <artifactId>gf-embedded-api</artifactId>
-            <version>1.0-alpha-4</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -109,6 +112,6 @@
                     <update>true</update>
                 </configuration>
             </plugin>
-       </plugins>
+        </plugins>
     </build>
 </project>

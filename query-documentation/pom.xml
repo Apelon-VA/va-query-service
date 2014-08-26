@@ -5,11 +5,11 @@
     <parent>
         <groupId>org.ihtsdo.otf</groupId>
         <artifactId>query-parent</artifactId>
-        <version>1.1-SNAPSHOT</version>
+        <version>1.1-informatics-SNAPSHOT</version>
     </parent>
     <groupId>org.ihtsdo.otf</groupId>
     <artifactId>query-documentation</artifactId>
-    <name>${branch}: Query documentation</name>
+    <name>OTF Query Service: Query documentation</name>
     <description>Contains documentation for construction of queries and getting started guide.</description>
     <packaging>pom</packaging>
     <properties>
@@ -59,13 +59,6 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>query-parent</artifactId>
-            <version>${project.version}</version>
-            <classifier>docbook</classifier>
-            <type>zip</type>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>query-jaxb-objects</artifactId>
             <version>${project.version}</version>
             <classifier>docbook</classifier>
             <type>zip</type>

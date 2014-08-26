@@ -89,7 +89,7 @@ public class QueryFromJaxb extends Query {
 
         }
         Unmarshaller unmarshaller = JaxbForQuery.get().createUnmarshaller();
-        BdbTerminologyStore.waitForSetup();
+        BdbTerminologyStore bdb = new BdbTerminologyStore();
 
         LetMap letMap = null;
 
