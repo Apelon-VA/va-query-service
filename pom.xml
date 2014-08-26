@@ -214,7 +214,7 @@
             </modules>
         </profile>
         <profile>
-            <id></id>
+            <id />
         </profile>
     </profiles>
     <reporting>
