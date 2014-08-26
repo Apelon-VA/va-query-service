@@ -463,7 +463,7 @@ public class QueryTest {
 
     }
 
-    @Test(enabled = false)
+    @Test
     public void notTest() throws IOException, Exception {
         Query q = new Query() {
             @Override
