@@ -80,7 +80,8 @@ public class LuceneTest {
     public void tearDown() {
     }
 
-    @Test(groups = "QueryServiceTests")
+
+    //@Test(groups = "QueryServiceTests")
     public void testLuceneDescriptionIndex() throws IOException, Exception {
 
         // add test description to concept
