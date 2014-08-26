@@ -19,6 +19,7 @@ import java.io.IOException;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
+import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
@@ -41,12 +42,12 @@ public class PreferredNameForConceptTest extends QueryClauseTest {
 
             @Override
             public void Let() throws IOException {
-                let("oligophrenia", "oligophrenia");
+                let("vibration", Snomed.VIBRATION);
             }
 
             @Override
             public Clause Where() {
-                return PreferredNameForConcept(ConceptForComponent(DescriptionLuceneMatch("oligophrenia")));
+                return PreferredNameForConcept(ConceptIs("vibration"));
             }
         };
     }

@@ -4,8 +4,7 @@
  
     <test name="QueryServiceTests">
         <classes>
-            <class name="org.ihtsdo.otf.query.integration.tests.QueryTest" />
-           
+            <class name="org.ihtsdo.otf.query.integration.tests.QueryTest" />      
         </classes>
         <package> 
             <package name="org.ihtsdo.otf.query.integration.tests.jaxb.*" />

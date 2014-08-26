@@ -20,17 +20,13 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javafx.embed.swing.JFXPanel;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
-import org.glassfish.hk2.runlevel.RunLevelController;
 import org.ihtsdo.otf.query.implementation.ForCollection;
 import org.ihtsdo.otf.query.implementation.JaxbForQuery;
+import static org.ihtsdo.otf.query.integration.tests.suite.QueryServiceTestSuiteSetup.PS;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.tcc.datastore.Bdb;
-import org.ihtsdo.otf.tcc.datastore.BdbTerminologyStore;
-import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
-import org.ihtsdo.otf.tcc.model.cc.termstore.PersistentStoreI;
 
 import static org.testng.Assert.*;
 import org.testng.annotations.*;
@@ -40,8 +36,6 @@ import org.testng.annotations.*;
  * @author kec
  */
 public class ForTest {
-
-    private static PersistentStoreI ps;
 
     private static final Logger LOGGER = Logger.getLogger(ForTest.class.getName());
     private static final String DIR = System.getProperty("user.dir");
@@ -92,6 +86,6 @@ public class ForTest {
         ForCollection forCollection = new ForCollection();
         forCollection.setForCollection(ForCollection.ForCollectionContents.CONCEPT);
         NativeIdSetBI forSet = forCollection.getCollection();
-        assertEquals(ps.getConceptCount(), forSet.size());
+        assertEquals(PS.getConceptCount(), forSet.size());
     }
 }

@@ -26,6 +26,7 @@ import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
 import org.ihtsdo.otf.tcc.datastore.BdbTerminologyStore;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.cc.termstore.PersistentStoreI;
+import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
 import org.testng.annotations.*;
 
 /**
@@ -38,7 +39,7 @@ public class QueryServiceTestSuiteSetup {
 
     private static final String DIR = System.getProperty("user.dir");
 
-    private static PersistentStoreI ps;
+    public static PersistentStoreI PS;
     private static final Logger LOGGER = Logger.getLogger(QueryServiceTestSuiteSetup.class.getName());
 
     @BeforeSuite
@@ -51,11 +52,11 @@ public class QueryServiceTestSuiteSetup {
         runLevelController.proceedTo(1);
         LOGGER.log(Level.INFO, "going to run level 2");
         runLevelController.proceedTo(2);
-        ps = Hk2Looker.get().getService(PersistentStoreI.class);
+        PS = Hk2Looker.get().getService(PersistentStoreI.class);
 
         ConceptChronicleBI concept;
         try {
-            concept = ps.getConcept(UUID.fromString("2faa9260-8fb2-11db-b606-0800200c9a66"));
+            concept = PS.getConcept(UUID.fromString("2faa9260-8fb2-11db-b606-0800200c9a66"));
             LOGGER.log(Level.INFO, "WB concept: {0}", concept.toLongString());
         } catch (IOException ex) {
             Logger.getLogger(QueryTest.class.getName()).log(Level.SEVERE, null, ex);
