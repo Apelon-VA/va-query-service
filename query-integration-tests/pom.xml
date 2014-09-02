@@ -71,8 +71,8 @@
         </dependency>
         <dependency>
             <groupId>com.informatics</groupId>
-            <artifactId>cement-report</artifactId>
-            <version>1.3</version>
+            <artifactId>cement-report-runner</artifactId>
+            <version>1.0</version>
             <type>zip</type>
         </dependency>
     </dependencies>
@@ -89,7 +89,7 @@
                             <goal>unpack-dependencies</goal>
                         </goals>
                         <configuration>
-                            <includeArtifactIds>otf-integration-test-data,otf-query-services-reports,cement-report</includeArtifactIds>
+                            <includeArtifactIds>otf-integration-test-data,otf-query-services-reports,cement-report-runner</includeArtifactIds>
                             <outputDirectory>${project.build.directory}/test-resources/</outputDirectory>
                         </configuration>
                     </execution>

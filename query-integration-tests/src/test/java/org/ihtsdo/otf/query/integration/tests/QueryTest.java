@@ -62,7 +62,7 @@ public class QueryTest {
 
     private static final String DIR = System.getProperty("user.dir");
     private static final JSONToReport REPORTS = new JSONToReport(DIR + "/target/test-resources/OTFReports.json");
-    private static final JSONToReport CEMENT_REPORT = new JSONToReport(DIR + "/target/test-resources/cementReport.json");
+    private static final JSONToReport CEMENT_REPORT = new JSONToReport(DIR + "/target/test-resources/eConceptReports.json");
     private static final Logger LOGGER = Logger.getLogger(QueryTest.class.getName());
     private static ViewCoordinate VC_LATEST_ACTIVE_AND_INACTIVE;
     private static ViewCoordinate VC_LATEST_ACTIVE_ONLY;
@@ -76,7 +76,7 @@ public class QueryTest {
     public static void setUpClass() {
         REPORTS.parseFile();
         CEMENT_REPORT.parseFile();
-        cementSize = CEMENT_REPORT.getQueryCount("Cement concept size");
+        cementSize = CEMENT_REPORT.getQueryCount("cement.jbin concept set size");
         LOGGER.log(Level.INFO, "Cement size: {0}", cementSize);
         try {
             VC_LATEST_ACTIVE_AND_INACTIVE = StandardViewCoordinates.getSnomedInferredLatestActiveAndInactive();
