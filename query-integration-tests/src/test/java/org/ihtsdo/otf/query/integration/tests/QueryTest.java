@@ -24,10 +24,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.embed.swing.JFXPanel;
 import org.glassfish.hk2.runlevel.RunLevelController;
-import org.ihtsdo.otf.query.implementation.Clause;
-import org.ihtsdo.otf.query.implementation.Query;
-import org.ihtsdo.otf.query.implementation.QueryExample;
-import org.ihtsdo.otf.query.implementation.ReturnTypes;
+import org.ihtsdo.otf.query.implementation.*;
 import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.query.integration.tests.rest.TermstoreChanges;
 import org.ihtsdo.otf.tcc.api.blueprint.InvalidCAB;
@@ -90,11 +87,12 @@ public class QueryTest {
     public void testSimpleQuery() throws IOException, Exception {
         LOGGER.log(Level.INFO, "Simple query: ");
         Query q = new Query() {
-            @Override
-            protected NativeIdSetBI For() throws IOException {
-                return null;
-            }
 
+            @Override
+            protected ForSetSpecification ForSetSpecification() throws IOException {
+                ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
+                return forSetSpecification;
+            }
             @Override
             public void Let() throws IOException {
                 let("motion", Snomed.MOTION);
@@ -130,8 +128,9 @@ public class QueryTest {
         Query q = new Query(d.getViewCoordinate()) {
 
             @Override
-            protected NativeIdSetBI For() throws IOException {
-                return PersistentStore.get().getAllConceptNids();
+            protected ForSetSpecification ForSetSpecification() throws IOException {
+                ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
+                return forSetSpecification;
             }
 
             @Override
@@ -174,8 +173,9 @@ public class QueryTest {
     public void testOr() throws IOException, Exception {
         Query q = new Query() {
             @Override
-            protected NativeIdSetBI For() throws IOException {
-                return PersistentStore.get().getAllConceptNids();
+            protected ForSetSpecification ForSetSpecification() throws IOException {
+                ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
+                return forSetSpecification;
             }
 
             @Override
@@ -200,10 +200,10 @@ public class QueryTest {
 
         Query q = new Query(VC_LATEST_ACTIVE_ONLY) {
             @Override
-            protected NativeIdSetBI For() throws IOException {
-                return PersistentStore.get().getAllConceptNids();
+            protected ForSetSpecification ForSetSpecification() throws IOException {
+                ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
+                return forSetSpecification;
             }
-
             @Override
             public void Let() throws IOException {
                 let("Acceleration", Snomed.ACCELERATION);
@@ -248,10 +248,10 @@ public class QueryTest {
         final SetViewCoordinate setViewCoordinate = new SetViewCoordinate(2002, 1, 31, 0, 0);
         Query q = new Query(VC_LATEST_ACTIVE_ONLY) {
             @Override
-            protected NativeIdSetBI For() throws IOException {
-                return PersistentStore.get().getAllConceptNids();
+            protected ForSetSpecification ForSetSpecification() throws IOException {
+                ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
+                return forSetSpecification;
             }
-
             @Override
             public void Let() throws IOException {
                 let("endocrine system", Snomed.STRUCTURE_OF_ENDOCRINE_SYSTEM);
@@ -344,10 +344,10 @@ public class QueryTest {
     public void testRelRestrictionSubsumptionNull() throws IOException, Exception {
         Query q = new Query(VC_LATEST_ACTIVE_ONLY) {
             @Override
-            protected NativeIdSetBI For() throws IOException {
-                return PersistentStore.get().getAllConceptNids();
+            protected ForSetSpecification ForSetSpecification() throws IOException {
+                ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
+                return forSetSpecification;
             }
-
             @Override
             public void Let() throws IOException {
                 let("physical force", Snomed.PHYSICAL_FORCE);
@@ -429,8 +429,9 @@ public class QueryTest {
     public void queryTest() throws IOException, Exception {
         Query q = new Query(VC_LATEST_ACTIVE_AND_INACTIVE) {
             @Override
-            protected NativeIdSetBI For() throws IOException {
-                return PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), VC_LATEST_ACTIVE_AND_INACTIVE);
+            protected ForSetSpecification ForSetSpecification() throws IOException {
+                ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
+                return forSetSpecification;
             }
 
             @Override
@@ -467,10 +468,10 @@ public class QueryTest {
     public void notTest() throws IOException, Exception {
         Query q = new Query() {
             @Override
-            protected NativeIdSetBI For() throws IOException {
-                return PersistentStore.get().getAllConceptNids();
+            protected ForSetSpecification ForSetSpecification() throws IOException {
+                ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
+                return forSetSpecification;
             }
-
             @Override
             public void Let() throws IOException {
                 let("acceleration", Snomed.ACCELERATION);
@@ -568,12 +569,11 @@ public class QueryTest {
     public void descriptionActiveLuceneMatchTest() throws Exception {
         LOGGER.log(Level.INFO, "DescriptionActiveLuceneMatch test");
         Query q1 = new Query(VC_LATEST_ACTIVE_AND_INACTIVE) {
-
             @Override
-            protected NativeIdSetBI For() throws IOException {
-                return PersistentStore.get().getAllConceptNids();
+            protected ForSetSpecification ForSetSpecification() throws IOException {
+                ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
+                return forSetSpecification;
             }
-
             @Override
             public void Let() throws IOException {
                 let("baranys", "barany's");
@@ -650,12 +650,11 @@ public class QueryTest {
     public void testKindOfDiseaseVersioned() throws Exception {
         final SetViewCoordinate setVC = new SetViewCoordinate(2002, 1, 31, 0, 0);
         Query q = new Query(setVC.getViewCoordinate()) {
-
             @Override
-            protected NativeIdSetBI For() throws IOException {
-                return PersistentStore.get().getAllConceptNids();
+            protected ForSetSpecification ForSetSpecification() throws IOException {
+                ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
+                return forSetSpecification;
             }
-
             @Override
             public void Let() throws IOException {
                 let("Disease", Snomed.DISEASE);

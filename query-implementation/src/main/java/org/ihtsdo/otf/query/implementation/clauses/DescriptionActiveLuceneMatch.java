@@ -24,21 +24,29 @@ import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.WhereClause;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
+import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetItrBI;
 import org.ihtsdo.otf.tcc.api.store.Ts;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  *
  *
  * @author dylangrald
  */
+@XmlRootElement
+@XmlAccessorType(value = XmlAccessType.NONE)
 public class DescriptionActiveLuceneMatch extends DescriptionLuceneMatch {
 
     public DescriptionActiveLuceneMatch(Query enclosingQuery, String luceneMatchKey, String viewCoordinateKey) {
         super(enclosingQuery, luceneMatchKey, viewCoordinateKey);
     }
-
+    protected DescriptionActiveLuceneMatch() {
+    }
     @Override
     public EnumSet<ClauseComputeType> getComputePhases() {
         return PRE_AND_POST_ITERATION;
@@ -46,6 +54,8 @@ public class DescriptionActiveLuceneMatch extends DescriptionLuceneMatch {
 
     @Override
     public final NativeIdSetBI computeComponents(NativeIdSetBI incomingComponents) throws IOException {
+
+        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
         getResultsCache().and(incomingComponents);
         NativeIdSetItrBI iter = getResultsCache().getSetBitIterator();
 

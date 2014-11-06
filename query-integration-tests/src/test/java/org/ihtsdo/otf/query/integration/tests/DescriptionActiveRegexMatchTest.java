@@ -17,9 +17,12 @@ package org.ihtsdo.otf.query.integration.tests;
 
 import java.io.IOException;
 import org.ihtsdo.otf.query.implementation.Clause;
+import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
+import org.ihtsdo.otf.query.implementation.ForSetSpecification;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
+import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetItrBI;
 import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
@@ -32,10 +35,13 @@ public class DescriptionActiveRegexMatchTest extends QueryClauseTest {
 
     public DescriptionActiveRegexMatchTest() throws IOException {
         this.q = new Query(StandardViewCoordinates.getSnomedInferredLatestActiveOnly()) {
-
             @Override
-            protected NativeIdSetBI For() throws IOException {
-                return PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), StandardViewCoordinates.getSnomedInferredLatestActiveAndInactive());
+            protected ForSetSpecification ForSetSpecification() throws IOException {
+                ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.CUSTOM_SET);
+                NativeIdSetBI forSet = new ConcurrentBitSet();
+                forSet.or(PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), StandardViewCoordinates.getSnomedInferredLatestActiveOnly()));
+                forSetSpecification.getCustomCollection().addAll(forSet.toPrimordialUuidSet());
+                return forSetSpecification;
             }
 
             @Override

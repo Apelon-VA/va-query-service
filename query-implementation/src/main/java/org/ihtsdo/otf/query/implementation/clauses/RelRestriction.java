@@ -34,6 +34,12 @@ import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
 import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 import org.ihtsdo.otf.tcc.datastore.Bdb;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * Allows the user to define a restriction on the destination set of a
  * relationship query. Also allows the user to specify subsumption on the
@@ -41,40 +47,37 @@ import org.ihtsdo.otf.tcc.datastore.Bdb;
  *
  * @author dylangrald
  */
+@XmlRootElement
+@XmlAccessorType(value = XmlAccessType.NONE)
 public class RelRestriction extends LeafClause {
 
-    ViewCoordinate viewCoordinate;
-    Query enclosingQuery;
+
+    @XmlElement
     String relTypeKey;
-    ConceptSpec relType;
+    @XmlElement
     String destinationSpecKey;
-    ConceptSpec destinationSpec;
+    @XmlElement
     String relRestrictionSpecKey;
-    ConceptSpec relRestrictionSpec;
+    @XmlElement
     String viewCoordinateKey;
+    @XmlElement
     String destinationSubsumptionKey;
-    Boolean destinationSubsumption;
+    @XmlElement
     String relTypeSubsumptionKey;
-    Boolean relTypeSubsumption;
 
     public RelRestriction(Query enclosingQuery, String relRestrictionSpecKey, String relTypeKey, String destinationSpecKey,
             String viewCoordinateKey, String destinationSubsumptionKey, String relTypeSubsumptionKey) {
         super(enclosingQuery);
-        this.enclosingQuery = enclosingQuery;
         this.destinationSpecKey = destinationSpecKey;
-        this.destinationSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(destinationSpecKey);
         this.relTypeKey = relTypeKey;
-        this.relType = (ConceptSpec) enclosingQuery.getLetDeclarations().get(relTypeKey);
         this.relRestrictionSpecKey = relRestrictionSpecKey;
-        this.relRestrictionSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(relRestrictionSpecKey);
         this.viewCoordinateKey = viewCoordinateKey;
         this.relTypeSubsumptionKey = relTypeSubsumptionKey;
         this.destinationSubsumptionKey = destinationSubsumptionKey;
-        this.relTypeSubsumption = (Boolean) enclosingQuery.getLetDeclarations().get(relTypeSubsumptionKey);
-        this.destinationSubsumption = (Boolean) enclosingQuery.getLetDeclarations().get(destinationSubsumptionKey);
 
     }
-
+    protected RelRestriction() {
+    }
     @Override
     public WhereClause getWhereClause() {
         WhereClause whereClause = new WhereClause();
@@ -97,29 +100,31 @@ public class RelRestriction extends LeafClause {
 
     @Override
     public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleComponents) throws IOException, ValidationException, ContradictionException {
-        if (this.viewCoordinateKey.equals(this.enclosingQuery.currentViewCoordinateKey)) {
-            this.viewCoordinate = (ViewCoordinate) this.enclosingQuery.getVCLetDeclarations().get(viewCoordinateKey);
-        } else {
-            this.viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
-        }
+        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+        ConceptSpec destinationSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(destinationSpecKey);
+        ConceptSpec relType = (ConceptSpec) enclosingQuery.getLetDeclarations().get(relTypeKey);
+        ConceptSpec relRestrictionSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(relRestrictionSpecKey);
+        Boolean relTypeSubsumption = (Boolean) enclosingQuery.getLetDeclarations().get(relTypeSubsumptionKey);
+        Boolean destinationSubsumption = (Boolean) enclosingQuery.getLetDeclarations().get(destinationSubsumptionKey);
+
         //The default is to set relTypeSubsumption and destinationSubsumption to true.
-        if (this.relTypeSubsumption == null) {
-            this.relTypeSubsumption = true;
+        if (relTypeSubsumption == null) {
+            relTypeSubsumption = true;
         }
-        if (this.destinationSubsumption == null) {
-            this.destinationSubsumption = true;
+        if (destinationSubsumption == null) {
+            destinationSubsumption = true;
         }
 
         NativeIdSetBI relTypeSet = new ConcurrentBitSet();
-        relTypeSet.add(this.relType.getNid());
-        if (this.relTypeSubsumption) {
-            relTypeSet.or(Ts.get().isKindOfSet(this.relType.getNid(), viewCoordinate));
+        relTypeSet.add(relType.getNid());
+        if (relTypeSubsumption) {
+            relTypeSet.or(Ts.get().isKindOfSet(relType.getNid(), viewCoordinate));
         }
 
         NativeIdSetBI destinationSet = new ConcurrentBitSet();
-        destinationSet.add(this.destinationSpec.getNid());
-        if (this.destinationSubsumption) {
-            destinationSet.or(Ts.get().isKindOfSet(this.destinationSpec.getNid(), viewCoordinate));
+        destinationSet.add(destinationSpec.getNid());
+        if (destinationSubsumption) {
+            destinationSet.or(Ts.get().isKindOfSet(destinationSpec.getNid(), viewCoordinate));
         }
 
         NativeIdSetBI restrictionSet = Ts.get().isKindOfSet(relRestrictionSpec.getNid(), viewCoordinate);

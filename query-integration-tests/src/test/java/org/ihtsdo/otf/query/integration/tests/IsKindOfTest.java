@@ -18,6 +18,8 @@ package org.ihtsdo.otf.query.integration.tests;
 import java.io.IOException;
 import java.util.EnumSet;
 import org.ihtsdo.otf.query.implementation.Clause;
+import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
+import org.ihtsdo.otf.query.implementation.ForSetSpecification;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.coordinate.Status;
@@ -39,8 +41,8 @@ public class IsKindOfTest extends QueryClauseTest {
         vc.setAllowedStatus(EnumSet.of(Status.ACTIVE));
         this.q = new Query(vc) {
             @Override
-            protected NativeIdSetBI For() throws IOException {
-                return PersistentStore.get().getAllConceptNids();
+            protected ForSetSpecification ForSetSpecification() {
+                return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
             }
 
             @Override

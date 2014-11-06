@@ -17,6 +17,8 @@ package org.ihtsdo.otf.query.implementation;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
+
+import org.ihtsdo.otf.query.implementation.clauses.*;
 import org.ihtsdo.otf.tcc.api.contradiction.strategy.IdentifyAllConflict;
 import org.ihtsdo.otf.tcc.api.contradiction.strategy.LastCommitWins;
 import org.ihtsdo.otf.tcc.api.coordinate.Path;
@@ -35,6 +37,8 @@ import org.ihtsdo.otf.tcc.ddo.concept.component.description.DescriptionVersionDd
 import org.ihtsdo.otf.tcc.ddo.concept.component.description.SimpleDescriptionVersionDdo;
 import org.ihtsdo.otf.tcc.model.cc.LanguageSortPrefs;
 
+import java.util.HashMap;
+
 /**
  *
  * @author kec
@@ -45,14 +49,24 @@ public class JaxbForQuery {
 
     public static JAXBContext get() throws JAXBException {
         if (singleton == null) {
-            singleton = JAXBContext.newInstance(ViewCoordinate.class, 
+            singleton = JAXBContext.newInstance(
+                    And.class,
+                    AndNot.class,
+                    ViewCoordinate.class,
                     IdentifyAllConflict.class, 
                     LastCommitWins.class,
                     Where.class,
-                    ForCollection.class,
+                    ForSetSpecification.class,
+                    ComponentCollectionTypes.class,
                     ConcurrentBitSet.class,
-                    Position.class, LetMap.class,
-                    Path.class, ConceptSpec.class, RelSpec.class, 
+                    Position.class,
+                    LetMap.class,
+                    Path.class,
+                    Query.class,
+                    QueryFactory.class,
+                    QueryFactory.QueryFromFactory.class,
+                    ConceptSpec.class,
+                    RelSpec.class,
                     ResultList.class,
                     DescriptionChronicleDdo.class,
                     DescriptionVersionDdo.class,
@@ -62,7 +76,34 @@ public class JaxbForQuery {
                     SimplePath.class,
                     SimplePosition.class, 
                     LanguageSortPrefs.class, 
-                    ReturnTypes.class);
+                    ReturnTypes.class,
+                    HashMap.class,
+                    Not.class,
+                    Or.class,
+                    Xor.class,
+                    ParentClause.class,
+                    LeafClause.class,
+                    Clause.class,
+                    ConceptIsKindOf.class,
+                    ChangedFromPreviousVersion.class,
+                    ComponentsFromSnomedIds.class,
+                    ConceptForComponent.class,
+                    ConceptIs.class,
+                    ConceptIsChildOf.class,
+                    ConceptIsDescendentOf.class,
+                    ConceptIsKindOf.class,
+                    DescriptionActiveLuceneMatch.class,
+                    DescriptionActiveRegexMatch.class,
+                    DescriptionLuceneMatch.class,
+                    DescriptionRegexMatch.class,
+                    FullySpecifiedNameForConcept.class,
+                    PreferredNameForConcept.class,
+                    RefsetContainsConcept.class,
+                    RefsetContainsKindOfConcept.class,
+                    RefsetContainsString.class,
+                    RefsetLuceneMatch.class,
+                    RelRestriction.class,
+                    RelType.class);
         }
         return singleton;
     }

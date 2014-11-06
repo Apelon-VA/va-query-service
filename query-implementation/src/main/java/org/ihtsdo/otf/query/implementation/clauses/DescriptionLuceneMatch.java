@@ -38,27 +38,32 @@ import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
 import org.ihtsdo.otf.tcc.model.index.service.SearchResult;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * Returns descriptions matching the input string using Lucene.
  *
  * @author kec
  */
+@XmlRootElement
+@XmlAccessorType(value = XmlAccessType.NONE)
 public class DescriptionLuceneMatch extends LeafClause {
 
-    String luceneMatch;
+    @XmlElement
     String luceneMatchKey;
-    ViewCoordinate viewCoordinate;
+    @XmlElement
     String viewCoordinateKey;
-    Query enclosingQuery;
 
     public DescriptionLuceneMatch(Query enclosingQuery, String luceneMatchKey, String viewCoordinateKey) {
         super(enclosingQuery);
-        this.enclosingQuery = enclosingQuery;
         this.luceneMatchKey = luceneMatchKey;
-        this.luceneMatch = (String) enclosingQuery.getLetDeclarations().get(luceneMatchKey);
         this.viewCoordinateKey = viewCoordinateKey;
     }
-
+    protected DescriptionLuceneMatch() {
+    }
     @Override
     public EnumSet<ClauseComputeType> getComputePhases() {
         return PRE_ITERATION;
@@ -66,11 +71,10 @@ public class DescriptionLuceneMatch extends LeafClause {
 
     @Override
     public final NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleComponents) throws IOException {
-        if (this.viewCoordinateKey.equals(this.enclosingQuery.currentViewCoordinateKey)) {
-            this.viewCoordinate = (ViewCoordinate) this.enclosingQuery.getVCLetDeclarations().get(viewCoordinateKey);
-        } else {
-            this.viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
-        }
+        String luceneMatch = (String) enclosingQuery.getLetDeclarations().get(luceneMatchKey);
+
+        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+
 
         NativeIdSetBI nids = new ConcurrentBitSet();
         try {

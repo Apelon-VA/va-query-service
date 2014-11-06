@@ -22,7 +22,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
-import org.ihtsdo.otf.query.implementation.ForCollection;
+
+import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
+import org.ihtsdo.otf.query.implementation.ForSetSpecification;
 import org.ihtsdo.otf.query.implementation.JaxbForQuery;
 import static org.ihtsdo.otf.query.integration.tests.suite.QueryServiceTestSuiteSetup.PS;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
@@ -52,29 +54,8 @@ public class ForTest {
     }
 
     @Test(groups = "QueryServiceTests")
-    public void conceptTest() {
-        try {
-            ForCollection forCollection = new ForCollection();
-            JAXBContext ctx = JaxbForQuery.get();
-            StringWriter writer = new StringWriter();
-
-            ctx.createMarshaller().marshal(forCollection, writer);
-
-            String forXml = writer.toString();
-            System.out.println("For list: " + forXml);
-
-            ForCollection unmarshalledForCollection = (ForCollection) ctx.createUnmarshaller()
-                    .unmarshal(new StringReader(forXml));
-            assertEquals(forCollection.getCollection(), unmarshalledForCollection.getCollection());
-        } catch (JAXBException | IOException ex) {
-            Logger.getLogger(ForTest.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-
-    @Test(groups = "QueryServiceTests")
     public void getAllComponentsTest() throws IOException {
-        ForCollection forCollection = new ForCollection();
-        forCollection.setForCollection(ForCollection.ForCollectionContents.COMPONENT);
+        ForSetSpecification forCollection = new ForSetSpecification(ComponentCollectionTypes.ALL_COMPONENTS);
         NativeIdSetBI forSet = forCollection.getCollection();
         System.out.println(forSet.size());
         assertTrue(forSet.contiguous());
@@ -83,8 +64,7 @@ public class ForTest {
 
     @Test(groups = "QueryServiceTests")
     public void getAllConceptstest() throws IOException {
-        ForCollection forCollection = new ForCollection();
-        forCollection.setForCollection(ForCollection.ForCollectionContents.CONCEPT);
+        ForSetSpecification forCollection = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
         NativeIdSetBI forSet = forCollection.getCollection();
         assertEquals(PS.getConceptCount(), forSet.size());
     }

@@ -17,6 +17,8 @@ package org.ihtsdo.otf.query.integration.tests;
 
 import java.io.IOException;
 import org.ihtsdo.otf.query.implementation.Clause;
+import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
+import org.ihtsdo.otf.query.implementation.ForSetSpecification;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
@@ -33,8 +35,8 @@ public class AndTest extends QueryClauseTest {
     public AndTest() throws IOException {
         this.q = new Query(StandardViewCoordinates.getSnomedInferredLatestActiveOnly()) {
             @Override
-            protected NativeIdSetBI For() throws IOException {
-                return PersistentStore.get().getAllConceptNids();
+            protected ForSetSpecification ForSetSpecification() {
+                return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
             }
 
             @Override

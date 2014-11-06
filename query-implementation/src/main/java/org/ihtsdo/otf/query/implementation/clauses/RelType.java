@@ -35,6 +35,11 @@ import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 import org.ihtsdo.otf.tcc.datastore.Bdb;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * Computes all concepts that have a source relationship matching the input
  * destination concept and relationship type. If the relationship type
@@ -45,31 +50,35 @@ import org.ihtsdo.otf.tcc.datastore.Bdb;
  *
  * @author dylangrald
  */
+@XmlRootElement
+@XmlAccessorType(value = XmlAccessType.NONE)
 public class RelType extends LeafClause {
 
-    ConceptSpec destinationSpec;
+    @XmlElement
     String destinationSpecKey;
+    @XmlElement
     String viewCoordinateKey;
-    ViewCoordinate viewCoordinate;
-    Query enclosingQuery;
-    ConceptSpec relType;
+
+    @XmlElement
     String relTypeSpecKey;
+
     NativeIdSetBI cache;
+    @XmlElement
     Boolean relTypeSubsumption;
+    @XmlElement
     boolean destinationSubsumption;
 
     public RelType(Query enclosingQuery, String relTypeSpecKey, String destinationSpecKey, String viewCoordinateKey, Boolean relTypeSubsumption) {
         this(enclosingQuery, relTypeSpecKey, destinationSpecKey, viewCoordinateKey, relTypeSubsumption, true);
     }
-
+    protected RelType() {
+    }
     public RelType(Query enclosingQuery, String relTypeSpecKey, String destinationSpecKey, String viewCoordinateKey, Boolean relTypeSubsumption, boolean destinationSubsumption) {
         super(enclosingQuery);
         this.destinationSpecKey = destinationSpecKey;
-        this.destinationSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(destinationSpecKey);
         this.viewCoordinateKey = viewCoordinateKey;
         this.enclosingQuery = enclosingQuery;
         this.relTypeSpecKey = relTypeSpecKey;
-        this.relType = (ConceptSpec) enclosingQuery.getLetDeclarations().get(relTypeSpecKey);
         this.relTypeSubsumption = relTypeSubsumption;
         this.destinationSubsumption = destinationSubsumption;
     }
@@ -91,20 +100,19 @@ public class RelType extends LeafClause {
 
     @Override
     public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleComponents) throws IOException, ValidationException, ContradictionException {
-        if (this.viewCoordinateKey.equals(this.enclosingQuery.currentViewCoordinateKey)) {
-            this.viewCoordinate = (ViewCoordinate) this.enclosingQuery.getVCLetDeclarations().get(viewCoordinateKey);
-        } else {
-            this.viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
-        }
+        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+        ConceptSpec destinationSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(destinationSpecKey);
+        ConceptSpec relType = (ConceptSpec) enclosingQuery.getLetDeclarations().get(relTypeSpecKey);
+
         NativeIdSetBI relTypeSet = new ConcurrentBitSet();
-        relTypeSet.add(this.relType.getNid());
+        relTypeSet.add(relType.getNid());
         if (this.relTypeSubsumption) {
-            relTypeSet.or(Ts.get().isKindOfSet(this.relType.getNid(), viewCoordinate));
+            relTypeSet.or(Ts.get().isKindOfSet(relType.getNid(), viewCoordinate));
         }
         NativeIdSetBI destinationIdSet = new ConcurrentBitSet();
-        destinationIdSet.add(this.destinationSpec.getNid());
+        destinationIdSet.add(destinationSpec.getNid());
         if (this.destinationSubsumption) {
-            destinationIdSet.or(Ts.get().isKindOfSet(this.destinationSpec.getNid(), viewCoordinate));
+            destinationIdSet.or(Ts.get().isKindOfSet(destinationSpec.getNid(), viewCoordinate));
         }
         NativeIdSetItrBI iter = destinationIdSet.getSetBitIterator();
         while (iter.next()) {

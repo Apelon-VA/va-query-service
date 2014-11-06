@@ -29,29 +29,34 @@ import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
 import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * An identity function that obtains the concept from the input
  * <code>ConceptSpec</code>.
  *
  * @author dylangrald
  */
+@XmlRootElement
+@XmlAccessorType(value = XmlAccessType.NONE)
 public class ConceptIs extends LeafClause {
 
-    Query enclosingQuery;
+    @XmlElement
     String conceptSpecString;
-    ConceptSpec conceptSpec;
+    @XmlElement
     String viewCoordinateKey;
-    ViewCoordinate viewCoordinate;
 
     public ConceptIs(Query enclosingQuery, String conceptSpec, String viewCoordinateKey) {
         super(enclosingQuery);
-        this.enclosingQuery = enclosingQuery;
         this.conceptSpecString = conceptSpec;
-        this.conceptSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(conceptSpecString);
         this.viewCoordinateKey = viewCoordinateKey;
 
     }
-
+    protected ConceptIs() {
+    }
     @Override
     public WhereClause getWhereClause() {
         WhereClause whereClause = new WhereClause();
@@ -68,12 +73,7 @@ public class ConceptIs extends LeafClause {
 
     @Override
     public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleComponents) throws IOException, ValidationException, ContradictionException {
-        if (this.viewCoordinateKey.equals(this.enclosingQuery.currentViewCoordinateKey)) {
-            this.viewCoordinate = (ViewCoordinate) this.enclosingQuery.getVCLetDeclarations().get(viewCoordinateKey);
-        } else {
-            this.viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
-        }
-        getResultsCache().add(this.conceptSpec.getNid());
+        getResultsCache().add(((ConceptSpec) enclosingQuery.getLetDeclarations().get(conceptSpecString)).getNid());
         return getResultsCache();
     }
 

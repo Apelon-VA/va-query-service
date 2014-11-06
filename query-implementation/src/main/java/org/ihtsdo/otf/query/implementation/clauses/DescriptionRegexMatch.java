@@ -30,6 +30,11 @@ import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.WhereClause;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * Calculates descriptions that match the specified Java Regular Expression.
  * Very slow when iterating over a large
@@ -37,23 +42,23 @@ import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
  *
  * @author kec
  */
+@XmlRootElement
+@XmlAccessorType(value = XmlAccessType.NONE)
 public class DescriptionRegexMatch extends LeafClause {
 
-    String regex;
     NativeIdSetBI cache = new ConcurrentBitSet();
+    @XmlElement
     String regexKey;
+    @XmlElement
     String viewCoordinateKey;
-    ViewCoordinate viewCoordinate;
-    Query enclosingQuery;
 
     public DescriptionRegexMatch(Query enclosingQuery, String regexKey, String viewCoordinateKey) {
         super(enclosingQuery);
-        this.enclosingQuery = enclosingQuery;
         this.viewCoordinateKey = viewCoordinateKey;
         this.regexKey = regexKey;
-        this.regex = (String) enclosingQuery.getLetDeclarations().get(regexKey);
     }
-
+    protected DescriptionRegexMatch() {
+    }
     @Override
     public EnumSet<ClauseComputeType> getComputePhases() {
         return ITERATION;
@@ -61,17 +66,13 @@ public class DescriptionRegexMatch extends LeafClause {
 
     @Override
     public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleComponents) throws IOException {
-        if (this.viewCoordinateKey.equals(this.enclosingQuery.currentViewCoordinateKey)) {
-            this.viewCoordinate = (ViewCoordinate) this.enclosingQuery.getVCLetDeclarations().get(viewCoordinateKey);
-        } else {
-            this.viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
-        }
         this.cache = incomingPossibleComponents;
         return incomingPossibleComponents;
     }
 
     @Override
     public void getQueryMatches(ConceptVersionBI conceptVersion) throws IOException, ContradictionException {
+        String regex = (String) enclosingQuery.getLetDeclarations().get(regexKey);
         for (DescriptionChronicleBI dc : conceptVersion.getDescriptions()) {
             if (cache.contains(dc.getNid())) {
                 for (DescriptionVersionBI dv : dc.getVersions()) {

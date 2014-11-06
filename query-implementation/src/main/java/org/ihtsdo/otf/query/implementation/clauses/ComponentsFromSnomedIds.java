@@ -27,16 +27,24 @@ import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  *
  * @author dylangrald
  */
+@XmlRootElement
+@XmlAccessorType(value = XmlAccessType.NONE)
 public class ComponentsFromSnomedIds extends LeafClause {
 
     public ComponentsFromSnomedIds(Query enclosingQuery){
         super(enclosingQuery);
     }
-    
+    protected ComponentsFromSnomedIds() {
+    }
+
     @Override
     public WhereClause getWhereClause() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.

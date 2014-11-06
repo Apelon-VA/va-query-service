@@ -20,6 +20,8 @@ import java.util.EnumSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.ihtsdo.otf.query.implementation.Clause;
+import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
+import org.ihtsdo.otf.query.implementation.ForSetSpecification;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.coordinate.Status;
@@ -43,10 +45,10 @@ public class XorVersionTest extends QueryClauseTest {
         Logger.getLogger(XorVersionTest.class.getName()).log(Level.INFO, "ViewCoordinate in XorVersionTest: {0}", this.setViewCoordinate.getViewCoordinate().toString());
         this.q = new Query(StandardViewCoordinates.getSnomedInferredLatestActiveOnly()) {
             @Override
-            protected NativeIdSetBI For() throws IOException {
-                return PersistentStore.get().getAllConceptNids();
+            protected ForSetSpecification ForSetSpecification() {
+                return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
             }
-            
+
             @Override
             public void Let() throws IOException {
                 let("disease", Snomed.DISEASE);

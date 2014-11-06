@@ -21,6 +21,9 @@ import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+
 /**
  * Returns components that are in the incoming For set and not in the set
  * returned from the computation of the clauses that are descendents of the
@@ -28,13 +31,22 @@ import org.ihtsdo.otf.tcc.api.spec.ValidationException;
  *
  * @author kec
  */
+@XmlRootElement()
 public class Not extends ParentClause {
 
+    @XmlTransient
     NativeIdSetBI forSet;
+    @XmlTransient
     NativeIdSetBI notSet;
 
     public Not(Query enclosingQuery, Clause child) {
         super(enclosingQuery, child);
+    }
+    /**
+     * Default no arg constructor for Jaxb.
+     */
+    protected Not() {
+        super();
     }
 
     @Override

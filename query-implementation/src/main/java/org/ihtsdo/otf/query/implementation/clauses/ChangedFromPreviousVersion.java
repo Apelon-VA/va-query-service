@@ -30,6 +30,11 @@ import org.ihtsdo.otf.query.implementation.WhereClause;
 import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.description.DescriptionVersionBI;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * Computes the components that have been modified since the version specified
  * by the <code>ViewCoordinate</code>. Currently only retrieves descriptions
@@ -37,16 +42,16 @@ import org.ihtsdo.otf.tcc.api.description.DescriptionVersionBI;
  *
  * @author dylangrald
  */
+@XmlRootElement
+@XmlAccessorType(value = XmlAccessType.NONE)
 public class ChangedFromPreviousVersion extends LeafClause {
 
     /**
      * The <code>ViewCoordinate</code> used to specify the previous version.
      */
-    ViewCoordinate previousViewCoordinate;
-    /**
-     * The <code>String</code> Let key that designate the previous
-     * <code>ViewCoordinate</code>.
-     */
+
+
+    @XmlElement
     String previousViewCoordinateKey;
     /**
      * Cached set of incoming components. Used to optimize speed in
@@ -65,7 +70,9 @@ public class ChangedFromPreviousVersion extends LeafClause {
     public ChangedFromPreviousVersion(Query enclosingQuery, String previousViewCoordinateKey) {
         super(enclosingQuery);
         this.previousViewCoordinateKey = previousViewCoordinateKey;
-        this.previousViewCoordinate = (ViewCoordinate) enclosingQuery.getLetDeclarations().get(previousViewCoordinateKey);
+    }
+
+    protected ChangedFromPreviousVersion() {
     }
 
     @Override
@@ -82,6 +89,7 @@ public class ChangedFromPreviousVersion extends LeafClause {
 
     @Override
     public void getQueryMatches(ConceptVersionBI conceptVersion) throws IOException, ContradictionException {
+        ViewCoordinate previousViewCoordinate = (ViewCoordinate) enclosingQuery.getLetDeclarations().get(previousViewCoordinateKey);
         for (DescriptionVersionBI desc : conceptVersion.getDescriptionsActive()) {
             if (desc.getVersion(previousViewCoordinate) != null) {
                 if (!desc.getVersion(previousViewCoordinate).equals(desc.getVersion(StandardViewCoordinates.getSnomedInferredLatestActiveOnly()))) {

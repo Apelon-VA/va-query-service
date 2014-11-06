@@ -1,0 +1,19 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+ 
+<suite name="TestAll" verbose="2">
+ 
+	<test name="lucene">
+		<classes>
+			<class name="org.ihtsdo.otf.query.integration.tests.lucene.LuceneTest" />
+			<class name="org.ihtsdo.oft.query.xml.serialization.TextXmlSerialization" />
+		</classes>
+	</test>
+ 
+<!--	<test name="database">  
+		<classes>
+			<class name="com.mkyong.testng.examples.suite.TestConfig" />
+			<class name="com.mkyong.testng.examples.suite.TestDatabase" />
+		</classes>
+	</test>-->
+ 
+</suite>

@@ -18,12 +18,16 @@ package org.ihtsdo.otf.query.integration.tests;
 
 
 import java.io.IOException;
+
+import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
+import org.ihtsdo.otf.query.implementation.ForSetSpecification;
 import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.Query;
+import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
 /**
  * Creates a test for the
@@ -36,8 +40,10 @@ public class DescriptionRegexMatchTest extends QueryClauseTest {
 
     public DescriptionRegexMatchTest() throws IOException {
         this.q = new Query(StandardViewCoordinates.getSnomedInferredLatestActiveOnly()) {
+
             @Override
-            protected NativeIdSetBI For() throws IOException {
+            protected ForSetSpecification ForSetSpecification() throws IOException {
+                ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.CUSTOM_SET);
                 NativeIdSetBI forSet = new ConcurrentBitSet();
                 forSet.add(Snomed.MOTION.getNid());
                 forSet.add(Snomed.ACCELERATION.getNid());
@@ -46,7 +52,8 @@ public class DescriptionRegexMatchTest extends QueryClauseTest {
                 forSet.add(Snomed.DECELERATION.getNid());
                 forSet.add((Snomed.MOMENTUM.getNid()));
                 forSet.add(Snomed.VIBRATION.getNid());
-                return forSet;
+                forSetSpecification.getCustomCollection().addAll(forSet.toPrimordialUuidSet());
+                return forSetSpecification;
             }
 
             @Override

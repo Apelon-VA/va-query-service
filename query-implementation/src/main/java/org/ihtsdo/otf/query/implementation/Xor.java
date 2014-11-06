@@ -21,16 +21,29 @@ import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * Computes the exclusive disjunction between the result sets of each
  * <code>ChildClause</code>.
  *
  * @author dylangrald
  */
+@XmlRootElement(name = "XOR")
+@XmlAccessorType(value = XmlAccessType.PROPERTY)
 public class Xor extends ParentClause {
 
     public Xor(Query enclosingQuery, Clause... clauses) {
         super(enclosingQuery, clauses);
+    }
+
+    /**
+     * Default no arg constructor for Jaxb.
+     */
+    protected Xor() {
+        super();
     }
 
     @Override

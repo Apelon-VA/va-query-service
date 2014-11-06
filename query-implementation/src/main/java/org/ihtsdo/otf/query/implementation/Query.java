@@ -15,30 +15,7 @@
  */
 package org.ihtsdo.otf.query.implementation;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.ihtsdo.otf.query.implementation.clauses.ChangedFromPreviousVersion;
-import org.ihtsdo.otf.query.implementation.clauses.ConceptForComponent;
-import org.ihtsdo.otf.query.implementation.clauses.ConceptIs;
-import org.ihtsdo.otf.query.implementation.clauses.ConceptIsChildOf;
-import org.ihtsdo.otf.query.implementation.clauses.ConceptIsDescendentOf;
-import org.ihtsdo.otf.query.implementation.clauses.ConceptIsKindOf;
-import org.ihtsdo.otf.query.implementation.clauses.DescriptionActiveLuceneMatch;
-import org.ihtsdo.otf.query.implementation.clauses.DescriptionActiveRegexMatch;
-import org.ihtsdo.otf.query.implementation.clauses.DescriptionLuceneMatch;
-import org.ihtsdo.otf.query.implementation.clauses.DescriptionRegexMatch;
-import org.ihtsdo.otf.query.implementation.clauses.FullySpecifiedNameForConcept;
-import org.ihtsdo.otf.query.implementation.clauses.PreferredNameForConcept;
-import org.ihtsdo.otf.query.implementation.clauses.RefsetContainsConcept;
-import org.ihtsdo.otf.query.implementation.clauses.RefsetContainsKindOfConcept;
-import org.ihtsdo.otf.query.implementation.clauses.RefsetContainsString;
-import org.ihtsdo.otf.query.implementation.clauses.RefsetLuceneMatch;
-import org.ihtsdo.otf.query.implementation.clauses.RelRestriction;
-import org.ihtsdo.otf.query.implementation.clauses.RelType;
+import org.ihtsdo.otf.query.implementation.clauses.*;
 import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentVersionBI;
@@ -60,31 +37,67 @@ import org.ihtsdo.otf.tcc.ddo.fetchpolicy.RefexPolicy;
 import org.ihtsdo.otf.tcc.ddo.fetchpolicy.RelationshipPolicy;
 import org.ihtsdo.otf.tcc.ddo.fetchpolicy.VersionPolicy;
 
+import javax.xml.bind.annotation.*;
+import java.io.IOException;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * Executes queries within the terminology hierarchy and returns the nids of the
  * components that match the criterion of query.
  *
  * @author kec
  */
+@XmlRootElement(name = "query")
+@XmlAccessorType(value = XmlAccessType.NONE)
+@XmlType(factoryClass=QueryFactory.class,
+         factoryMethod="createQuery")
+
 public abstract class Query {
 
-    public String currentViewCoordinateKey = "Current view coordinate";
-    private HashMap<String, Object> letDeclarations
-            = new HashMap<>();
+    @XmlElementWrapper(name = "for")
+    @XmlElement(name = "component")
+    protected List<ComponentCollectionTypes> forCollectionTypes = new ArrayList<>();
 
-    public HashMap<String, Object> getLetDeclarations() {
+    @XmlElementWrapper(name = "custom-for")
+    @XmlElement(name = "uuid")
+    protected Set<UUID> customCollection = new HashSet<>();
+
+    public static final String currentViewCoordinateKey = "Current view coordinate";
+    @XmlElementWrapper(name = "let")
+    private HashMap<String, Object> letDeclarations;
+
+    @XmlElementWrapper(name = "where")
+    @XmlElement(name = "clause")
+    protected Clause[] rootClause = new Clause[1];
+
+    @XmlElementWrapper(name = "return")
+    @XmlElement(name = "type")
+    private EnumSet<ReturnTypes> returnTypes = EnumSet.of(ReturnTypes.NIDS);
+
+    public void setup() throws IOException {
+        getLetDeclarations();
+        rootClause[0]= Where();
+        ForSetSpecification forSetSpec = ForSetSpecification();
+        forCollectionTypes = forSetSpec.getForCollectionTypes();
+        customCollection = forSetSpec.getCustomCollection();
+    }
+
+    protected abstract ForSetSpecification ForSetSpecification() throws IOException;
+
+    public HashMap<String, Object> getLetDeclarations() throws IOException {
+        if (letDeclarations == null) {
+            letDeclarations = new HashMap<>();
+            if (viewCoordinate != null) {
+                letDeclarations.put(currentViewCoordinateKey, viewCoordinate);
+            } else {
+                letDeclarations.put(currentViewCoordinateKey, StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
+            }
+
+            Let();
+        }
         return letDeclarations;
-    }
-
-    public void setLetDelclarations(HashMap<String, Object> letMap) {
-        this.letDeclarations = letMap;
-    }
-
-    public HashMap<String, Object> getVCLetDeclarations() throws IOException {
-        HashMap<String, Object> letVCDeclarations
-                = new HashMap<>();
-        letVCDeclarations.put(currentViewCoordinateKey, StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
-        return letVCDeclarations;
     }
     /**
      * Number of Components output in the returnResultSet method.
@@ -147,7 +160,37 @@ public abstract class Query {
      * @return the <code>NativeIdSetBI</code> of the set that will be queried
      * @throws IOException
      */
-    protected abstract NativeIdSetBI For() throws IOException;
+    protected final NativeIdSetBI For() throws IOException {
+        forSet = Ts.get().getEmptyNidSet();
+        for (ComponentCollectionTypes collection : forCollectionTypes) {
+            switch (collection) {
+                case ALL_COMPONENTS:
+                    forSet.or(Ts.get().getAllComponentNids());
+                    break;
+                case ALL_CONCEPTS:
+                    forSet.or(Ts.get().getAllConceptNids());
+                    break;
+
+                case ALL_DESCRIPTION:
+                    forSet.or(Ts.get().getAllComponentNids());
+                    break;
+                case ALL_RELATIONSHIPS:
+                    forSet.or(Ts.get().getAllComponentNids());
+                    break;
+                case ALL_SEMEMES:
+                    forSet.or(Ts.get().getAllComponentNids());
+                    break;
+                case CUSTOM_SET:
+                    for (UUID uuid : customCollection) {
+                        forSet.add(Ts.get().getNidForUuids(uuid));
+                    }
+                    break;
+                default:
+                    throw new UnsupportedOperationException();
+            }
+        }
+        return forSet;
+    }
 
     public abstract void Let() throws IOException;
 
@@ -173,7 +216,7 @@ public abstract class Query {
      */
     public NativeIdSetBI compute() throws IOException, Exception {
         forSet = For();
-        Let();
+        getLetDeclarations();
         Clause rootClause = Where();
         NativeIdSetBI possibleComponents
                 = rootClause.computePossibleComponents(forSet);

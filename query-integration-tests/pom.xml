@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.ihtsdo.otf</groupId>
         <artifactId>query-parent</artifactId>
-        <version>1.2-informatics-SNAPSHOT</version>
+        <version>1.2-ISAAC-SNAPSHOT</version>
     </parent>
     <groupId>org.ihtsdo.otf</groupId>
     <artifactId>query-integration-tests</artifactId>
@@ -36,6 +36,16 @@
             <artifactId>otf-integration-test-data</artifactId>
             <version>1.4</version>     
             <type>zip</type>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.ihtsdo.sct.rf2</groupId>
+                    <artifactId>rf-to-econcept-conversion</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.informatics</groupId>
+                    <artifactId>path-econcept</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.glassfish.hk2</groupId>

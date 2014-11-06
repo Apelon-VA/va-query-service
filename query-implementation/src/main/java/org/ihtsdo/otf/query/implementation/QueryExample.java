@@ -37,8 +37,8 @@ public class QueryExample {
         try {
             this.q = new Query(StandardViewCoordinates.getSnomedInferredLatestActiveOnly()) {
                 @Override
-                protected NativeIdSetBI For() throws IOException {
-                    return Ts.get().getAllConceptNids();
+                protected ForSetSpecification ForSetSpecification() {
+                    return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
                 }
 
                 @Override

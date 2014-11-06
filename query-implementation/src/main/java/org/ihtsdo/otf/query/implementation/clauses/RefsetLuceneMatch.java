@@ -40,27 +40,33 @@ import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
 import org.ihtsdo.otf.tcc.model.index.service.SearchResult;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * Retrieves the refset matching the input SNOMED id.
  *
  * @author dylangrald
  */
+@XmlRootElement
+@XmlAccessorType(value = XmlAccessType.NONE)
 public class RefsetLuceneMatch extends LeafClause {
 
-    Query enclosingQuery;
-    String luceneMatch;
+
+     @XmlElement
     String luceneMatchKey;
-    ViewCoordinate viewCoordinate;
+    @XmlElement
     String viewCoordinateKey;
 
     public RefsetLuceneMatch(Query enclosingQuery, String luceneMatchKey, String viewCoordinateKey) {
         super(enclosingQuery);
-        this.enclosingQuery = enclosingQuery;
         this.luceneMatchKey = luceneMatchKey;
-        this.luceneMatch = (String) enclosingQuery.getLetDeclarations().get(luceneMatchKey);
         this.viewCoordinateKey = viewCoordinateKey;
     }
-
+    protected RefsetLuceneMatch() {
+    }
     @Override
     public WhereClause getWhereClause() {
         WhereClause whereClause = new WhereClause();
@@ -76,11 +82,9 @@ public class RefsetLuceneMatch extends LeafClause {
 
     @Override
     public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleComponents) throws IOException, ValidationException, ContradictionException {
-        if (this.viewCoordinateKey.equals(this.enclosingQuery.currentViewCoordinateKey)) {
-            this.viewCoordinate = (ViewCoordinate) this.enclosingQuery.getVCLetDeclarations().get(viewCoordinateKey);
-        } else {
-            this.viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
-        }
+        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+        String luceneMatch = (String) enclosingQuery.getLetDeclarations().get(luceneMatchKey);
+
         NativeIdSetBI nids = new ConcurrentBitSet();
         try {
             List<IndexerBI> lookers = Hk2Looker.get().getAllServices(IndexerBI.class);
