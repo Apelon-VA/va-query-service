@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension>
+    <!-- https://cwiki.apache.org/confluence/display/MAVEN/Maven+3.x+Class+Loading -->
+    <!-- the packages to share with build plugins -->
+    <exportedPackages>
+        <exportedPackage>org.ihtsdo.otf</exportedPackage>
+        <exportedPackage>gov.vha.isaac</exportedPackage>
+        <exportedPackage>org.glassfish</exportedPackage>
+    </exportedPackages>
+
+    <!-- the group & artifact ids to exclude from the class realms of build plugins because the extension provides them -->
+    <exportedArtifacts>
+        <exportedArtifact>gov.vha.isaac:ochre-api</exportedArtifact>
+        <exportedArtifact>gov.vha.isaac:tcc-serializer</exportedArtifact>
+        <exportedArtifact>gov.vha.isaac:tcc-model-impl</exportedArtifact>
+        <exportedArtifact>gov.vha.isaac:tcc-lookup</exportedArtifact>
+        <exportedArtifact>gov.vha.isaac:tcc-api</exportedArtifact>
+        <exportedArtifact>gov.vha.isaac:tcc-dto-ddo</exportedArtifact>
+        <exportedArtifact>org.glassfish.hk2</exportedArtifact>
+    </exportedArtifacts>
+</extension>

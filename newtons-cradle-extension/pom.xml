@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>gov.vha.isaac</groupId>
+    <artifactId>newtons-cradle-parent</artifactId>
+    <version>1.0-SNAPSHOT</version>
+  </parent>
+  <groupId>gov.vha.isaac</groupId>
+  <artifactId>newtons-cradle-extension</artifactId>
+  <packaging>jar</packaging>
+    <name>${project.parent.artifactId}: ${project.artifactId}</name>
+  <description>Newton's Cradle (ChRonicled Assertion Database of Logical Expressions) Maven Build Extension</description>
+  <url>http://maven.apache.org</url>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+  <dependencies>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-core</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- dependency for plexus annotation -->
+        <dependency>
+            <groupId>org.codehaus.plexus</groupId>
+            <artifactId>plexus-component-annotations</artifactId>
+            <version>1.5.5</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>gov.vha.isaac</groupId>
+            <artifactId>tcc-build-extension</artifactId>
+            <version>${ochre.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>newtons-cradle</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+        </dependency>
+  </dependencies>
+</project>
