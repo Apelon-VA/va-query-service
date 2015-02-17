@@ -7,9 +7,14 @@ import gov.vha.isaac.cradle.taxonomy.PrimitiveTaxonomyRecord;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
 import java.io.IOException;
 import java.util.EnumSet;
+
+import gov.vha.isaac.ochre.api.ConceptProxy;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
+import org.ihtsdo.otf.tcc.dto.component.TtkRevision;
+import org.ihtsdo.otf.tcc.dto.component.TtkRevisionProcessorBI;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 
+import java.util.UUID;
 import java.util.concurrent.*;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.metadata.binding.SnomedMetadataRf2;
@@ -50,9 +55,16 @@ public class ImportEConcept implements Callable<Void> {
 
     TtkConceptChronicle eConcept;
     Semaphore permit;
+    UUID newPathUuid = null;
 
     public ImportEConcept(TtkConceptChronicle eConcept,
-            Semaphore permit) {
+                          Semaphore permit, UUID newPathUuid) {
+        this(eConcept, permit);
+        this.newPathUuid = newPathUuid;
+    }
+
+    public ImportEConcept(TtkConceptChronicle eConcept,
+                          Semaphore permit) {
         this.eConcept = eConcept;
         this.permit = permit;
     }
@@ -60,6 +72,10 @@ public class ImportEConcept implements Callable<Void> {
     @Override
     public Void call() throws Exception {
         try {
+            if (this.newPathUuid != null) {
+                eConcept.processComponentRevisions(r -> r.setPathUuid(newPathUuid));
+            }
+
             int conceptNid = cradle.getNidForUuids(eConcept.getPrimordialUuid());
 
             ConceptChronicle cc = ConceptChronicle.get(conceptNid);

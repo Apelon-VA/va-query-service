@@ -30,6 +30,14 @@
             <artifactId>tcc-serializer</artifactId>
             <version>${ochre.version}</version>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>isaac-metadata-artifacts</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>isaac-metadata-coordinates</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

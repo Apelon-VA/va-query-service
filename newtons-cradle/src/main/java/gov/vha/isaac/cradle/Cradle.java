@@ -1,5 +1,6 @@
 package gov.vha.isaac.cradle;
 
+import gov.vha.isaac.cradle.tasks.*;
 import gov.vha.isaac.cradle.taxonomy.PrimitiveTaxonomyRecordSerializer;
 import gov.vha.isaac.cradle.taxonomy.PrimitiveTaxonomyRecord;
 import gov.vha.isaac.cradle.collections.CasSequenceObjectMap;
@@ -10,16 +11,12 @@ import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEagerSerializer;
 import gov.vha.isaac.cradle.component.SememeSerializer;
 import gov.vha.isaac.cradle.component.StampSerializer;
-import gov.vha.isaac.cradle.tasks.GenerateIndexes;
-import gov.vha.isaac.cradle.tasks.LoadEConceptFile;
-import gov.vha.isaac.cradle.tasks.ExportEConceptFile;
-import gov.vha.isaac.cradle.tasks.ImportCradleLogFile;
-import gov.vha.isaac.cradle.tasks.VerifyLoadEConceptFile;
 import gov.vha.isaac.cradle.taxonomy.StampRecordsUnpacked;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordUnpacked;
 import gov.vha.isaac.cradle.version.StampSequenceComputer;
 import gov.vha.isaac.cradle.version.ViewPoint;
+import gov.vha.isaac.ochre.api.ConceptProxy;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,6 +44,8 @@ import org.ihtsdo.otf.tcc.ddo.concept.ConceptChronicleDdo;
 import org.ihtsdo.otf.tcc.ddo.fetchpolicy.RefexPolicy;
 import org.ihtsdo.otf.tcc.ddo.fetchpolicy.RelationshipPolicy;
 import org.ihtsdo.otf.tcc.ddo.fetchpolicy.VersionPolicy;
+import org.ihtsdo.otf.tcc.dto.component.TtkRevision;
+import org.ihtsdo.otf.tcc.dto.component.TtkRevisionProcessorBI;
 import org.ihtsdo.otf.tcc.model.cc.NidPairForRefex;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
@@ -69,6 +68,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.text.ParseException;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutionException;
@@ -503,7 +503,7 @@ public class Cradle
 
     @Override
     public TerminologyBuilderBI getTerminologyBuilder(EditCoordinate editCoordinate, ViewCoordinate viewCoordinate) {
-        throw new UnsupportedOperationException();
+        return new Builder(editCoordinate, viewCoordinate, this);
     }
 
     @Override
@@ -511,7 +511,16 @@ public class Cradle
         if (i > 0) {
             i = getConceptNid(i);
         }
-        return getComponent(i).getPrimordialUuid();
+        ComponentChronicleBI<?> component = getComponent(i);
+        if (component != null) {
+            return getComponent(i).getPrimordialUuid();
+        }
+        UUID[] uuids = uuidIntMap.getKeysForValue(i);
+        log.warn("[1] No object for nid: "+ i +" Found uuids: " + Arrays.asList(uuids));
+        if (uuids != null && uuids.length >= 1) {
+            return uuids[0];
+        }
+        return null;
     }
 
     @Override
@@ -520,7 +529,9 @@ public class Cradle
         if (component != null) {
             return getComponent(nid).getUUIDs();
         }
-        return Collections.emptyList();
+        UUID[] uuids = uuidIntMap.getKeysForValue(nid);
+        log.warn("[3] No object for nid: "+nid+" Found uuids: " + Arrays.asList(uuids));
+        return Arrays.asList(uuids);
     }
 
     @Override
@@ -756,7 +767,7 @@ public class Cradle
 
     @Override
     public void put(UUID uuid, int i) {
-        throw new UnsupportedOperationException();
+        uuidIntMap.put(uuid, i);
     }
 
     /**
@@ -1081,4 +1092,53 @@ public class Cradle
         ForkJoinPool.commonPool().execute(indexingTask);
         return indexingTask;
     }
+
+    @Override
+    public Task<Integer> startLoadTask(ConceptProxy stampPath, Path... filePaths) {
+        LoadEConceptFile loaderTask = new LoadEConceptFile(filePaths, this, stampPath);
+        ForkJoinPool.commonPool().execute(loaderTask);
+        return loaderTask;
+    }
+
+    @Override
+    public Task<Boolean> startVerifyTask(ConceptProxy stampPath, Path... filePaths) {
+        VerifyLoadEConceptFile loaderTask = new VerifyLoadEConceptFile(filePaths, this, stampPath);
+        ForkJoinPool.commonPool().execute(loaderTask);
+        return loaderTask;
+
+    }
+
+    @Override
+    public Task<Integer> startExportTask(ConceptProxy stampPath, Path filePath) {
+        ExportEConceptFile exporterTask = new ExportEConceptFile(filePath, this, ttkConceptChronicle -> {
+            ttkConceptChronicle.processComponentRevisions(r -> {
+               r.setPathUuid(stampPath.getUuids()[0]);
+            });
+        });
+        ForkJoinPool.commonPool().execute(exporterTask);
+        return exporterTask;
+    }
+
+    @Override
+    public Task<Integer> startLogicGraphExportTask(ConceptProxy stampPath, Path filePath) {
+        UUID pathUuid = stampPath.getUuids()[0];
+        ExportEConceptFile exporterTask = new ExportEConceptFile(filePath, this,
+                (Consumer<TtkConceptChronicle>) (TtkConceptChronicle t) -> {
+                    t.setRelationships(null);
+                }, (Consumer<TtkConceptChronicle>) (TtkConceptChronicle t) -> {
+            t.processComponentRevisions(r -> {
+                r.setPathUuid(pathUuid);
+            });
+        });
+        ForkJoinPool.commonPool().execute(exporterTask);
+        return exporterTask;
+    }
+
+    @Override
+    public Task<Void> addStampPathOrigin(ConceptProxy stampPath, ConceptProxy originStampPath, Instant originTime) {
+        AddStampOrigin addStampOrigin = new AddStampOrigin(stampPath, originStampPath, originTime, this);
+        ForkJoinPool.commonPool().execute(addStampOrigin);
+        return addStampOrigin;
+    }
+
 }

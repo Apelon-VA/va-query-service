@@ -6,6 +6,15 @@
 package gov.vha.isaac.cradle.tasks;
 
 import gov.vha.isaac.cradle.CradleExtensions;
+import gov.vha.isaac.ochre.api.ConceptProxy;
+import javafx.application.Platform;
+import javafx.concurrent.Task;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
+import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
+import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
+
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -16,17 +25,7 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
-import javafx.application.Platform;
-import javafx.concurrent.Task;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
-import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
-import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
+import java.util.concurrent.*;
 
 /**
  *
@@ -42,12 +41,19 @@ public class VerifyLoadEConceptFile
 
     Path[] paths;
     CradleExtensions termService;
+    ConceptProxy stampPath = null;
+
 
     public VerifyLoadEConceptFile(Path[] paths, CradleExtensions termService) {
-        updateTitle("Concept File Verify Load");
+        updateTitle("Verify load of concept files");
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         this.paths = paths;
         this.termService = termService;
+    }
+
+    public VerifyLoadEConceptFile(Path[] paths, CradleExtensions termService, ConceptProxy stampPath) {
+        this(paths, termService);
+        this.stampPath = stampPath;
     }
 
     @Override
@@ -84,16 +90,16 @@ public class VerifyLoadEConceptFile
                             System.out.println("Watch concept: " + eConcept);
                         }
                         conversionPermits.acquire();
-                        conversionService.submit(new VerifyEConcept(termService, eConcept, conversionPermits));
+                        conversionService.submit(new VerifyEConcept(termService, eConcept, conversionPermits, stampPath));
 
                         conceptCount++;
 
                         for (Future<Boolean> future = conversionService.poll(); future != null; future = conversionService.poll()) {
-                            Boolean verified = future.get();
-                            if (!verified) {
-                                filesVerified = false;
-                            }
-                            completionCount++;
+                                Boolean verified = future.get();
+                                if (!verified) {
+                                    filesVerified = false;
+                                }
+                                completionCount++;
                         }
                     }
 
@@ -104,9 +110,13 @@ public class VerifyLoadEConceptFile
                 bytesProcessedForLoad += bytesForPath;
                 updateMessage("Verification of file: " + p.toFile().getName() + " complete, cleaning up converters.");
                 while (completionCount < conceptCount) {
-                    Future future = conversionService.take();
-                    future.get();
+                    Future<Boolean> future = conversionService.take();
+                        Boolean verified = future.get();
+                        if (!verified) {
+                            filesVerified = false;
+                        }
                     completionCount++;
+
                 }
 
             }

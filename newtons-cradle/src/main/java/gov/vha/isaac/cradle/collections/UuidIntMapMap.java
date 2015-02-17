@@ -1,6 +1,7 @@
 package gov.vha.isaac.cradle.collections;
 
 import gov.vha.isaac.ochre.collections.uuidnidmap.ConcurrentUuidToIntHashMap;
+import gov.vha.isaac.ochre.collections.uuidnidmap.UuidArrayList;
 import gov.vha.isaac.ochre.collections.uuidnidmap.UuidToIntMap;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -11,8 +12,11 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.function.Consumer;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -146,5 +150,15 @@ public class UuidIntMapMap implements UuidToIntMap {
     
     public int[] getNextIdArray() {
         return nextIdArray;
+    }
+
+    public UUID[] getKeysForValue(int i) {
+        ArrayList<UUID> uuids = new ArrayList<>();
+        for (ConcurrentUuidToIntHashMap map: maps) {
+            map.keysOf(i).stream().forEach(uuid -> {
+                uuids.add(uuid);
+            });
+        }
+        return uuids.toArray(new UUID[uuids.size()]);
     }
 }

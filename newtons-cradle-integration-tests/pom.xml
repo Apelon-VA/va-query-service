@@ -53,19 +53,25 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency> 
-            <groupId>com.informatics</groupId>
-            <artifactId>path-econcept</artifactId>
-            <version>1.2</version>
+        <dependency>
+            <groupId>gov.vha.isaac</groupId>
+            <artifactId>isaac-metadata-artifacts</artifactId>
+            <classifier>all.econ</classifier>
+            <version>${isaac-metadata.version}</version>
             <type>zip</type>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
-                    <groupId>org.ihtsdo</groupId>
-                    <artifactId>*</artifactId>
+                    <groupId>org.ihtsdo.otf</groupId>
+                    <artifactId>tcc-dto-ddo</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.ihtsdo.otf</groupId>
+                    <artifactId>tcc-api</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
+
     </dependencies>
     <build>
         <plugins>
@@ -99,8 +105,8 @@
                             <goal>unpack-dependencies</goal>
                         </goals>
                         <configuration>
-                            <includeArtifactIds>cement-file,rf-to-econcept-conversion,path-econcept,ttk-auxiliary-taxonomies</includeArtifactIds>
-                            <outputDirectory>${project.build.directory}/</outputDirectory>
+                            <includeArtifactIds>rf-to-econcept-conversion,isaac-metadata-artifacts</includeArtifactIds>
+                            <outputDirectory>${project.build.directory}/data</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
