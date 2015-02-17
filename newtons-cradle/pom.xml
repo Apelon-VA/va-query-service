@@ -4,7 +4,7 @@
     <parent>
         <groupId>gov.vha.isaac</groupId>
         <artifactId>newtons-cradle-parent</artifactId>
-        <version>1.0</version>
+        <version>1.1</version>
     </parent>
     <artifactId>newtons-cradle</artifactId>
     <name>${project.parent.artifactId}: ${project.artifactId}</name>
@@ -29,6 +29,14 @@
             <groupId>gov.vha.isaac</groupId>
             <artifactId>tcc-serializer</artifactId>
             <version>${ochre.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>isaac-metadata-artifacts</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>isaac-metadata-coordinates</artifactId>
         </dependency>
     </dependencies>
     <build>

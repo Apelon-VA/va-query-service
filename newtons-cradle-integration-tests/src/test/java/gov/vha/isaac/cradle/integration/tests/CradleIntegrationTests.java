@@ -17,6 +17,9 @@ import gov.vha.isaac.cradle.taxonomy.TaxonomyWalkAccumulator;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyWalkCollector;
 import gov.vha.isaac.cradle.version.ViewPoint;
 import static gov.vha.isaac.lookup.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
+
+import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
+import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskServer;
 import gov.vha.isaac.ochre.api.graph.SimpleDirectedGraph;
 import gov.vha.isaac.ochre.api.graph.SimpleDirectedGraphBuilder;
@@ -45,7 +48,6 @@ import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.coordinate.Precedence;
-import org.ihtsdo.otf.tcc.api.coordinate.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
@@ -190,7 +192,7 @@ public class CradleIntegrationTests {
         try {
             IntStream conceptSequenceStream = cradle.getConceptSequenceStream().limit(10);
             CasSequenceObjectMap<PrimitiveTaxonomyRecord> taxonomyMap = cradle.getTaxonomyMap();
-            ViewCoordinate vc = StandardViewCoordinates.getSnomedInferredLatest();
+            ViewCoordinate vc = ViewCoordinates.getDevelopmentInferredLatest();
             EnumSet<TaxonomyFlags> flags = TaxonomyFlags.INFERRED_PARENT_FLAGS_SET;
             OpenIntHashSet activeModuleNids = new OpenIntHashSet();  // null or empty is a wild card 
             ViewPoint vp = new ViewPoint(vc.getViewPosition(), activeModuleNids, Precedence.PATH);
@@ -245,13 +247,13 @@ public class CradleIntegrationTests {
     }
 
     private void loadDatabase(ObjectChronicleTaskServer tts, CradleExtensions ps) throws ExecutionException, IOException, MultiException, InterruptedException {
-        Path cementDataFile = Paths.get("target/cement.jbin");
-        Path snomedDataFile = Paths.get("target/sctSiEConcepts.jbin");
-        Path pathDataFile = Paths.get("target/pathEConcept.jbin");
+        Path snomedDataFile = Paths.get("target/data/sctSiEConcepts.jbin");
+        Path isaacMetadataFile = Paths.get("target/data/isaac/metadata/econ/IsaacMetadataAuxiliary.econ");
+
         Instant start = Instant.now();
 
-        Task<Integer> loadTask = tts.startLoadTask(cementDataFile, pathDataFile, 
-                snomedDataFile);
+        Task<Integer> loadTask = tts.startLoadTask(IsaacMetadataAuxiliaryBinding.DEVELOPMENT,
+                isaacMetadataFile, snomedDataFile);
         Hk2Looker.get().getService(ActiveTaskSet.class).get().add(loadTask);
         int conceptCount = loadTask.get();
         Hk2Looker.get().getService(ActiveTaskSet.class).get().remove(loadTask);
@@ -270,13 +272,12 @@ public class CradleIntegrationTests {
     }
     
     private boolean testLoad(ObjectChronicleTaskServer tts, CradleExtensions ps) throws ExecutionException, IOException, MultiException, InterruptedException {
-        Path cementDataFile = Paths.get("target/cement.jbin");
-        Path snomedDataFile = Paths.get("target/sctSiEConcepts.jbin");
-        Path pathDataFile = Paths.get("target/pathEConcept.jbin");
+        Path snomedDataFile = Paths.get("target/data/sctSiEConcepts.jbin");
+        Path isaacMetadataFile = Paths.get("target/data/isaac/metadata/econ/IsaacMetadataAuxiliary.econ");
         Instant start = Instant.now();
 
-        Task<Boolean> verifyTask = tts.startVerifyTask(cementDataFile, pathDataFile, 
-                snomedDataFile);
+        Task<Boolean> verifyTask = tts.startVerifyTask(IsaacMetadataAuxiliaryBinding.DEVELOPMENT,
+                isaacMetadataFile, snomedDataFile);
         Hk2Looker.get().getService(ActiveTaskSet.class).get().add(verifyTask);
         boolean verified = verifyTask.get();
         Hk2Looker.get().getService(ActiveTaskSet.class).get().remove(verifyTask);
@@ -307,8 +308,8 @@ public class CradleIntegrationTests {
     
     private void testTaxonomy(CradleExtensions cradle) {
         try {
-            testTaxonomy(cradle, StandardViewCoordinates.getSnomedInferredLatest());
-            testTaxonomy(cradle, StandardViewCoordinates.getSnomedStatedLatest());
+            testTaxonomy(cradle, ViewCoordinates.getDevelopmentInferredLatest());
+            testTaxonomy(cradle, ViewCoordinates.getDevelopmentStatedLatest());
         } catch (IOException | ContradictionException ex) {
             log.error(ex.getLocalizedMessage(), ex);
         }
@@ -330,7 +331,7 @@ public class CradleIntegrationTests {
         Instant collectStart = Instant.now();
         IntStream conceptSequenceStream = cradle.getParallelConceptSequenceStream();
         TaxonomyWalkCollector collector = new TaxonomyWalkCollector(cradle.getTaxonomyMap(),
-                StandardViewCoordinates.getSnomedStatedLatest());
+                ViewCoordinates.getDevelopmentStatedLatest());
         TaxonomyWalkAccumulator taxonomyWalkAccumulator = conceptSequenceStream.collect(
                 TaxonomyWalkAccumulator::new,
                 collector,
@@ -352,7 +353,7 @@ public class CradleIntegrationTests {
         log.info("  conceptSequenceStream distinct count :" + conceptSequenceStream.distinct().count());
         conceptSequenceStream = cradle.getConceptSequenceStream();
         GraphCollector collector = new GraphCollector(cradle.getTaxonomyMap(),
-                StandardViewCoordinates.getSnomedInferredLatest());
+                ViewCoordinates.getDevelopmentInferredLatest());
         SimpleDirectedGraphBuilder graphBuilder = conceptSequenceStream.collect(
                 SimpleDirectedGraphBuilder::new,
                 collector,

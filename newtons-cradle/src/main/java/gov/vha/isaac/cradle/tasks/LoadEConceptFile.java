@@ -1,6 +1,7 @@
 package gov.vha.isaac.cradle.tasks;
 
 import gov.vha.isaac.cradle.CradleExtensions;
+import gov.vha.isaac.ochre.api.ConceptProxy;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,6 +32,8 @@ public class LoadEConceptFile extends Task<Integer> {
 
     Path[] paths;
     CradleExtensions termService;
+    ConceptProxy stampPath = null;
+    UUID stampPathUuid = null;
 
     public LoadEConceptFile(Path[] paths, CradleExtensions termService) {
         updateTitle("Concept File Load");
@@ -38,6 +41,14 @@ public class LoadEConceptFile extends Task<Integer> {
         updateValue(0); // no concepts loaded
         this.paths = paths;
         this.termService = termService;
+    }
+
+    public LoadEConceptFile(Path[] paths, CradleExtensions termService, ConceptProxy stampPath) {
+        this(paths, termService);
+        this.stampPath = stampPath;
+        if (this.stampPath != null) {
+            this.stampPathUuid = this.stampPath.getUuids()[0];
+        }
     }
 
     /*
@@ -118,7 +129,7 @@ public class LoadEConceptFile extends Task<Integer> {
                         TtkConceptChronicle eConcept = new TtkConceptChronicle(dis);
 
                         conversionPermits.acquire();
-                        conversionService.submit(new ImportEConcept(eConcept, conversionPermits));
+                        conversionService.submit(new ImportEConcept(eConcept, conversionPermits, stampPathUuid));
 
                         conceptCount++;
 

@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+
+import gov.vha.isaac.ochre.api.ConceptProxy;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,6 +30,7 @@ import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
 public class ExportEConceptFile extends Task<Integer>{
     Path paths;
     CradleExtensions termService;
+
     private static final Logger log = LogManager.getLogger();
 
     int conceptCount;
@@ -47,7 +50,8 @@ public class ExportEConceptFile extends Task<Integer>{
             throw new RuntimeException(ex);
         }
     }
-    
+
+
     @Override
     protected Integer call() throws Exception {
         Hk2Looker.get().getService(ActiveTaskSet.class).get().add(this);
