@@ -16,6 +16,7 @@ import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordUnpacked;
 import gov.vha.isaac.cradle.version.StampSequenceComputer;
 import gov.vha.isaac.cradle.version.ViewPoint;
+import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import gov.vha.isaac.ochre.api.ConceptProxy;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
@@ -706,6 +707,10 @@ public class Cradle
     @Override
     public void addXrefPair(int i, NidPairForRefex nidPairForRefex) throws IOException {
         // noting to do, added elsewhere...
+    }
+
+    protected ViewCoordinate makeMetaVc() throws IOException {
+        return ViewCoordinates.getMetadataViewCoordinate();
     }
 
     @Override
