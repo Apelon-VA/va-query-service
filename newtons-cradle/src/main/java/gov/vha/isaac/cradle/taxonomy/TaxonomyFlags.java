@@ -5,47 +5,70 @@
  */
 package gov.vha.isaac.cradle.taxonomy;
 
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
+import java.util.Arrays;
 import java.util.EnumSet;
-import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 
 /**
+ * An enum of flags used by taxonomy records to indicate if the specified
+ * concept is either a parent of, or child of, or other type of relationship.
+ * These flags are designed to support a bit representation within the top 8
+ * bits of a 32 bit integer (without interfering with the sign bit), enabling
+ * multiple flags to be associated with a STAMP value within a single integer.
  *
  * @author kec
  */
 public enum TaxonomyFlags {
-    STATED(0x10000000), INFERRED(0x20000000), PARENT(0x40000000), CHILD(0x08000000);
-    public static final EnumSet<TaxonomyFlags> CHILD_FLAG_SET = EnumSet.of(TaxonomyFlags.CHILD);
-    public static final EnumSet<TaxonomyFlags> INFERRED_CHILD_FLAGS_SET = EnumSet.of(TaxonomyFlags.CHILD, TaxonomyFlags.INFERRED);
-    public static final EnumSet<TaxonomyFlags> PARENT_FLAG_SET = EnumSet.of(TaxonomyFlags.PARENT);
-    public static final EnumSet<TaxonomyFlags> INFERRED_PARENT_FLAGS_SET = EnumSet.of(TaxonomyFlags.PARENT, TaxonomyFlags.INFERRED);
-    public static final EnumSet<TaxonomyFlags> STATED_CHILD_FLAGS_SET = EnumSet.of(TaxonomyFlags.CHILD, TaxonomyFlags.STATED);
-    public static final EnumSet<TaxonomyFlags> STATED_PARENT_FLAGS_SET = EnumSet.of(TaxonomyFlags.PARENT, TaxonomyFlags.STATED);
-    public static EnumSet<TaxonomyFlags> getFlagsFromRelationshipAssertionType(ViewCoordinate viewCoordinate) throws UnsupportedOperationException {
-        EnumSet<TaxonomyFlags> flags;
-        switch (viewCoordinate.getRelationshipAssertionType()) {
+
+    STATED(0x10000000),        // 0001 0000
+    INFERRED(0x20000000),      // 0010 0000
+    PARENT(0x40000000),        // 0100 0000
+    CHILD(0x08000000),         // 0000 1000
+    OTHER_CONCEPT(0x04000000), // 0000 0100
+    PARENT_SEMEME(0x02000000), // 0000 0010
+    CHILD_SEMEME(0x01000000);  // 0000 0001
+
+    public static final int ALL_RELS = 0;
+    public static final int PARENT_FLAG_SET = TaxonomyFlags.PARENT.bits;
+    public static final int INFERRED_PARENT_FLAGS_SET = TaxonomyFlags.PARENT.bits + TaxonomyFlags.INFERRED.bits;
+    public static final int STATED_PARENT_FLAGS_SET = TaxonomyFlags.PARENT.bits +  TaxonomyFlags.STATED.bits;
+    public static final int OTHER_REL_FLAGS_SET = TaxonomyFlags.OTHER_CONCEPT.bits;
+    public static final int PARENT_SEMEME_FLAGS_SET = TaxonomyFlags.PARENT_SEMEME.bits;
+    public static final int CHILD_SEMEME_FLAGS_SET = TaxonomyFlags.CHILD_SEMEME.bits;
+
+    public static int getFlagsFromTaxonomyCoordinate(TaxonomyCoordinate viewCoordinate) {
+         switch (viewCoordinate.getTaxonomyType()) {
             case INFERRED:
-                flags = TaxonomyFlags.INFERRED_PARENT_FLAGS_SET;
-                break;
+                return TaxonomyFlags.INFERRED_PARENT_FLAGS_SET;
             case STATED:
-                flags = TaxonomyFlags.STATED_PARENT_FLAGS_SET;
-                break;
-            case INFERRED_THEN_STATED:
-                flags = TaxonomyFlags.PARENT_FLAG_SET;
-                break;
+                return TaxonomyFlags.STATED_PARENT_FLAGS_SET;
             default:
-                throw new UnsupportedOperationException("no support for: " + viewCoordinate.getRelationshipAssertionType());
+                throw new UnsupportedOperationException("no support for: " + viewCoordinate.getTaxonomyType());
         }
-        return flags;
     }
-    
-    
-    
-    
-    
+
     public final int bits;
 
     TaxonomyFlags(int bits) {
         this.bits = bits;
     }
     
+    public static int getTaxonomyFlagsAsInt(EnumSet<TaxonomyFlags> flagSet) {
+        int flags = 0;
+        for (TaxonomyFlags flag: flagSet) {
+            flags += flag.bits;
+        }
+        return flags;
+    }
+    
+    public static EnumSet<TaxonomyFlags> getTaxonomyFlags(int stampWithFlags) {
+        EnumSet<TaxonomyFlags> flagSet = EnumSet.noneOf(TaxonomyFlags.class);
+        Arrays.stream(TaxonomyFlags.values()).forEach((flag) -> {
+            if ((stampWithFlags & flag.bits) == flag.bits) {
+                flagSet.add(flag);
+            }
+        });
+        return flagSet;  
+    }
+
 }

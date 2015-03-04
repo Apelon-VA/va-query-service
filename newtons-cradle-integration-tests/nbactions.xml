@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+        <action>
+            <actionName>CUSTOM-JProfiler Clean Install</actionName>
+            <displayName>JProfiler Clean Install</displayName>
+            <goals>
+                <goal>clean</goal>
+                <goal>install</goal>
+            </goals>
+            <properties>
+                <Env.MAVEN_OPTS>-ea -d64 -XX:+UseCompressedOops -Xmx10g -Xms10g -Xbootclasspath/a:/Applications/jprofiler8/bin/agent.jar -agentpath:/Applications/jprofiler8/bin/macos/libjprofilerti.jnilib</Env.MAVEN_OPTS>
+            </properties>
+        </action>
+    </actions>

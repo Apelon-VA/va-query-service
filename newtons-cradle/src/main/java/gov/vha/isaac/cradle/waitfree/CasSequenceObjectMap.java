@@ -3,9 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package gov.vha.isaac.cradle.collections;
+package gov.vha.isaac.cradle.waitfree;
 
-import gov.vha.isaac.cradle.CradleObject;
+import gov.vha.isaac.cradle.collections.SerializedAtomicReferenceArray;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
@@ -29,16 +29,16 @@ import java.util.stream.Stream;
  * @author kec
  * @param <T>
  */
-public class CasSequenceObjectMap<T extends CradleObject> {
+public class CasSequenceObjectMap<T extends WaitFreeComparable> {
 
     private static final int SEGMENT_SIZE = 1280;
 
-    CradleMergeSerializer<T> serializer;
+    WaitFreeMergeSerializer<T> serializer;
     CopyOnWriteArrayList<SerializedAtomicReferenceArray> objectByteList = new CopyOnWriteArrayList<>();
 
     CopyOnWriteArrayList<Boolean> changed = new CopyOnWriteArrayList<>();
 
-    public CasSequenceObjectMap(CradleMergeSerializer<T> serializer) {
+    public CasSequenceObjectMap(WaitFreeMergeSerializer<T> serializer) {
         this.serializer = serializer;
         objectByteList.add(new SerializedAtomicReferenceArray(SEGMENT_SIZE, serializer, objectByteList.size()));
         changed.add(Boolean.FALSE);
@@ -125,7 +125,7 @@ public class CasSequenceObjectMap<T extends CradleObject> {
 
         byte[] objectBytes = objectByteList.get(segmentIndex).get(indexInSegment);
         try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(objectBytes))) {
-            return serializer.deserialize(dis, CradleObject.digest(objectBytes));
+            return serializer.deserialize(dis, WaitFreeComparable.digest(objectBytes));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -155,7 +155,7 @@ public class CasSequenceObjectMap<T extends CradleObject> {
         byte[] objectBytes = objectByteList.get(segmentIndex).get(indexInSegment);
         if (objectBytes != null) {
             try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(objectBytes))) {
-                return Optional.of(serializer.deserialize(dis, CradleObject.digest(objectBytes)));
+                return Optional.of(serializer.deserialize(dis, WaitFreeComparable.digest(objectBytes)));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -195,7 +195,7 @@ public class CasSequenceObjectMap<T extends CradleObject> {
                 if (Arrays.equals(newBytes, currentBytes)) {
                     return true;
                 }
-                md5Data = CradleObject.digest(currentBytes);
+                md5Data = WaitFreeComparable.digest(currentBytes);
             }
             while (true) {
                 while (!value.verifyDigest(currentBytes)) {
@@ -203,7 +203,7 @@ public class CasSequenceObjectMap<T extends CradleObject> {
                         T currentWrittenObject = serializer.deserialize(new DataInputStream(bais), md5Data);
                         value = serializer.merge(value, currentWrittenObject, md5Data);
                         currentBytes = objectByteList.get(segmentIndex).get(indexInSegment);
-                        md5Data = CradleObject.digest(currentBytes);
+                        md5Data = WaitFreeComparable.digest(currentBytes);
                     }
                 }
                 try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(128)) {
@@ -215,7 +215,7 @@ public class CasSequenceObjectMap<T extends CradleObject> {
                             return true;
                         }
                         currentBytes = objectByteList.get(segmentIndex).get(indexInSegment);
-                        md5Data = CradleObject.digest(currentBytes);
+                        md5Data = WaitFreeComparable.digest(currentBytes);
                     } else {
                         return false; // no write for null value...
                     }

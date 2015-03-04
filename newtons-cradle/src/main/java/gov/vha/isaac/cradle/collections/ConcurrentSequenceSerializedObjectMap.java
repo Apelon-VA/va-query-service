@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.IntPredicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -28,15 +29,31 @@ public class ConcurrentSequenceSerializedObjectMap<T> {
     CopyOnWriteArrayList<Object[]> objectListList = new CopyOnWriteArrayList<>();
     boolean[] changed = new boolean[1];
     AtomicInteger maxSequence = new AtomicInteger(-1);
+    
+    Path dbFolderPath;
+    String folder;
+    String suffix;
 
-    public ConcurrentSequenceSerializedObjectMap(CradleSerializer<T> serializer) {
+    public ConcurrentSequenceSerializedObjectMap(CradleSerializer<T> serializer, 
+            Path dbFolderPath, String folder, String suffix) {
         this.serializer = serializer;
+        this.dbFolderPath = dbFolderPath;
+        this.folder = folder;
+        this.suffix = suffix;
         objectByteList[0] = new byte[SEGMENT_SIZE][];
         objectListList.add(new Object[SEGMENT_SIZE]);
         changed[0] = false;
     }
+    
+    public void readSegment(Path dbFolderPath, String folder, String suffix) {
+        
+    }
+    
+    public void writeSegment(Path dbFolderPath, String folder, String suffix) {
+        
+    }
 
-    public void read(Path dbFolderPath, String folder, String suffix) {
+    public void read() {
         int segment = 0;
         int segments = 1;
 
@@ -65,7 +82,7 @@ public class ConcurrentSequenceSerializedObjectMap<T> {
 
     }
 
-    public void write(Path dbFolderPath, String folder, String suffix) {
+    public void write() {
         int segments = objectByteList.length;
         for (int segmentIndex = 0; segmentIndex < segments; segmentIndex++) {
             File segmentFile = new File(dbFolderPath.toFile(), folder + segmentIndex + suffix);
@@ -88,6 +105,11 @@ public class ConcurrentSequenceSerializedObjectMap<T> {
             }
         }
     }
+    
+    public Stream<T> getStream(IntPredicate sequenceFilter) {
+        IntStream sequences = IntStream.rangeClosed(0, maxSequence.get());
+        return sequences.filter(sequenceFilter).filter(sequence -> containsKey(sequence)).mapToObj(sequence -> getQuick(sequence));
+    }
 
     public Stream<T> getStream() {
         IntStream sequences = IntStream.rangeClosed(0, maxSequence.get());
@@ -97,6 +119,11 @@ public class ConcurrentSequenceSerializedObjectMap<T> {
     public Stream<T> getParallelStream() {
         IntStream sequences = IntStream.rangeClosed(0, maxSequence.get()).parallel();
         return sequences.filter(sequence -> containsKey(sequence)).mapToObj(sequence -> getQuick(sequence));
+    }
+    
+    public Stream<T> getParallelStream(IntPredicate sequenceFilter) {
+        IntStream sequences = IntStream.rangeClosed(0, maxSequence.get()).parallel();
+        return sequences.filter(sequenceFilter).filter(sequence -> containsKey(sequence)).mapToObj(sequence -> getQuick(sequence));
     }
 
     /**

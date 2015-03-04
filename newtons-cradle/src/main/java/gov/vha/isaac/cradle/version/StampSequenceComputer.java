@@ -16,6 +16,8 @@
 package gov.vha.isaac.cradle.version;
 
 import gov.vha.isaac.cradle.CradleExtensions;
+import gov.vha.isaac.ochre.api.SequenceProvider;
+import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import java.util.BitSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,8 +39,15 @@ public class StampSequenceComputer {
 
     private static final ConcurrentHashMap<ViewPoint, StampSequenceComputer> sequenceComputerCache
             = new ConcurrentHashMap<>();
+    SequenceProvider sequenceProvider = Hk2Looker.getService(SequenceProvider.class);
+
     
-    CradleExtensions termStore = Hk2Looker.getService(CradleExtensions.class);
+    //CradleExtensions termStore = Hk2Looker.getService(CradleExtensions.class);
+    
+    public static StampSequenceComputer getComputer(StampCoordinate stampCoordinate) {
+        return getComputer(new ViewPoint(stampCoordinate));
+    }
+
 
     public static StampSequenceComputer getComputer(ViewPoint viewPoint) {
         StampSequenceComputer pm = sequenceComputerCache.get(viewPoint);
@@ -81,12 +90,12 @@ public class StampSequenceComputer {
     private BitSet addOriginsToPathNidSegmentMap(Position destination) {
 
         int pathNid = destination.getPath().getConceptNid();
-        int pathSequence = termStore.getConceptSequence(pathNid);
+        int pathSequence = sequenceProvider.getConceptSequence(pathNid);
 
         BitSet precedingSegments = new BitSet();
         destination.getOrigins().stream().forEach((origin) -> {
             int originPathNid = origin.getPath().getConceptNid();
-            precedingSegments.set(termStore.getConceptSequence(originPathNid));
+            precedingSegments.set(sequenceProvider.getConceptSequence(originPathNid));
             // Recursive call
             precedingSegments.or(addOriginsToPathNidSegmentMap(origin));
         });
@@ -110,9 +119,9 @@ public class StampSequenceComputer {
         if (viewPoint.getActiveModuleNids().isEmpty() ||
                 (viewPoint.getActiveModuleNids().contains(idb.getModuleNidForStamp(stamp1))
                 && viewPoint.getActiveModuleNids().contains(idb.getModuleNidForStamp(stamp2)))) {
-            int stamp1PathSequence = idb.getConceptSequence(idb.getPathNidForStamp(stamp1));
+            int stamp1PathSequence = sequenceProvider.getConceptSequence(idb.getPathNidForStamp(stamp1));
             long stamp1Time = idb.getTimeForStamp(stamp1);
-            int stamp2PathSequence = idb.getConceptSequence(idb.getPathNidForStamp(stamp2));
+            int stamp2PathSequence = sequenceProvider.getConceptSequence(idb.getPathNidForStamp(stamp2));
             long stamp2Time = idb.getTimeForStamp(stamp2);
             
             if (stamp1PathSequence == stamp2PathSequence) {
@@ -181,7 +190,7 @@ public class StampSequenceComputer {
      * the class's instance.
      */
     public boolean onRoute(int stamp) {
-        int pathSequence = getIsaacDb().getConceptSequence(getIsaacDb().getPathNidForStamp(stamp));
+        int pathSequence = sequenceProvider.getConceptSequence(getIsaacDb().getPathNidForStamp(stamp));
         
         PathSegment seg = pathSequenceSegmentMap.get(pathSequence);
         if (seg != null) {
@@ -222,6 +231,13 @@ public class StampSequenceComputer {
         }
     };
     
+    private class LatestStampAsIntArrayResultSupplier implements Supplier<LatestStampsAsIntArray> {
+        @Override
+        public LatestStampsAsIntArray get() {
+            return new LatestStampsAsIntArray();
+        }
+    };
+    
     public Set<StampedObject> getLatestStamps(
             Stream<StampedObject> stamps) {
         LatestStampResultSupplier supplier = new LatestStampResultSupplier();
@@ -234,6 +250,18 @@ public class StampSequenceComputer {
         return result.getLatestStamps();
     }      
     
+        public int[] getLatestStamps(IntStream stamps) {
+        LatestStampAsIntArrayResultSupplier supplier = new LatestStampAsIntArrayResultSupplier();
+        LatestPrimitiveStampCollector collector = new LatestPrimitiveStampCollector(this.viewPoint);
+        LatestPrimitiveStampCombiner combiner = new LatestPrimitiveStampCombiner(this);
+        LatestStampsAsIntArray result = stamps.collect(supplier, 
+                       collector, 
+                       combiner);
+        
+        return result.getLatestStamps().keys().elements();
+    }      
+    
+
     /**
      * 
      * @param stamps A stream of stamps from which the latest is found, and then
@@ -243,7 +271,7 @@ public class StampSequenceComputer {
      */
     public boolean isLatestActive(IntStream stamps) {
         return getLatestStamps(stamps.mapToObj((int stamp) -> new StampedObjectWrapper(stamp))).stream().anyMatch((StampedObject stamp) -> 
-                termStore.getStatusForStamp(stamp.getStamp()) == Status.ACTIVE);
+                getIsaacDb().getStatusForStamp(stamp.getStamp()) == Status.ACTIVE);
     }
     
     private static CradleExtensions isaacDb;

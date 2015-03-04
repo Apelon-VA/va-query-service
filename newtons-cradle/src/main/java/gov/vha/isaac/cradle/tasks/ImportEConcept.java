@@ -1,24 +1,20 @@
 package gov.vha.isaac.cradle.tasks;
 
 import gov.vha.isaac.cradle.CradleExtensions;
-import gov.vha.isaac.cradle.collections.CasSequenceObjectMap;
+import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
-import gov.vha.isaac.cradle.taxonomy.PrimitiveTaxonomyRecord;
+import gov.vha.isaac.cradle.taxonomy.DestinationOriginRecord;
+import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
+import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
+import gov.vha.isaac.ochre.api.SequenceProvider;
 import java.io.IOException;
-import java.util.EnumSet;
 
-import gov.vha.isaac.ochre.api.ConceptProxy;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
-import org.ihtsdo.otf.tcc.dto.component.TtkRevision;
-import org.ihtsdo.otf.tcc.dto.component.TtkRevisionProcessorBI;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 
 import java.util.UUID;
 import java.util.concurrent.*;
-import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
-import org.ihtsdo.otf.tcc.api.metadata.binding.SnomedMetadataRf2;
-import org.ihtsdo.otf.tcc.api.metadata.binding.TermAux;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.cc.relationship.Relationship;
 import org.ihtsdo.otf.tcc.model.cc.relationship.RelationshipVersion;
@@ -27,27 +23,25 @@ import org.ihtsdo.otf.tcc.model.cc.relationship.RelationshipVersion;
  * Created by kec on 7/20/14.
  */
 public class ImportEConcept implements Callable<Void> {
-    
-    private static final int snomedIsaNid;
-    private static final int auxIsaNid;
 
-    private static final int snomedStatedNid;
-    private static final int auxStatedNid;
-    private static final int snomedInferredNid;
-    private static final int auxInferredNid;
-    private static final CradleExtensions cradle;
-    public static CasSequenceObjectMap<PrimitiveTaxonomyRecord> taxonomyRecords;
+    private static final SequenceProvider sequenceProvider = Hk2Looker.getService(SequenceProvider.class);
+    private static final CradleExtensions cradle = Hk2Looker.getService(CradleExtensions.class);
+    ;
+    
+    private static final int isaNid;
+
+    private static final int statedNid;
+    private static final int inferredNid;
+    public static CasSequenceObjectMap<TaxonomyRecordPrimitive> originDestinationTaxonomyRecords;
+    public static ConcurrentSkipListSet<DestinationOriginRecord> destinationOriginRecordSet;
 
     static {
         try {
-            cradle = Hk2Looker.get().getService(CradleExtensions.class);
-            taxonomyRecords = cradle.getTaxonomyMap();
-            snomedIsaNid = cradle.getNidForUuids(Snomed.IS_A.getUuids());
-            auxIsaNid = cradle.getNidForUuids(TermAux.IS_A.getUuids());
-            snomedStatedNid = cradle.getNidForUuids(SnomedMetadataRf2.STATED_RELATIONSHIP_RF2.getUuids());
-            auxStatedNid = cradle.getNidForUuids(TermAux.REL_STATED_CHAR.getUuids());
-            snomedInferredNid = cradle.getNidForUuids(SnomedMetadataRf2.INFERRED_RELATIONSHIP_RF2.getUuids());
-            auxInferredNid = cradle.getNidForUuids(TermAux.REL_INFERED_CHAR.getUuids());
+            originDestinationTaxonomyRecords = cradle.getOriginDestinationTaxonomyMap();
+            destinationOriginRecordSet = cradle.getDestinationOriginRecordSet();
+            isaNid = cradle.getNidForUuids(IsaacMetadataAuxiliaryBinding.IS_A.getUuids());
+            statedNid = cradle.getNidForUuids(IsaacMetadataAuxiliaryBinding.STATED.getUuids());
+            inferredNid = cradle.getNidForUuids(IsaacMetadataAuxiliaryBinding.INFERRED.getUuids());
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -58,13 +52,13 @@ public class ImportEConcept implements Callable<Void> {
     UUID newPathUuid = null;
 
     public ImportEConcept(TtkConceptChronicle eConcept,
-                          Semaphore permit, UUID newPathUuid) {
+            Semaphore permit, UUID newPathUuid) {
         this(eConcept, permit);
         this.newPathUuid = newPathUuid;
     }
 
     public ImportEConcept(TtkConceptChronicle eConcept,
-                          Semaphore permit) {
+            Semaphore permit) {
         this.eConcept = eConcept;
         this.permit = permit;
     }
@@ -77,48 +71,46 @@ public class ImportEConcept implements Callable<Void> {
             }
 
             int conceptNid = cradle.getNidForUuids(eConcept.getPrimordialUuid());
-
+            cradle.setConceptNidForNid(conceptNid, conceptNid);
             ConceptChronicle cc = ConceptChronicle.get(conceptNid);
             ConceptChronicle.mergeWithEConcept(eConcept, cc);
             ConceptChronicleDataEager conceptData = (ConceptChronicleDataEager) cc.getData();
-            int conceptSequence = cradle.getConceptSequence(cc.getNid());
-            
-                PrimitiveTaxonomyRecord parentTaxonomyRecord;
-                if (taxonomyRecords.containsKey(conceptSequence)) {
-                    parentTaxonomyRecord = taxonomyRecords.get(conceptSequence).get();
-                } else {
-                    parentTaxonomyRecord = new PrimitiveTaxonomyRecord();
-                }
+            int originSequence = sequenceProvider.getConceptSequence(cc.getNid());
 
-                for (Relationship rel : conceptData.getSourceRels()) {
-                    int destinationSequence
-                            = cradle.getConceptSequence(rel.getDestinationNid());
-                    assert destinationSequence != conceptSequence;
-                    PrimitiveTaxonomyRecord childTaxonomyRecord;
-                    if (taxonomyRecords.containsKey(destinationSequence)) {
-                        childTaxonomyRecord = taxonomyRecords.get(destinationSequence).get();
-                    } else {
-                        childTaxonomyRecord = new PrimitiveTaxonomyRecord();
-                    }
-                    
-                    rel.getVersions().stream().forEach((rv) -> {
-                        EnumSet parentRecordFlags = EnumSet.of(TaxonomyFlags.PARENT);
-                        EnumSet childRecordFlags = EnumSet.of(TaxonomyFlags.CHILD);
-                        if (isaRelType(rv)) {
-                            if (statedRelType(rv)) {
-                                parentRecordFlags.add(TaxonomyFlags.STATED);
-                                childRecordFlags.add(TaxonomyFlags.STATED);
-                            } else if (inferredRelType(rv)) {
-                                parentRecordFlags.add(TaxonomyFlags.INFERRED);
-                                childRecordFlags.add(TaxonomyFlags.INFERRED);
-                            }
-                            parentTaxonomyRecord.getTaxonomyRecordUnpacked().addStampRecord(destinationSequence, rv.getStamp(), parentRecordFlags);
-                            childTaxonomyRecord.getTaxonomyRecordUnpacked().addStampRecord(conceptSequence, rv.getStamp(), childRecordFlags);
+            TaxonomyRecordPrimitive parentTaxonomyRecord;
+            if (originDestinationTaxonomyRecords.containsKey(originSequence)) {
+                parentTaxonomyRecord = originDestinationTaxonomyRecords.get(originSequence).get();
+            } else {
+                parentTaxonomyRecord = new TaxonomyRecordPrimitive();
+            }
+
+            for (Relationship rel : conceptData.getSourceRels()) {
+                int destinationSequence
+                        = sequenceProvider.getConceptSequence(rel.getDestinationNid());
+                assert destinationSequence != originSequence;
+                rel.getVersions().stream().forEach((rv) -> {
+                    if (isaRelType(rv)) {
+                        int parentRecordFlags = TaxonomyFlags.PARENT.bits;
+                        if (statedRelType(rv)) {
+                            parentRecordFlags += TaxonomyFlags.STATED.bits;
+                        } else if (inferredRelType(rv)) {
+                            parentRecordFlags += TaxonomyFlags.INFERRED.bits;
                         }
-                    });
-                    taxonomyRecords.put(destinationSequence, childTaxonomyRecord);
-                }
-                taxonomyRecords.put(conceptSequence, parentTaxonomyRecord);            
+                        parentTaxonomyRecord.getTaxonomyRecordUnpacked()
+                                .addStampRecord(destinationSequence, rv.getStamp(), parentRecordFlags);
+                    } else {
+                        int parentRecordFlags = TaxonomyFlags.OTHER_CONCEPT.bits;
+                        if (statedRelType(rv)) {
+                            parentRecordFlags += TaxonomyFlags.STATED.bits;
+                        } else if (inferredRelType(rv)) {
+                            parentRecordFlags += TaxonomyFlags.INFERRED.bits;
+                        }
+                        parentTaxonomyRecord.getTaxonomyRecordUnpacked().addStampRecord(destinationSequence, rv.getStamp(), parentRecordFlags);
+                    }
+                });
+                destinationOriginRecordSet.add(new DestinationOriginRecord(destinationSequence, originSequence));
+            }
+            originDestinationTaxonomyRecords.put(originSequence, parentTaxonomyRecord);
             cradle.writeConceptData(conceptData);
             return null;
         } finally {
@@ -127,18 +119,15 @@ public class ImportEConcept implements Callable<Void> {
     }
 
     private static boolean inferredRelType(RelationshipVersion rv) {
-        return rv.getCharacteristicNid() == snomedInferredNid
-                || rv.getCharacteristicNid() == auxInferredNid;
+        return rv.getCharacteristicNid() == inferredNid;
     }
 
     private static boolean statedRelType(RelationshipVersion rv) {
-        return rv.getCharacteristicNid() == snomedStatedNid
-                || rv.getCharacteristicNid() == auxStatedNid;
+        return rv.getCharacteristicNid() == statedNid;
     }
 
     private static boolean isaRelType(RelationshipVersion rv) {
-        return rv.getTypeNid() == snomedIsaNid || rv.getTypeNid() == auxIsaNid;
+        return rv.getTypeNid() == isaNid;
     }
-
 
 }

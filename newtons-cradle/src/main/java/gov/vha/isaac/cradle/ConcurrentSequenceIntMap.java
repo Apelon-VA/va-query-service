@@ -1,5 +1,6 @@
 package gov.vha.isaac.cradle;
 
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -20,7 +21,7 @@ import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
  */
 public class ConcurrentSequenceIntMap {
 
-    private static final int SEGMENT_SIZE = 12800;
+    private static final int SEGMENT_SIZE = 128000;
     ReentrantLock lock = new ReentrantLock();
     
     int[][] sequenceIntList = new int[1][];
@@ -33,15 +34,16 @@ public class ConcurrentSequenceIntMap {
     }
     
     public void read(File folder) throws IOException {
+        sequenceIntList = null;
         int segments = 1;
         for (int segment = 0; segment < segments; segment++) {
             try (DataInputStream in = new DataInputStream(
                     new BufferedInputStream(new FileInputStream(new File(folder, segment + ".sequence-int.map"))))) {                
                 int segmentSize = in.readInt();
-                int totalsegments = in.readInt();
+                segments = in.readInt();
                 if (sequenceIntList == null) {
-                    sequenceIntList = new int[totalsegments][];
-                    changed = new boolean[totalsegments];
+                    sequenceIntList = new int[segments][];
+                    changed = new boolean[segments];
                 }
                 sequenceIntList[segment] = new int[segmentSize];
                 changed[segment] = false;
@@ -75,6 +77,9 @@ public class ConcurrentSequenceIntMap {
     }
     
     public boolean containsKey(int sequence) {
+        if (sequence < 0) {
+            sequence = sequence - Integer.MIN_VALUE;
+        }   
         int segmentIndex = sequence / SEGMENT_SIZE;
         int indexInSegment = sequence % SEGMENT_SIZE;
         if (segmentIndex >= sequenceIntList.length) {
@@ -84,7 +89,9 @@ public class ConcurrentSequenceIntMap {
     }
     
     public OptionalInt get(int sequence) {
-        
+        if (sequence < 0) {
+            sequence = sequence - Integer.MIN_VALUE;
+        }        
         int segmentIndex = sequence / SEGMENT_SIZE;
         if (segmentIndex >= sequenceIntList.length) {
             return OptionalInt.empty();
@@ -99,6 +106,9 @@ public class ConcurrentSequenceIntMap {
     }
     
     public boolean put(int sequence, int value) {
+        if (sequence < 0) {
+            sequence = sequence - Integer.MIN_VALUE;
+        }
         size.set(Math.max(sequence, size.get()));
         int segmentIndex = sequence / SEGMENT_SIZE;
         
@@ -121,6 +131,21 @@ public class ConcurrentSequenceIntMap {
         changed[segmentIndex] = true;
         return true;
     }
+    
+    public NativeIdSetBI getKeysForValues(NativeIdSetBI values) {
+        int componentSize = size.get();
+        ConcurrentBitSet componentNids = new ConcurrentBitSet(size.get());
+        for (int i = 0; i < componentSize; i++) {
+            int segmentIndex = i / SEGMENT_SIZE;
+            int indexInSegment = i % SEGMENT_SIZE;
+            if (sequenceIntList[segmentIndex][indexInSegment] != 0) {
+                if (values.contains(sequenceIntList[segmentIndex][indexInSegment])) {
+                    componentNids.set(i + Integer.MIN_VALUE);
+                }
+            }
+        }
+        return componentNids;
+    }
 
     public NativeIdSetBI getComponentNids() {
         int componentSize = size.get();
@@ -132,8 +157,20 @@ public class ConcurrentSequenceIntMap {
                 componentNids.set(i + Integer.MIN_VALUE);
             }
         }
-        
-        
         return componentNids;
+    }
+
+    NidSet getComponentsNotSet() {
+        NidSet resultSet = new NidSet();
+        int componentSize = size.get();
+        componentSize = componentSize - SEGMENT_SIZE;
+        for (int i = 0; i < componentSize; i++) {
+            int segmentIndex = i / SEGMENT_SIZE;
+            int indexInSegment = i % SEGMENT_SIZE;
+            if (sequenceIntList[segmentIndex][indexInSegment] == 0) {
+                resultSet.add(i);
+            }
+        }
+        return resultSet;
     }
 }

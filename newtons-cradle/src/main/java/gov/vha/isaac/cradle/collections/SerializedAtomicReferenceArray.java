@@ -5,7 +5,8 @@
  */
 package gov.vha.isaac.cradle.collections;
 
-import gov.vha.isaac.cradle.CradleObject;
+import gov.vha.isaac.cradle.waitfree.WaitFreeComparable;
+import gov.vha.isaac.cradle.waitfree.WaitFreeMergeSerializer;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -20,10 +21,10 @@ import org.ihtsdo.otf.tcc.api.store.Ts;
  */
 public class SerializedAtomicReferenceArray extends AtomicReferenceArray<byte[]> {
 
-    CradleMergeSerializer isaacSerializer;
+    WaitFreeMergeSerializer isaacSerializer;
     int segment;
 
-    public SerializedAtomicReferenceArray(int length, CradleMergeSerializer isaacSerializer, int segment) {
+    public SerializedAtomicReferenceArray(int length, WaitFreeMergeSerializer isaacSerializer, int segment) {
         super(length);
         this.isaacSerializer = isaacSerializer;
         this.segment = segment;
@@ -53,7 +54,7 @@ public class SerializedAtomicReferenceArray extends AtomicReferenceArray<byte[]>
                 byte[] byteData = get(i);
                 if (byteData != null) {
                     try (ByteArrayInputStream bais = new ByteArrayInputStream(byteData)) {
-                        b.append(isaacSerializer.deserialize(new DataInputStream(bais), CradleObject.digest(byteData)));
+                        b.append(isaacSerializer.deserialize(new DataInputStream(bais), WaitFreeComparable.digest(byteData)));
                     } catch (IOException ex) {
                         throw new RuntimeException(ex);
                     }

@@ -1,13 +1,13 @@
 package gov.vha.isaac.cradle;
 
-import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPacked;
+import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordUnpacked;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TaxonomyRecordPackedTest {
+public class PrimitiveTaxonomyRecordTest {
 
     private static final int conceptSequence1 = 4;
     private static final int conceptSequence2 = 33;
@@ -17,17 +17,17 @@ public class TaxonomyRecordPackedTest {
     private static final TaxonomyFlags[] flags1 = { TaxonomyFlags.STATED, TaxonomyFlags.PARENT};
     private static final TaxonomyFlags[] flags2 = { TaxonomyFlags.STATED, TaxonomyFlags.CHILD};
     private static final TaxonomyFlags[] flags2b = { TaxonomyFlags.INFERRED, TaxonomyFlags.CHILD};
-    private TaxonomyRecordPacked testRecord1;
-    private TaxonomyRecordPacked testRecord2;
+    private TaxonomyRecordPrimitive testRecord1;
+    private TaxonomyRecordPrimitive testRecord2;
     
     @Before
     public void setup() {
-        testRecord1 = new TaxonomyRecordPacked(new int[]{0,0});
+        testRecord1 = new TaxonomyRecordPrimitive(new int[]{0,0}, null);
         testRecord1.setSequence(0, conceptSequence1);
         testRecord1.setStampAndFlags(1, stamp1, flags1);
         testRecord1.setConceptSequenceStampRecordLength(0, testRecord1.getTaxonomyData().length);
 
-        testRecord2 = new TaxonomyRecordPacked(new int[]{0,0,0});
+        testRecord2 = new TaxonomyRecordPrimitive(new int[]{0,0,0}, null);
         testRecord2.setSequence(0, conceptSequence2);
         testRecord2.setStampAndFlags(1, stamp2, flags2);
         testRecord2.setStampAndFlags(2, stamp2b, flags2b);

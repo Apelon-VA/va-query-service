@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package gov.vha.isaac.cradle.taxonomy;
+package gov.vha.isaac.cradle.taxonomy.walk;
 
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 
@@ -19,9 +19,6 @@ public class TaxonomyWalkAccumulator {
     public int parentConnections = 0;
     public int statedParentConnections = 0;
     public int inferredParentConnections = 0;
-    public int childConnections = 0;
-    public int statedChildConnections = 0;
-    public int inferredChildConnections = 0;
     public double maxDepthSum = 0;
     public double maxDepth = 0;
     public ConceptChronicle maxDepthConcept;
@@ -37,9 +34,6 @@ public class TaxonomyWalkAccumulator {
         this.parentConnections += u.parentConnections;
         this.statedParentConnections += u.statedParentConnections;
         this.inferredParentConnections += u.inferredParentConnections;
-        this.childConnections += u.childConnections;
-        this.statedChildConnections += u.statedChildConnections;
-        this.inferredChildConnections += u.inferredChildConnections;
         this.maxDepthSum += u.maxDepthSum;
         if (u.maxDepth > this.maxDepth) {
             maxDepthConcept = u.maxDepthConcept;
@@ -58,9 +52,6 @@ public class TaxonomyWalkAccumulator {
                 ", parentConnections=" + parentConnections + 
                 ", statedParentConnections=" + statedParentConnections + 
                 ", inferredParentConnections=" + inferredParentConnections + 
-                ", childConnections=" + childConnections + 
-                ", statedChildConnections=" + statedChildConnections + 
-                ", inferredChildConnections=" + inferredChildConnections + 
                 ", maxDepth=" + maxDepth + 
                 //" on concept:\n\n" +  maxDepthConcept.toLongString() +
                 ", average depth=" + (maxDepthSum/conceptsProcessed) +

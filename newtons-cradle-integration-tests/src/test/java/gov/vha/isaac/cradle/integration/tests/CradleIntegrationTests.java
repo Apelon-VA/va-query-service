@@ -6,24 +6,20 @@
 package gov.vha.isaac.cradle.integration.tests;
 
 import gov.vha.isaac.cradle.CradleExtensions;
-import gov.vha.isaac.cradle.collections.CasSequenceObjectMap;
-import gov.vha.isaac.cradle.taxonomy.GraphCollector;
-import gov.vha.isaac.cradle.taxonomy.PrimitiveTaxonomyRecord;
-import gov.vha.isaac.cradle.taxonomy.TaxonomyAccumulator;
-import gov.vha.isaac.cradle.taxonomy.TaxonomyCollector;
-import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
+import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
+import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordUnpacked;
-import gov.vha.isaac.cradle.taxonomy.TaxonomyWalkAccumulator;
-import gov.vha.isaac.cradle.taxonomy.TaxonomyWalkCollector;
-import gov.vha.isaac.cradle.version.ViewPoint;
+import gov.vha.isaac.cradle.taxonomy.walk.TaxonomyWalkAccumulator;
+import gov.vha.isaac.cradle.taxonomy.walk.TaxonomyWalkCollector;
+import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
+
 import static gov.vha.isaac.lookup.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
 
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskServer;
-import gov.vha.isaac.ochre.api.graph.SimpleDirectedGraph;
-import gov.vha.isaac.ochre.api.graph.SimpleDirectedGraphBuilder;
-import gov.vha.isaac.ochre.api.graph.SimpleDirectedGraphVisitData;
+import gov.vha.isaac.ochre.api.SequenceProvider;
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,23 +27,23 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.EnumSet;
-import java.util.OptionalDouble;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.IntStream;
+
+import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
+import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeBuilder;
+import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeWithBitSets;
 import javafx.concurrent.Task;
 import javafx.embed.swing.JFXPanel;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.mahout.math.set.OpenIntHashSet;
 import org.glassfish.hk2.api.MultiException;
 import org.glassfish.hk2.runlevel.RunLevelController;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
-import org.ihtsdo.otf.tcc.api.coordinate.Precedence;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
@@ -68,10 +64,22 @@ import org.testng.annotations.*;
 @HK2("cradle")
 public class CradleIntegrationTests {
     
+    public static void main(String[] args) {
+        try {
+            CradleIntegrationTests cit = new CradleIntegrationTests();
+            cit.setUpSuite();
+            cit.testLoad();
+            cit.tearDownSuite();
+        } catch (Exception ex) {
+            log.fatal(ex.getLocalizedMessage(), ex);
+        }
+    }
+    
     private static Logger log = LogManager.getLogger();
     Subscription tickSubscription;
     RunLevelController runLevelController;
     private boolean dbExists = false;
+    private static SequenceProvider sequenceProvider;
     
 
     @BeforeSuite
@@ -86,10 +94,13 @@ public class CradleIntegrationTests {
         
         runLevelController = Hk2Looker.get().getService(RunLevelController.class);
 
+        log.info("going to run level 0");
+        runLevelController.proceedTo(0);
         log.info("going to run level 1");
         runLevelController.proceedTo(1);
         log.info("going to run level 2");
         runLevelController.proceedTo(2);
+        sequenceProvider = Hk2Looker.getService(SequenceProvider.class);
         tickSubscription = EventStreams.ticks(Duration.ofSeconds(10))
                 .subscribe(tick -> {
                     Set<Task> taskSet = Hk2Looker.get().getService(ActiveTaskSet.class).get();
@@ -107,6 +118,8 @@ public class CradleIntegrationTests {
         runLevelController.proceedTo(1);
         log.info("going to run level 0");
         runLevelController.proceedTo(0);
+        log.info("going to run level -1");
+        runLevelController.proceedTo(-1);
         tickSubscription.unsubscribe();
     }
     
@@ -143,7 +156,7 @@ public class CradleIntegrationTests {
                     path eConcept file may have multiple incremental entries for 
                     a single concept. 
             
-                    May want a white list or somilar at some point. 
+                    May want a white list or similar at some point.
                     Assert.assertTrue(differences);
             */
         }
@@ -154,35 +167,29 @@ public class CradleIntegrationTests {
         findRoots(mapDbService);
 
 
-        SimpleDirectedGraph g = makeGraph(mapDbService);
+        HashTreeWithBitSets g = makeGraph(mapDbService);
         log.info("    graph size:" + g.size());
         log.info("    Graph roots: " + Arrays.toString(g.getRootSequences()));
         for (int rootSequence : IntStream.of(g.getRootSequences()).limit(10).toArray()) {
             log.info("    rootSequence: " + rootSequence);
             log.info("    root concept: " + mapDbService.getConcept(rootSequence).toUserString());
-            log.info("    parents of root" + Arrays.toString(g.getParents(rootSequence)));
-            SimpleDirectedGraphVisitData dfsData = g.depthFirstSearch(rootSequence);
+            log.info("    parents of root" + Arrays.toString(g.getParentSequences(rootSequence)));
+            TreeNodeVisitData dfsData = g.depthFirstProcess(rootSequence,
+                    (nodeVisitData, sequence) -> {});
             log.info("  dfsData:" + dfsData);
 
-            OptionalDouble averageDepth = dfsData.getAverageDepth();
-            if (averageDepth.isPresent()) {
-                log.info(" Average depth from root: " + averageDepth.getAsDouble());
-            }
             int maxDepth = dfsData.getMaxDepth();
             log.info(" Map depth from root: " + maxDepth);
-            SimpleDirectedGraphVisitData bfsData = g.breadthFirstSearch(rootSequence);
+            TreeNodeVisitData bfsData = g.breadthFirstProcess(rootSequence,
+                    (nodeVisitData, sequence) -> {});
             log.info("  bfsData:" + bfsData);
 
-            OptionalDouble averageBfsDepth = bfsData.getAverageDepth();
-            if (averageBfsDepth.isPresent()) {
-                log.info(" Average depth from root: " + averageBfsDepth.getAsDouble());
-            }
             int maxBfsDepth = bfsData.getMaxDepth();
             log.info(" Map depth from root: " + maxBfsDepth);
             log.info("\n\n");
         }
 
-        log.info("  Graph leaves: " + g.getLeaves().length);
+        log.info("  Graph leaves: " + g.getLeafSequences().length);
         log.info("  Graph size: " + g.size());
         log.info("  Graph concepts with parents count: " + g.conceptSequencesWithParentsCount());
         log.info("  Graph concepts with children count: " + g.conceptSequencesWithChildrenCount());
@@ -190,14 +197,11 @@ public class CradleIntegrationTests {
     
     private void findRoots(CradleExtensions cradle) {
         try {
-            IntStream conceptSequenceStream = cradle.getConceptSequenceStream().limit(10);
-            CasSequenceObjectMap<PrimitiveTaxonomyRecord> taxonomyMap = cradle.getTaxonomyMap();
+            IntStream conceptSequenceStream = sequenceProvider.getConceptSequenceStream().limit(10);
+            CasSequenceObjectMap<TaxonomyRecordPrimitive> taxonomyMap = cradle.getOriginDestinationTaxonomyMap();
             ViewCoordinate vc = ViewCoordinates.getDevelopmentInferredLatest();
-            EnumSet<TaxonomyFlags> flags = TaxonomyFlags.INFERRED_PARENT_FLAGS_SET;
-            OpenIntHashSet activeModuleNids = new OpenIntHashSet();  // null or empty is a wild card 
-            ViewPoint vp = new ViewPoint(vc.getViewPosition(), activeModuleNids, Precedence.PATH);
             conceptSequenceStream.forEach((int conceptSequence) -> {
-                walkToRoot(conceptSequence, taxonomyMap, vp, flags, 0, new BitSet(), cradle);
+                walkToRoot(conceptSequence, taxonomyMap, vc, 0, new BitSet(), cradle);
                 System.out.println("\n\n");
             });
         } catch (IOException ex) {
@@ -206,15 +210,15 @@ public class CradleIntegrationTests {
 
     }
 
-    private void walkToRoot(int child, CasSequenceObjectMap<PrimitiveTaxonomyRecord> taxonomyMap, ViewPoint vp,
-            EnumSet<TaxonomyFlags> flags, int depth, BitSet visited, CradleExtensions cradle) {
+    private void walkToRoot(int child, CasSequenceObjectMap<TaxonomyRecordPrimitive> taxonomyMap, TaxonomyCoordinate vp,
+            int depth, BitSet visited, CradleExtensions cradle) {
         visited.set(child);
         if (depth > 25) {
             return;
         }
         try {
             ConceptChronicleBI childConcept = cradle.getConcept(child);
-            java.util.Optional<PrimitiveTaxonomyRecord> taxonomyRecord = taxonomyMap.get(child);
+            java.util.Optional<TaxonomyRecordPrimitive> taxonomyRecord = taxonomyMap.get(child);
 
             StringBuilder sb = new StringBuilder();
             sb.append(childConcept.getNid());
@@ -232,10 +236,10 @@ public class CradleIntegrationTests {
             System.out.println(sb.toString());
             if (taxonomyRecord.isPresent()) {
                 TaxonomyRecordUnpacked record = taxonomyRecord.get().getTaxonomyRecordUnpacked();
-                IntStream parentSequences = record.getActiveConceptSequences(flags, vp);
+                IntStream parentSequences = record.getActiveConceptSequences(vp);
                 parentSequences.forEach((int parentSequence) -> {
                     if (!visited.get(parentSequence)) {
-                        walkToRoot(parentSequence, taxonomyMap, vp, flags, depth + 1, visited, cradle);
+                        walkToRoot(parentSequence, taxonomyMap, vp, depth + 1, visited, cradle);
                     }
                 });
 
@@ -268,7 +272,7 @@ public class CradleIntegrationTests {
 
         log.info("  concepts in map: {}", ps.getConceptCount());
 
-        log.info("  sequences map: {}", ps.getConceptSequenceStream().distinct().count());
+        log.info("  sequences map: {}", sequenceProvider.getConceptSequenceStream().distinct().count());
     }
     
     private boolean testLoad(ObjectChronicleTaskServer tts, CradleExtensions ps) throws ExecutionException, IOException, MultiException, InterruptedException {
@@ -285,27 +289,11 @@ public class CradleIntegrationTests {
         Duration duration = Duration.between(start, finish);
         log.info("  Verified concepts in: " + duration);
         log.info("  concepts in map: {}", ps.getConceptCount());
-        log.info("  sequences map: {}", ps.getConceptSequenceStream().distinct().count());
+        log.info("  sequences map: {}", sequenceProvider.getConceptSequenceStream().distinct().count());
 
         return verified;
     }
-    
 
-    private void makeTaxonomyRecords(CradleExtensions mapDbService) throws IOException {
-        Instant collectStart = Instant.now();
-
-        log.info("  ConceptDataEagerStream count: " + mapDbService.getParallelConceptDataEagerStream().count());
-
-        TaxonomyAccumulator statistics = mapDbService.getParallelConceptDataEagerStream().collect(new TaxonomyCollector());
-        //TaxonomyAccumulator statistics = mapDbService.getConceptDataEagerStream().collect(new TaxonomyCollector());
-        Instant collectEnd = Instant.now();
-        Duration collectDuration = Duration.between(collectStart, collectEnd);
-        log.info("  DataEager Parallel stats: " + statistics);
-        //log.info("  DataEager sequential stats: " + statistics);
-        log.info("  Collection duration: " + collectDuration);
-
-    }
-    
     private void testTaxonomy(CradleExtensions cradle) {
         try {
             testTaxonomy(cradle, ViewCoordinates.getDevelopmentInferredLatest());
@@ -329,8 +317,8 @@ public class CradleIntegrationTests {
     private void walkTaxonomy(CradleExtensions cradle) throws IOException {
         log.info("  Start walking taxonomy.");
         Instant collectStart = Instant.now();
-        IntStream conceptSequenceStream = cradle.getParallelConceptSequenceStream();
-        TaxonomyWalkCollector collector = new TaxonomyWalkCollector(cradle.getTaxonomyMap(),
+        IntStream conceptSequenceStream = sequenceProvider.getParallelConceptSequenceStream();
+        TaxonomyWalkCollector collector = new TaxonomyWalkCollector(cradle.getOriginDestinationTaxonomyMap(),
                 ViewCoordinates.getDevelopmentStatedLatest());
         TaxonomyWalkAccumulator taxonomyWalkAccumulator = conceptSequenceStream.collect(
                 TaxonomyWalkAccumulator::new,
@@ -342,23 +330,23 @@ public class CradleIntegrationTests {
         log.info("  Collection duration: " + collectDuration);
     }
 
-    private SimpleDirectedGraph makeGraph(CradleExtensions cradle) throws IOException {
+    private HashTreeWithBitSets makeGraph(CradleExtensions cradle) throws IOException {
         log.info("  Start to make graph.");
         Instant collectStart = Instant.now();
-        IntStream conceptSequenceStream = cradle.getParallelConceptSequenceStream();
+        IntStream conceptSequenceStream = sequenceProvider.getParallelConceptSequenceStream();
         log.info("  conceptSequenceStream count 1:" + conceptSequenceStream.count());
-        conceptSequenceStream = cradle.getParallelConceptSequenceStream();
+        conceptSequenceStream = sequenceProvider.getParallelConceptSequenceStream();
         log.info("  conceptSequenceStream count 2:" + conceptSequenceStream.count());
-        conceptSequenceStream = cradle.getParallelConceptSequenceStream();
+        conceptSequenceStream = sequenceProvider.getParallelConceptSequenceStream();
         log.info("  conceptSequenceStream distinct count :" + conceptSequenceStream.distinct().count());
-        conceptSequenceStream = cradle.getConceptSequenceStream();
-        GraphCollector collector = new GraphCollector(cradle.getTaxonomyMap(),
+        conceptSequenceStream = sequenceProvider.getConceptSequenceStream();
+        GraphCollector collector = new GraphCollector(cradle.getOriginDestinationTaxonomyMap(),
                 ViewCoordinates.getDevelopmentInferredLatest());
-        SimpleDirectedGraphBuilder graphBuilder = conceptSequenceStream.collect(
-                SimpleDirectedGraphBuilder::new,
+        HashTreeBuilder graphBuilder = conceptSequenceStream.collect(
+                HashTreeBuilder::new,
                 collector,
                 collector);
-        SimpleDirectedGraph resultGraph = graphBuilder.getSimpleDirectedGraphGraph();
+        HashTreeWithBitSets resultGraph = graphBuilder.getSimpleDirectedGraphGraph();
         Instant collectEnd = Instant.now();
         Duration collectDuration = Duration.between(collectStart, collectEnd);
         log.info("  Finished making graph: " + resultGraph);

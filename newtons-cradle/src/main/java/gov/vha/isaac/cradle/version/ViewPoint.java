@@ -5,7 +5,9 @@
  */
 package gov.vha.isaac.cradle.version;
 
+import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import java.util.Objects;
+import java.util.stream.IntStream;
 import org.apache.mahout.math.set.OpenIntHashSet;
 import org.ihtsdo.otf.tcc.api.coordinate.Position;
 import org.ihtsdo.otf.tcc.api.coordinate.Precedence;
@@ -27,6 +29,12 @@ public class ViewPoint {
             return true;
         }); 
         this.precedencePolicy = precedencePolicy;
+    }
+    
+    public ViewPoint(StampCoordinate sc) {
+        this.position = new Position(sc.getStampPosition());
+        this.precedencePolicy = Precedence.of(sc.getStampPrecedence());
+        IntStream.of(sc.getModuleSequences()).forEach((sequence) -> activeModuleNids.add(sequence));
     }
 
     public Precedence getPrecedencePolicy() {

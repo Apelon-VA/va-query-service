@@ -5,8 +5,8 @@
  */
 package gov.vha.isaac.cradle;
 
-import gov.vha.isaac.cradle.taxonomy.PrimitiveTaxonomyRecord;
-import gov.vha.isaac.cradle.collections.CasSequenceObjectMap;
+import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
+import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -26,10 +26,10 @@ public class IsaacStartupAccumulator {
     public int conceptCount = 0;
     public int inferredIsaRel = 0;
     public int relVersionCount = 0;
-    public CasSequenceObjectMap<PrimitiveTaxonomyRecord> taxonomyRecords;
+    public CasSequenceObjectMap<TaxonomyRecordPrimitive> taxonomyRecords;
 
     public IsaacStartupAccumulator(Cradle isaacDb) {
-        this.taxonomyRecords = isaacDb.getTaxonomyMap();
+        this.taxonomyRecords = isaacDb.getOriginDestinationTaxonomyMap();
     }
 
     public IsaacStartupAccumulator combine(IsaacStartupAccumulator another) {
