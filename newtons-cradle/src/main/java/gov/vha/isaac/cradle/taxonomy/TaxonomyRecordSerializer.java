@@ -5,8 +5,7 @@
  */
 package gov.vha.isaac.cradle.taxonomy;
 
-import gov.vha.isaac.cradle.collections.CradleMergeSerializer;
-import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordUnpacked;
+import gov.vha.isaac.cradle.waitfree.WaitFreeMergeSerializer;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -15,17 +14,17 @@ import java.io.IOException;
  *
  * @author kec
  */
-public class PrimitiveTaxonomyRecordSerializer implements CradleMergeSerializer<PrimitiveTaxonomyRecord> {
+public class TaxonomyRecordSerializer implements WaitFreeMergeSerializer<TaxonomyRecordPrimitive> {
 
     @Override
-    public void serialize(DataOutput d, PrimitiveTaxonomyRecord a) {
+    public void serialize(DataOutput d, TaxonomyRecordPrimitive a) {
         if (a.unpacked != null) {
-            a.array = a.unpacked.pack();
+            a.taxonomyData = a.unpacked.pack();
         }
         try {
-            if (a.array.length > 0) {
-                d.writeInt(a.array.length);
-                for (int i : a.array) {
+            if (a.taxonomyData.length > 0) {
+                d.writeInt(a.taxonomyData.length);
+                for (int i : a.taxonomyData) {
                     d.writeInt(i);
                 }
             }
@@ -35,22 +34,22 @@ public class PrimitiveTaxonomyRecordSerializer implements CradleMergeSerializer<
     }
 
     @Override
-    public PrimitiveTaxonomyRecord merge(PrimitiveTaxonomyRecord a, PrimitiveTaxonomyRecord b, long[] md5Data) {
+    public TaxonomyRecordPrimitive merge(TaxonomyRecordPrimitive a, TaxonomyRecordPrimitive b, long[] md5Data) {
         TaxonomyRecordUnpacked aRecords = a.getTaxonomyRecordUnpacked();
         TaxonomyRecordUnpacked bRecords = b.getTaxonomyRecordUnpacked();
         aRecords.merge(bRecords);
-        return new PrimitiveTaxonomyRecord(aRecords.pack(), md5Data);
+        return new TaxonomyRecordPrimitive(aRecords.pack(), md5Data);
     }
 
     @Override
-    public PrimitiveTaxonomyRecord deserialize(DataInput di, long[] md5Data) {
+    public TaxonomyRecordPrimitive deserialize(DataInput di, long[] md5Data) {
         try {
             int length = di.readInt();
             int[] result = new int[length];
             for (int i = 0; i < length; i++) {
                 result[i] = di.readInt();
             }
-            return new PrimitiveTaxonomyRecord(result, md5Data);
+            return new TaxonomyRecordPrimitive(result, md5Data);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }

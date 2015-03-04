@@ -14,13 +14,12 @@ import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import gov.vha.isaac.ochre.api.ConceptProxy;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
+import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
-import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
 
 /**
@@ -57,7 +56,7 @@ public class ExportEConceptFile extends Task<Integer>{
         Hk2Looker.get().getService(ActiveTaskSet.class).get().add(this);
       
         try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(paths.toFile())))) {
-            termService.getConceptStream().forEach((ConceptChronicle cc) -> {
+            termService.getConceptStream().forEach((ConceptChronicleBI cc) -> {
                 try {
                     TtkConceptChronicle eConcept = new TtkConceptChronicle(cc);
                     if (transformers != null) {

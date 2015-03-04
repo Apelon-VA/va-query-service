@@ -3,10 +3,11 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package gov.vha.isaac.cradle;
+package gov.vha.isaac.cradle.taxonomy.initfromrels;
 
-import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
+import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
+import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.SequenceProvider;
@@ -27,30 +28,31 @@ import org.ihtsdo.otf.tcc.model.cc.relationship.RelationshipVersion;
  *
  * @author kec
  */
-public class IsaacStartupCollector implements Collector<ConceptChronicleDataEager, IsaacStartupAccumulator, IsaacStartupAccumulator> {
-
+public class TaxonomyCollector implements Collector<ConceptChronicleDataEager, TaxonomyAccumulator, TaxonomyAccumulator> {
     private static final SequenceProvider sequenceProvider = Hk2Looker.getService(SequenceProvider.class);
-    private final int isaNid;
+    private static final CradleExtensions cradle = Hk2Looker.getService(CradleExtensions.class);;
 
-    private final int statedNid;
-    private final int inferredNid;
-    private final Cradle isaacDb;
-
-    IsaacStartupCollector(Cradle isaacDb) throws IOException {
-        this.isaacDb = isaacDb;
-        isaNid = isaacDb.getNidForUuids(IsaacMetadataAuxiliaryBinding.IS_A.getUuids());
-        statedNid = isaacDb.getNidForUuids(IsaacMetadataAuxiliaryBinding.STATED.getUuids());
-        inferredNid = isaacDb.getNidForUuids(IsaacMetadataAuxiliaryBinding.INFERRED.getUuids());
+    private static final int isaNid;
+    private static final int statedNid;
+    private static final int inferredNid;
+    static {
+        try {
+            isaNid = cradle.getNidForUuids(IsaacMetadataAuxiliaryBinding.IS_A.getUuids());
+            statedNid = cradle.getNidForUuids(IsaacMetadataAuxiliaryBinding.STATED.getUuids());
+            inferredNid = cradle.getNidForUuids(IsaacMetadataAuxiliaryBinding.INFERRED.getUuids());
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     @Override
-    public Supplier<IsaacStartupAccumulator> supplier() {
-        return () -> new IsaacStartupAccumulator(isaacDb);
+    public Supplier<TaxonomyAccumulator> supplier() {
+        return TaxonomyAccumulator::new;
     }
 
     @Override
-    public BiConsumer<IsaacStartupAccumulator, ConceptChronicleDataEager> accumulator() {
-        return (IsaacStartupAccumulator stats, ConceptChronicleDataEager concept) -> {
+    public BiConsumer<TaxonomyAccumulator, ConceptChronicleDataEager> accumulator() {
+        return (TaxonomyAccumulator stats, ConceptChronicleDataEager concept) -> {
             int conceptSequence = sequenceProvider.getConceptSequence(concept.getNid());
             stats.conceptCount++;
             stats.descCount += concept.getDescriptions().size();
@@ -74,9 +76,9 @@ public class IsaacStartupCollector implements Collector<ConceptChronicleDataEage
                 
                 rel.getVersions().stream().forEach((rv) -> {
                     stats.relVersionCount++;
+                    if (isaRelType(rv)) {
                     int parentRecordFlags = TaxonomyFlags.PARENT.bits;
                     int childRecordFlags = TaxonomyFlags.CHILD.bits;
-                    if (isaRelType(rv)) {
                         if (statedRelType(rv)) {
                             stats.statedIsaRel++;
                             parentRecordFlags =+ TaxonomyFlags.STATED.bits;
@@ -88,6 +90,21 @@ public class IsaacStartupCollector implements Collector<ConceptChronicleDataEage
                         }
                         parentTaxonomyRecord.getTaxonomyRecordUnpacked().addStampRecord(destinationSequence, rv.getStamp(), parentRecordFlags);
                         childTaxonomyRecord.getTaxonomyRecordUnpacked().addStampRecord(conceptSequence, rv.getStamp(), childRecordFlags);
+                    } else {
+                        int parentRecordFlags = TaxonomyFlags.OTHER_CONCEPT.bits;
+                        int childRecordFlags = TaxonomyFlags.OTHER_CONCEPT.bits;
+                        if (statedRelType(rv)) {
+                            stats.otherStatedRel++;
+                            parentRecordFlags =+ TaxonomyFlags.STATED.bits;
+                            childRecordFlags =+ TaxonomyFlags.STATED.bits;
+                        } else if (inferredRelType(rv)) {
+                            stats.otherInferredRel++;
+                            parentRecordFlags =+ TaxonomyFlags.INFERRED.bits;
+                            childRecordFlags =+ TaxonomyFlags.INFERRED.bits;
+                                    }
+                        parentTaxonomyRecord.getTaxonomyRecordUnpacked().addStampRecord(destinationSequence, rv.getStamp(), parentRecordFlags);
+                        childTaxonomyRecord.getTaxonomyRecordUnpacked().addStampRecord(conceptSequence, rv.getStamp(), childRecordFlags);
+                        
                     }
                 });
                 stats.taxonomyRecords.put(destinationSequence, childTaxonomyRecord);
@@ -96,25 +113,25 @@ public class IsaacStartupCollector implements Collector<ConceptChronicleDataEage
         };
     }
 
-    private boolean inferredRelType(RelationshipVersion rv) {
+    private static boolean inferredRelType(RelationshipVersion rv) {
         return rv.getCharacteristicNid() == inferredNid;
     }
 
-    private boolean statedRelType(RelationshipVersion rv) {
+    private static boolean statedRelType(RelationshipVersion rv) {
         return rv.getCharacteristicNid() == statedNid;
     }
 
-    private boolean isaRelType(RelationshipVersion rv) {
+    private static boolean isaRelType(RelationshipVersion rv) {
         return rv.getTypeNid() == isaNid;
     }
 
     @Override
-    public BinaryOperator<IsaacStartupAccumulator> combiner() {
+    public BinaryOperator<TaxonomyAccumulator> combiner() {
         return (a, b) -> a.combine(b);
     }
 
     @Override
-    public Function<IsaacStartupAccumulator, IsaacStartupAccumulator> finisher() {
+    public Function<TaxonomyAccumulator, TaxonomyAccumulator> finisher() {
         throw new UnsupportedOperationException("Not supported.");
     }
 

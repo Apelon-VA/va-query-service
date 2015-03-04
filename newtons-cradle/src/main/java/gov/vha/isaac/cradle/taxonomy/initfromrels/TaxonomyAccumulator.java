@@ -3,10 +3,11 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package gov.vha.isaac.cradle.taxonomy;
+package gov.vha.isaac.cradle.taxonomy.initfromrels;
 
 import gov.vha.isaac.cradle.CradleExtensions;
-import gov.vha.isaac.cradle.collections.CasSequenceObjectMap;
+import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
+import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 
@@ -27,11 +28,13 @@ public class TaxonomyAccumulator {
     public int statedIsaRel = 0;
     public int conceptCount = 0;
     public int inferredIsaRel = 0;
+    public int otherStatedRel = 0;
+    public int otherInferredRel = 0;
     public int relVersionCount = 0;
-    public CasSequenceObjectMap<PrimitiveTaxonomyRecord> taxonomyRecords;
+    public CasSequenceObjectMap<TaxonomyRecordPrimitive> taxonomyRecords;
 
     public TaxonomyAccumulator() {
-        this.taxonomyRecords = cradle.getTaxonomyMap();
+        this.taxonomyRecords = cradle.getOriginDestinationTaxonomyMap();
     }
 
     public TaxonomyAccumulator combine(TaxonomyAccumulator another) {
@@ -40,6 +43,8 @@ public class TaxonomyAccumulator {
         this.statedIsaRel += another.statedIsaRel;
         this.conceptCount += another.conceptCount;
         this.inferredIsaRel += another.inferredIsaRel;
+        this.otherStatedRel += another.otherStatedRel;
+        this.otherInferredRel += another.otherInferredRel;
         this.relVersionCount += another.relVersionCount;
         return this;
     }
@@ -52,6 +57,8 @@ public class TaxonomyAccumulator {
                 ", statedIsaRel=" + statedIsaRel + 
                 ", conceptCount=" + conceptCount + 
                 ", inferredIsaRel=" + inferredIsaRel + 
+                ", otherStatedRel=" + otherStatedRel + 
+                ", otherInferredRel=" + otherInferredRel + 
                 ", relVersionCount=" + relVersionCount + '}';
     }
 

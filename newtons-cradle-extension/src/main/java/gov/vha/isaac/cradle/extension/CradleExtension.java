@@ -5,15 +5,38 @@
  */
 package gov.vha.isaac.cradle.extension;
 
+import javafx.concurrent.Task;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.maven.AbstractMavenLifecycleParticipant;
 import org.codehaus.plexus.component.annotations.Component;
+import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.build.extension.DatabaseBuildExtension;
+import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
+import org.reactfx.EventStreams;
+import org.reactfx.Subscription;
+
+import java.time.Duration;
+import java.util.Set;
 
 @Component(role = AbstractMavenLifecycleParticipant.class, hint = "cradle")
 public class CradleExtension extends DatabaseBuildExtension {
 
+    private static Logger log = LogManager.getLogger();
+
+    Subscription tickSubscription;
+
     public CradleExtension() {
         super("Cradle");
+        tickSubscription = EventStreams.ticks(Duration.ofSeconds(10))
+                .subscribe(tick -> {
+                    Set<Task> taskSet = Hk2Looker.get().getService(ActiveTaskSet.class).get();
+                    taskSet.stream().forEach((task) -> {
+                        log.printf(Level.INFO, "%n    %s%n    %s%n    %.1f%% complete",
+                                task.getTitle(), task.getMessage(), task.getProgress() * 100);
+                    });
+                });
     }
 }
 

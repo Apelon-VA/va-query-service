@@ -26,7 +26,7 @@ import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 /**
  * Created by kec on 7/22/14.
  */
-public class LoadEConceptFile extends Task<Integer> {
+public class ImportEConceptFile extends Task<Integer> {
 
     private static final Logger log = LogManager.getLogger();
 
@@ -35,7 +35,7 @@ public class LoadEConceptFile extends Task<Integer> {
     ConceptProxy stampPath = null;
     UUID stampPathUuid = null;
 
-    public LoadEConceptFile(Path[] paths, CradleExtensions termService) {
+    public ImportEConceptFile(Path[] paths, CradleExtensions termService) {
         updateTitle("Concept File Load");
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         updateValue(0); // no concepts loaded
@@ -43,7 +43,7 @@ public class LoadEConceptFile extends Task<Integer> {
         this.termService = termService;
     }
 
-    public LoadEConceptFile(Path[] paths, CradleExtensions termService, ConceptProxy stampPath) {
+    public ImportEConceptFile(Path[] paths, CradleExtensions termService, ConceptProxy stampPath) {
         this(paths, termService);
         this.stampPath = stampPath;
         if (this.stampPath != null) {
@@ -158,6 +158,7 @@ public class LoadEConceptFile extends Task<Integer> {
             updateMessage("Load of " + completionCount + " concepts complete in "
                     + duration.getSeconds() + " seconds.");
             updateProgress(bytesToProcessForLoad, bytesToProcessForLoad);
+            //termService.reportStats();
             return conceptCount;
         } finally {
             Hk2Looker.get().getService(ActiveTaskSet.class).get().remove(this);

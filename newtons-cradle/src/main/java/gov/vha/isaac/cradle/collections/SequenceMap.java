@@ -22,19 +22,30 @@ import java.util.stream.IntStream;
  * @author kec
  */
 public class SequenceMap {
+   
+    private static final double minimumLoadFactor = 0.75;
+    private static final double maximumLoadFactor = 0.9;
 
     ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
 
     int nextSequence = 0;
 
+ 
+    final NativeIntIntHashMap nidSequenceMap;
+    final NativeIntIntHashMap sequenceNidMap;
+
+    public SequenceMap(int defaultCapacity) {
+        nidSequenceMap = new NativeIntIntHashMap(defaultCapacity, minimumLoadFactor, maximumLoadFactor);
+        sequenceNidMap = new NativeIntIntHashMap(defaultCapacity, minimumLoadFactor, maximumLoadFactor);
+    }
+
+    
+    
     public int getNextSequence() {
         return nextSequence;
     }
 
-    NativeIntIntHashMap nidSequenceMap = new NativeIntIntHashMap();
-    NativeIntIntHashMap sequenceNidMap = new NativeIntIntHashMap();
-
-    public int getSize() {
+   public int getSize() {
         assert nidSequenceMap.size() == sequenceNidMap.size() : "nidSequenceMap.size() = "
                 + nidSequenceMap.size() + " sequenceNidMap.size() = " + sequenceNidMap.size();
         return sequenceNidMap.size();
@@ -44,6 +55,15 @@ public class SequenceMap {
         rwl.readLock().lock();
         try {
             return nidSequenceMap.containsKey(nid);
+        } finally {
+            rwl.readLock().unlock();
+        }
+    }
+    public int getSequenceFast(int nid) {
+
+        rwl.readLock().lock();
+        try {
+           return nidSequenceMap.get(nid);
         } finally {
             rwl.readLock().unlock();
         }
@@ -118,7 +138,7 @@ public class SequenceMap {
         }
     }
 
-    public IntStream getConceptSequenceStream() {
+    public IntStream getSequenceStream() {
         return IntStream.of(sequenceNidMap.keys().elements());
     }
 

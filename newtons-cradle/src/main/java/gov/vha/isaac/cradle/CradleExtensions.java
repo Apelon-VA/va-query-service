@@ -1,15 +1,16 @@
 package gov.vha.isaac.cradle;
 
-import gov.vha.isaac.cradle.taxonomy.PrimitiveTaxonomyRecord;
-import gov.vha.isaac.cradle.collections.CasSequenceObjectMap;
+import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
+import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
+import gov.vha.isaac.cradle.taxonomy.DestinationOriginRecord;
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import java.io.IOException;
-import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
+import java.util.concurrent.ConcurrentSkipListSet;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
 import org.ihtsdo.otf.tcc.model.cc.termstore.PersistentStoreI;
 import org.jvnet.hk2.annotations.Contract;
 
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -17,27 +18,24 @@ import java.util.stream.Stream;
  */
 @Contract
 public interface CradleExtensions extends PersistentStoreI {
+    
     void writeConceptData(ConceptChronicleDataEager conceptData);
 
     Stream<ConceptChronicleDataEager> getConceptDataEagerStream();
+    Stream<ConceptChronicleDataEager> getConceptDataEagerStream(ConceptSequenceSet conceptSequences);
 
     Stream<ConceptChronicleDataEager> getParallelConceptDataEagerStream();
+    Stream<ConceptChronicleDataEager> getParallelConceptDataEagerStream(ConceptSequenceSet conceptSequences);
 
-    @Override
-    Stream<ConceptChronicle> getConceptStream();
-
-    @Override
-    Stream<ConceptChronicle> getParallelConceptStream();
-
-    CasSequenceObjectMap<PrimitiveTaxonomyRecord> getTaxonomyMap();
-
-    int getConceptSequence(int nid);
-
-    IntStream getConceptSequenceStream();
-
-    IntStream getParallelConceptSequenceStream();
+    ConcurrentSkipListSet<DestinationOriginRecord> getDestinationOriginRecordSet();
+    CasSequenceObjectMap<TaxonomyRecordPrimitive> getOriginDestinationTaxonomyMap();
 
     void writeSememe(RefexMember<?, ?> sememe);
+    
+    Stream<RefexMember<?, ?>> getSememeStream();
+    Stream<RefexMember<?, ?>> getParallelSememeStream();
 
     void loadExistingDatabase() throws IOException;  
+    
+    void reportStats();
 }
