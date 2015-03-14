@@ -15,6 +15,8 @@
  */
 package gov.vha.isaac.cradle.version;
 
+import gov.vha.isaac.ochre.collections.StampSequenceSet;
+import java.util.stream.IntStream;
 import org.apache.mahout.math.set.OpenIntHashSet;
 
 /**
@@ -23,7 +25,7 @@ import org.apache.mahout.math.set.OpenIntHashSet;
  */
 public class LatestStampsAsIntArray {
 
-    private final OpenIntHashSet latestStamps = new OpenIntHashSet();
+    private final StampSequenceSet latestStamps = new StampSequenceSet();
 
     public void addAll(OpenIntHashSet stamps) {
         stamps.forEachKey((stamp) -> {
@@ -36,15 +38,17 @@ public class LatestStampsAsIntArray {
             latestStamps.add(stamp);
         }
     }
-
-    public OpenIntHashSet getLatestStamps() {
-        OpenIntHashSet latest = new OpenIntHashSet();
-        latestStamps.forEachKey((int stamp) -> {
-            latest.add(stamp);
-            return true;
-        });
-        return latest;
+    public void addAll(LatestStampsAsIntArray other) {
+        latestStamps.or(other.latestStamps);
     }
+
+    public StampSequenceSet getLatestStamps() {
+        return StampSequenceSet.of(latestStamps.stream());
+    }
+    public int[] getLatestStampsAsArray() {
+        return latestStamps.stream().toArray();
+    }
+
 
     public void add(int stamp) {
         latestStamps.add(stamp);

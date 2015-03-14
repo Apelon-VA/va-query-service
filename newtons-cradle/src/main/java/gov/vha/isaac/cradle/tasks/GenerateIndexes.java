@@ -46,11 +46,11 @@ public class GenerateIndexes extends Task<Void> {
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
+        Hk2Looker.get().getService(ActiveTaskSet.class).get().add(this);
     }
 
     @Override
     protected Void call() throws Exception {
-        Hk2Looker.get().getService(ActiveTaskSet.class).get().add(this);
         try {
             termService.getParallelConceptDataEagerStream().forEach((ConceptChronicleDataEager ccde) -> {
                 ccde.getConceptComponents().forEach((ConceptComponent<?, ?> cc) -> {

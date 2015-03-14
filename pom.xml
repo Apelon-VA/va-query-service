@@ -12,8 +12,8 @@
     <name>${project.artifactId}: (MMP)</name>
     <description>Newton's Cradle (ChRonicled Assertion Database of Logical Expressions) Parent Project </description>
     <properties>
-        <ochre.version>2.11</ochre.version>
-        <isaac-metadata.version>1.11</isaac-metadata.version>
+        <ochre.version>2.12</ochre.version>
+        <isaac-metadata.version>1.12</isaac-metadata.version>
     </properties>
     <dependencyManagement>
         <dependencies>

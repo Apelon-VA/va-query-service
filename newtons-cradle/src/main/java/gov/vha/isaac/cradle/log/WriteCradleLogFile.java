@@ -13,7 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package gov.vha.isaac.cradle.log;
+
+import javafx.concurrent.Task;
+
 /**
- * Classes to initialize a taxonomy map from relationships on concept chronicles.  
+ *
+ * @author kec
  */
-package gov.vha.isaac.cradle.taxonomy.initfromrels;
+public class WriteCradleLogFile extends Task<Integer> {
+
+    @Override
+    protected Integer call() throws Exception {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+}

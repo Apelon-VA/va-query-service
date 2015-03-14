@@ -49,6 +49,7 @@ public class VerifyLoadEConceptFile
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         this.paths = paths;
         this.termService = termService;
+        Hk2Looker.get().getService(ActiveTaskSet.class).get().add(this);
     }
 
     public VerifyLoadEConceptFile(Path[] paths, CradleExtensions termService, ConceptProxy stampPath) {
@@ -59,7 +60,6 @@ public class VerifyLoadEConceptFile
     @Override
     protected Boolean call() throws Exception {
         boolean filesVerified = true;
-        Hk2Looker.get().getService(ActiveTaskSet.class).get().add(this);
         try {
             Instant start = Instant.now();
             Semaphore conversionPermits = new Semaphore(Runtime.getRuntime().availableProcessors());

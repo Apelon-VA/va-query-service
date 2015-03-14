@@ -49,6 +49,7 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
     private boolean conceptForgotten = false;
     private boolean primordial;
     private boolean annotationStyleRefex;
+    private long lastModified = Long.MIN_VALUE;
     
     public ConceptChronicleDataEager(boolean primordial) {
         this.primordial = primordial;
@@ -99,18 +100,9 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
         this.media.add(media);
     }
     
-    private static CradleExtensions isaacDb;
-    
-    private static CradleExtensions getIsaacDb() {
-        if (isaacDb == null) {
-            isaacDb = Hk2Looker.getService(CradleExtensions.class);
-        }
-        return isaacDb;
-    }
-    
     @Override
     public void add(RefexMember<?, ?> refexMember) {
-        getIsaacDb().writeSememe(refexMember);
+        getCradle().writeSememe(refexMember);
     }
 
     /**
@@ -122,7 +114,7 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
     @Override
     public RefexMember<?, ?> getRefsetMember(int nid) {
         
-        return (RefexMember<?, ?>) getIsaacDb().getSememe(nid);
+        return (RefexMember<?, ?>) getCradle().getSememe(nid);
     }
 
     /**
@@ -160,12 +152,12 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
     
     @Override
     public void modified(ComponentChronicleBI component) {
-        
+        lastModified = cradle.incrementAndGetSequence();
     }
     
     @Override
     public void modified(ConceptComponent component, long sequence) {
-        
+        lastModified = sequence;
     }
     
     @Override
@@ -175,7 +167,8 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
     
     @Override
     public Collection<Integer> getAllNids() {
-        throw new UnsupportedOperationException();
+        return getConceptComponents().mapToInt((ConceptComponent<?, ?> component) -> 
+                component.getNid()).boxed().collect(Collectors.toList());
     }
     
     @Override
@@ -327,7 +320,10 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
     
     @Override
     public boolean isUncommitted() {
-        return false;
+        
+        return getConceptComponents().anyMatch((ConceptComponent<?, ?> component) -> {
+            return component.isUncommitted();
+        });
     }
     
     @Override

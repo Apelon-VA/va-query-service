@@ -15,7 +15,9 @@ import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 
 import java.util.UUID;
 import java.util.concurrent.*;
+import org.ihtsdo.otf.tcc.api.coordinate.Status;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
+import org.ihtsdo.otf.tcc.model.cc.attributes.ConceptAttributesVersion;
 import org.ihtsdo.otf.tcc.model.cc.relationship.Relationship;
 import org.ihtsdo.otf.tcc.model.cc.relationship.RelationshipVersion;
 
@@ -26,8 +28,7 @@ public class ImportEConcept implements Callable<Void> {
 
     private static final SequenceProvider sequenceProvider = Hk2Looker.getService(SequenceProvider.class);
     private static final CradleExtensions cradle = Hk2Looker.getService(CradleExtensions.class);
-    ;
-    
+
     private static final int isaNid;
 
     private static final int statedNid;
@@ -65,6 +66,7 @@ public class ImportEConcept implements Callable<Void> {
 
     @Override
     public Void call() throws Exception {
+
         try {
             if (this.newPathUuid != null) {
                 eConcept.processComponentRevisions(r -> r.setPathUuid(newPathUuid));
@@ -84,50 +86,45 @@ public class ImportEConcept implements Callable<Void> {
                 parentTaxonomyRecord = new TaxonomyRecordPrimitive();
             }
 
-            for (Relationship rel : conceptData.getSourceRels()) {
-                int destinationSequence
-                        = sequenceProvider.getConceptSequence(rel.getDestinationNid());
-                assert destinationSequence != originSequence;
-                rel.getVersions().stream().forEach((rv) -> {
-                    if (isaRelType(rv)) {
-                        int parentRecordFlags = TaxonomyFlags.PARENT.bits;
-                        if (statedRelType(rv)) {
-                            parentRecordFlags += TaxonomyFlags.STATED.bits;
-                        } else if (inferredRelType(rv)) {
-                            parentRecordFlags += TaxonomyFlags.INFERRED.bits;
-                        }
-                        parentTaxonomyRecord.getTaxonomyRecordUnpacked()
-                                .addStampRecord(destinationSequence, rv.getStamp(), parentRecordFlags);
-                    } else {
-                        int parentRecordFlags = TaxonomyFlags.OTHER_CONCEPT.bits;
-                        if (statedRelType(rv)) {
-                            parentRecordFlags += TaxonomyFlags.STATED.bits;
-                        } else if (inferredRelType(rv)) {
-                            parentRecordFlags += TaxonomyFlags.INFERRED.bits;
-                        }
-                        parentTaxonomyRecord.getTaxonomyRecordUnpacked().addStampRecord(destinationSequence, rv.getStamp(), parentRecordFlags);
-                    }
-                });
-                destinationOriginRecordSet.add(new DestinationOriginRecord(destinationSequence, originSequence));
+            if (conceptData.getConceptAttributes() != null) {
+                for (ConceptAttributesVersion cav : conceptData.getConceptAttributes().getVersions()) {
+                    parentTaxonomyRecord.getTaxonomyRecordUnpacked().addStampRecord(originSequence, 
+                            cav.getStamp(), TaxonomyFlags.CONCEPT_STATUS.bits);
+                }
+
+                for (Relationship rel : conceptData.getSourceRels()) {
+                    int destinationSequence
+                            = sequenceProvider.getConceptSequence(rel.getDestinationNid());
+                    assert destinationSequence != originSequence;
+                    rel.getVersions().stream().forEach((rv) -> {
+                        if (rv.getTypeNid() == isaNid) {
+                            int parentRecordFlags = TaxonomyFlags.PARENT.bits;
+                            if (rv.getCharacteristicNid() == statedNid) {
+                                parentRecordFlags += TaxonomyFlags.STATED.bits;
+                            } else if (rv.getCharacteristicNid() == inferredNid) {
+                                parentRecordFlags += TaxonomyFlags.INFERRED.bits;
+                            }
+                            parentTaxonomyRecord.getTaxonomyRecordUnpacked()
+                                    .addStampRecord(destinationSequence, rv.getStamp(), parentRecordFlags);
+                        } //else {
+//                            int relDestinationRecordFlags = TaxonomyFlags.NON_TAXONOMIC_REL.bits;
+//                            if (rv.getCharacteristicNid() == statedNid) {
+//                                relDestinationRecordFlags += TaxonomyFlags.STATED.bits;
+//                            } else if (rv.getCharacteristicNid() == inferredNid) {
+//                                relDestinationRecordFlags += TaxonomyFlags.INFERRED.bits;
+//                            }
+//                            parentTaxonomyRecord.getTaxonomyRecordUnpacked().addStampRecord(destinationSequence, rv.getStamp(), relDestinationRecordFlags);
+//                        }
+                    });
+                    destinationOriginRecordSet.add(new DestinationOriginRecord(destinationSequence, originSequence));
+                }
+                originDestinationTaxonomyRecords.put(originSequence, parentTaxonomyRecord);
+                cradle.writeConceptData(conceptData);
             }
-            originDestinationTaxonomyRecords.put(originSequence, parentTaxonomyRecord);
-            cradle.writeConceptData(conceptData);
             return null;
         } finally {
             permit.release();
         }
-    }
-
-    private static boolean inferredRelType(RelationshipVersion rv) {
-        return rv.getCharacteristicNid() == inferredNid;
-    }
-
-    private static boolean statedRelType(RelationshipVersion rv) {
-        return rv.getCharacteristicNid() == statedNid;
-    }
-
-    private static boolean isaRelType(RelationshipVersion rv) {
-        return rv.getTypeNid() == isaNid;
     }
 
 }

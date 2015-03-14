@@ -20,21 +20,20 @@ import java.util.EnumSet;
  */
 public enum TaxonomyFlags {
 
-    STATED(0x10000000),        // 0001 0000
-    INFERRED(0x20000000),      // 0010 0000
-    PARENT(0x40000000),        // 0100 0000
-    CHILD(0x08000000),         // 0000 1000
-    OTHER_CONCEPT(0x04000000), // 0000 0100
-    PARENT_SEMEME(0x02000000), // 0000 0010
-    CHILD_SEMEME(0x01000000);  // 0000 0001
+    STATED(0x10000000),              // 0001 0000
+    INFERRED(0x20000000),            // 0010 0000
+    SEMEME(0x40000000),              // 0100 0000
+    PARENT(0x08000000),              // 0000 1000
+    CONCEPT_STATUS(0x04000000),      // 0000 0100
+    NON_TAXONOMIC_REL(0x02000000),   // 0000 0010
+    RESERVED_FUTURE_USE(0x01000000); // 0000 0001
 
     public static final int ALL_RELS = 0;
     public static final int PARENT_FLAG_SET = TaxonomyFlags.PARENT.bits;
     public static final int INFERRED_PARENT_FLAGS_SET = TaxonomyFlags.PARENT.bits + TaxonomyFlags.INFERRED.bits;
     public static final int STATED_PARENT_FLAGS_SET = TaxonomyFlags.PARENT.bits +  TaxonomyFlags.STATED.bits;
-    public static final int OTHER_REL_FLAGS_SET = TaxonomyFlags.OTHER_CONCEPT.bits;
-    public static final int PARENT_SEMEME_FLAGS_SET = TaxonomyFlags.PARENT_SEMEME.bits;
-    public static final int CHILD_SEMEME_FLAGS_SET = TaxonomyFlags.CHILD_SEMEME.bits;
+    public static final int NON_TAXONOMIC_REL_FLAGS_SET = TaxonomyFlags.NON_TAXONOMIC_REL.bits;
+    public static final int PARENT_SEMEME_FLAGS_SET = TaxonomyFlags.PARENT.bits + TaxonomyFlags.SEMEME.bits;
 
     public static int getFlagsFromTaxonomyCoordinate(TaxonomyCoordinate viewCoordinate) {
          switch (viewCoordinate.getTaxonomyType()) {

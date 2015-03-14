@@ -49,6 +49,7 @@ public class ImportEConceptFile extends Task<Integer> {
         if (this.stampPath != null) {
             this.stampPathUuid = this.stampPath.getUuids()[0];
         }
+        Hk2Looker.get().getService(ActiveTaskSet.class).get().add(this);
     }
 
     /*
@@ -99,7 +100,6 @@ public class ImportEConceptFile extends Task<Integer> {
      */
     @Override
     protected Integer call() throws Exception {
-        Hk2Looker.get().getService(ActiveTaskSet.class).get().add(this);
         try {
             Instant start = Instant.now();
             Semaphore conversionPermits = new Semaphore(Runtime.getRuntime().availableProcessors());
@@ -127,6 +127,10 @@ public class ImportEConceptFile extends Task<Integer> {
                             updateValue(completionCount);
                         }
                         TtkConceptChronicle eConcept = new TtkConceptChronicle(dis);
+                        
+                        if (eConcept.getPrimordialUuid().equals(UUID.fromString("cd5710b4-d4d4-3582-9799-b9428f9b8938"))) {
+                            log.info("Watch concept: " + eConcept);
+                        }
 
                         conversionPermits.acquire();
                         conversionService.submit(new ImportEConcept(eConcept, conversionPermits, stampPathUuid));

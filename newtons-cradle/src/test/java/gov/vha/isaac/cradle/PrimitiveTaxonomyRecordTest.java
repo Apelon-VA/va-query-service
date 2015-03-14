@@ -15,8 +15,6 @@ public class PrimitiveTaxonomyRecordTest {
     private static final int stamp2 = 77;
     private static final int stamp2b = 79;
     private static final TaxonomyFlags[] flags1 = { TaxonomyFlags.STATED, TaxonomyFlags.PARENT};
-    private static final TaxonomyFlags[] flags2 = { TaxonomyFlags.STATED, TaxonomyFlags.CHILD};
-    private static final TaxonomyFlags[] flags2b = { TaxonomyFlags.INFERRED, TaxonomyFlags.CHILD};
     private TaxonomyRecordPrimitive testRecord1;
     private TaxonomyRecordPrimitive testRecord2;
     
@@ -29,8 +27,6 @@ public class PrimitiveTaxonomyRecordTest {
 
         testRecord2 = new TaxonomyRecordPrimitive(new int[]{0,0,0}, null);
         testRecord2.setSequence(0, conceptSequence2);
-        testRecord2.setStampAndFlags(1, stamp2, flags2);
-        testRecord2.setStampAndFlags(2, stamp2b, flags2b);
         testRecord2.setConceptSequenceStampRecordLength(0, testRecord2.getTaxonomyData().length);
     
     }
@@ -61,35 +57,6 @@ public class PrimitiveTaxonomyRecordTest {
         Assert.assertNotEquals(unpacked1, testRecord1.unpack());
         Assert.assertEquals(unpacked1, unpacked2);
         Assert.assertArrayEquals(unpacked1.pack(), unpacked2.pack());
-    }
-
-    @Test
-    public void testInferredFlag() throws Exception {
-        Assert.assertFalse(testRecord1.inferredFlagSet(1));
-        Assert.assertTrue(testRecord2.inferredFlagSet(2));
-        Assert.assertFalse(testRecord2.inferredFlagSet(1));
-    }
-
-    @Test
-    public void testStatedFlagSet() throws Exception {
-        Assert.assertTrue(testRecord1.statedFlagSet(1));
-        Assert.assertTrue(testRecord2.statedFlagSet(1));
-        Assert.assertFalse(testRecord2.statedFlagSet(2));
-    }
-
-    @Test
-    public void testGetStamp() throws Exception {
-        Assert.assertEquals(stamp1, testRecord1.getStamp(1));
-        Assert.assertEquals(stamp2, testRecord2.getStamp(1));
-        Assert.assertEquals(stamp2b, testRecord2.getStamp(2));
-    }
-
-
-    @Test
-    public void testChildOf() throws Exception {
-        Assert.assertFalse(testRecord1.childFlagSet(1));
-        Assert.assertTrue(testRecord2.childFlagSet(1));
-        Assert.assertTrue(testRecord2.childFlagSet(2));
     }
 
     @Test
