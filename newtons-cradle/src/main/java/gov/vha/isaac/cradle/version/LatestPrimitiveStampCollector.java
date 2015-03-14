@@ -15,6 +15,7 @@
  */
 package gov.vha.isaac.cradle.version;
 
+import gov.vha.isaac.ochre.collections.StampSequenceSet;
 import java.util.EnumSet;
 import java.util.function.ObjIntConsumer;
 import org.apache.mahout.math.set.OpenIntHashSet;
@@ -25,7 +26,7 @@ import org.ihtsdo.otf.tcc.model.version.Stamp;
  *
  * @author kec
  */
-public class LatestPrimitiveStampCollector implements ObjIntConsumer<LatestStampsAsIntArray> {
+public class LatestPrimitiveStampCollector implements ObjIntConsumer<StampSequenceSet> {
 
     private final StampSequenceComputer computer;
 
@@ -34,33 +35,33 @@ public class LatestPrimitiveStampCollector implements ObjIntConsumer<LatestStamp
     }
 
     @Override
-    public void accept(LatestStampsAsIntArray latestResult, int possibleNewLatestStamp) {
-        OpenIntHashSet oldResult = latestResult.getLatestStamps();
-        latestResult.reset();
+    public void accept(StampSequenceSet latestResult, int possibleNewLatestStamp) {
+        StampSequenceSet oldResult = StampSequenceSet.of(latestResult.stream());
+        latestResult.clear();
         if (oldResult.isEmpty()) {
             // Simple case, no results yet, just add the possible stamp...
-            oldResult.add(possibleNewLatestStamp);
+            latestResult.add(possibleNewLatestStamp);
         } else if (oldResult.size() == 1) {
             // Only a single existing result (no contradiction identified), so see which is
             // latest, or if a contradiction exists. 
-            int oldStampedObject = oldResult.keys().get(0);
-            RelativePosition relativePosition = computer.relativePosition(oldStampedObject, possibleNewLatestStamp);
+            int oldStampSequence = oldResult.getIntIterator().next();
+            RelativePosition relativePosition = computer.relativePosition(oldStampSequence, possibleNewLatestStamp);
             switch (relativePosition) {
                 case AFTER:
-                    latestResult.add(oldStampedObject);
+                    latestResult.add(oldStampSequence);
                     break;
                 case BEFORE:
                     latestResult.add(possibleNewLatestStamp);
                     break;
                 case CONTRADICTION:
                 case EQUAL:
-                    latestResult.add(oldStampedObject);
-                    if (oldStampedObject != possibleNewLatestStamp) {
+                    latestResult.add(oldStampSequence);
+                    if (oldStampSequence != possibleNewLatestStamp) {
                         latestResult.add(possibleNewLatestStamp);
                     }
                     break;
                 case UNREACHABLE:
-                    latestResult.addAll(oldResult);
+                    latestResult.or(oldResult);
                     if (computer.onRoute(possibleNewLatestStamp)) {
                         latestResult.add(possibleNewLatestStamp);
                     }
@@ -73,9 +74,8 @@ public class LatestPrimitiveStampCollector implements ObjIntConsumer<LatestStamp
             // Complicated case, current results contain at least one contradiction (size > 1)
 
             EnumSet<RelativePosition> relativePositions = EnumSet.noneOf(RelativePosition.class);
-            oldResult.keys().forEach((oldResultStamp) -> {
+            oldResult.stream().forEach((oldResultStamp) -> {
                 relativePositions.add(computer.relativePosition(possibleNewLatestStamp, oldResultStamp));
-                return true;
             });
             if (relativePositions.size() == 1) {
                 switch ((RelativePosition) relativePositions.toArray()[0]) {
@@ -84,17 +84,15 @@ public class LatestPrimitiveStampCollector implements ObjIntConsumer<LatestStamp
                         break;
                     case BEFORE:
                     case UNREACHABLE:
-                        oldResult.keys().forEach((oldResultStamp) -> {
+                        oldResult.stream().forEach((oldResultStamp) -> {
                             latestResult.add(oldResultStamp);
-                            return true;
                         });
                         break;
                     case CONTRADICTION:
                     case EQUAL:
                         latestResult.add(possibleNewLatestStamp);
-                        oldResult.keys().forEach((oldResultStamp) -> {
+                        oldResult.stream().forEach((oldResultStamp) -> {
                             latestResult.add(oldResultStamp);
-                            return true;
                         });
                         break;
 
@@ -103,7 +101,7 @@ public class LatestPrimitiveStampCollector implements ObjIntConsumer<LatestStamp
                 }
             } else {
                 oldResult.add(possibleNewLatestStamp);
-                String stampInfo = Stamp.stampArrayToString(oldResult.keys().elements());
+                String stampInfo = Stamp.stampArrayToString(oldResult.stream().toArray());
                 System.out.println(stampInfo);
                 throw new UnsupportedOperationException("Can't compute latest stamp for: " + stampInfo);
             }

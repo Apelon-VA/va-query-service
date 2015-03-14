@@ -18,6 +18,8 @@ package gov.vha.isaac.cradle.sequence;
 import gov.vha.isaac.cradle.IsaacDbFolder;
 import gov.vha.isaac.cradle.collections.SequenceMap;
 import gov.vha.isaac.ochre.api.SequenceProvider;
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.collections.SememeSequenceSet;
 import java.io.File;
 import java.io.IOException;
 import java.util.BitSet;
@@ -115,16 +117,16 @@ public class SequenceService implements SequenceProvider {
     }
 
     @Override
-    public BitSet getConceptSequencesForNids(int[] conceptNidArray) {
-        BitSet sequences = new BitSet();
-        IntStream.of(conceptNidArray).forEach((nid) -> sequences.set(conceptSequenceMap.getSequenceFast(nid)));
+    public ConceptSequenceSet getConceptSequencesForNids(int[] conceptNidArray) {
+        ConceptSequenceSet sequences = new ConceptSequenceSet();
+        IntStream.of(conceptNidArray).forEach((nid) -> sequences.add(conceptSequenceMap.getSequenceFast(nid)));
         return sequences;
     }
 
     @Override
-    public BitSet getSememeSequencesForNids(int[] sememeNidArray) {
-        BitSet sequences = new BitSet();
-        IntStream.of(sememeNidArray).forEach((nid) -> sequences.set(sememeSequenceMap.getSequenceFast(nid)));
+    public SememeSequenceSet getSememeSequencesForNids(int[] sememeNidArray) {
+        SememeSequenceSet sequences = new SememeSequenceSet();
+        IntStream.of(sememeNidArray).forEach((nid) -> sequences.add(sememeSequenceMap.getSequenceFast(nid)));
         return sequences;
     }
 }

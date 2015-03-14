@@ -45,11 +45,11 @@ public class ImportCradleLogFile extends Task<Integer> {
         updateValue(0); // no concepts loaded
         this.paths = paths;
         this.termService = termService;
+        Hk2Looker.get().getService(ActiveTaskSet.class).get().add(this);
     }
 
     @Override
     protected Integer call() throws Exception {
-        Hk2Looker.get().getService(ActiveTaskSet.class).get().add(this);
         try {
             Instant start = Instant.now();
             Semaphore conversionPermits = new Semaphore(Runtime.getRuntime().availableProcessors());

@@ -11,12 +11,14 @@ import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordUnpacked;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import gov.vha.isaac.ochre.api.SequenceProvider;
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.ObjIntConsumer;
 import org.apache.mahout.math.set.OpenIntHashSet;
+import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
@@ -64,12 +66,21 @@ public class TaxonomyWalkCollector implements
         if (primitiveTaxonomyRecord.isPresent()) {
             TaxonomyRecordUnpacked taxonomyRecordUnpacked = primitiveTaxonomyRecord.get().getTaxonomyRecordUnpacked();
             accumulator.conceptsProcessed++;
+            if (taxonomyRecordUnpacked.containsActiveConceptSequence(conceptSequence, viewCoordinate, TaxonomyFlags.CONCEPT_STATUS.bits)) {
             int connectionCount = taxonomyRecordUnpacked.conectionCount();
             accumulator.connections += connectionCount;
             accumulator.maxConnections = Math.max(accumulator.maxConnections, connectionCount);
             accumulator.minConnections = Math.min(accumulator.minConnections, connectionCount);
 
             int[] parentSequences = taxonomyRecordUnpacked.getVisibleConceptSequences(viewCoordinate).toArray();
+            if (parentSequences.length == 0) {
+                try {
+                    ConceptChronicleBI c = cradle.getConcept(conceptSequence);
+                    System.out.println("No parents for: " + c);
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
 
             int depth = Integer.MIN_VALUE;
 
@@ -79,6 +90,13 @@ public class TaxonomyWalkCollector implements
             accumulator.parentConnections += parentSequences.length;
             accumulator.statedParentConnections += taxonomyRecordUnpacked.getVisibleConceptSequences(viewCoordinate).count();
             accumulator.inferredParentConnections += taxonomyRecordUnpacked.getVisibleConceptSequences(viewCoordinate).count();
+        }
+        } else {
+            try {
+                System.out.println("No ptm for: " + cradle.getConcept(conceptSequence).toLongString());
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
         }
     }
 

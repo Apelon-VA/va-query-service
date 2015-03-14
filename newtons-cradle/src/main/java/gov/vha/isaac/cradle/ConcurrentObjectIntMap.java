@@ -4,15 +4,25 @@ import org.apache.mahout.math.map.OpenObjectIntHashMap;
 
 import java.util.OptionalInt;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.ObjIntConsumer;
+import org.apache.mahout.math.function.ObjectIntProcedure;
 
 /**
  * Created by kec on 12/18/14.
+ * @param <T> Type of object in map. 
  */
 public class ConcurrentObjectIntMap<T> {
     ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
 
     OpenObjectIntHashMap<T> backingMap = new OpenObjectIntHashMap<>();
 
+    public void forEachPair(ObjIntConsumer<T> consumer) {
+        backingMap.forEachPair((T first, int second) -> {
+            consumer.accept(first, second);
+            return true;
+        });
+        
+    }
 
     public boolean containsKey(T key) {
         rwl.readLock().lock();

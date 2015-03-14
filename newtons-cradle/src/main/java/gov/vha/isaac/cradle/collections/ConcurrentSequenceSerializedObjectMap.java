@@ -133,7 +133,7 @@ public class ConcurrentSequenceSerializedObjectMap<T> {
      * @param sequence
      * @return
      */
-    private T getQuick(int sequence) {
+    public T getQuick(int sequence) {
         int segmentIndex = sequence / SEGMENT_SIZE;
         int indexInSegment = sequence % SEGMENT_SIZE;
         if (storeObjects) {

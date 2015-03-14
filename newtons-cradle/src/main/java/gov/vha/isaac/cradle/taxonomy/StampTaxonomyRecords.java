@@ -76,7 +76,7 @@ public class StampTaxonomyRecords {
        
     public boolean containsStampWithFlags(int flags) {
         boolean found = !stampFlagsMap.forEachPair((int stamp, int flagsForStamp) -> {
-            return (flagsForStamp & flags) != flags;
+            return (flagsForStamp & flags) == flags;
         });
         return found;
     }
@@ -84,7 +84,7 @@ public class StampTaxonomyRecords {
     public IntStream getStampsWithFlags(int flags) {
         Builder intStreamBuilder = IntStream.builder();
         stampFlagsMap.forEachPair((int stamp, int flagsForStamp) -> {
-            if ((flagsForStamp & flags) != flags) {
+            if ((flagsForStamp & flags) == flags) {
                 intStreamBuilder.accept(stamp);
             }
             return true;

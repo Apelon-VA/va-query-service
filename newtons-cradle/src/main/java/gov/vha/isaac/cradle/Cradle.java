@@ -8,11 +8,11 @@ import gov.vha.isaac.cradle.collections.UuidIntMapMap;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEagerSerializer;
 import gov.vha.isaac.cradle.component.SememeSerializer;
-import gov.vha.isaac.cradle.component.StampSerializer;
 import gov.vha.isaac.cradle.taxonomy.DestinationOriginRecord;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyService;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import gov.vha.isaac.ochre.api.ConceptProxy;
+import gov.vha.isaac.ochre.api.LookupService;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,7 +44,6 @@ import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
 import org.ihtsdo.otf.tcc.model.cc.relationship.Relationship;
 import org.ihtsdo.otf.tcc.model.cc.termstore.Termstore;
-import org.ihtsdo.otf.tcc.model.version.Stamp;
 import org.jvnet.hk2.annotations.Service;
 
 import javax.annotation.PostConstruct;
@@ -65,26 +64,18 @@ import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskServer;
 import gov.vha.isaac.ochre.api.SequenceProvider;
 import gov.vha.isaac.ochre.api.TaxonomyProvider;
+import gov.vha.isaac.ochre.api.commit.CommitManager;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.MemoryNotificationInfo;
 import java.nio.file.Path;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
-import java.util.function.IntConsumer;
-import java.util.logging.Level;
-import javax.management.Notification;
-import javax.management.NotificationEmitter;
-import javax.management.NotificationListener;
+import java.util.function.IntFunction;
+import java.util.function.IntUnaryOperator;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.ihtsdo.otf.tcc.api.concept.ConceptFetcherBI;
 import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
@@ -102,7 +93,7 @@ public class Cradle
         extends Termstore
         implements ObjectChronicleTaskServer, CradleExtensions {
 
-    public static final String DEFAULT_ISAACDB_FOLDER = "isaacDb";
+    public static final String DEFAULT_CRADLE_FOLDER = "cradle";
     private static final Logger log = LogManager.getLogger();
 
     final UuidIntMapMap uuidIntMap = new UuidIntMapMap();
@@ -110,10 +101,6 @@ public class Cradle
     final ConcurrentSequenceSerializedObjectMap<ConceptChronicleDataEager> conceptMap;
     final ConcurrentSequenceSerializedObjectMap<RefexMember<?, ?>> sememeMap;
 
-    final ConcurrentObjectIntMap<Stamp> stampMap = new ConcurrentObjectIntMap<>();
-    final ConcurrentSequenceSerializedObjectMap<Stamp> inverseStampMap;
-    final AtomicInteger nextStamp = new AtomicInteger(1);
-    final AtomicLong databaseSequence = new AtomicLong();
 
     final ConcurrentSequenceIntMap nidCnidMap = new ConcurrentSequenceIntMap();
 
@@ -128,6 +115,7 @@ public class Cradle
 
     SequenceProvider sequenceProvider;
     TaxonomyProvider taxonomyProvider;
+    CommitManager commitManager;
 
     Cradle() throws IOException, NumberFormatException, ParseException {
         dbFolderPath = IsaacDbFolder.get().getDbFolderPath();
@@ -136,14 +124,13 @@ public class Cradle
         sememeMap = new ConcurrentSequenceSerializedObjectMap(new SememeSerializer(),
                 dbFolderPath, "sememe-map/", ".sememe.map");
 
-        inverseStampMap = new ConcurrentSequenceSerializedObjectMap<>(new StampSerializer(),
-                dbFolderPath, null, null);
 
     }
 
     @PostConstruct
     private void startMe() throws IOException {
         log.info("Starting Cradle post-construct");
+        commitManager = LookupService.getService(CommitManager.class);
         sequenceProvider = Hk2Looker.getService(SequenceProvider.class);
         if (!IsaacDbFolder.get().getPrimordial()) {
             loadExisting.set(!IsaacDbFolder.get().getPrimordial());
@@ -154,20 +141,6 @@ public class Cradle
     public void loadExistingDatabase() throws IOException {
         taxonomyProvider = Hk2Looker.getService(TaxonomyProvider.class);
         if (loadExisting.compareAndSet(true, false)) {
-            log.info("Loading existing database. ");
-            log.info("Loading isaac.data.");
-            try (DataInputStream in = new DataInputStream(new FileInputStream(new File(dbFolderPath.toFile(), "isaac.data")))) {
-                nextStamp.set(in.readInt());
-                databaseSequence.set(in.readLong());
-                UuidIntMapMap.getNextNidProvider().set(in.readInt());
-                int stampMapSize = in.readInt();
-                for (int i = 0; i < stampMapSize; i++) {
-                    int stampSequence = in.readInt();
-                    Stamp stamp = new Stamp(in);
-                    stampMap.put(stamp, stampSequence);
-                    inverseStampMap.put(stampSequence, stamp);
-                }
-            }
 
             log.info("Loading sequence-cnid-map.");
             nidCnidMap.read(new File(dbFolderPath.toFile(), "sequence-cnid-map"));
@@ -201,26 +174,8 @@ public class Cradle
     private void stopMe() throws IOException {
         log.info("Stopping Cradle pre-destroy. ");
 
-        log.info("nextStamp: {}", nextStamp);
         log.info("sememeMap size: {}", sememeMap.getSize());
 
-        log.info("Writing cradle data");
-
-        try (DataOutputStream out = new DataOutputStream(new FileOutputStream(new File(dbFolderPath.toFile(), "isaac.data")))) {
-            out.writeInt(nextStamp.get());
-            out.writeLong(databaseSequence.get());
-            out.writeInt(UuidIntMapMap.getNextNidProvider().get());
-            out.writeInt(stampMap.size());
-            stampMap.backingMap.forEachPair((Stamp stamp, int stampSequence) -> {
-                try {
-                    out.writeInt(stampSequence);
-                    stamp.write(out);
-                    return true;
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
-                }
-            });
-        }
 
         log.info("writing concept-map.");
         conceptMap.write();
@@ -362,17 +317,13 @@ public class Cradle
     }
 
     @Override
-    public Stream<? extends ConceptChronicleBI> getConceptStream(BitSet conceptSequences) throws IOException {
-        return conceptMap.getStream((sequence) -> {
-            return conceptSequences.get(sequence);
-        }).map(ConceptChronicleDataEager::getConceptChronicle);
+    public Stream<? extends ConceptChronicleBI> getConceptStream(ConceptSequenceSet conceptSequences) throws IOException {
+        return conceptSequences.stream().mapToObj((int sequence) -> conceptMap.getQuick(sequence).getConceptChronicle());
     }
 
     @Override
-    public Stream<? extends ConceptChronicleBI> getParallelConceptStream(BitSet conceptSequences) throws IOException {
-        return conceptMap.getParallelStream((sequence) -> {
-            return conceptSequences.get(sequence);
-        }).map(ConceptChronicleDataEager::getConceptChronicle);
+    public Stream<? extends ConceptChronicleBI> getParallelConceptStream(ConceptSequenceSet conceptSequences) throws IOException {
+        return conceptSequences.stream().parallel().mapToObj((int sequence) -> conceptMap.getQuick(sequence).getConceptChronicle());
     }
 
     private static HashSet<UUID> watchSet = new HashSet<>();
@@ -461,19 +412,18 @@ public class Cradle
 
     @Override
     public void addUncommitted(ConceptChronicleBI conceptChronicleBI) throws IOException {
-        throw new UnsupportedOperationException();
+        commitManager.addUncommitted(conceptChronicleBI);
     }
 
     /**
-     * TODO checks should be before the termstore, not part of the termstore...
      *
      * @param conceptChronicleBI
      * @throws IOException
      */
     @Override
     public void addUncommittedNoChecks(ConceptChronicleBI conceptChronicleBI) throws IOException {
-        throw new UnsupportedOperationException();
-    }
+        commitManager.addUncommittedNoChecks(conceptChronicleBI);
+   }
 
     @Override
     public Collection<? extends ConceptChronicleBI> getUncommittedConcepts() {
@@ -481,12 +431,15 @@ public class Cradle
     }
 
     @Override
-    public boolean commit(ConceptChronicleBI conceptChronicleBI, ChangeSetPolicy changeSetPolicy, ChangeSetWriterThreading changeSetWriterThreading) throws IOException {
+    public boolean commit(ConceptChronicleBI conceptChronicleBI, 
+            ChangeSetPolicy changeSetPolicy, 
+            ChangeSetWriterThreading changeSetWriterThreading) throws IOException {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void cancel(ConceptChronicleBI conceptChronicleBI) throws IOException {
+        commitManager.cancel(conceptChronicleBI);
         throw new UnsupportedOperationException();
     }
 
@@ -498,7 +451,7 @@ public class Cradle
 
     @Override
     public void commit(ConceptVersionBI conceptVersionBI) throws IOException {
-        throw new UnsupportedOperationException();
+        commitManager.commit(conceptVersionBI, null);
     }
 
     @Override
@@ -536,16 +489,16 @@ public class Cradle
     }
 
     @Override
-    public UUID getUuidPrimordialForNid(int i) throws IOException {
-        if (i > 0) {
-            i = sequenceProvider.getConceptNid(i);
+    public UUID getUuidPrimordialForNid(int nid) throws IOException {
+        if (nid > 0) {
+            nid = sequenceProvider.getConceptNid(nid);
         }
-        ComponentChronicleBI<?> component = getComponent(i);
+        ComponentChronicleBI<?> component = getComponent(nid);
         if (component != null) {
-            return getComponent(i).getPrimordialUuid();
+            return getComponent(nid).getPrimordialUuid();
         }
-        UUID[] uuids = uuidIntMap.getKeysForValue(i);
-        log.warn("[1] No object for nid: " + i + " Found uuids: " + Arrays.asList(uuids));
+        UUID[] uuids = uuidIntMap.getKeysForValue(nid);
+        log.warn("[1] No object for nid: " + nid + " Found uuids: " + Arrays.asList(uuids));
         if (uuids != null && uuids.length >= 1) {
             return uuids[0];
         }
@@ -585,8 +538,8 @@ public class Cradle
 
     @Override
     public long getSequence() {
-        return databaseSequence.get();
-    }
+        return commitManager.getSequence();
+   }
 
     @Override
     public int getConceptCount() throws IOException {
@@ -661,7 +614,7 @@ public class Cradle
 
     @Override
     public long incrementAndGetSequence() {
-        return databaseSequence.incrementAndGet();
+        return commitManager.incrementAndGetSequence();
     }
 
     @Override
@@ -839,7 +792,7 @@ public class Cradle
 
     @Override
     public void commit() throws IOException {
-        throw new UnsupportedOperationException();
+        commitManager.commit(null);
     }
 
     @Override
@@ -960,9 +913,9 @@ public class Cradle
     }
 
     @Override
-    public int getAuthorNidForStamp(int i) {
-        Optional<Stamp> s = inverseStampMap.get(i);
-        return s.get().getAuthorNid();
+    public int getAuthorNidForStamp(int stamp) {
+        return sequenceProvider.getConceptNid(
+                commitManager.getAuthorSequenceForStamp(stamp));
     }
 
     @Override
@@ -971,27 +924,25 @@ public class Cradle
     }
 
     @Override
-    public int getModuleNidForStamp(int i) {
-        Optional<Stamp> s = inverseStampMap.get(i);
-        return s.get().getModuleNid();
+    public int getModuleNidForStamp(int stamp) {
+        return sequenceProvider.getConceptNid(
+                commitManager.getModuleSequenceForStamp(stamp));
     }
 
     @Override
-    public int getPathNidForStamp(int i) {
-        Optional<Stamp> s = inverseStampMap.get(i);
-        return s.get().getPathNid();
+    public int getPathNidForStamp(int stamp) {
+        return sequenceProvider.getConceptNid(
+                commitManager.getPathSequenceForStamp(stamp));
     }
 
     @Override
-    public Status getStatusForStamp(int i) {
-        Optional<Stamp> s = inverseStampMap.get(i);
-        return s.get().getStatus();
+    public Status getStatusForStamp(int stamp) {
+        return Status.getStatusFromState(commitManager.getStatusForStamp(stamp));
     }
 
     @Override
-    public long getTimeForStamp(int i) {
-        Optional<Stamp> s = inverseStampMap.get(i);
-        return s.get().getTime();
+    public long getTimeForStamp(int stamp) {
+        return commitManager.getTimeForStamp(stamp);
     }
 
     @Override
@@ -1054,33 +1005,15 @@ public class Cradle
         return new SememeCollection(assemblageSememeKeys, sememeMap);
     }
 
-    ReentrantLock stampLock = new ReentrantLock();
 
     @Override
     public int getStamp(Status status, long time, int authorNid, int moduleNid, int pathNid) {
-        if (time == Long.MAX_VALUE) {
-            throw new UnsupportedOperationException("Can't handle commit yet...");
-        }
-        Stamp stampKey = new Stamp(status, time, authorNid, moduleNid, pathNid);
-        OptionalInt stampValue = stampMap.get(stampKey);
-        if (!stampValue.isPresent()) {
-            // maybe have a few available in an atomic queue, and put back
-            // if not used? Maybe in a thread-local?
-            // Have different sequences, and have the increments be equal to the
-            // number of sequences?
-            stampLock.lock();
-            try {
-                stampValue = stampMap.get(stampKey);
-                if (!stampValue.isPresent()) {
-                    stampValue = OptionalInt.of(nextStamp.getAndIncrement());
-                    inverseStampMap.put(stampValue.getAsInt(), stampKey);
-                    stampMap.put(stampKey, stampValue.getAsInt());
-                }
-            } finally {
-                stampLock.unlock();
-            }
-        }
-        return stampValue.getAsInt();
+        return commitManager.getStamp(status.getState(), 
+                time, 
+                sequenceProvider.getConceptSequence(authorNid), 
+                sequenceProvider.getConceptSequence(moduleNid), 
+                sequenceProvider.getConceptSequence(pathNid));
+
     }
 
     @Override

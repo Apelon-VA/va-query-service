@@ -48,12 +48,12 @@ public class ExportEConceptFile extends Task<Integer>{
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
+        Hk2Looker.get().getService(ActiveTaskSet.class).get().add(this);
     }
 
 
     @Override
     protected Integer call() throws Exception {
-        Hk2Looker.get().getService(ActiveTaskSet.class).get().add(this);
       
         try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(paths.toFile())))) {
             termService.getConceptStream().forEach((ConceptChronicleBI cc) -> {

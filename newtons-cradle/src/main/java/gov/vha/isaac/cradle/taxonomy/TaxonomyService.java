@@ -15,10 +15,12 @@
  */
 package gov.vha.isaac.cradle.taxonomy;
 
+import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.cradle.IsaacDbFolder;
 import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
 import gov.vha.isaac.cradle.version.StampSequenceComputer;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
+import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SequenceProvider;
 import gov.vha.isaac.ochre.api.TaxonomyProvider;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
@@ -59,11 +61,13 @@ public class TaxonomyService implements TaxonomyProvider {
     final ConcurrentSkipListSet<DestinationOriginRecord> destinationOriginRecordSet = new ConcurrentSkipListSet<>();
 
     private SequenceProvider sequenceProvider;
+    private CradleExtensions cradle;
 
     @PostConstruct
     private void startMe() throws IOException {
         log.info("Starting TaxonomyService post-construct");    
         sequenceProvider = Hk2Looker.getService(SequenceProvider.class);
+        cradle = LookupService.getService(CradleExtensions.class);
         if (!IsaacDbFolder.get().getPrimordial()) {
             log.info("Reading taxonomy.");
             originDestinationTaxonomyRecordMap.read(IsaacDbFolder.get().getDbFolderPath(), "taxonomy/", ".taxonomy.map");
@@ -130,7 +134,9 @@ public class TaxonomyService implements TaxonomyProvider {
 
         childId = sequenceProvider.getConceptSequence(childId);
         parentId = sequenceProvider.getConceptSequence(parentId);
-
+        if (childId == parentId) {
+            return true;
+        }
         return recursiveFindAncestor(childId, parentId, tc);
     }
 

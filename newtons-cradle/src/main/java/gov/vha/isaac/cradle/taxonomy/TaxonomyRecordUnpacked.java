@@ -65,7 +65,7 @@ public class TaxonomyRecordUnpacked {
         }
         return false;
     }
-    boolean containsActiveConceptSequence(int conceptSequence, TaxonomyCoordinate tc, int flags) {
+    public boolean containsActiveConceptSequence(int conceptSequence, TaxonomyCoordinate tc, int flags) {
         StampSequenceComputer computer = StampSequenceComputer.getComputer(tc.getStampCoordinate());
         if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
             return conceptSequenceRecordMap.get(conceptSequence).isActive(flags, computer);

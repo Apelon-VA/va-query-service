@@ -18,6 +18,8 @@ package gov.vha.isaac.cradle.version;
 import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.ochre.api.SequenceProvider;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
+import gov.vha.isaac.ochre.collections.StampSequenceSet;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -231,10 +233,10 @@ public class StampSequenceComputer {
         }
     };
     
-    private class LatestStampAsIntArrayResultSupplier implements Supplier<LatestStampsAsIntArray> {
+    private class StampSequenceSetSupplier implements Supplier<StampSequenceSet> {
         @Override
-        public LatestStampsAsIntArray get() {
-            return new LatestStampsAsIntArray();
+        public StampSequenceSet get() {
+            return new StampSequenceSet();
         }
     };
     
@@ -250,15 +252,15 @@ public class StampSequenceComputer {
         return result.getLatestStamps();
     }      
     
-        public int[] getLatestStamps(IntStream stamps) {
-        LatestStampAsIntArrayResultSupplier supplier = new LatestStampAsIntArrayResultSupplier();
+    public int[] getLatestStamps(IntStream stamps) {
+        StampSequenceSetSupplier supplier = new StampSequenceSetSupplier();
         LatestPrimitiveStampCollector collector = new LatestPrimitiveStampCollector(this.viewPoint);
         LatestPrimitiveStampCombiner combiner = new LatestPrimitiveStampCombiner(this);
-        LatestStampsAsIntArray result = stamps.collect(supplier, 
+        StampSequenceSet result = stamps.collect(supplier, 
                        collector, 
                        combiner);
         
-        return result.getLatestStamps().keys().elements();
+        return result.stream().toArray();
     }      
     
 
@@ -270,8 +272,8 @@ public class StampSequenceComputer {
      * contradiction) are active. 
      */
     public boolean isLatestActive(IntStream stamps) {
-        return getLatestStamps(stamps.mapToObj((int stamp) -> new StampedObjectWrapper(stamp))).stream().anyMatch((StampedObject stamp) -> 
-                getIsaacDb().getStatusForStamp(stamp.getStamp()) == Status.ACTIVE);
+        return Arrays.stream(getLatestStamps(stamps)).anyMatch((int stamp) -> 
+                getIsaacDb().getStatusForStamp(stamp) == Status.ACTIVE);
     }
     
     private static CradleExtensions isaacDb;

@@ -15,16 +15,16 @@
  */
 package gov.vha.isaac.cradle.version;
 
+import gov.vha.isaac.ochre.collections.StampSequenceSet;
+import java.util.Arrays;
 import java.util.function.BiConsumer;
-import java.util.stream.IntStream;
-import org.apache.mahout.math.set.OpenIntHashSet;
 import org.ihtsdo.otf.tcc.model.version.RelativePosition;
 
 /**
  *
  * @author kec
  */
-public class LatestPrimitiveStampCombiner implements BiConsumer<LatestStampsAsIntArray, LatestStampsAsIntArray> {
+public class LatestPrimitiveStampCombiner implements BiConsumer<StampSequenceSet, StampSequenceSet> {
 
     private final StampSequenceComputer computer;
 
@@ -33,14 +33,13 @@ public class LatestPrimitiveStampCombiner implements BiConsumer<LatestStampsAsIn
     }
 
     @Override
-    public void accept(LatestStampsAsIntArray t, LatestStampsAsIntArray u) {
-        OpenIntHashSet tStampSet = t.getLatestStamps();
-        OpenIntHashSet uStampSet = u.getLatestStamps();
-        t.reset();
+    public void accept(StampSequenceSet t, StampSequenceSet uStampSet) {
+        StampSequenceSet tStampSet = StampSequenceSet.of(t.stream());
+        t.clear();
         if (tStampSet.size() == 1 && uStampSet.size() == 1) {
 
-            int stamp1 = tStampSet.keys().get(0);
-            int stamp2 = uStampSet.keys().get(0);
+            int stamp1 = tStampSet.getIntIterator().next();
+            int stamp2 = uStampSet.getIntIterator().next();
             RelativePosition relativePosition = computer.relativePosition(stamp1, stamp2);
             switch (relativePosition) {
                 case AFTER:
@@ -67,12 +66,9 @@ public class LatestPrimitiveStampCombiner implements BiConsumer<LatestStampsAsIn
             }
 
         } else {
-            uStampSet.forEachKey((stamp) -> {
-                tStampSet.add(stamp);
-                return true;
-            });
-            t.reset();
-            t.addAll(computer.getLatestStamps(IntStream.of(tStampSet.keys().elements())));
+            tStampSet.or(uStampSet);
+            t.clear();
+            Arrays.stream(computer.getLatestStamps(tStampSet.stream())).forEach((stamp) -> t.add(stamp));
         }
     }
 

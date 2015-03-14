@@ -5,8 +5,10 @@
  */
 package gov.vha.isaac.cradle.taxonomy;
 
+import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import gov.vha.isaac.cradle.waitfree.WaitFreeComparable;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
+import java.util.Optional;
 import java.util.stream.IntStream;
 
 /**
@@ -19,6 +21,20 @@ public class TaxonomyRecordPrimitive implements WaitFreeComparable {
     public static final int STAMP_BIT_MASK = 0x00FFFFFF;
     public static final int LENGTH_BIT_MASK = 0xFF000000;
     public static final int FLAGS_BIT_MASK = 0xFF000000;
+    
+    public static Optional<TaxonomyRecordPrimitive> getIfActive(int conceptSequence, 
+            CasSequenceObjectMap<TaxonomyRecordPrimitive> taxonomyMap, 
+            TaxonomyCoordinate vp) {
+        Optional<TaxonomyRecordPrimitive> optionalRecord = taxonomyMap.get(conceptSequence);
+        if (optionalRecord.isPresent()) {
+            TaxonomyRecordPrimitive record = optionalRecord.get();
+            if (record.containsActiveSequence(conceptSequence, vp, 
+                    TaxonomyFlags.CONCEPT_STATUS.bits)) {
+                return optionalRecord;
+            }
+        }
+        return Optional.empty();
+    }
 
     long msb = 0;
     long lsb = 0;
@@ -113,10 +129,6 @@ public class TaxonomyRecordPrimitive implements WaitFreeComparable {
         taxonomyData[index] = taxonomyData[index] & SEQUENCE_BIT_MASK;
         length = length << 24;
         taxonomyData[index] = taxonomyData[index] + length;
-    }
-
-    public boolean childFlagSet(int index) {
-        return (taxonomyData[index] & TaxonomyFlags.CHILD.bits) == TaxonomyFlags.CHILD.bits;
     }
 
     public boolean parentFlagSet(int index) {

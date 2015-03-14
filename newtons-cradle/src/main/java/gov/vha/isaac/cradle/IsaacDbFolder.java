@@ -15,7 +15,7 @@
  */
 package gov.vha.isaac.cradle;
 
-import static gov.vha.isaac.cradle.Cradle.DEFAULT_ISAACDB_FOLDER;
+import static gov.vha.isaac.cradle.Cradle.DEFAULT_CRADLE_FOLDER;
 import gov.vha.isaac.lookup.constants.Constants;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -51,7 +51,7 @@ public class IsaacDbFolder {
         }
         
 
-        dbFolderPath = Paths.get(issacDbRootFolder, DEFAULT_ISAACDB_FOLDER);
+        dbFolderPath = Paths.get(issacDbRootFolder, DEFAULT_CRADLE_FOLDER);
         primordial.compareAndSet(null, !Files.exists(dbFolderPath));
         if (primordial.get()) {
             Files.createDirectories(dbFolderPath);
