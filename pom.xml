@@ -7,7 +7,7 @@
         <version>1.3</version>
     </parent>
     <artifactId>newtons-cradle-parent</artifactId>
-    <version>1.5-SNAPSHOT</version>
+    <version>1.4</version>
     <packaging>pom</packaging>
     <name>${project.artifactId}: (MMP)</name>
     <description>Newton's Cradle (ChRonicled Assertion Database of Logical Expressions) Parent Project </description>
