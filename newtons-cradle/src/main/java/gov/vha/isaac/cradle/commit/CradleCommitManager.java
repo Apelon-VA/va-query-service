@@ -36,6 +36,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.concurrent.ConcurrentHashMap;
@@ -68,7 +69,7 @@ import org.jvnet.hk2.annotations.Service;
 @Service(name = "Cradle Commit Manager")
 @RunLevel(value = 1)
 public class CradleCommitManager implements CommitManager {
-    
+
     private static final Logger log = LogManager.getLogger();
     public static final String DEFAULT_CRADLE_COMMIT_MANAGER_FOLDER = "commit-manager";
     private static final String COMMIT_MANAGER_DATA_FILENAME = "commit-manager.data";
@@ -95,12 +96,11 @@ public class CradleCommitManager implements CommitManager {
     private final ReentrantLock uncommittedSequenceLock = new ReentrantLock();
     private final ConceptSequenceSet uncommittedWithChecksSequenceSet = new ConceptSequenceSet();
     private final ConceptSequenceSet uncommittedNoChecksSequenceSet = new ConceptSequenceSet();
-    
+
     private final WriteConceptCompletionService writeConceptCompletionService = new WriteConceptCompletionService();
     private final ExecutorService writeCompletionServicePool = Executors.newSingleThreadExecutor((Runnable r) -> {
         return new Thread(r, "writeCompletionService thread");
     });
-
 
     private long lastCommit = Long.MIN_VALUE;
 
@@ -208,34 +208,49 @@ public class CradleCommitManager implements CommitManager {
     @Override
     public int getAuthorSequenceForStamp(int stamp) {
         Optional<Stamp> s = inverseStampMap.get(stamp);
-        return sequenceProvider.getConceptSequence(
-                s.get().getAuthorNid());
+        if (s.isPresent()) {
+            return sequenceProvider.getConceptSequence(
+                    s.get().getAuthorNid());
+        }
+        throw new NoSuchElementException("No stampSequence found: " + stamp);
     }
 
     @Override
     public int getModuleSequenceForStamp(int stamp) {
         Optional<Stamp> s = inverseStampMap.get(stamp);
-        return sequenceProvider.getConceptSequence(
-                s.get().getModuleNid());
+        if (s.isPresent()) {
+            return sequenceProvider.getConceptSequence(
+                    s.get().getModuleNid());
+        }
+        throw new NoSuchElementException("No stampSequence found: " + stamp);
     }
 
     @Override
     public int getPathSequenceForStamp(int stamp) {
         Optional<Stamp> s = inverseStampMap.get(stamp);
-        return sequenceProvider.getConceptSequence(
-                s.get().getPathNid());
+        if (s.isPresent()) {
+            return sequenceProvider.getConceptSequence(
+                    s.get().getPathNid());
+        }
+        throw new NoSuchElementException("No stampSequence found: " + stamp);
     }
 
     @Override
     public State getStatusForStamp(int stamp) {
         Optional<Stamp> s = inverseStampMap.get(stamp);
-        return s.get().getStatus().getState();
+        if (s.isPresent()) {
+            return s.get().getStatus().getState();
+        }
+        throw new NoSuchElementException("No stampSequence found: " + stamp);
     }
 
     @Override
     public long getTimeForStamp(int stamp) {
         Optional<Stamp> s = inverseStampMap.get(stamp);
-        return s.get().getTime();
+        if (s.isPresent()) {
+            return s.get().getTime();
+        }
+        throw new NoSuchElementException("No stampSequence found: " + stamp);
     }
 
     @Override
@@ -392,17 +407,16 @@ public class CradleCommitManager implements CommitManager {
             }
 
             if (!stampSequenceSet.isEmpty()) {
-                CommitRecord commitRecord = new CommitRecord(Instant.ofEpochMilli(commitTime), 
+                CommitRecord commitRecord = new CommitRecord(Instant.ofEpochMilli(commitTime),
                         stampSequenceSet.asOpenIntHashSet(),
-                        new OpenIntIntHashMap(), 
+                        new OpenIntIntHashMap(),
                         commitComment);
-            
+
 //                ChangeSetWriterHandler handler
 //                        = new ChangeSetWriterHandler(conceptsToCommit, commitTime,
 //                                stampSequenceSet, ChangeSetPolicy.INCREMENTAL.convert(),
 //                                ChangeSetWriterThreading.SINGLE_THREAD);
 //                changeSetWriterService.execute(handler);
-
             }
 
 //            notifyCommit();
@@ -414,9 +428,7 @@ public class CradleCommitManager implements CommitManager {
 //                    i.commitWriter();
 //                }
 //            }
-            
 //            GlobalPropertyChange.firePropertyChange(TerminologyStoreDI.CONCEPT_EVENT.POST_COMMIT, null, conceptsToCommit);
-
             CommitSequence.nextSequence();
         } catch (Exception e1) {
             throw new RuntimeException(e1);

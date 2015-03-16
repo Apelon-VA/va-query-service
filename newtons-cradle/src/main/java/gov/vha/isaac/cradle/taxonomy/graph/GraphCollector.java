@@ -10,6 +10,7 @@ import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordUnpacked;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
+import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SequenceProvider;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
@@ -33,6 +34,8 @@ import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 public class GraphCollector implements 
         ObjIntConsumer<HashTreeBuilder>, BiConsumer<HashTreeBuilder,HashTreeBuilder>{
     private static CradleExtensions isaacDb;
+
+    private final static int ISA_CONCEPT_SEQUENCE = IsaacMetadataAuxiliaryBinding.IS_A.getSequence();
 
     /**
      * @return the isaacDb
@@ -78,13 +81,8 @@ public class GraphCollector implements
         
         if (isaacPrimitiveTaxonomyRecord.isPresent()) {
             TaxonomyRecordUnpacked taxonomyRecordUnpacked = isaacPrimitiveTaxonomyRecord.get().getTaxonomyRecordUnpacked();
-            IntStream destinationStream = taxonomyRecordUnpacked.getActiveConceptSequences(taxonomyCoordinate);
-
-            if ((taxonomyFlags & TaxonomyFlags.PARENT.bits) == TaxonomyFlags.PARENT.bits) {
-                destinationStream.forEach((int destinationSequence) -> graphBuilder.add(destinationSequence, originSequence));
-            } else {
-                destinationStream.forEach((int destinationSequence) -> graphBuilder.add(originSequence, destinationSequence));
-            }
+            IntStream destinationStream = taxonomyRecordUnpacked.getActiveConceptSequencesForType(ISA_CONCEPT_SEQUENCE, taxonomyCoordinate);
+            destinationStream.forEach((int destinationSequence) -> graphBuilder.add(destinationSequence, originSequence));
         }
         originSequenceBeingProcessed = -1;
     }

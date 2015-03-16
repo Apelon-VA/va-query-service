@@ -14,25 +14,26 @@ import java.time.Instant;
 import java.util.EnumSet;
 import java.util.stream.IntStream;
 import java.util.stream.IntStream.Builder;
-import org.apache.mahout.math.function.IntIntProcedure;
-import org.apache.mahout.math.map.OpenIntIntHashMap;
+import java.util.stream.LongStream;
+import org.apache.mahout.math.function.LongProcedure;
+import org.apache.mahout.math.set.OpenLongHashSet;
 import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
 import org.ihtsdo.otf.tcc.api.coordinate.Status;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 
 /**
- * This class maps stamps to the
- * {@code TaxonomyFlags} associated with that stamp.
+ * This class maps stamps to the {@code TaxonomyFlags} associated with that
+ * stampSequence.
  *
  * @author kec
  */
-public class StampTaxonomyRecords {
+public class TypeStampTaxonomyRecords {
 
     /**
-     * int (the map key) is a stamp TaxonomyFlags (the map value) are the flags
-     * associated with the stamp;
+     * int (the map key) is a stampSequence TaxonomyFlags (the map value) are
+     * the flags associated with the stampSequence;
      */
-    private final OpenIntIntHashMap stampFlagsMap = new OpenIntIntHashMap(11);
+    private final OpenLongHashSet typeStampFlagsSet = new OpenLongHashSet(7);
 
     private static CradleExtensions isaacDb;
 
@@ -46,145 +47,145 @@ public class StampTaxonomyRecords {
         return isaacDb;
     }
 
-    public StampTaxonomyRecords() {
+    public TypeStampTaxonomyRecords() {
     }
 
-    public StampTaxonomyRecords(int stamp,
-            TaxonomyFlags flag) {
-        this.stampFlagsMap.put(stamp, flag.bits);
+    public TypeStampTaxonomyRecords(int typeSequence, int stampSequence, TaxonomyFlags flag) {
+        this.typeStampFlagsSet.add(convertToLong(typeSequence, stampSequence, flag.bits));
     }
 
-    public StampTaxonomyRecords(int[] sourceArray, int sourcePosition) {
+    public TypeStampTaxonomyRecords(int[] sourceArray, int sourcePosition) {
         int length = sourceArray[sourcePosition] >>> 24;
         int recordEnd = sourcePosition + length;
-        for (sourcePosition = sourcePosition + 1; sourcePosition < recordEnd; sourcePosition++) {
-            int stamp = sourceArray[sourcePosition] & TaxonomyRecordPrimitive.SEQUENCE_BIT_MASK;
-            int flags = sourceArray[sourcePosition] & TaxonomyRecordPrimitive.FLAGS_BIT_MASK;
-            stampFlagsMap.put(stamp, flags);
+        for (sourcePosition = sourcePosition + 1; sourcePosition < recordEnd; sourcePosition += 2) {
+            long record = sourceArray[sourcePosition];
+            record = record << 32;
+            record += sourceArray[sourcePosition + 1];
+            typeStampFlagsSet.add(record);
         }
-    }
-    
-    public IntStream getStampFlagStream() {
-        int[] keys = stampFlagsMap.keys().elements();
-        int[] stampFlags = new int[keys.length];
-        for (int i = 0; i < stampFlags.length; i++) {
-            stampFlags[i] = keys[i] + stampFlagsMap.get(keys[i]);
-        }
-        return IntStream.of(stampFlags);
     }
 
-       
-    public boolean containsStampWithFlags(int flags) {
-        boolean found = !stampFlagsMap.forEachPair((int stamp, int flagsForStamp) -> {
-            return (flagsForStamp & flags) == flags;
+    public LongStream getTypeStampFlagStream() {
+        return LongStream.of(typeStampFlagsSet.keys().elements());
+    }
+
+    /**
+     * 
+     * @param typeSequence Integer.MAX_VALUE is a wildcard and will match all types. 
+     * @param flags
+     * @return true if found. 
+     */
+    public boolean containsStampOfTypeWithFlags(int typeSequence, int flags) {
+        boolean found = !typeStampFlagsSet.forEachKey((long record) -> {
+            if (typeSequence == Integer.MAX_VALUE) { // wildcard
+                if (((record >>> 32) & TaxonomyRecordPrimitive.FLAGS_BIT_MASK) == flags) {
+                    return false; // finish search. 
+                }
+            } else if ((record & TaxonomyRecordPrimitive.SEQUENCE_BIT_MASK) == typeSequence) {
+                if (((record >>> 32) & TaxonomyRecordPrimitive.FLAGS_BIT_MASK) == flags) {
+                    return false; // finish search. 
+                }
+            }
+            return true; // continue search...
         });
         return found;
     }
-    
-    public IntStream getStampsWithFlags(int flags) {
+
+    public IntStream getStampsOfTypeWithFlags(int typeSequence, int flags) {
         Builder intStreamBuilder = IntStream.builder();
-        stampFlagsMap.forEachPair((int stamp, int flagsForStamp) -> {
-            if ((flagsForStamp & flags) == flags) {
-                intStreamBuilder.accept(stamp);
+        typeStampFlagsSet.forEachKey((long record) -> {
+            int stampAndFlag = (int) (record >>> 32);
+            if (typeSequence == Integer.MAX_VALUE) { // wildcard
+                 if ((stampAndFlag & TaxonomyRecordPrimitive.FLAGS_BIT_MASK) == flags) {
+                    intStreamBuilder.accept(stampAndFlag & TaxonomyRecordPrimitive.SEQUENCE_BIT_MASK); 
+                }
+            } else if ((record & TaxonomyRecordPrimitive.SEQUENCE_BIT_MASK) == typeSequence) {
+                if ((stampAndFlag & TaxonomyRecordPrimitive.FLAGS_BIT_MASK) == flags) {
+                    intStreamBuilder.accept(stampAndFlag & TaxonomyRecordPrimitive.SEQUENCE_BIT_MASK); 
+                }
             }
             return true;
         });
         return intStreamBuilder.build();
     }
 
-    boolean isActive(TaxonomyCoordinate tc, StampSequenceComputer computer) {
+    boolean isActive(int typeSequence, TaxonomyCoordinate tc, StampSequenceComputer computer) {
         int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
-        return isActive(flags, computer);
+        return isActive(typeSequence, flags, computer);
     }
 
-    public boolean isActive(int flags, StampSequenceComputer computer) {
-        int[] latestStamps = computer.getLatestStamps(getStampsWithFlags(flags));
-        for (int stamp: latestStamps) {
+    public boolean isActive(int typeSequence, int flags, StampSequenceComputer computer) {
+        int[] latestStamps = computer.getLatestStamps(getStampsOfTypeWithFlags(typeSequence, flags));
+        for (int stamp : latestStamps) {
             if (getIsaacDb().getStatusForStamp(stamp) == Status.ACTIVE) {
                 return true;
             }
         }
         return false;
     }
-    boolean isVisible(TaxonomyCoordinate tc, StampSequenceComputer computer) {
+
+    boolean isVisible(int typeSequence, TaxonomyCoordinate tc, StampSequenceComputer computer) {
         int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
-        return isVisible(flags, computer);
+        return isVisible(typeSequence, flags, computer);
     }
 
-    public boolean isVisible(int flags, StampSequenceComputer computer) {
-        return computer.getLatestStamps(getStampsWithFlags(flags)).length > 0;
+    public boolean isVisible(int typeSequence, int flags, StampSequenceComputer computer) {
+        return computer.getLatestStamps(getStampsOfTypeWithFlags(typeSequence, flags)).length > 0;
     }
-    
+
     /**
      *
-     * @return the number of integers this stamp record will occupy when packed.
+     * @return the number of integers this stampSequence record will occupy when
+     * packed.
      */
     public int length() {
         // 1 is for the concept sequence with the top 8 bits set to the length
-        // of sequence plus the associated stamp records. 
-        return 1 + stampFlagsMap.size();
+        // of sequence plus the associated stampSequence records. 
+        return 1 + (typeStampFlagsSet.size() * 2);
     }
 
     public void addToIntArray(int conceptSequence, int[] destinationArray, int destinationPosition) {
         int length = length();
         int index = destinationPosition + 1;
         destinationArray[destinationPosition] = conceptSequence + (length << 24);
-        AddToArrayIntIntProcedure addToArrayIntObjectProcedure = new AddToArrayIntIntProcedure(index, destinationArray);
-        stampFlagsMap.forEachPair(addToArrayIntObjectProcedure);
+        AddToArrayProcedure addToArrayIntObjectProcedure = new AddToArrayProcedure(index, destinationArray);
+        typeStampFlagsSet.forEachKey(addToArrayIntObjectProcedure);
     }
 
-
-    private static class AddToArrayIntIntProcedure implements IntIntProcedure {
+    private static class AddToArrayProcedure implements LongProcedure {
 
         int index;
         int destinationArray[];
 
-        public AddToArrayIntIntProcedure(int index, int[] destinationArray) {
+        public AddToArrayProcedure(int index, int[] destinationArray) {
             this.index = index;
             this.destinationArray = destinationArray;
         }
 
         /**
-         * Adds the combined stamp + flags to the index location in the
+         * Adds the combined typeSequence + stampSequence + flags to the index location in the
          * destination array defined in the procedure constructor.
-         *
-         * @param stamp the stamp to combine with the flags into a single
-         * integer.
-         * @param flags the flags to combine with the stamp into a single
-         * integer.
-         * @return true if the procedure should continue
+         * @param record
+         * @return true to continue.
          */
         @Override
-        public boolean apply(int stamp, int flags) {
-            // This reduce operation is the sum of the flags + the stamp value. 
-            // Since the flags only occupy the top 8 bits of the integer, the 
-            // bottom 24 bits represent the stamp. 
-              stamp += flags;  
-
-            // Tried below streams. Turned out really slow on profiling. So replaced
-            // with above. 
-            //stamp = flags.stream().map((field) -> field.bits).reduce(stamp, Integer::sum);
-            destinationArray[index] = stamp;
-            index++;
+        public boolean apply(long record) {
+            int stampAndFlags = (int) (record >>> 32);
+            destinationArray[index++] = stampAndFlags;
+            destinationArray[index++] = (int) record;
             return true;
         }
     }
 
-    public void addStampRecord(int stamp, int flags) {
-        if (stampFlagsMap.containsKey(stamp)) {
-           stampFlagsMap.put(stamp, stampFlagsMap.get(stamp) + flags);
-        } else {
-            stampFlagsMap.put(stamp, flags);
-        }
+    public void addStampRecord(int typeSequence, int stampSequence, int taxonomyFlags) {
+        long record = convertToLong(typeSequence, stampSequence, taxonomyFlags);
+        typeStampFlagsSet.add(record);
     }
 
-    public void merge(StampTaxonomyRecords newRecord) {
-        newRecord.stampFlagsMap.forEachPair((int stamp, int flags) -> {
-            if (stampFlagsMap.containsKey(stamp)) {
-                stampFlagsMap.put(stamp, stampFlagsMap.get(stamp) + flags);
-            } else {
-                stampFlagsMap.put(stamp, flags);
-            }
+    public void merge(TypeStampTaxonomyRecords newRecords) {
+
+        newRecords.typeStampFlagsSet.forEachKey((long recordAsLong) -> {
+            typeStampFlagsSet.add(recordAsLong);
             return true;
         });
     }
@@ -192,37 +193,70 @@ public class StampTaxonomyRecords {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        stampFlagsMap.forEachPair((int stamp, int flags) -> {
-            StampTaxonomyRecord str = new StampTaxonomyRecord(stamp, flags);
+        typeStampFlagsSet.forEachKey((long record) -> {
+            TypeStampTaxonomyRecord str = new TypeStampTaxonomyRecord(record);
             sb.append(str.toString());
             return true;
         });
         return sb.toString();
     }
 
-    public static class StampTaxonomyRecord implements StampedObject {
+    public static long convertToLong(int typeSequence, int stampSequence, int taxonomyFlags) {
+        long record = stampSequence;
+        if (taxonomyFlags > 512) {
+           record += taxonomyFlags;
+        } else {
+            record += (taxonomyFlags << 24);
+        }
+        record = record << 32;
+        record += typeSequence;
+        return record;
+    }
 
-        int stamp;
+    public static class TypeStampTaxonomyRecord implements StampedObject {
+
+        int typeSequence;
+        int stampSequence;
         int taxonomyFlags;
 
-        public StampTaxonomyRecord(int stamp, int taxonomyFlags) {
-            this.stamp = stamp;
+        public TypeStampTaxonomyRecord(long record) {
+            this.typeSequence = (int) record & TaxonomyRecordPrimitive.SEQUENCE_BIT_MASK;
+            record = record >>> 32;
+            this.stampSequence = (int) record & TaxonomyRecordPrimitive.SEQUENCE_BIT_MASK;
+            this.taxonomyFlags = (int) record & TaxonomyRecordPrimitive.FLAGS_BIT_MASK;
+        }
+
+        public TypeStampTaxonomyRecord(int typeSequence, int stampSequence, int taxonomyFlags) {
+            this.typeSequence = typeSequence;
+            this.stampSequence = stampSequence;
             this.taxonomyFlags = taxonomyFlags;
+        }
+
+        public int getTypeSequence() {
+            return typeSequence;
+        }
+
+        public long getAsLong() {
+            return convertToLong(typeSequence, stampSequence, taxonomyFlags);
+
         }
 
         @Override
         public int getStamp() {
-            return stamp;
+            return stampSequence;
         }
 
-        public EnumSet<TaxonomyFlags> getTaxonomyFlags() {
+        public EnumSet<TaxonomyFlags> getTaxonomyFlagsAsEnum() {
             return TaxonomyFlags.getTaxonomyFlags(taxonomyFlags);
+        }
+        public int getTaxonomyFlags() {
+            return taxonomyFlags;
         }
 
         @Override
         public int hashCode() {
             int hash = 7;
-            hash = 97 * hash + this.stamp;
+            hash = 97 * hash + this.stampSequence;
             return hash;
         }
 
@@ -234,8 +268,11 @@ public class StampTaxonomyRecords {
             if (getClass() != obj.getClass()) {
                 return false;
             }
-            final StampTaxonomyRecord other = (StampTaxonomyRecord) obj;
-            if (this.stamp != other.stamp) {
+            final TypeStampTaxonomyRecord other = (TypeStampTaxonomyRecord) obj;
+            if (this.stampSequence != other.stampSequence) {
+                return false;
+            }
+            if (this.typeSequence != other.typeSequence) {
                 return false;
             }
             return this.taxonomyFlags == other.taxonomyFlags;
@@ -246,24 +283,29 @@ public class StampTaxonomyRecords {
             StringBuilder sb = new StringBuilder();
             try {
                 sb.append("«");
-                sb.append(stamp);
+                sb.append(getIsaacDb().getConcept(typeSequence).toUserString());
+                sb.append("|");
+                sb.append(typeSequence);
+                sb.append("|");
+                sb.append(" ss:");
+                sb.append(stampSequence);
                 sb.append(" (s:");
-                Status status = getIsaacDb().getStatusForStamp(stamp);
+                Status status = getIsaacDb().getStatusForStamp(stampSequence);
                 sb.append(status);
                 sb.append(" t:");
-                Instant time = Instant.ofEpochMilli(getIsaacDb().getTimeForStamp(stamp));
+                Instant time = Instant.ofEpochMilli(getIsaacDb().getTimeForStamp(stampSequence));
                 sb.append(time.toString());
                 sb.append(" a:");
-                ConceptChronicleBI author = getIsaacDb().getConcept(getIsaacDb().getAuthorNidForStamp(stamp));
+                ConceptChronicleBI author = getIsaacDb().getConcept(getIsaacDb().getAuthorNidForStamp(stampSequence));
                 sb.append(author.toUserString());
                 sb.append(" m:");
-                ConceptChronicleBI module = getIsaacDb().getConcept(getIsaacDb().getModuleNidForStamp(stamp));
+                ConceptChronicleBI module = getIsaacDb().getConcept(getIsaacDb().getModuleNidForStamp(stampSequence));
                 sb.append(module.toUserString());
                 sb.append(" p:");
-                ConceptChronicleBI path = getIsaacDb().getConcept(getIsaacDb().getPathNidForStamp(stamp));
+                ConceptChronicleBI path = getIsaacDb().getConcept(getIsaacDb().getPathNidForStamp(stampSequence));
                 sb.append(path.toUserString());
                 sb.append(")->");
-                sb.append(getTaxonomyFlags());
+                sb.append(getTaxonomyFlagsAsEnum());
                 sb.append("»");
             } catch (IOException ex) {
                 throw new RuntimeException(ex);

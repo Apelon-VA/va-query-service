@@ -20,6 +20,7 @@ import gov.vha.isaac.cradle.IsaacDbFolder;
 import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
 import gov.vha.isaac.cradle.version.StampSequenceComputer;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
+import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SequenceProvider;
 import gov.vha.isaac.ochre.api.TaxonomyProvider;
@@ -51,7 +52,7 @@ import org.jvnet.hk2.annotations.Service;
 public class TaxonomyService implements TaxonomyProvider {
     
     private static final Logger log = LogManager.getLogger();
-    
+
     /**
      * The {@code taxonomyMap} associates concept sequence keys with a 
      * primitive taxonomy record, which represents the destination, 
@@ -110,18 +111,11 @@ public class TaxonomyService implements TaxonomyProvider {
         Optional<TaxonomyRecordPrimitive> record = originDestinationTaxonomyRecordMap.get(childId);
         if (record.isPresent()) {
             TaxonomyRecordUnpacked childTaxonomyRecords = new TaxonomyRecordUnpacked(record.get().getArray());
-            Optional<StampTaxonomyRecords> parentStampRecordsOptional = childTaxonomyRecords.getConceptSequenceStampRecords(parentId);
+            Optional<TypeStampTaxonomyRecords> parentStampRecordsOptional = childTaxonomyRecords.getConceptSequenceStampRecords(parentId);
             if (parentStampRecordsOptional.isPresent()) {
-                StampTaxonomyRecords parentStampRecords = parentStampRecordsOptional.get();
-                IntStream.Builder parentStampsIntStream = IntStream.builder();
-                parentStampRecords.getStampFlagStream().forEach((stampFlag) -> {
-                    if ((stampFlag & flags) == flags) {
-                        parentStampsIntStream
-                                .add(stampFlag & TaxonomyRecordPrimitive.STAMP_BIT_MASK);
-                    }
-                });
-
-                if (computer.isLatestActive(parentStampsIntStream.build())) {
+                TypeStampTaxonomyRecords parentStampRecords = parentStampRecordsOptional.get();
+                if (computer.isLatestActive(parentStampRecords.getStampsOfTypeWithFlags(
+                        IsaacMetadataAuxiliaryBinding.IS_A.getSequence(), flags))) {
                     return true;
                 }
             }
@@ -149,7 +143,8 @@ public class TaxonomyService implements TaxonomyProvider {
         if (record.isPresent()) {
             TaxonomyRecordUnpacked childTaxonomyRecords = new TaxonomyRecordUnpacked(record.get().getArray());
             int[] activeConceptSequences
-                    = childTaxonomyRecords.getActiveConceptSequences(tc).toArray();
+                    = childTaxonomyRecords.getActiveConceptSequencesForType(
+                            IsaacMetadataAuxiliaryBinding.IS_A.getSequence(), tc).toArray();
             if (Arrays.stream(activeConceptSequences).anyMatch((int activeParentSequence) -> activeParentSequence == parentSequence)) {
                 return true;
             }
@@ -179,32 +174,32 @@ public class TaxonomyService implements TaxonomyProvider {
     }
 
 
-    private IntStream filterOriginSequences(IntStream origins, int parentId, TaxonomyCoordinate tc, AllowedStatus allowedStatus, AllowedRelTypes allowedRelTypes) {
+    private IntStream filterOriginSequences(IntStream origins, int parentSequence, int typeSequence, TaxonomyCoordinate tc, AllowedStatus allowedStatus, AllowedRelTypes allowedRelTypes) {
         return origins.filter((originSequence) -> {
             Optional<TaxonomyRecordPrimitive> taxonomyRecordOptional = originDestinationTaxonomyRecordMap.get(originSequence);
             if (taxonomyRecordOptional.isPresent()) {
                 TaxonomyRecordPrimitive taxonomyRecord = taxonomyRecordOptional.get();
                 if (allowedStatus == AllowedStatus.ACTIVE_ONLY) {
                     if (allowedRelTypes == AllowedRelTypes.ALL_RELS) {
-                        return taxonomyRecord.containsActiveSequence(parentId, tc, TaxonomyFlags.ALL_RELS);
+                        return taxonomyRecord.containsActiveSequenceViaType(parentSequence, typeSequence, tc, TaxonomyFlags.ALL_RELS);
                     }
-                    return taxonomyRecord.containsActiveSequence(parentId, tc);
+                    return taxonomyRecord.containsActiveSequenceViaType(parentSequence, typeSequence, tc);
                 } else {
                     if (allowedRelTypes == AllowedRelTypes.ALL_RELS) {
-                        return taxonomyRecord.containsVisibleSequence(parentId, tc, TaxonomyFlags.ALL_RELS);
+                        return taxonomyRecord.containsVisibleSequenceViaType(parentSequence, typeSequence, tc, TaxonomyFlags.ALL_RELS);
                     }
-                    return taxonomyRecord.containsVisibleSequence(parentId, tc);
+                    return taxonomyRecord.containsVisibleSequenceViaType(parentSequence, typeSequence, tc);
                 }
             }
             return false;
         });
     }
-    private IntStream filterOriginSequences(IntStream origins, int parentId, int flags) {
+    private IntStream filterOriginSequences(IntStream origins, int parentSequence, int typeSequence, int flags) {
         return origins.filter((originSequence) -> {
             Optional<TaxonomyRecordPrimitive> taxonomyRecordOptional = originDestinationTaxonomyRecordMap.get(originSequence);
             if (taxonomyRecordOptional.isPresent()) {
                 TaxonomyRecordPrimitive taxonomyRecord = taxonomyRecordOptional.get();
-                return taxonomyRecord.containsSequenceWithFlags(parentId, flags);
+                return taxonomyRecord.containsSequenceViaTypeWithFlags(parentSequence, typeSequence, flags);
             }
             return false;
         });
@@ -264,7 +259,9 @@ public class TaxonomyService implements TaxonomyProvider {
         parentId = sequenceProvider.getConceptSequence(parentId);
         IntStream origins = getOriginSequenceStream(parentId);
         
-        return filterOriginSequences(origins, parentId, tc, AllowedStatus.ACTIVE_ONLY, AllowedRelTypes.HIERARCHICAL_ONLY).toArray();
+        return filterOriginSequences(origins, parentId, 
+                IsaacMetadataAuxiliaryBinding.IS_A.getSequence(), tc, 
+                AllowedStatus.ACTIVE_ONLY, AllowedRelTypes.HIERARCHICAL_ONLY).toArray();
     }
 
     @Override
@@ -272,7 +269,9 @@ public class TaxonomyService implements TaxonomyProvider {
         parentId = sequenceProvider.getConceptSequence(parentId);
         // Set of all concept sequences that point to the parent. 
         IntStream origins = getOriginSequenceStream(parentId);
-        return filterOriginSequences(origins, parentId, tc, AllowedStatus.ACTIVE_AND_INACTIVE, AllowedRelTypes.HIERARCHICAL_ONLY).toArray();
+        return filterOriginSequences(origins, parentId, 
+                IsaacMetadataAuxiliaryBinding.IS_A.getSequence(), tc, 
+                AllowedStatus.ACTIVE_AND_INACTIVE, AllowedRelTypes.HIERARCHICAL_ONLY).toArray();
     }
 
     @Override
@@ -280,7 +279,8 @@ public class TaxonomyService implements TaxonomyProvider {
         parentId = sequenceProvider.getConceptSequence(parentId);
         // Set of all concept sequences that point to the parent. 
         IntStream origins = getOriginSequenceStream(parentId);
-        return filterOriginSequences(origins, parentId, TaxonomyFlags.PARENT_FLAG_SET).toArray();
+        return filterOriginSequences(origins, parentId, 
+                IsaacMetadataAuxiliaryBinding.IS_A.getSequence(), TaxonomyFlags.ALL_RELS).toArray();
     }
 
     @Override
@@ -288,7 +288,9 @@ public class TaxonomyService implements TaxonomyProvider {
         destination = sequenceProvider.getConceptSequence(destination);
         // Set of all concept sequences that point to the parent. 
         IntStream origins = getOriginSequenceStream(destination);
-        return filterOriginSequences(origins, destination, tc,  AllowedStatus.ACTIVE_ONLY, AllowedRelTypes.ALL_RELS).toArray();
+        return filterOriginSequences(origins, destination, 
+                IsaacMetadataAuxiliaryBinding.IS_A.getSequence(), tc,  
+                AllowedStatus.ACTIVE_ONLY, AllowedRelTypes.ALL_RELS).toArray();
     }
 
     @Override
@@ -296,7 +298,9 @@ public class TaxonomyService implements TaxonomyProvider {
         destination = sequenceProvider.getConceptSequence(destination);
         // Set of all concept sequences that point to the parent. 
         IntStream origins = getOriginSequenceStream(destination);
-        return filterOriginSequences(origins, destination, tc, AllowedStatus.ACTIVE_AND_INACTIVE, AllowedRelTypes.ALL_RELS).toArray();
+        return filterOriginSequences(origins, destination, 
+                IsaacMetadataAuxiliaryBinding.IS_A.getSequence(), tc, 
+                AllowedStatus.ACTIVE_AND_INACTIVE, AllowedRelTypes.ALL_RELS).toArray();
     }
 
     

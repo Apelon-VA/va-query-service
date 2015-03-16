@@ -10,8 +10,8 @@ import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordUnpacked;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
+import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.SequenceProvider;
-import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,6 +31,7 @@ public class TaxonomyWalkCollector implements
         ObjIntConsumer<TaxonomyWalkAccumulator>, BiConsumer<TaxonomyWalkAccumulator,TaxonomyWalkAccumulator> {
     private static final SequenceProvider sequenceProvider = Hk2Looker.getService(SequenceProvider.class);
     private static final CradleExtensions cradle = Hk2Looker.getService(CradleExtensions.class);;
+    private static final int ISA_CONCEPT_SEQUENCE = IsaacMetadataAuxiliaryBinding.IS_A.getSequence();
 
     final CasSequenceObjectMap<TaxonomyRecordPrimitive> taxonomyMap;
     final ViewCoordinate viewCoordinate;
@@ -66,13 +67,15 @@ public class TaxonomyWalkCollector implements
         if (primitiveTaxonomyRecord.isPresent()) {
             TaxonomyRecordUnpacked taxonomyRecordUnpacked = primitiveTaxonomyRecord.get().getTaxonomyRecordUnpacked();
             accumulator.conceptsProcessed++;
-            if (taxonomyRecordUnpacked.containsActiveConceptSequence(conceptSequence, viewCoordinate, TaxonomyFlags.CONCEPT_STATUS.bits)) {
+            if (taxonomyRecordUnpacked.containsActiveConceptSequenceViaType(conceptSequence, Integer.MAX_VALUE,
+                    viewCoordinate, TaxonomyFlags.CONCEPT_STATUS.bits)) {
             int connectionCount = taxonomyRecordUnpacked.conectionCount();
             accumulator.connections += connectionCount;
             accumulator.maxConnections = Math.max(accumulator.maxConnections, connectionCount);
             accumulator.minConnections = Math.min(accumulator.minConnections, connectionCount);
 
-            int[] parentSequences = taxonomyRecordUnpacked.getVisibleConceptSequences(viewCoordinate).toArray();
+            int[] parentSequences = 
+                    taxonomyRecordUnpacked.getVisibleConceptSequencesForType(ISA_CONCEPT_SEQUENCE, viewCoordinate).toArray();
             if (parentSequences.length == 0) {
                 try {
                     ConceptChronicleBI c = cradle.getConcept(conceptSequence);
@@ -88,8 +91,8 @@ public class TaxonomyWalkCollector implements
             accumulator.maxDepthSum += depth;
 
             accumulator.parentConnections += parentSequences.length;
-            accumulator.statedParentConnections += taxonomyRecordUnpacked.getVisibleConceptSequences(viewCoordinate).count();
-            accumulator.inferredParentConnections += taxonomyRecordUnpacked.getVisibleConceptSequences(viewCoordinate).count();
+            accumulator.statedParentConnections += taxonomyRecordUnpacked.getVisibleConceptSequencesForType(ISA_CONCEPT_SEQUENCE, viewCoordinate).count();
+            accumulator.inferredParentConnections += taxonomyRecordUnpacked.getVisibleConceptSequencesForType(ISA_CONCEPT_SEQUENCE, viewCoordinate).count();
         }
         } else {
             try {

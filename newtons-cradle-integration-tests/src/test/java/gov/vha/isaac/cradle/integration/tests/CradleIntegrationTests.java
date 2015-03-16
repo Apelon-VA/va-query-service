@@ -6,6 +6,7 @@
 package gov.vha.isaac.cradle.integration.tests;
 
 import gov.vha.isaac.cradle.CradleExtensions;
+import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
 import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordUnpacked;
@@ -219,7 +220,8 @@ public class CradleIntegrationTests {
         try {
             ConceptChronicleBI childConcept = cradle.getConcept(child);
             java.util.Optional<TaxonomyRecordPrimitive> taxonomyRecord
-                    = TaxonomyRecordPrimitive.getIfActive(child, taxonomyMap, vp);
+                    = TaxonomyRecordPrimitive.getIfConceptActive(child, 
+                            taxonomyMap, vp);
 
             if (taxonomyRecord.isPresent()) {
 
@@ -234,7 +236,7 @@ public class CradleIntegrationTests {
                 sb.append(childConcept);
                 System.out.println(sb.toString());
                 TaxonomyRecordUnpacked record = taxonomyRecord.get().getTaxonomyRecordUnpacked();
-                IntStream parentSequences = record.getActiveConceptSequences(vp);
+                IntStream parentSequences = record.getActiveConceptSequencesForType(IsaacMetadataAuxiliaryBinding.IS_A.getSequence(), vp);
                 parentSequences.forEach((int parentSequence) -> {
                     if (!visited.get(parentSequence)) {
                         walkToRoot(parentSequence, taxonomyMap, vp, depth + 1, visited, cradle);
