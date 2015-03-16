@@ -1,6 +1,8 @@
 package gov.vha.isaac.cradle.taxonomy;
 
+import gov.vha.isaac.cradle.taxonomy.TypeStampTaxonomyRecords.TypeStampTaxonomyRecord;
 import gov.vha.isaac.cradle.version.StampSequenceComputer;
+import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import org.apache.mahout.math.function.IntObjectProcedure;
 import org.apache.mahout.math.list.IntArrayList;
@@ -30,9 +32,9 @@ import java.util.stream.IntStream;
 public class TaxonomyRecordUnpacked {
 
     /**
-     * key = origin concept sequence; value = StampTaxonomyRecords
+     * key = origin concept sequence; value = TypeStampTaxonomyRecords
      */
-    private final OpenIntObjectHashMap<StampTaxonomyRecords> conceptSequenceRecordMap = new OpenIntObjectHashMap<>(11);
+    private final OpenIntObjectHashMap<TypeStampTaxonomyRecords> conceptSequenceRecordMap = new OpenIntObjectHashMap<>(11);
 
     public TaxonomyRecordUnpacked() {
     }
@@ -44,70 +46,78 @@ public class TaxonomyRecordUnpacked {
                 int conceptSequence = recordArray[index] & TaxonomyRecordPrimitive.SEQUENCE_BIT_MASK;
                 int length = recordArray[index] >>> 24;
 
-                StampTaxonomyRecords record = new StampTaxonomyRecords(recordArray, index);
+                TypeStampTaxonomyRecords record = new TypeStampTaxonomyRecords(recordArray, index);
                 index += length;
                 conceptSequenceRecordMap.put(conceptSequence, record);
             }
         }
     }
 
-    public boolean containsSequenceWithFlags(int conceptSequence, int flags) {
+    public boolean containsSequenceViaTypeWithFlags(int conceptSequence, int typeSequence, int flags) {
         if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
-            return conceptSequenceRecordMap.get(conceptSequence).containsStampWithFlags(flags);
+            return conceptSequenceRecordMap.get(conceptSequence).containsStampOfTypeWithFlags(typeSequence, flags);
         }
         return false;
     }
 
-    boolean containsActiveConceptSequence(int conceptSequence, TaxonomyCoordinate tc) {
+    boolean containsActiveConceptSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc) {
         StampSequenceComputer computer = StampSequenceComputer.getComputer(tc.getStampCoordinate());
         if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
-            return conceptSequenceRecordMap.get(conceptSequence).isActive(tc, computer);
-        }
-        return false;
-    }
-    public boolean containsActiveConceptSequence(int conceptSequence, TaxonomyCoordinate tc, int flags) {
-        StampSequenceComputer computer = StampSequenceComputer.getComputer(tc.getStampCoordinate());
-        if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
-            return conceptSequenceRecordMap.get(conceptSequence).isActive(flags, computer);
+            return conceptSequenceRecordMap.get(conceptSequence).isActive(typeSequence, tc, computer);
         }
         return false;
     }
 
-    boolean containsVisibleConceptSequence(int conceptSequence, TaxonomyCoordinate tc) {
+    public boolean containsActiveConceptSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc, int flags) {
         StampSequenceComputer computer = StampSequenceComputer.getComputer(tc.getStampCoordinate());
         if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
-            return conceptSequenceRecordMap.get(conceptSequence).isVisible(tc, computer);
-        }
-        return false;
-    }
-    boolean containsVisibleConceptSequence(int conceptSequence, TaxonomyCoordinate tc, int flags) {
-        StampSequenceComputer computer = StampSequenceComputer.getComputer(tc.getStampCoordinate());
-        if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
-            return conceptSequenceRecordMap.get(conceptSequence).isVisible(flags, computer);
+            return conceptSequenceRecordMap.get(conceptSequence).isActive(typeSequence, flags, computer);
         }
         return false;
     }
 
-    public Optional<StampTaxonomyRecords> getConceptSequenceStampRecords(int conceptSequence) {
+    boolean containsVisibleConceptSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc) {
+        StampSequenceComputer computer = StampSequenceComputer.getComputer(tc.getStampCoordinate());
+        if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
+            return conceptSequenceRecordMap.get(conceptSequence).isVisible(typeSequence, tc, computer);
+        }
+        return false;
+    }
+
+    boolean containsVisibleConceptSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc, int flags) {
+        StampSequenceComputer computer = StampSequenceComputer.getComputer(tc.getStampCoordinate());
+        if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
+            return conceptSequenceRecordMap.get(conceptSequence).isVisible(typeSequence, flags, computer);
+        }
+        return false;
+    }
+
+    public Optional<TypeStampTaxonomyRecords> getConceptSequenceStampRecords(int conceptSequence) {
         return Optional.ofNullable(conceptSequenceRecordMap.get(conceptSequence));
     }
 
     /**
+     * @param typeSequence typeSequence to match, or Integer.MAX_VALUE if a
+     * wildcard.
      * @param tc used to determine if a concept is active.
      * @return active concepts identified by their sequence value.
      */
-    public IntStream getActiveConceptSequences(TaxonomyCoordinate tc) {
+    public IntStream getActiveConceptSequencesForType(int typeSequence, TaxonomyCoordinate tc) {
         int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
         StampSequenceComputer computer = StampSequenceComputer.getComputer(tc.getStampCoordinate());
         IntStream.Builder conceptSequenceIntStream = IntStream.builder();
-        conceptSequenceRecordMap.forEachPair((int possibleParentSequence, StampTaxonomyRecords stampRecords) -> {
+        conceptSequenceRecordMap.forEachPair((int possibleParentSequence, TypeStampTaxonomyRecords stampRecords) -> {
             IntStream.Builder stampsForConceptIntStream = IntStream.builder();
-            stampRecords.getStampFlagStream().forEach((stampFlag) -> {
-                if ((stampFlag & flags) == flags) {
-                    stampsForConceptIntStream.add(stampFlag & TaxonomyRecordPrimitive.STAMP_BIT_MASK);
+            stampRecords.getTypeStampFlagStream().forEach((typeStampFlag) -> {
+                TypeStampTaxonomyRecord record = new TypeStampTaxonomyRecord(typeStampFlag);
+                if ((record.getTaxonomyFlags() & flags) == flags) {
+                    if (typeSequence == Integer.MAX_VALUE) {
+                        stampsForConceptIntStream.add(record.getStamp());
+                    } else if (typeSequence == record.getTypeSequence()) {
+                        stampsForConceptIntStream.add(record.getStamp());
+                    }
                 }
             });
-
             if (computer.isLatestActive(stampsForConceptIntStream.build())) {
                 conceptSequenceIntStream.accept(possibleParentSequence);
             }
@@ -116,30 +126,34 @@ public class TaxonomyRecordUnpacked {
         return conceptSequenceIntStream.build();
     }
 
-    public IntStream getVisibleConceptSequences(TaxonomyCoordinate tc) {
-        int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
+    public IntStream getVisibleConceptSequencesForType(int typeSequence, TaxonomyCoordinate tc) {
+        final int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
         StampSequenceComputer computer = StampSequenceComputer.getComputer(tc.getStampCoordinate());
         IntStream.Builder conceptSequenceIntStream = IntStream.builder();
-        conceptSequenceRecordMap.forEachPair((int possibleParentSequence, StampTaxonomyRecords stampRecords) -> {
-            stampRecords.getStampFlagStream().forEach((stampFlag) -> {
-                if ((stampFlag & flags) == flags) {
-                    if (computer.onRoute(stampFlag & TaxonomyRecordPrimitive.STAMP_BIT_MASK)) {
-                        conceptSequenceIntStream.accept(possibleParentSequence);
+        conceptSequenceRecordMap.forEachPair((int possibleParentSequence, TypeStampTaxonomyRecords stampRecords) -> {
+            stampRecords.getTypeStampFlagStream().forEach((typeStampFlag) -> {
+                TypeStampTaxonomyRecord record = new TypeStampTaxonomyRecord(typeStampFlag);
+                if ((record.getTaxonomyFlags() & flags) == flags) {
+                    if (computer.onRoute(record.getStamp())) {
+                        if (typeSequence == Integer.MAX_VALUE) {
+                            conceptSequenceIntStream.accept(possibleParentSequence);
+                        } else if (record.getTypeSequence() == typeSequence) {
+                            conceptSequenceIntStream.accept(possibleParentSequence);
+                        }
                     }
                 }
             });
-
             return true;
         });
         return conceptSequenceIntStream.build();
     }
 
     public IntStream getParentConceptSequences() {
-        int flags = TaxonomyFlags.PARENT_FLAG_SET;
+
         IntStream.Builder conceptSequenceIntStream = IntStream.builder();
-        conceptSequenceRecordMap.forEachPair((int possibleParentSequence, StampTaxonomyRecords stampRecords) -> {
-            stampRecords.getStampFlagStream().forEach((stampFlag) -> {
-                if ((stampFlag & flags) == flags) {
+        conceptSequenceRecordMap.forEachPair((int possibleParentSequence, TypeStampTaxonomyRecords stampRecords) -> {
+            stampRecords.getTypeStampFlagStream().forEach((typeStampFlag) -> {
+                if ((typeStampFlag & TaxonomyRecordPrimitive.SEQUENCE_BIT_MASK) == IsaacMetadataAuxiliaryBinding.IS_A.getSequence()) {
                     conceptSequenceIntStream.accept(possibleParentSequence);
                 }
             });
@@ -152,9 +166,9 @@ public class TaxonomyRecordUnpacked {
         return conceptSequenceRecordMap.size();
     }
 
-    public void addConceptSequenceStampRecords(int conceptSequence, StampTaxonomyRecords newRecord) {
+    public void addConceptSequenceStampRecords(int conceptSequence, TypeStampTaxonomyRecords newRecord) {
         if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
-            StampTaxonomyRecords oldRecord = conceptSequenceRecordMap.get(conceptSequence);
+            TypeStampTaxonomyRecords oldRecord = conceptSequenceRecordMap.get(conceptSequence);
             oldRecord.merge(newRecord);
         } else {
             conceptSequenceRecordMap.put(conceptSequence, newRecord);
@@ -162,7 +176,7 @@ public class TaxonomyRecordUnpacked {
     }
 
     public void merge(TaxonomyRecordUnpacked newRecord) {
-        newRecord.conceptSequenceRecordMap.forEachPair((int key, StampTaxonomyRecords value) -> {
+        newRecord.conceptSequenceRecordMap.forEachPair((int key, TypeStampTaxonomyRecords value) -> {
             if (conceptSequenceRecordMap.containsKey(key)) {
                 conceptSequenceRecordMap.get(key).merge(value);
             } else {
@@ -216,7 +230,7 @@ public class TaxonomyRecordUnpacked {
                 buf.append(" |");
                 buf.append(conceptSequence);
                 buf.append("|->");
-                StampTaxonomyRecords value = conceptSequenceRecordMap.get(conceptSequence);
+                TypeStampTaxonomyRecords value = conceptSequenceRecordMap.get(conceptSequence);
                 buf.append(value.toString());
                 if (i < maxIndex) {
                     buf.append(",");
@@ -229,24 +243,24 @@ public class TaxonomyRecordUnpacked {
         }
     }
 
-    public void addStampRecord(int destinationSequence, int stamp, int recordFlags) {
-        StampTaxonomyRecords conceptSequenceStampRecordsUnpacked;
+    public void addStampRecord(int destinationSequence, int typeSequence, int stamp, int recordFlags) {
+        TypeStampTaxonomyRecords conceptSequenceStampRecordsUnpacked;
         if (conceptSequenceRecordMap.containsKey(destinationSequence)) {
             conceptSequenceStampRecordsUnpacked = conceptSequenceRecordMap.get(destinationSequence);
         } else {
-            conceptSequenceStampRecordsUnpacked = new StampTaxonomyRecords();
+            conceptSequenceStampRecordsUnpacked = new TypeStampTaxonomyRecords();
             conceptSequenceRecordMap.put(destinationSequence, conceptSequenceStampRecordsUnpacked);
         }
-        conceptSequenceStampRecordsUnpacked.addStampRecord(stamp, recordFlags);
+        conceptSequenceStampRecordsUnpacked.addStampRecord(typeSequence, stamp, recordFlags);
     }
 
-    private class PackConceptSequenceStampRecords implements IntObjectProcedure<StampTaxonomyRecords> {
+    private class PackConceptSequenceStampRecords implements IntObjectProcedure<TypeStampTaxonomyRecords> {
 
         int[] taxonomyRecordArray = new int[length()];
         int destinationPosition = 0;
 
         @Override
-        public boolean apply(int conceptSequence, StampTaxonomyRecords stampRecordsUnpacked) {
+        public boolean apply(int conceptSequence, TypeStampTaxonomyRecords stampRecordsUnpacked) {
             stampRecordsUnpacked.addToIntArray(conceptSequence, taxonomyRecordArray, destinationPosition);
             destinationPosition += stampRecordsUnpacked.length();
             return true;

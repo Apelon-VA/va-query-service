@@ -20,27 +20,22 @@ import java.util.EnumSet;
  */
 public enum TaxonomyFlags {
 
-    STATED(0x10000000),              // 0001 0000
-    INFERRED(0x20000000),            // 0010 0000
-    SEMEME(0x40000000),              // 0100 0000
-    PARENT(0x08000000),              // 0000 1000
-    CONCEPT_STATUS(0x04000000),      // 0000 0100
-    NON_TAXONOMIC_REL(0x02000000),   // 0000 0010
-    RESERVED_FUTURE_USE(0x01000000); // 0000 0001
+    STATED(0x10000000),                // 0001 0000
+    INFERRED(0x20000000),              // 0010 0000
+    SEMEME(0x40000000),                // 0100 0000
+    NON_DL_REL(0x08000000),            // 0000 1000
+    CONCEPT_STATUS(0x04000000),        // 0000 0100
+    RESERVED_FUTURE_USE_1(0x02000000), // 0000 0010
+    RESERVED_FUTURE_USE_2(0x01000000); // 0000 0001
 
     public static final int ALL_RELS = 0;
-    public static final int PARENT_FLAG_SET = TaxonomyFlags.PARENT.bits;
-    public static final int INFERRED_PARENT_FLAGS_SET = TaxonomyFlags.PARENT.bits + TaxonomyFlags.INFERRED.bits;
-    public static final int STATED_PARENT_FLAGS_SET = TaxonomyFlags.PARENT.bits +  TaxonomyFlags.STATED.bits;
-    public static final int NON_TAXONOMIC_REL_FLAGS_SET = TaxonomyFlags.NON_TAXONOMIC_REL.bits;
-    public static final int PARENT_SEMEME_FLAGS_SET = TaxonomyFlags.PARENT.bits + TaxonomyFlags.SEMEME.bits;
 
     public static int getFlagsFromTaxonomyCoordinate(TaxonomyCoordinate viewCoordinate) {
          switch (viewCoordinate.getTaxonomyType()) {
             case INFERRED:
-                return TaxonomyFlags.INFERRED_PARENT_FLAGS_SET;
+                return TaxonomyFlags.INFERRED.bits;
             case STATED:
-                return TaxonomyFlags.STATED_PARENT_FLAGS_SET;
+                return TaxonomyFlags.STATED.bits;
             default:
                 throw new UnsupportedOperationException("no support for: " + viewCoordinate.getTaxonomyType());
         }
@@ -61,9 +56,16 @@ public enum TaxonomyFlags {
     }
     
     public static EnumSet<TaxonomyFlags> getTaxonomyFlags(int stampWithFlags) {
+        if (stampWithFlags < 512) {
+           stampWithFlags = stampWithFlags << 24;
+        }
+        return getFlags(stampWithFlags);  
+    }
+
+    private static EnumSet<TaxonomyFlags> getFlags(int justFlags) {
         EnumSet<TaxonomyFlags> flagSet = EnumSet.noneOf(TaxonomyFlags.class);
         Arrays.stream(TaxonomyFlags.values()).forEach((flag) -> {
-            if ((stampWithFlags & flag.bits) == flag.bits) {
+            if ((justFlags & flag.bits) == flag.bits) {
                 flagSet.add(flag);
             }
         });
