@@ -25,20 +25,28 @@ import org.ihtsdo.otf.tcc.api.coordinate.Status;
 import org.ihtsdo.otf.tcc.api.description.DescriptionChronicleBI;
 import org.ihtsdo.otf.tcc.api.description.DescriptionVersionBI;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * Calculates the active descriptions that match the specified Java Regular
  * Expression.
  *
  * @author dylangrald
  */
+@XmlRootElement
+@XmlAccessorType(value = XmlAccessType.NONE)
 public class DescriptionActiveRegexMatch extends DescriptionRegexMatch {
 
     public DescriptionActiveRegexMatch(Query enclosingQuery, String regexKey, String viewCoordinateKey) {
         super(enclosingQuery, regexKey, viewCoordinateKey);
     }
-
+    protected DescriptionActiveRegexMatch() {
+    }
     @Override
     public void getQueryMatches(ConceptVersionBI conceptVersion) throws IOException, ContradictionException {
+        String regex = (String) enclosingQuery.getLetDeclarations().get(regexKey);
         for (DescriptionChronicleBI dc : conceptVersion.getDescriptionsActive()) {
             for (DescriptionVersionBI dv : dc.getVersions()) {
                 if (dv.getText().matches(regex) && dv.getStatus().compareTo(Status.ACTIVE) == 0) {

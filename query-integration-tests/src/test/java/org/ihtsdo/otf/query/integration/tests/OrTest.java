@@ -15,13 +15,13 @@ package org.ihtsdo.otf.query.integration.tests;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import java.io.IOException;
 import org.ihtsdo.otf.query.implementation.Clause;
+import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
+import org.ihtsdo.otf.query.implementation.ForSetSpecification;
 import org.ihtsdo.otf.query.implementation.Query;
-import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
 /**
  * Creates a test for the {@link org.ihtsdo.otf.query.implementation.Or} clause.
@@ -31,10 +31,10 @@ import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 public class OrTest extends QueryClauseTest {
 
     public OrTest() throws IOException {
-        this.q = new Query(StandardViewCoordinates.getSnomedInferredLatestActiveOnly()) {
+        this.q = new Query(ViewCoordinates.getDevelopmentInferredLatestActiveOnly()) {
             @Override
-            protected NativeIdSetBI For() throws IOException {
-                return PersistentStore.get().getAllConceptNids();
+            protected ForSetSpecification ForSetSpecification() {
+                return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
             }
 
             @Override

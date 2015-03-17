@@ -18,17 +18,25 @@ package org.ihtsdo.otf.query.integration.tests.jaxb;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.embed.swing.JFXPanel;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import org.glassfish.hk2.runlevel.RunLevelController;
 import org.ihtsdo.otf.query.implementation.JaxbForQuery;
-import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
+import static gov.vha.isaac.lookup.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
+import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
+import java.util.Set;
+import javafx.concurrent.Task;
+import java.time.Duration;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
-import org.ihtsdo.otf.tcc.datastore.BdbTerminologyStore;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
+import org.jvnet.testing.hk2testng.HK2;
+import org.reactfx.EventStreams;
+import org.reactfx.Subscription;
 
 import static org.testng.Assert.*;
 import org.testng.annotations.*;
@@ -37,49 +45,29 @@ import org.testng.annotations.*;
  *
  * @author kec
  */
+
 public class ViewCoordinateTest {
 
-    private static final Logger LOGGER = Logger.getLogger(ViewCoordinateTest.class.getName());
-    private static final String DIR = System.getProperty("user.dir");
 
     public ViewCoordinateTest() {
     }
 
-    @BeforeClass
-    public static void setUpClass() {
-        JFXPanel panel = new JFXPanel();
-        LOGGER.log(Level.INFO, "oneTimeSetUp");
-        System.setProperty(BdbTerminologyStore.BDB_LOCATION_PROPERTY, DIR + "/target/test-resources/berkeley-db");
-        RunLevelController runLevelController = Hk2Looker.get().getService(RunLevelController.class);
-        LOGGER.log(Level.INFO, "going to run level 1");
-        runLevelController.proceedTo(1);
-        LOGGER.log(Level.INFO, "going to run level 2");
-        runLevelController.proceedTo(2);
-    }
-
-    @AfterClass
-    public static void tearDownClass() {
-        LOGGER.log(Level.INFO, "oneTimeTearDown");
-        RunLevelController runLevelController = Hk2Looker.get().getService(RunLevelController.class);
-        LOGGER.log(Level.INFO, "going to run level 1");
-        runLevelController.proceedTo(1);
-        LOGGER.log(Level.INFO, "going to run level 0");
-        runLevelController.proceedTo(0);
-    }
 
     @BeforeMethod
-    public void setUp() {
+    public void setUp() throws Exception {
+
     }
 
     @AfterMethod
-    public void tearDown() {
-    }
+    public void tearDown() throws Exception {
 
+    }
+    
     @Test
     public void testJaxb() {
         try {
 
-            ViewCoordinate originalViewCoordinate = StandardViewCoordinates.getSnomedInferredLatestActiveOnly();
+            ViewCoordinate originalViewCoordinate = ViewCoordinates.getDevelopmentInferredLatestActiveOnly();
             JAXBContext ctx = JaxbForQuery.get();
             StringWriter writer = new StringWriter();
 
@@ -93,7 +81,6 @@ public class ViewCoordinateTest {
 
             assertEquals(originalViewCoordinate, unmarshalledViewCoordinate);
         } catch (JAXBException | IOException ex) {
-            Logger.getLogger(ViewCoordinateTest.class.getName()).log(Level.SEVERE, null, ex);
             fail(ex.toString());
         }
 

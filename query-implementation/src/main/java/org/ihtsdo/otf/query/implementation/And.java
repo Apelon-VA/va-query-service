@@ -21,16 +21,29 @@ import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * <code>ParentClause</code> that computes the intersection of the set results
  * from the enclosed <code>Clauses</code>.
  *
  * @author kec
  */
+@XmlRootElement(name = "and")
+@XmlAccessorType(value = XmlAccessType.NONE)
+
 public class And extends ParentClause {
 
     public And(Query enclosingQuery, Clause... clauses) {
         super(enclosingQuery, clauses);
+    }
+    /**
+     * Default no arg constructor for Jaxb.
+     */
+    protected And() {
+        super();
     }
 
     @Override

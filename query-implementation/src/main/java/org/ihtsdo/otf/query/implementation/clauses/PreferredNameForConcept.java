@@ -32,18 +32,25 @@ import org.ihtsdo.otf.query.implementation.WhereClause;
 import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * Retrieves the preferred names for a result set of concepts.
  *
  * @author dylangrald
  */
+@XmlRootElement
+@XmlAccessorType(value = XmlAccessType.NONE)
 public class PreferredNameForConcept extends ParentClause {
 
     public PreferredNameForConcept(Query enclosingQuery, Clause child) {
         super(enclosingQuery, child);
 
     }
-
+    protected PreferredNameForConcept() {
+    }
     @Override
     public WhereClause getWhereClause() {
         WhereClause whereClause = new WhereClause();

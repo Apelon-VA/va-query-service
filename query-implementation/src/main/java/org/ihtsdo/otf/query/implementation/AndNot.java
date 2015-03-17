@@ -21,14 +21,23 @@ import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  *
  * @author dylangrald
  */
+@XmlRootElement()
 public class AndNot extends ParentClause {
 
     public AndNot(Query enclosingQuery, Clause... clauses) {
         super(enclosingQuery, clauses);
+    }
+    /**
+     * Default no arg constructor for Jaxb.
+     */
+    protected AndNot() {
+        super();
     }
 
     @Override

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section xml:id="org.ihtsdo.otf.query_query-implementation" xmlns="http://docbook.org/ns/docbook"
+    version="5.0" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Query Extension</title>
+    <para>This query extension module implements a maven build extension for enabling query
+        capability across mojos.</para>
+</section>

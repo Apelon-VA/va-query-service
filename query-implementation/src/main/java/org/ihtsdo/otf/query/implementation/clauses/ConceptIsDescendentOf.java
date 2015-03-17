@@ -32,6 +32,11 @@ import org.ihtsdo.otf.query.implementation.WhereClause;
 import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
 import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * Computes the set of concepts that are descendents of the specified concept
  * spec. The set of descendents of a given concept is the set of concepts that
@@ -41,31 +46,31 @@ import org.ihtsdo.otf.tcc.api.spec.ValidationException;
  *
  * @author dylangrald
  */
+@XmlRootElement
+@XmlAccessorType(value = XmlAccessType.NONE)
 public class ConceptIsDescendentOf extends LeafClause {
 
-    ConceptSpec kindOfSpec;
+    @XmlElement
     String kindOfSpecKey;
-    Query enclosingQuery;
-    ViewCoordinate viewCoordinate;
+     @XmlElement
     String viewCoordinateKey;
 
     public ConceptIsDescendentOf(Query enclosingQuery, String kindOfSpecKey, String viewCoordinateKey) {
         super(enclosingQuery);
         this.kindOfSpecKey = kindOfSpecKey;
-        this.kindOfSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(kindOfSpecKey);
         this.viewCoordinateKey = viewCoordinateKey;
-        this.enclosingQuery = enclosingQuery;
 
+    }
+    protected ConceptIsDescendentOf() {
     }
 
     @Override
     public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleComponents)
             throws ValidationException, IOException, ContradictionException {
-        if (this.viewCoordinateKey.equals(this.enclosingQuery.currentViewCoordinateKey)) {
-            this.viewCoordinate = (ViewCoordinate) this.enclosingQuery.getVCLetDeclarations().get(viewCoordinateKey);
-        } else {
-            this.viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
-        }
+        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+
+        ConceptSpec kindOfSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(kindOfSpecKey);
+
         int parentNid = kindOfSpec.getNid(viewCoordinate);
         getResultsCache().or(Ts.get().isKindOfSet(parentNid, viewCoordinate));
         getResultsCache().remove(parentNid);

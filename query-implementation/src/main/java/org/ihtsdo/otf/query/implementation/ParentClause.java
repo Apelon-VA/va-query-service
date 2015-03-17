@@ -16,9 +16,15 @@
 package org.ihtsdo.otf.query.implementation;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.List;
+
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
+
+import javax.xml.bind.annotation.*;
 
 /**
  * Acts as root node for the construction of queries. Sorts results from one of
@@ -28,6 +34,8 @@ import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
  *
  * @author kec
  */
+@XmlRootElement(name = "parent")
+@XmlAccessorType(value = XmlAccessType.NONE)
 public abstract class ParentClause extends Clause {
 
     /**
@@ -36,11 +44,19 @@ public abstract class ParentClause extends Clause {
      * used to compute the constructed
      * <code>Query</code>.
      */
-    private Clause[] children;
+    @XmlElementWrapper(name="child-clauses")
+    @XmlElement(name="clause")
+    private List<Clause> children = new ArrayList();;
 
-    @Override
-    public Clause[] getChildren() {
+    public List<Clause> getChildren() {
         return children;
+    }
+
+    public void setChildren(List<Clause> children) {
+        this.children = children;
+        for (Clause child : children) {
+            child.setParent(this);
+        }
     }
 
     /**
@@ -51,10 +67,19 @@ public abstract class ParentClause extends Clause {
      */
     public ParentClause(Query enclosingQuery, Clause... children) {
         super(enclosingQuery);
-        this.children = children;
-        for (Clause child : children) {
-            child.setParent(this);
-        }
+        setChildren(Arrays.asList(children));
+
+    }
+    public ParentClause(Query enclosingQuery, List<Clause> children) {
+        super(enclosingQuery);
+        setChildren(children);
+
+    }
+    /**
+     * Default no arg constructor for Jaxb.
+     */
+    protected ParentClause() {
+        super();
     }
 
     @Override

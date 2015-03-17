@@ -15,10 +15,11 @@
  */
 package org.ihtsdo.otf.query.integration.tests.rest;
 
+import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
+import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.query.integration.tests.QueryTest;
 import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
 import org.ihtsdo.otf.tcc.api.blueprint.DescriptionCAB;
@@ -73,7 +74,7 @@ public class TermstoreChanges {
             int authorNid = TermAux.USER.getLenient().getConceptNid();
             int editPathNid = TermAux.WB_AUX_PATH.getLenient().getConceptNid();
             EditCoordinate ec = new EditCoordinate(authorNid, Snomed.CORE_MODULE.getLenient().getNid(), editPathNid);
-            TerminologyBuilderBI tb = PersistentStore.get().getTerminologyBuilder(ec, StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
+            TerminologyBuilderBI tb = PersistentStore.get().getTerminologyBuilder(ec, ViewCoordinates.getDevelopmentInferredLatestActiveOnly());
             RefexChronicleBI rc = tb.construct(refex);
             PersistentStore.get().addUncommitted(Snomed.SEVERITY_REFSET.getLenient());
             PersistentStore.get().commit();
@@ -89,8 +90,8 @@ public class TermstoreChanges {
             DescriptionVersionBI desc = PersistentStore.get().getConceptVersion(vc, nid).getPreferredDescription();
             DescriptionCAB descCAB = desc.makeBlueprint(vc, IdDirective.PRESERVE, RefexDirective.EXCLUDE);
             descCAB.setText(text);
-            int authorNid = TermAux.USER.getLenient().getConceptNid();
-            int editPathNid = TermAux.SNOMED_CORE.getLenient().getConceptNid();
+            int authorNid = IsaacMetadataAuxiliaryBinding.USER.getLenient().getConceptNid();
+            int editPathNid = IsaacMetadataAuxiliaryBinding.DEVELOPMENT.getLenient().getConceptNid();
             EditCoordinate ec = new EditCoordinate(authorNid, Snomed.CORE_MODULE.getLenient().getNid(), editPathNid);
             TerminologyBuilderBI tb = PersistentStore.get().getTerminologyBuilder(ec, vc);
             DescriptionChronicleBI descChronicle = tb.construct(descCAB);

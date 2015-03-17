@@ -20,8 +20,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
@@ -40,27 +38,33 @@ import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
 import org.ihtsdo.otf.tcc.model.index.service.SearchResult;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * Retrieves the refset matching the input SNOMED id.
  *
  * @author dylangrald
  */
+@XmlRootElement
+@XmlAccessorType(value = XmlAccessType.NONE)
 public class RefsetLuceneMatch extends LeafClause {
 
-    Query enclosingQuery;
-    String luceneMatch;
+
+     @XmlElement
     String luceneMatchKey;
-    ViewCoordinate viewCoordinate;
+    @XmlElement
     String viewCoordinateKey;
 
     public RefsetLuceneMatch(Query enclosingQuery, String luceneMatchKey, String viewCoordinateKey) {
         super(enclosingQuery);
-        this.enclosingQuery = enclosingQuery;
         this.luceneMatchKey = luceneMatchKey;
-        this.luceneMatch = (String) enclosingQuery.getLetDeclarations().get(luceneMatchKey);
         this.viewCoordinateKey = viewCoordinateKey;
     }
-
+    protected RefsetLuceneMatch() {
+    }
     @Override
     public WhereClause getWhereClause() {
         WhereClause whereClause = new WhereClause();
@@ -76,26 +80,20 @@ public class RefsetLuceneMatch extends LeafClause {
 
     @Override
     public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleComponents) throws IOException, ValidationException, ContradictionException {
-        if (this.viewCoordinateKey.equals(this.enclosingQuery.currentViewCoordinateKey)) {
-            this.viewCoordinate = (ViewCoordinate) this.enclosingQuery.getVCLetDeclarations().get(viewCoordinateKey);
-        } else {
-            this.viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
-        }
+        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+        String luceneMatch = (String) enclosingQuery.getLetDeclarations().get(luceneMatchKey);
+
         NativeIdSetBI nids = new ConcurrentBitSet();
-        try {
-            List<IndexerBI> lookers = Hk2Looker.get().getAllServices(IndexerBI.class);
-            IndexerBI refexIndexer = null;
-            for (IndexerBI li : lookers) {
-                if (li.getIndexerName().equals("refex")) {
-                    refexIndexer = li;
-                }
+        List<IndexerBI> lookers = Hk2Looker.get().getAllServices(IndexerBI.class);
+        IndexerBI refexIndexer = null;
+        for (IndexerBI li : lookers) {
+            if (li.getIndexerName().equals("refex")) {
+                refexIndexer = li;
             }
-            List<SearchResult> queryResults = refexIndexer.query(luceneMatch, ComponentProperty.LONG_EXTENSION_1, 1000);
-            for (SearchResult s : queryResults) {
-                nids.add(s.nid);
-            }
-        } catch (ParseException ex) {
-            Logger.getLogger(DescriptionLuceneMatch.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        List<SearchResult> queryResults = refexIndexer.query(luceneMatch, ComponentProperty.LONG_EXTENSION_1, 1000);
+        for (SearchResult s : queryResults) {
+            nids.add(s.nid);
         }
         //Filter the results, based upon the input ViewCoordinate
         NativeIdSetItrBI iter = nids.getSetBitIterator();

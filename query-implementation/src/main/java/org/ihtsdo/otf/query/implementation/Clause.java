@@ -19,9 +19,16 @@ package org.ihtsdo.otf.query.implementation;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import java.io.IOException;
 import java.util.EnumSet;
+import java.util.List;
+
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
 import org.ihtsdo.otf.tcc.api.spec.ValidationException;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
 
 /**
  * Statements that are used to retrieve desired components in a
@@ -32,13 +39,15 @@ import org.ihtsdo.otf.tcc.api.spec.ValidationException;
  *
  * @author kec
  */
+@XmlRootElement(name = "CLAUSE")
+@XmlAccessorType(value = XmlAccessType.NONE)
 public abstract class Clause {
 
     /**
      * The instance of
      * <code>Query</code> that contains the specifications.
      */
-    Query enclosingQuery;
+    protected Query enclosingQuery;
     Clause parent = null;
     protected static final EnumSet<ClauseComputeType> PRE_AND_POST_ITERATION = EnumSet.of(ClauseComputeType.PRE_ITERATION, ClauseComputeType.POST_ITERATION);
     protected static final EnumSet<ClauseComputeType> PRE_ITERATION = EnumSet.of(ClauseComputeType.PRE_ITERATION);
@@ -57,10 +66,6 @@ public abstract class Clause {
         return enclosingQuery;
     }
 
-    public Clause getParent() {
-        return parent;
-    }
-
     public void setParent(Clause parent) {
         this.parent = parent;
     }
@@ -71,15 +76,12 @@ public abstract class Clause {
     }
 
     /**
-     * Getter for instances of
-     * <code>Clause</code> that are children of the Clause in the computation
-     * tree.
-     *
-     * @return the array of child clauses
+     * Default no arg constructor for Jaxb.
      */
-    public Clause[] getChildren() {
-        return new Clause[]{};
+    protected Clause() {
+        super();
     }
+
 
     /**
      * Getter for the
@@ -88,6 +90,8 @@ public abstract class Clause {
      * @return the where clause of the query
      */
     public abstract WhereClause getWhereClause();
+
+    public abstract List<Clause> getChildren();
 
     /**
      * Getter for the iteration types required to compute the clause.

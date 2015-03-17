@@ -15,16 +15,16 @@ package org.ihtsdo.otf.query.integration.tests;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import java.io.IOException;
 import java.util.EnumSet;
 import org.ihtsdo.otf.query.implementation.Clause;
+import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
+import org.ihtsdo.otf.query.implementation.ForSetSpecification;
 import org.ihtsdo.otf.query.implementation.Query;
-import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.coordinate.Status;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
 /**
  * Creates a test for
@@ -35,12 +35,12 @@ import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 public class IsKindOfTest extends QueryClauseTest {
 
     public IsKindOfTest() throws IOException {
-        ViewCoordinate vc = StandardViewCoordinates.getSnomedInferredLatestActiveOnly();
+        ViewCoordinate vc = ViewCoordinates.getDevelopmentInferredLatestActiveOnly();
         vc.setAllowedStatus(EnumSet.of(Status.ACTIVE));
         this.q = new Query(vc) {
             @Override
-            protected NativeIdSetBI For() throws IOException {
-                return PersistentStore.get().getAllConceptNids();
+            protected ForSetSpecification ForSetSpecification() {
+                return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
             }
 
             @Override

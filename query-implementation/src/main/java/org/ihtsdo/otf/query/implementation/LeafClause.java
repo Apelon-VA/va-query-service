@@ -17,8 +17,15 @@
 package org.ihtsdo.otf.query.implementation;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+
 import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  * A leaf in the computation tree of clauses of a query. A LeafClause
@@ -28,6 +35,8 @@ import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
  *
  * @author kec
  */
+@XmlRootElement(name = "leaf")
+@XmlAccessorType(value = XmlAccessType.NONE)
 public abstract class LeafClause extends Clause {
 
     /**
@@ -41,6 +50,10 @@ public abstract class LeafClause extends Clause {
         super(enclosingQuery);
     }
 
+    protected LeafClause() {
+        super();
+    }
+
     /**
      *
      * @return <code>NativeIdSetBI</code> of components in the resultsCache,
@@ -49,6 +62,10 @@ public abstract class LeafClause extends Clause {
      */
     public NativeIdSetBI getResultsCache() {
         return resultsCache;
+    }
+
+    public List<Clause> getChildren() {
+        return Collections.emptyList();
     }
 
     /**

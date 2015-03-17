@@ -2,13 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.ihtsdo.otf</groupId>
+        <groupId>gov.vha.isaac</groupId>
         <artifactId>query-parent</artifactId>
-        <version>1.1-informatics</version>
+        <version>2.0</version>
     </parent>
-    <groupId>org.ihtsdo.otf</groupId>
     <artifactId>query-implementation</artifactId>
-    <name>OTF Query Service: Query implementation</name>
+    <name>${project.parent.artifactId}: ${project.artifactId}</name>
     <description>Query clauses used for the construction and computation of queries.</description>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -20,21 +19,15 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.ihtsdo.otf</groupId>
+            <groupId>gov.vha.isaac</groupId>
             <artifactId>query-lucene</artifactId>
             <version>${project.version}</version>
             <type>jar</type>
         </dependency>
         <dependency>
-            <groupId>org.ihtsdo.otf</groupId>
-            <artifactId>tcc-dto-ddo</artifactId>
-            <version>${terminology-component-chronicle.version}</version>
-            <type>jar</type>
-        </dependency>
-        <dependency>
-            <groupId>org.ihtsdo.otf</groupId>
-            <artifactId>tcc-model-impl</artifactId>
-            <version>${terminology-component-chronicle.version}</version> <!-- shouldn't this be ${terminology-component-chronicle.version} ? -->
+            <groupId>gov.vha.isaac</groupId>
+            <artifactId>isaac-metadata-coordinates</artifactId>
+            <version>${isaac-metadata.version}</version>
             <type>jar</type>
         </dependency>
         <dependency>
@@ -63,12 +56,6 @@
             <artifactId>commons-lang3</artifactId>
             <version>3.1</version>
             <scope>test</scope>
-            <type>jar</type>
-        </dependency>
-        <dependency>
-            <groupId>com.informatics</groupId>
-            <artifactId>bdb-store-implementation</artifactId>
-            <version>1.0</version>
             <type>jar</type>
         </dependency>
     </dependencies>

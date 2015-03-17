@@ -21,15 +21,24 @@ import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * Clause that computes the union of the results of the enclosed <code>Clauses</code>.
  *
  * @author dylangrald
  */
+@XmlRootElement()
 public class Or extends ParentClause {
 
     public Or(Query enclosingQuery, Clause... clauses) {
         super(enclosingQuery, clauses);
+    }
+    /**
+     * Default no arg constructor for Jaxb.
+     */
+    protected Or() {
+        super();
     }
 
     @Override

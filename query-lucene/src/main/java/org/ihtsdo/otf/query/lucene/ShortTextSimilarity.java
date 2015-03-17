@@ -35,10 +35,5 @@ class ShortTextSimilarity extends DefaultSimilarity {
     public float tf(float freq) {
         return 1.0f;
     }
-
-    @Override
-    public float tf(int freq) {
-        return 1.0f;
-    }
     
 }

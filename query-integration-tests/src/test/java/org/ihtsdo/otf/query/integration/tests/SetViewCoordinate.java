@@ -15,11 +15,11 @@ package org.ihtsdo.otf.query.integration.tests;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.GregorianCalendar;
 import org.ihtsdo.otf.tcc.api.coordinate.Position;
-import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.coordinate.Status;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 
@@ -36,7 +36,7 @@ public final class SetViewCoordinate {
 
     public SetViewCoordinate(int year, int month, int day, int hour, int minute) throws IOException {
         this.position = new Position();
-        this.v1 = StandardViewCoordinates.getSnomedInferredLatestActiveOnly();
+        this.v1 = ViewCoordinates.getDevelopmentInferredLatestActiveOnly();
         position = v1.getViewPosition();
         setPositionTime(year, month, day, hour, minute);
         v1.setViewPosition(position);

@@ -40,31 +40,40 @@ import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
 import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * .
  *
  * @author dylangrald
  */
+@XmlRootElement
+@XmlAccessorType(value = XmlAccessType.NONE)
 public class RefsetContainsString extends LeafClause {
 
-    Query enclosingQuery;
+
+    @XmlElement
     String queryText;
+    @XmlElement
     String viewCoordinateKey;
-    ViewCoordinate viewCoordinate;
+
     NativeIdSetBI cache;
-    ConceptSpec refsetSpec;
+
+    @XmlElement
     String refsetSpecKey;
 
     public RefsetContainsString(Query enclosingQuery, String refsetSpecKey, String queryText, String viewCoordinateKey) {
         super(enclosingQuery);
-        this.enclosingQuery = enclosingQuery;
         this.refsetSpecKey = refsetSpecKey;
-        this.refsetSpec = (ConceptSpec) this.enclosingQuery.getLetDeclarations().get(refsetSpecKey);
         this.queryText = queryText;
         this.viewCoordinateKey = viewCoordinateKey;
 
     }
-
+    protected RefsetContainsString() {
+    }
     @Override
     public EnumSet<ClauseComputeType> getComputePhases() {
         return PRE_ITERATION;
@@ -72,12 +81,11 @@ public class RefsetContainsString extends LeafClause {
 
     @Override
     public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleComponents) throws IOException, ValidationException, ContradictionException {
-        if (this.viewCoordinateKey.equals(this.enclosingQuery.currentViewCoordinateKey)) {
-            this.viewCoordinate = (ViewCoordinate) this.enclosingQuery.getVCLetDeclarations().get(viewCoordinateKey);
-        } else {
-            this.viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
-        }
-        int refsetNid = this.refsetSpec.getNid();
+
+        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+        ConceptSpec refsetSpec = (ConceptSpec) this.enclosingQuery.getLetDeclarations().get(refsetSpecKey);
+
+        int refsetNid = refsetSpec.getNid();
         ConceptVersionBI conceptVersion = Ts.get().getConceptVersion(viewCoordinate, refsetNid);
 
         for (RefexVersionBI<?> rm : conceptVersion.getCurrentRefsetMembers(viewCoordinate)) {

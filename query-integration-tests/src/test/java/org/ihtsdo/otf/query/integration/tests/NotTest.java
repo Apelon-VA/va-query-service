@@ -15,9 +15,13 @@ package org.ihtsdo.otf.query.integration.tests;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import java.io.IOException;
-import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
+
+import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
+import org.ihtsdo.otf.query.implementation.ForSetSpecification;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
+import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.Query;
@@ -35,18 +39,21 @@ public class NotTest extends QueryClauseTest {
 
     public NotTest() throws IOException {
 
-        this.q = new Query(StandardViewCoordinates.getSnomedInferredLatestActiveOnly()) {
+        this.q = new Query(ViewCoordinates.getDevelopmentInferredLatestActiveOnly()) {
             @Override
-            protected NativeIdSetBI For() throws IOException {
-                return PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
-
+            protected ForSetSpecification ForSetSpecification() throws IOException {
+                ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.CUSTOM_SET);
+                NativeIdSetBI forSet = new ConcurrentBitSet();
+                forSet.or(PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), ViewCoordinates.getDevelopmentInferredLatestActiveOnly()));
+                forSetSpecification.getCustomCollection().addAll(forSet.toPrimordialUuidSet());
+                return forSetSpecification;
             }
 
             @Override
             public void Let() throws IOException {
                 let("motion", Snomed.MOTION);
                 let("regex", "[Vv]ibration.*");
-                NativeIdSetBI kindOfSet = PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
+                NativeIdSetBI kindOfSet = PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), ViewCoordinates.getDevelopmentInferredLatestActiveOnly());
                 NativeIdSetItrBI iter = kindOfSet.getSetBitIterator();
                 StringBuilder forSet = new StringBuilder("");
                 while(iter.next()){

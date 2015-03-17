@@ -29,18 +29,25 @@ import org.ihtsdo.otf.query.implementation.WhereClause;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  * Computes the set of enclosing concepts for the set of components that
  * are returned from the child clause.
  *
  * @author kec
  */
+@XmlRootElement
+@XmlAccessorType(value = XmlAccessType.NONE)
 public class ConceptForComponent extends ParentClause {
 
     public ConceptForComponent(Query enclosingQuery, Clause child) {
         super(enclosingQuery, child);
     }
-
+    protected ConceptForComponent() {
+    }
     @Override
     public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleConceptNids) throws IOException, ValidationException, ContradictionException {
         NativeIdSetBI incomingPossibleComponentNids = Ts.get().getComponentNidsForConceptNids(incomingPossibleConceptNids);

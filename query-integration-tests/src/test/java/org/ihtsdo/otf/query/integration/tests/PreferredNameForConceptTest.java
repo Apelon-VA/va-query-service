@@ -15,13 +15,13 @@
  */
 package org.ihtsdo.otf.query.integration.tests;
 
+import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import java.io.IOException;
 import org.ihtsdo.otf.query.implementation.Clause;
+import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
+import org.ihtsdo.otf.query.implementation.ForSetSpecification;
 import org.ihtsdo.otf.query.implementation.Query;
-import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
 /**
  * Creates a test for the
@@ -34,12 +34,11 @@ public class PreferredNameForConceptTest extends QueryClauseTest {
 
     public PreferredNameForConceptTest() throws IOException {
         final SetViewCoordinate setViewCoordinate = new SetViewCoordinate(2002, 1, 31, 0, 0);
-        this.q = new Query(StandardViewCoordinates.getSnomedInferredLatestActiveOnly()) {
+        this.q = new Query(ViewCoordinates.getDevelopmentInferredLatestActiveOnly()) {
             @Override
-            protected NativeIdSetBI For() throws IOException {
-                return PersistentStore.get().getAllComponentNids();
+            protected ForSetSpecification ForSetSpecification() {
+                return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
             }
-
             @Override
             public void Let() throws IOException {
                 let("vibration", Snomed.VIBRATION);
