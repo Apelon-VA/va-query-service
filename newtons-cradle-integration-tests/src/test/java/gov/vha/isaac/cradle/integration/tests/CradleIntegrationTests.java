@@ -5,8 +5,8 @@
  */
 package gov.vha.isaac.cradle.integration.tests;
 
+import com.sun.javafx.application.PlatformImpl;
 import gov.vha.isaac.cradle.CradleExtensions;
-import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
 import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordUnpacked;
@@ -36,7 +36,6 @@ import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeBuilder;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeWithBitSets;
 import javafx.concurrent.Task;
-import javafx.embed.swing.JFXPanel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.api.MultiException;
@@ -82,7 +81,9 @@ public class CradleIntegrationTests {
     @BeforeSuite
     public void setUpSuite() throws Exception {
         log.info("oneTimeSetUp");
-        JFXPanel panel = new JFXPanel();
+        PlatformImpl.startup(() -> {
+            // No need to do anything here
+        });
         System.setProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY, "target/object-chronicles");
 
         java.nio.file.Path dbFolderPath = Paths.get(System.getProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY));

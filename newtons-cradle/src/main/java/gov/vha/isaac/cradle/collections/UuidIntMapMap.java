@@ -119,7 +119,15 @@ public class UuidIntMapMap implements UuidToIntMap {
                 return nid;
             }
             nid = nextNidProvider.incrementAndGet();
-            maps[mapIndex].put(key, nid);
+//            if (nid == -2147483637) {
+//                System.out.println(nid + "->" + key);
+//            }
+            try {
+                maps[mapIndex].put(key, nid);
+            } catch (Throwable e) {
+                e.printStackTrace();
+                throw e;
+            }
             return nid;
         } finally {
             maps[mapIndex].getWriteLock().unlock();

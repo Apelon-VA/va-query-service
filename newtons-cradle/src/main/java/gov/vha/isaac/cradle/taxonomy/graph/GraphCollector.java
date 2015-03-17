@@ -58,8 +58,8 @@ public class GraphCollector implements
         this.taxonomyMap = taxonomyMap;
         this.taxonomyCoordinate = viewCoordinate;
         taxonomyFlags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(viewCoordinate);
-        addToWatchList("728828c6-b802-3f4e-a45b-3dcf238e48fd");
-        addToWatchList("6be31736-e4b2-392f-840a-482393b43d55");
+        //addToWatchList("728828c6-b802-3f4e-a45b-3dcf238e48fd");
+        //addToWatchList("6be31736-e4b2-392f-840a-482393b43d55");
     }
 
     public final void addToWatchList(String uuid) throws RuntimeException {
@@ -74,9 +74,10 @@ public class GraphCollector implements
     @Override
     public void accept(HashTreeBuilder graphBuilder, int originSequence) {
         originSequenceBeingProcessed = originSequence;
-        if (watchList.contains(originSequence)) {
-            System.out.println("Found watch: " + this.toString());
-        }
+        // For debugging. 
+//        if (watchList.contains(originSequence)) {
+//            System.out.println("Found watch: " + this.toString());
+//        }
         Optional<TaxonomyRecordPrimitive> isaacPrimitiveTaxonomyRecord = taxonomyMap.get(originSequence);
         
         if (isaacPrimitiveTaxonomyRecord.isPresent()) {

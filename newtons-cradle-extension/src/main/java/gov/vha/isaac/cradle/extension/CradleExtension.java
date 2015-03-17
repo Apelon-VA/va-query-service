@@ -23,8 +23,6 @@ import java.util.Set;
 @Component(role = AbstractMavenLifecycleParticipant.class, hint = "cradle")
 public class CradleExtension extends DatabaseBuildExtension {
 
-    private static Logger log = LogManager.getLogger();
-
     Subscription tickSubscription;
 
     public CradleExtension() {
@@ -33,10 +31,8 @@ public class CradleExtension extends DatabaseBuildExtension {
                 .subscribe(tick -> {
                     Set<Task> taskSet = Hk2Looker.get().getService(ActiveTaskSet.class).get();
                     taskSet.stream().forEach((task) -> {
-                        log.printf(Level.INFO, "%n    %s%n    %s%n    %.1f%% complete",
-                                task.getTitle(), task.getMessage(), task.getProgress() * 100);
+                        tick(task);
                     });
                 });
     }
 }
-

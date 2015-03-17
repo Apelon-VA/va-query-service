@@ -86,9 +86,9 @@ public class VerifyLoadEConceptFile
                             updateMessage(String.format("Verified %,d concepts...", completionCount));
                         }
                         TtkConceptChronicle eConcept = new TtkConceptChronicle(dis);
-                        if (watchSet.contains(eConcept.getPrimordialUuid())) {
-                            System.out.println("Watch concept: " + eConcept);
-                        }
+//                        if (watchSet.contains(eConcept.getPrimordialUuid())) {
+//                            System.out.println("Watch concept: " + eConcept);
+//                        }
                         conversionPermits.acquire();
                         conversionService.submit(new VerifyEConcept(termService, eConcept, conversionPermits, stampPath));
 
