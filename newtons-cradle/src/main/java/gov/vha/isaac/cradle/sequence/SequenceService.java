@@ -22,7 +22,6 @@ import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
 import java.io.File;
 import java.io.IOException;
-import java.util.BitSet;
 import java.util.stream.IntStream;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -128,5 +127,15 @@ public class SequenceService implements SequenceProvider {
         SememeSequenceSet sequences = new SememeSequenceSet();
         IntStream.of(sememeNidArray).forEach((nid) -> sequences.add(sememeSequenceMap.getSequenceFast(nid)));
         return sequences;
+    }
+
+    @Override
+    public IntStream getConceptNidsForSequences(IntStream conceptSequences) {
+        return conceptSequences.map((sequence)->{return getConceptNid(sequence);});
+    }
+
+    @Override
+    public IntStream getSememeNidsForSequences(IntStream sememSequences) {
+         return sememSequences.map((sequence)->{return getSememeNid(sequence);});
     }
 }

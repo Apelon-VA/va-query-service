@@ -1,6 +1,7 @@
 package gov.vha.isaac.cradle;
 
 import gov.vha.isaac.ochre.collections.NidSet;
+import gov.vha.isaac.ochre.collections.SequenceSet;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -13,6 +14,7 @@ import java.util.Arrays;
 import java.util.OptionalInt;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.IntStream;
 import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 
@@ -160,17 +162,17 @@ public class ConcurrentSequenceIntMap {
         return componentNids;
     }
 
-    NidSet getComponentsNotSet() {
-        NidSet resultSet = new NidSet();
+    IntStream getComponentsNotSet() {
+        IntStream.Builder builder = IntStream.builder();
         int componentSize = size.get();
         componentSize = componentSize - SEGMENT_SIZE;
         for (int i = 0; i < componentSize; i++) {
             int segmentIndex = i / SEGMENT_SIZE;
             int indexInSegment = i % SEGMENT_SIZE;
             if (sequenceIntList[segmentIndex][indexInSegment] == 0) {
-                resultSet.add(i);
+                builder.add(i);
             }
         }
-        return resultSet;
+        return builder.build();
     }
 }

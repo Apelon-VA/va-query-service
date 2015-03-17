@@ -152,7 +152,7 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
     
     @Override
     public void modified(ComponentChronicleBI component) {
-        lastModified = cradle.incrementAndGetSequence();
+        lastModified = getCradle().incrementAndGetSequence();
     }
     
     @Override

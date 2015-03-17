@@ -71,11 +71,10 @@ import gov.vha.isaac.ochre.api.SequenceProvider;
 import gov.vha.isaac.ochre.api.TaxonomyProvider;
 import gov.vha.isaac.ochre.api.commit.CommitManager;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.nio.file.Path;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
-import java.util.function.IntFunction;
-import java.util.function.IntUnaryOperator;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.ihtsdo.otf.tcc.api.concept.ConceptFetcherBI;
 import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
@@ -195,25 +194,35 @@ public class Cradle
         uuidIntMap.write(new File(dbFolderPath.toFile(), "uuid-nid-map"));
 
         log.info("writing sequence-cnid-map.");
+        //integrityTest();
+        nidCnidMap.write(new File(dbFolderPath.toFile(), "sequence-cnid-map"));
+
+        log.info("Finished pre-destroy.");
+    }
+
+    public void integrityTest() {
         log.info("NidCnid integrity test. ");
-        gov.vha.isaac.ochre.collections.NidSet componentsNotSet = nidCnidMap.getComponentsNotSet();
-        log.info("Components with no concept: " + componentsNotSet.size());
+        IntStream componentsNotSet = nidCnidMap.getComponentsNotSet();
+        NidSet componentNidsNotSet = 
+                NidSet.of(componentsNotSet.map((nid)->{return nid - Integer.MIN_VALUE;}).toArray());
+        componentNidsNotSet.remove(Integer.MIN_VALUE); // we know Integer.MIN_VALUE is not used. 
+        log.info("Components with no concept: " + componentNidsNotSet.size());
         getParallelConceptDataEagerStream().forEach((ConceptChronicleDataEager cde) -> {
-            if (componentsNotSet.contains(cde.getNid())) {
+            if (componentNidsNotSet.contains(cde.getNid())) {
                 if (nidCnidMap.containsKey(cde.getNid())) {
                     int key = nidCnidMap.get(cde.getNid()).getAsInt();
                     System.out.println("Concept in nidCnidMap, but not componentsNotSet: " + cde);
-                    componentsNotSet.contains(cde.getNid());
+                    componentNidsNotSet.contains(cde.getNid());
                 } else {
                     System.out.println("Concept not in nidCnidMap: " + cde);
                 }
             }
             cde.getConceptComponents().forEach((ConceptComponent<?, ?> cc) -> {
-                if (componentsNotSet.contains(cc.getNid())) {
+                if (componentNidsNotSet.contains(cc.getNid())) {
                     if (nidCnidMap.containsKey(cde.getNid())) {
                         int key = nidCnidMap.get(cde.getNid()).getAsInt();
                         System.out.println("component in nidCnidMap, but not componentsNotSet: " + cc);
-                        componentsNotSet.contains(cde.getNid());
+                        componentNidsNotSet.contains(cde.getNid());
                     } else {
                         System.out.println("component not in nidCnidMap: " + cc);
                     }
@@ -222,18 +231,18 @@ public class Cradle
         });
 
         getParallelSememeStream().forEach((RefexMember<?, ?> sememe) -> {
-            if (componentsNotSet.contains(sememe.getNid())) {
+            if (componentNidsNotSet.contains(sememe.getNid())) {
                 if (nidCnidMap.containsKey(sememe.getNid())) {
                     int key = nidCnidMap.get(sememe.getNid()).getAsInt();
                     System.out.println("Sememe in nidCnidMap, but not componentsNotSet: " + sememe);
-                    componentsNotSet.contains(sememe.getNid());
+                    componentNidsNotSet.contains(sememe.getNid());
                 } else {
                     System.out.println("Sememe not in nidCnidMap: " + sememe);
                 }
             }
         });
 
-        componentsNotSet.stream().limit(100).forEach((int nid) -> {
+        componentNidsNotSet.stream().limit(100).forEach((int nid) -> {
             try {
                 List<UUID> uuids = getUuidsForNid(nid);
                 System.out.println("Unmapped nid: " + nid + " UUIDs:" + uuids);
@@ -241,9 +250,6 @@ public class Cradle
                 throw new RuntimeException(ex);
             }
         });
-        nidCnidMap.write(new File(dbFolderPath.toFile(), "sequence-cnid-map"));
-
-        log.info("Finished pre-destroy.");
     }
 
     @Override
@@ -326,20 +332,23 @@ public class Cradle
         return conceptSequences.stream().parallel().mapToObj((int sequence) -> conceptMap.getQuick(sequence).getConceptChronicle());
     }
 
+    /**
+     * For debugging...
+     */
     private static HashSet<UUID> watchSet = new HashSet<>();
     {
-        watchSet.add(UUID.fromString("0418a591-f75b-39ad-be2c-3ab849326da9"));
-        watchSet.add(UUID.fromString("4459d8cf-5a6f-3952-9458-6d64324b27b7"));
+//        watchSet.add(UUID.fromString("0418a591-f75b-39ad-be2c-3ab849326da9"));
+//        watchSet.add(UUID.fromString("4459d8cf-5a6f-3952-9458-6d64324b27b7"));
     }
     
     @Override
     public int getNidForUuids(UUID... uuids) throws IOException {
 
         for (UUID uuid : uuids) {
-            if (watchSet.contains(uuid)) {
-                System.out.println("Found watch: " + Arrays.asList(uuids));
-                watchSet.remove(uuid);
-            }
+//            if (watchSet.contains(uuid)) {
+//                System.out.println("Found watch: " + Arrays.asList(uuids));
+//                watchSet.remove(uuid);
+//            }
             int nid = uuidIntMap.get(uuid);
             if (nid != Integer.MAX_VALUE) {
                 return nid;

@@ -128,9 +128,9 @@ public class ImportEConceptFile extends Task<Integer> {
                         }
                         TtkConceptChronicle eConcept = new TtkConceptChronicle(dis);
                         
-                        if (eConcept.getPrimordialUuid().equals(UUID.fromString("cd5710b4-d4d4-3582-9799-b9428f9b8938"))) {
-                            log.info("Watch concept: " + eConcept);
-                        }
+//                        if (eConcept.getPrimordialUuid().equals(UUID.fromString("cd5710b4-d4d4-3582-9799-b9428f9b8938"))) {
+//                            log.info("Watch concept: " + eConcept);
+//                        }
 
                         conversionPermits.acquire();
                         conversionService.submit(new ImportEConcept(eConcept, conversionPermits, stampPathUuid));

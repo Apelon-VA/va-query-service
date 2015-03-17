@@ -35,6 +35,7 @@ import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 public class WriteConceptCompletionService implements Runnable {
     private static final Logger log = LogManager.getLogger();
     private final ExecutorService writeConceptPool = Executors.newFixedThreadPool(2);
+    private boolean run = true;
 
     ExecutorCompletionService<Void> conversionService = new ExecutorCompletionService(writeConceptPool);
     
@@ -51,17 +52,22 @@ public class WriteConceptCompletionService implements Runnable {
 
     @Override
     public void run() {
-        while (true) {
+        while (run) {
             try {
-                Future<Void> future = conversionService.poll();
-                future.get();
+                Future<Void> task = conversionService.poll(500, TimeUnit.MILLISECONDS);
+                if (task != null) {
+                    task.get();
+                }
+                if (writeConceptPool.isTerminated()) {
+                    run = false;
+                }
             } catch (InterruptedException ex) {
                 log.warn(ex.getLocalizedMessage(), ex);
             } catch (ExecutionException ex) {
                 log.error(ex.getLocalizedMessage(), ex);
             }
-            
         }
+        System.out.println("WriteConceptCompletionService closed");
     }
     
     public void cancel() {
