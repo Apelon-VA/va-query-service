@@ -16,6 +16,9 @@ import org.jvnet.hk2.annotations.Service;
 //~--- JDK imports ------------------------------------------------------------
 
 import java.io.IOException;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import org.glassfish.hk2.runlevel.RunLevel;
 import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
 
 /**
@@ -24,7 +27,8 @@ import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
  *
  * @author aimeefurber
  */
-@Service
+@Service(name = "Description indexer")
+@RunLevel(value = 2)
 public class LuceneDescriptionIndexer extends LuceneIndexer implements IndexerBI {
     public LuceneDescriptionIndexer() throws IOException {
         super("descriptions");
@@ -55,4 +59,17 @@ public class LuceneDescriptionIndexer extends LuceneIndexer implements IndexerBI
             }
         }
     }
+    
+    @PostConstruct
+    private void startMe() throws IOException {
+        logger.info("Starting LuceneDescriptionIndexer post-construct");
+        
+    }
+    
+    @PreDestroy
+    private void stopMe() throws IOException {
+        logger.info("Stopping LuceneDescriptionIndexer pre-destroy. ");
+    }
+
+
 }

@@ -15,13 +15,12 @@
  */
 package org.ihtsdo.otf.query.implementation;
 
+import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.api.store.Ts;
 
 /**
  * Demonstrates the syntax to construct and compute a
@@ -35,7 +34,7 @@ public class QueryExample {
     
     public QueryExample(){
         try {
-            this.q = new Query(StandardViewCoordinates.getSnomedInferredLatestActiveOnly()) {
+            this.q = new Query(ViewCoordinates.getDevelopmentInferredLatestActiveOnly()) {
                 @Override
                 protected ForSetSpecification ForSetSpecification() {
                     return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);

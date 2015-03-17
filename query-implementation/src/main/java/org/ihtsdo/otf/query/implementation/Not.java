@@ -15,6 +15,8 @@
  */
 package org.ihtsdo.otf.query.implementation;
 
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.io.IOException;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
@@ -23,6 +25,9 @@ import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
+import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
+import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
+import org.ihtsdo.otf.tcc.api.store.Ts;
 
 /**
  * Returns components that are in the incoming For set and not in the set
@@ -84,9 +89,23 @@ public class Not extends ParentClause {
     public NativeIdSetBI computeComponents(NativeIdSetBI incomingComponents) throws IOException, ValidationException, ContradictionException {
         this.forSet = enclosingQuery.getForSet();
         assert forSet != null;
+        ConceptSequenceSet activeSet = new ConceptSequenceSet();
+        
+        Ts.get().getConceptStream(incomingComponents.toConceptSequenceSet()).forEach((ConceptChronicleBI cc) -> {
+            for (ConceptVersionBI cv: cc.getVersions(getEnclosingQuery().getViewCoordinate())) {
+                try {
+                    if (cv.isActive()) {
+                        activeSet.add(cc.getNid());
+                    }
+                } catch (IOException ex) {
+                   throw new RuntimeException(ex);
+                }
+            }
+        });
         for (Clause c : getChildren()) {
             notSet.or(c.computeComponents(incomingComponents));
         }
+        forSet = new ConcurrentBitSet(NidSet.of(activeSet));
         forSet.andNot(notSet);
         return forSet;
     }

@@ -1,6 +1,7 @@
 package org.ihtsdo.otf.query.lucene;
 
 //~--- non-JDK imports --------------------------------------------------------
+import static gov.vha.isaac.lookup.constants.Constants.SEARCH_ROOT_LOCATION_PROPERTY;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -14,8 +15,6 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.NRTManager;
-import org.apache.lucene.search.NRTManagerReopenThread;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -49,15 +48,23 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.lucene.index.TrackingIndexWriter;
+import org.apache.lucene.search.ControlledRealTimeReopenThread;
+import org.apache.lucene.search.ReferenceManager;
+import org.apache.lucene.search.SearcherManager;
+
+// See example for help with the Controlled Real-time indexing...
+// http://stackoverflow.com/questions/17993960/lucene-4-4-0-new-controlledrealtimereopenthread-sample-usage?answertab=votes#tab-top
 
 public abstract class LuceneIndexer implements IndexerBI {
 
+
     public static final String LUCENE_ROOT_LOCATION_PROPERTY
-            = "org.ihtsdo.otf.tcc.query.lucene-root-location";
-    public static final String DEFAULT_LUCENE_LOCATION = "lucene";
+            = SEARCH_ROOT_LOCATION_PROPERTY;
+    public static final String DEFAULT_LUCENE_FOLDER = "lucene";
     protected static final Logger logger
             = Logger.getLogger(LuceneIndexer.class.getName());
-    public static final Version luceneVersion = Version.LUCENE_43;
+    public static final Version luceneVersion = Version.LUCENE_4_10_3;
     private static final UnindexedFuture unindexedFuture = new UnindexedFuture();
     private static final ThreadGroup threadGroup = new ThreadGroup("Lucene");
     public static File root;
@@ -83,9 +90,9 @@ public abstract class LuceneIndexer implements IndexerBI {
     private boolean enabled = true;
     protected final ExecutorService luceneWriterService;
     protected ExecutorService luceneWriterFutureCheckerService;
-    private final NRTManagerReopenThread reopenThread;
-    private final NRTManager.TrackingIndexWriter trackingIndexWriter;
-    private final NRTManager searcherManager;
+    private final ControlledRealTimeReopenThread<IndexSearcher> reopenThread;
+    private final TrackingIndexWriter trackingIndexWriter;
+    private final ReferenceManager<IndexSearcher> searcherManager;
     private final String indexName;
 
     public LuceneIndexer(String indexName) throws IOException {
@@ -103,22 +110,29 @@ public abstract class LuceneIndexer implements IndexerBI {
         indexDirectory.clearLock("write.lock");
 
         IndexWriterConfig config = new IndexWriterConfig(luceneVersion, new StandardAnalyzer(luceneVersion));
+        config.setRAMBufferSizeMB(256);
         MergePolicy mergePolicy = new LogByteSizeMergePolicy();
 
         config.setMergePolicy(mergePolicy);
         config.setSimilarity(new ShortTextSimilarity());
 
         IndexWriter indexWriter = new IndexWriter(indexDirectory, config);
+        
 
-        trackingIndexWriter = new NRTManager.TrackingIndexWriter(indexWriter);
+        trackingIndexWriter = new TrackingIndexWriter(indexWriter);
 
         boolean applyAllDeletes = false;
 
-        searcherManager = new NRTManager(trackingIndexWriter, null, applyAllDeletes);
+        searcherManager = new SearcherManager(indexWriter, applyAllDeletes, null);
         
-        // Refreshes searcher every 5 seconds when nobody is waiting, and up to 100 msec delay
-        // when somebody is waiting:
-        reopenThread = new NRTManagerReopenThread(searcherManager, 5.0, 0.1);
+           // [3]: Create the ControlledRealTimeReopenThread that reopens the index periodically taking into 
+            //      account the changes made to the index and tracked by the TrackingIndexWriter instance
+            //      The index is refreshed every 60sc when nobody is waiting 
+            //      and every 100 millis whenever is someone waiting (see search method)
+            //      (see http://lucene.apache.org/core/4_3_0/core/org/apache/lucene/search/NRTManagerReopenThread.html)
+        reopenThread = new ControlledRealTimeReopenThread<>(trackingIndexWriter,
+                    searcherManager, 60.00, 0.1);
+    
         this.startThread();
 
     }
@@ -127,20 +141,20 @@ public abstract class LuceneIndexer implements IndexerBI {
         String rootLocation = System.getProperty(LUCENE_ROOT_LOCATION_PROPERTY);
 
         if (rootLocation != null) {
-            root = new File(rootLocation, DEFAULT_LUCENE_LOCATION);
+            root = new File(rootLocation, DEFAULT_LUCENE_FOLDER);
         } else {
             rootLocation = System.getProperty("org.ihtsdo.otf.tcc.datastore.bdb-location");
 
             if (rootLocation != null) {
-                root = new File(rootLocation, DEFAULT_LUCENE_LOCATION);
+                root = new File(rootLocation, DEFAULT_LUCENE_FOLDER);
             } else {
-                root = new File(DEFAULT_LUCENE_LOCATION);
+                root = new File(DEFAULT_LUCENE_FOLDER);
             }
         }
     }
 
     private void startThread() {
-        reopenThread.setName("Lucene NRT " + indexName + " Reopen Thread");
+        reopenThread.setName("Lucene " + indexName + " Reopen Thread");
         reopenThread.setPriority(Math.min(Thread.currentThread().getPriority() + 2, Thread.MAX_PRIORITY));
         reopenThread.setDaemon(true);
         reopenThread.start();
@@ -174,11 +188,11 @@ public abstract class LuceneIndexer implements IndexerBI {
      * component that matched, and the score of that match relative to other
      * matches.
      * @throws IOException
-     * @throws ParseException
      */
+    @Override
     public final List<SearchResult> query(String query, ComponentProperty field, int sizeLimit)
-            throws IOException, ParseException {
-        return query(query, field, sizeLimit, Long.MIN_VALUE);
+            throws IOException {
+            return query(query, field, sizeLimit, Long.MIN_VALUE);
     }
 
     /**
@@ -193,10 +207,10 @@ public abstract class LuceneIndexer implements IndexerBI {
      * component that matched, and the score of that match relative to other
      * matches.
      * @throws IOException
-     * @throws ParseException
      */
+    @Override
     public final List<SearchResult> query(String query, ComponentProperty field, int sizeLimit, long targetGeneration)
-            throws IOException, ParseException {
+            throws IOException {
         try {
             List<SearchResult> result;
 
@@ -253,6 +267,15 @@ public abstract class LuceneIndexer implements IndexerBI {
     }
 
     @Override
+    public void forceMerge() {
+        try {
+            trackingIndexWriter.getIndexWriter().forceMerge(1);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    @Override
     public final void closeWriter() {
         try {
             reopenThread.close();
@@ -260,7 +283,7 @@ public abstract class LuceneIndexer implements IndexerBI {
             luceneWriterService.awaitTermination(15, TimeUnit.MINUTES);
             luceneWriterFutureCheckerService.shutdown();
             luceneWriterFutureCheckerService.awaitTermination(15, TimeUnit.MINUTES);
-            trackingIndexWriter.getIndexWriter().close(true);
+            trackingIndexWriter.getIndexWriter().close();
         } catch (IOException ex) {
             Logger.getLogger(LuceneRefexIndexer.class.getName()).log(Level.SEVERE, null, ex);
         } catch (InterruptedException ex) {
@@ -298,7 +321,11 @@ public abstract class LuceneIndexer implements IndexerBI {
 
     private List<SearchResult> search(Query q, int sizeLimit, long targetGeneration) throws IOException {
         if (targetGeneration != Long.MIN_VALUE) {
-            searcherManager.waitForGeneration(targetGeneration);
+            try {
+                reopenThread.waitForGeneration(targetGeneration);
+            } catch (InterruptedException ex) {
+                Logger.getLogger(LuceneIndexer.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
 
         IndexSearcher searcher = searcherManager.acquire();
@@ -356,6 +383,12 @@ public abstract class LuceneIndexer implements IndexerBI {
     public boolean isEnabled() {
         return enabled;
     }
+    
+    @Override
+    public File getIndexerFolder() {
+        return root;
+    }
+
 
     private class AddDocument implements Callable<Long> {
 

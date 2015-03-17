@@ -20,8 +20,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
@@ -86,20 +84,16 @@ public class RefsetLuceneMatch extends LeafClause {
         String luceneMatch = (String) enclosingQuery.getLetDeclarations().get(luceneMatchKey);
 
         NativeIdSetBI nids = new ConcurrentBitSet();
-        try {
-            List<IndexerBI> lookers = Hk2Looker.get().getAllServices(IndexerBI.class);
-            IndexerBI refexIndexer = null;
-            for (IndexerBI li : lookers) {
-                if (li.getIndexerName().equals("refex")) {
-                    refexIndexer = li;
-                }
+        List<IndexerBI> lookers = Hk2Looker.get().getAllServices(IndexerBI.class);
+        IndexerBI refexIndexer = null;
+        for (IndexerBI li : lookers) {
+            if (li.getIndexerName().equals("refex")) {
+                refexIndexer = li;
             }
-            List<SearchResult> queryResults = refexIndexer.query(luceneMatch, ComponentProperty.LONG_EXTENSION_1, 1000);
-            for (SearchResult s : queryResults) {
-                nids.add(s.nid);
-            }
-        } catch (ParseException ex) {
-            Logger.getLogger(DescriptionLuceneMatch.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        List<SearchResult> queryResults = refexIndexer.query(luceneMatch, ComponentProperty.LONG_EXTENSION_1, 1000);
+        for (SearchResult s : queryResults) {
+            nids.add(s.nid);
         }
         //Filter the results, based upon the input ViewCoordinate
         NativeIdSetItrBI iter = nids.getSetBitIterator();

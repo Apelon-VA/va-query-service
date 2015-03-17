@@ -15,6 +15,7 @@
  */
 package org.ihtsdo.otf.query.integration.tests.jaxb;
 
+import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -26,7 +27,6 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import org.ihtsdo.otf.query.implementation.JaxbForQuery;
 import org.ihtsdo.otf.query.implementation.LetMap;
-import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.model.cc.termstore.PersistentStoreI;
 
@@ -59,7 +59,7 @@ public class LetMapTest {
         try {
             Map<String, Object> map = new HashMap<>();
             map.put("kind-of", Snomed.ALLERGIC_ASTHMA);
-            map.put("old-view", StandardViewCoordinates.getSnomedInferredLatestActiveOnly());
+            map.put("old-view", ViewCoordinates.getDevelopmentInferredLatestActiveOnly());
 
             JAXBContext ctx = JaxbForQuery.get();
             StringWriter writer = new StringWriter();

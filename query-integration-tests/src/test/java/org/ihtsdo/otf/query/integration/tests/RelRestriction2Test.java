@@ -21,8 +21,6 @@ import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
 import org.ihtsdo.otf.query.implementation.ForSetSpecification;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
 /**
  *
@@ -41,12 +39,13 @@ public class RelRestriction2Test extends QueryClauseTest {
                 let("Is a", Snomed.IS_A);
                 let("Motion", Snomed.MOTION);
                 let("Acceleration", Snomed.ACCELERATION);
-                let("false", false);
+                let("relTypeSubsumptionKey", true);
+                let("destinationSubsumptionKey", true);
             }
 
             @Override
             public Clause Where() {
-                return Or(RelRestriction("Acceleration", "Is a", "Motion", "false"));
+                return Or(RelRestriction("Is a", "Motion", "relTypeSubsumptionKey", "destinationSubsumptionKey"));
             }
         };
     }

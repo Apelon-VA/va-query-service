@@ -15,11 +15,11 @@ package org.ihtsdo.otf.query.integration.tests;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import java.io.IOException;
 
 import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
 import org.ihtsdo.otf.query.implementation.ForSetSpecification;
-import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.query.implementation.Clause;
@@ -40,8 +40,8 @@ public class ChangedFromPreviousVersionTest extends QueryClauseTest {
             protected ForSetSpecification ForSetSpecification() throws IOException {
                 ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.CUSTOM_SET);
                 NativeIdSetBI forSet = new ConcurrentBitSet();
-                forSet.or(PersistentStore.get().isChildOfSet(Snomed.CLINICAL_FINDING.getNid(), StandardViewCoordinates.getSnomedInferredLatestActiveOnly()));
-                forSet.add(Snomed.CLINICAL_FINDING.getNid());
+                forSet.or(PersistentStore.get().isChildOfSet(Snomed.CLINICAL_FINDING.getNid(), ViewCoordinates.getDevelopmentInferredLatestActiveOnly()));
+                forSet.add(Snomed.ADMINISTRATIVE_STATUSES.getNid());
                 forSetSpecification.getCustomCollection().addAll(forSet.toPrimordialUuidSet());
                 return forSetSpecification;
             }

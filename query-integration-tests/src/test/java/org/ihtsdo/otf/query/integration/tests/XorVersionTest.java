@@ -15,6 +15,7 @@
  */
 package org.ihtsdo.otf.query.integration.tests;
 
+import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.logging.Level;
@@ -23,11 +24,8 @@ import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
 import org.ihtsdo.otf.query.implementation.ForSetSpecification;
 import org.ihtsdo.otf.query.implementation.Query;
-import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
 import org.ihtsdo.otf.tcc.api.coordinate.Status;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
 /**
  * Creates a test for the {@link org.ihtsdo.otf.query.implementation.Xor}
@@ -43,7 +41,7 @@ public class XorVersionTest extends QueryClauseTest {
         this.setViewCoordinate = new SetViewCoordinate(2002, 1, 31, 0, 0);
         this.setViewCoordinate.getViewCoordinate().setAllowedStatus(EnumSet.of(Status.ACTIVE));
         Logger.getLogger(XorVersionTest.class.getName()).log(Level.INFO, "ViewCoordinate in XorVersionTest: {0}", this.setViewCoordinate.getViewCoordinate().toString());
-        this.q = new Query(StandardViewCoordinates.getSnomedInferredLatestActiveOnly()) {
+        this.q = new Query(ViewCoordinates.getDevelopmentInferredLatestActiveOnly()) {
             @Override
             protected ForSetSpecification ForSetSpecification() {
                 return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);

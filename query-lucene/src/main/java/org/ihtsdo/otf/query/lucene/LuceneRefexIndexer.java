@@ -40,15 +40,17 @@ import org.jvnet.hk2.annotations.Service;
 import java.io.IOException;
 
 import java.util.Iterator;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.ihtsdo.otf.tcc.api.spec.ValidationException;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import org.glassfish.hk2.runlevel.RunLevel;
+import static org.ihtsdo.otf.query.lucene.LuceneIndexer.logger;
 
 /**
  *
  * @author kec
  */
-@Service
+@Service(name = "snomed id refex indexer")
+@RunLevel(value = 2)
 public class LuceneRefexIndexer extends LuceneIndexer {
 
     int snomedAssemblageNid = Integer.MIN_VALUE;
@@ -56,26 +58,30 @@ public class LuceneRefexIndexer extends LuceneIndexer {
     public LuceneRefexIndexer() throws IOException {
         super("refex");
     }
+    
+    @PostConstruct
+    private void startMe() throws IOException {
+        logger.info("Starting LuceneRefexIndexer post-construct");
+        
+    }
+    
+    @PreDestroy
+    private void stopMe() throws IOException {
+        logger.info("Stopping LuceneRefexIndexer pre-destroy. ");
+    }
 
     @Override
     protected boolean indexChronicle(ComponentChronicleBI chronicle) {
         if (chronicle instanceof RefexChronicleBI) {
             RefexMember rxc = (RefexMember) chronicle;
             if (snomedAssemblageNid == Integer.MIN_VALUE) {
-                try {
-                    snomedAssemblageNid = TermAux.SNOMED_IDENTIFIER.getNid();
-                } catch (ValidationException ex) {
-                    Logger.getLogger(LuceneRefexIndexer.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (IOException ex) {
-                    Logger.getLogger(LuceneRefexIndexer.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                snomedAssemblageNid = TermAux.SNOMED_IDENTIFIER.getNid();
             }
 
             if (rxc.getAssemblageNid() == snomedAssemblageNid) {
                 return true;
             }
         }
-
         return false;
     }
 
@@ -86,7 +92,6 @@ public class LuceneRefexIndexer extends LuceneIndexer {
             RefexMemberVersion rxv = (RefexMemberVersion) it.next();
             if (rxv instanceof RefexLongVersionBI) {
                 RefexLongVersionBI rxvl = (RefexLongVersionBI) rxv;
-
                 doc.add(new LongField(ComponentProperty.LONG_EXTENSION_1.name(), rxvl.getLong1(),
                                       Field.Store.NO));
             }

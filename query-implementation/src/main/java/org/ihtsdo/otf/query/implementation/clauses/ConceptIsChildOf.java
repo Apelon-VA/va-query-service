@@ -69,8 +69,8 @@ public class ConceptIsChildOf extends LeafClause {
             throws ValidationException, IOException, ContradictionException {
         ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
 
-        ConceptSpec kindOfSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(kindOfSpecKey);
-        int parentNid = kindOfSpec.getNid(viewCoordinate);
+        ConceptSpec childOfSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(kindOfSpecKey);
+        int parentNid = childOfSpec.getNid(viewCoordinate);
         getResultsCache().or(Ts.get().isChildOfSet(parentNid, viewCoordinate));
         return getResultsCache();
     }

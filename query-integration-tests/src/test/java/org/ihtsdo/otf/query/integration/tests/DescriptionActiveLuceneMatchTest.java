@@ -15,14 +15,12 @@
  */
 package org.ihtsdo.otf.query.integration.tests;
 
+import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import java.io.IOException;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
 import org.ihtsdo.otf.query.implementation.ForSetSpecification;
 import org.ihtsdo.otf.query.implementation.Query;
-import org.ihtsdo.otf.query.implementation.versioning.StandardViewCoordinates;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
 /**
  *
@@ -31,7 +29,7 @@ import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 public class DescriptionActiveLuceneMatchTest extends QueryClauseTest {
 
     public DescriptionActiveLuceneMatchTest() throws IOException {
-        this.q = new Query(StandardViewCoordinates.getSnomedInferredLatestActiveAndInactive()) {
+        this.q = new Query(ViewCoordinates.getDevelopmentInferredLatestActiveOnly()) {
             @Override
             protected ForSetSpecification ForSetSpecification() {
                 return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);

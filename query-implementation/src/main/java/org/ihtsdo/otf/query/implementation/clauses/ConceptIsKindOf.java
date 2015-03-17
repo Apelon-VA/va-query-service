@@ -33,7 +33,6 @@ import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  * Calculates the set of concepts that are a kind of the specified concept. The

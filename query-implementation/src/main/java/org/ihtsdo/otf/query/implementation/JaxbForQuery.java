@@ -38,6 +38,7 @@ import org.ihtsdo.otf.tcc.ddo.concept.component.description.SimpleDescriptionVer
 import org.ihtsdo.otf.tcc.model.cc.LanguageSortPrefs;
 
 import java.util.HashMap;
+import org.ihtsdo.otf.tcc.api.coordinate.LanguagePreferenceList;
 
 /**
  *
@@ -75,6 +76,7 @@ public class JaxbForQuery {
                     SimpleViewCoordinate.class,
                     SimplePath.class,
                     SimplePosition.class, 
+                    LanguagePreferenceList.class,
                     LanguageSortPrefs.class, 
                     ReturnTypes.class,
                     HashMap.class,
@@ -102,8 +104,7 @@ public class JaxbForQuery {
                     RefsetContainsKindOfConcept.class,
                     RefsetContainsString.class,
                     RefsetLuceneMatch.class,
-                    RelRestriction.class,
-                    RelType.class);
+                    RelRestriction.class);
         }
         return singleton;
     }

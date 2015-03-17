@@ -16,19 +16,11 @@
 package org.ihtsdo.otf.query.integration.tests.jaxb;
 
 import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
 
 import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
 import org.ihtsdo.otf.query.implementation.ForSetSpecification;
-import org.ihtsdo.otf.query.implementation.JaxbForQuery;
-import static org.ihtsdo.otf.query.integration.tests.suite.QueryServiceTestSuiteSetup.PS;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.datastore.Bdb;
+import org.ihtsdo.otf.tcc.api.store.Ts;
 
 import static org.testng.Assert.*;
 import org.testng.annotations.*;
@@ -38,9 +30,6 @@ import org.testng.annotations.*;
  * @author kec
  */
 public class ForTest {
-
-    private static final Logger LOGGER = Logger.getLogger(ForTest.class.getName());
-    private static final String DIR = System.getProperty("user.dir");
 
     public ForTest() {
     }
@@ -59,13 +48,12 @@ public class ForTest {
         NativeIdSetBI forSet = forCollection.getCollection();
         System.out.println(forSet.size());
         assertTrue(forSet.contiguous());
-        assertEquals(Bdb.getUuidsToNidMap().getCurrentMaxNid() - Integer.MIN_VALUE, forSet.size());
     }
 
     @Test(groups = "QueryServiceTests")
     public void getAllConceptstest() throws IOException {
         ForSetSpecification forCollection = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
         NativeIdSetBI forSet = forCollection.getCollection();
-        assertEquals(PS.getConceptCount(), forSet.size());
+        assertEquals(Ts.get().getConceptCount(), forSet.size());
     }
 }
