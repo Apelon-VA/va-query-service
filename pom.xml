@@ -17,9 +17,9 @@
     <properties>
         <branch>QS ${project.scm.tag}</branch>
         <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
-        <ochre.version>2.16</ochre.version>
-        <isaac-metadata.version>1.18</isaac-metadata.version>
-        <newtons-cradle.version>1.6</newtons-cradle.version>
+        <ochre.version>2.17</ochre.version>
+        <isaac-metadata.version>1.19</isaac-metadata.version>
+        <newtons-cradle.version>1.7</newtons-cradle.version>
         <org.apache.lucene.version>4.10.3</org.apache.lucene.version>
     </properties>
     <build>
