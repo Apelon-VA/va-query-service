@@ -4,7 +4,7 @@
   <parent>
     <groupId>gov.vha.isaac</groupId>
     <artifactId>newtons-cradle-parent</artifactId>
-    <version>1.6</version>
+    <version>1.7</version>
   </parent>
   <artifactId>newtons-cradle-integration-tests</artifactId>
     <name>${project.parent.artifactId}: ${project.artifactId}</name>

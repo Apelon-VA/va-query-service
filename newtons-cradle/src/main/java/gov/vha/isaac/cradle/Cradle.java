@@ -11,6 +11,7 @@ import gov.vha.isaac.cradle.component.SememeSerializer;
 import gov.vha.isaac.cradle.taxonomy.DestinationOriginRecord;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyService;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
+import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.ConceptProxy;
 import gov.vha.isaac.ochre.api.LookupService;
 import javafx.concurrent.Task;
@@ -68,6 +69,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskServer;
 import gov.vha.isaac.ochre.api.SequenceProvider;
+import gov.vha.isaac.ochre.api.StandardPaths;
 import gov.vha.isaac.ochre.api.TaxonomyProvider;
 import gov.vha.isaac.ochre.api.commit.CommitManager;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
@@ -100,7 +102,6 @@ public class Cradle
     final ConcurrentSequenceSerializedObjectMap<ConceptChronicleDataEager> conceptMap;
     final ConcurrentSequenceSerializedObjectMap<RefexMember<?, ?>> sememeMap;
 
-
     final ConcurrentSequenceIntMap nidCnidMap = new ConcurrentSequenceIntMap();
 
     final ConcurrentSkipListSet<SememeKey> assemblageNidReferencedNidSememeSequenceMap = new ConcurrentSkipListSet<>();
@@ -122,7 +123,6 @@ public class Cradle
                 dbFolderPath, "concept-map/", ".concepts.map");
         sememeMap = new ConcurrentSequenceSerializedObjectMap(new SememeSerializer(),
                 dbFolderPath, "sememe-map/", ".sememe.map");
-
 
     }
 
@@ -175,7 +175,6 @@ public class Cradle
 
         log.info("sememeMap size: {}", sememeMap.getSize());
 
-
         log.info("writing concept-map.");
         conceptMap.write();
         log.info("writing sememe-map.");
@@ -203,8 +202,10 @@ public class Cradle
     public void integrityTest() {
         log.info("NidCnid integrity test. ");
         IntStream componentsNotSet = nidCnidMap.getComponentsNotSet();
-        NidSet componentNidsNotSet = 
-                NidSet.of(componentsNotSet.map((nid)->{return nid - Integer.MIN_VALUE;}).toArray());
+        NidSet componentNidsNotSet
+                = NidSet.of(componentsNotSet.map((nid) -> {
+                    return nid - Integer.MIN_VALUE;
+                }).toArray());
         componentNidsNotSet.remove(Integer.MIN_VALUE); // we know Integer.MIN_VALUE is not used. 
         log.info("Components with no concept: " + componentNidsNotSet.size());
         getParallelConceptDataEagerStream().forEach((ConceptChronicleDataEager cde) -> {
@@ -336,11 +337,12 @@ public class Cradle
      * For debugging...
      */
     private static HashSet<UUID> watchSet = new HashSet<>();
+
     {
 //        watchSet.add(UUID.fromString("0418a591-f75b-39ad-be2c-3ab849326da9"));
 //        watchSet.add(UUID.fromString("4459d8cf-5a6f-3952-9458-6d64324b27b7"));
     }
-    
+
     @Override
     public int getNidForUuids(UUID... uuids) throws IOException {
 
@@ -432,7 +434,7 @@ public class Cradle
     @Override
     public void addUncommittedNoChecks(ConceptChronicleBI conceptChronicleBI) throws IOException {
         commitManager.addUncommittedNoChecks(conceptChronicleBI);
-   }
+    }
 
     @Override
     public Collection<? extends ConceptChronicleBI> getUncommittedConcepts() {
@@ -440,8 +442,8 @@ public class Cradle
     }
 
     @Override
-    public boolean commit(ConceptChronicleBI conceptChronicleBI, 
-            ChangeSetPolicy changeSetPolicy, 
+    public boolean commit(ConceptChronicleBI conceptChronicleBI,
+            ChangeSetPolicy changeSetPolicy,
             ChangeSetWriterThreading changeSetWriterThreading) throws IOException {
         throw new UnsupportedOperationException();
     }
@@ -548,7 +550,7 @@ public class Cradle
     @Override
     public long getSequence() {
         return commitManager.getSequence();
-   }
+    }
 
     @Override
     public int getConceptCount() throws IOException {
@@ -1014,13 +1016,12 @@ public class Cradle
         return new SememeCollection(assemblageSememeKeys, sememeMap);
     }
 
-
     @Override
     public int getStamp(Status status, long time, int authorNid, int moduleNid, int pathNid) {
-        return commitManager.getStamp(status.getState(), 
-                time, 
-                sequenceProvider.getConceptSequence(authorNid), 
-                sequenceProvider.getConceptSequence(moduleNid), 
+        return commitManager.getStamp(status.getState(),
+                time,
+                sequenceProvider.getConceptSequence(authorNid),
+                sequenceProvider.getConceptSequence(moduleNid),
                 sequenceProvider.getConceptSequence(pathNid));
 
     }
@@ -1118,5 +1119,53 @@ public class Cradle
     public void reportStats() {
         uuidIntMap.reportStats(log);
     }
+
+    @Override
+    public Task<Integer> startLoadTask(StandardPaths stampPath, Path... filePaths) {
+        switch (stampPath) {
+            case DEVELOPMENT:
+                return startLoadTask(IsaacMetadataAuxiliaryBinding.DEVELOPMENT, filePaths);
+            case MASTER:
+                return startLoadTask(IsaacMetadataAuxiliaryBinding.MASTER, filePaths);
+            default:
+                throw new UnsupportedOperationException("Can't handle: " + stampPath);
+        }
+    }
+
+    @Override
+    public Task<Boolean> startVerifyTask(StandardPaths stampPath, Path... filePaths) {
+        switch (stampPath) {
+            case DEVELOPMENT:
+                return startVerifyTask(IsaacMetadataAuxiliaryBinding.DEVELOPMENT, filePaths);
+            case MASTER:
+                return startVerifyTask(IsaacMetadataAuxiliaryBinding.MASTER, filePaths);
+            default:
+                throw new UnsupportedOperationException("Can't handle: " + stampPath);
+        }
+   }
+
+    @Override
+    public Task<Integer> startExportTask(StandardPaths stampPath, Path filePath) {
+        switch (stampPath) {
+            case DEVELOPMENT:
+                return startExportTask(IsaacMetadataAuxiliaryBinding.DEVELOPMENT, filePath);
+            case MASTER:
+                return startExportTask(IsaacMetadataAuxiliaryBinding.MASTER, filePath);
+            default:
+                throw new UnsupportedOperationException("Can't handle: " + stampPath);
+        }
+   }
+
+    @Override
+    public Task<Integer> startLogicGraphExportTask(StandardPaths stampPath, Path filePath) {
+        switch (stampPath) {
+            case DEVELOPMENT:
+                return startLogicGraphExportTask(IsaacMetadataAuxiliaryBinding.DEVELOPMENT, filePath);
+            case MASTER:
+                return startLogicGraphExportTask(IsaacMetadataAuxiliaryBinding.MASTER, filePath);
+            default:
+                throw new UnsupportedOperationException("Can't handle: " + stampPath);
+        }
+   }
 
 }
