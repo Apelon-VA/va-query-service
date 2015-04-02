@@ -16,7 +16,7 @@
 package org.ihtsdo.otf.query.implementation;
 
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
-import gov.vha.isaac.ochre.api.SequenceProvider;
+import gov.vha.isaac.ochre.api.SequenceService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import org.ihtsdo.otf.query.implementation.clauses.*;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
@@ -59,7 +59,7 @@ import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 
 public abstract class Query {
 
-    private static SequenceProvider sequenceProvider = Hk2Looker.getService(SequenceProvider.class);
+    private static SequenceService sequenceProvider = Hk2Looker.getService(SequenceService.class);
 
     @XmlElementWrapper(name = "for")
     @XmlElement(name = "component")
