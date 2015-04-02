@@ -5,11 +5,11 @@
  */
 package gov.vha.isaac.cradle.waitfree;
 
+import gov.vha.isaac.ochre.model.WaitFreeComparable;
 import gov.vha.isaac.cradle.collections.SerializedAtomicReferenceArray;
+import gov.vha.isaac.ochre.model.DataBuffer;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -17,9 +17,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -32,6 +32,15 @@ import java.util.stream.Stream;
 public class CasSequenceObjectMap<T extends WaitFreeComparable> {
 
     private static final int SEGMENT_SIZE = 1280;
+    private static final int WRITE_SEQUENCES = 64;
+
+    private static final AtomicIntegerArray writeSequences = new AtomicIntegerArray(WRITE_SEQUENCES);
+
+    private static int getWriteSequence(int componentSequence) {
+        return writeSequences.incrementAndGet(componentSequence % WRITE_SEQUENCES);
+    }
+
+    ReentrantLock expandLock = new ReentrantLock();
 
     WaitFreeMergeSerializer<T> serializer;
     CopyOnWriteArrayList<SerializedAtomicReferenceArray> objectByteList = new CopyOnWriteArrayList<>();
@@ -44,23 +53,29 @@ public class CasSequenceObjectMap<T extends WaitFreeComparable> {
         changed.add(Boolean.FALSE);
     }
 
-    public void read(Path dbFolderPath, String folder, String suffix) {
+    /**
+     * Read from disk
+     *
+     * @param dbFolderPath folder where the data is located
+     * @param filePrefix prefix for files that contain segment data
+     * @param fileSuffix suffix for files that contain segment data
+     */
+    public void read(Path dbFolderPath, String filePrefix, String fileSuffix) {
         objectByteList.clear();
-        
+
         int segment = 0;
         int segments = 1;
 
         while (segment < segments) {
-            File segmentFile = new File(dbFolderPath.toFile(), folder + segment + suffix);
+            File segmentFile = new File(dbFolderPath.toFile(), filePrefix + segment + fileSuffix);
             try (DataInputStream input = new DataInputStream(new BufferedInputStream(new FileInputStream(segmentFile)))) {
                 segments = input.readInt();
                 int segmentIndex = input.readInt();
                 int segmentArrayLength = input.readInt();
-                
+
                 SerializedAtomicReferenceArray referenceArray = new SerializedAtomicReferenceArray(SEGMENT_SIZE, serializer, objectByteList.size());
                 objectByteList.add(referenceArray);
 
-                
                 for (int i = 0; i < segmentArrayLength; i++) {
                     int byteArrayLength = input.readInt();
                     if (byteArrayLength > 0) {
@@ -69,7 +84,7 @@ public class CasSequenceObjectMap<T extends WaitFreeComparable> {
                         referenceArray.set(i, bytes);
                     }
                 }
-                
+
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
@@ -102,6 +117,7 @@ public class CasSequenceObjectMap<T extends WaitFreeComparable> {
             }
         }
     }
+
     public Stream<T> getStream() {
         IntStream sequences = IntStream.range(0, objectByteList.size() * SEGMENT_SIZE);
         return sequences.filter(sequence -> containsKey(sequence)).mapToObj(sequence -> getQuick(sequence));
@@ -119,16 +135,12 @@ public class CasSequenceObjectMap<T extends WaitFreeComparable> {
      * @param sequence
      * @return
      */
-    private T getQuick(int sequence) {
+    public T getQuick(int sequence) {
         int segmentIndex = sequence / SEGMENT_SIZE;
         int indexInSegment = sequence % SEGMENT_SIZE;
 
-        byte[] objectBytes = objectByteList.get(segmentIndex).get(indexInSegment);
-        try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(objectBytes))) {
-            return serializer.deserialize(dis, WaitFreeComparable.digest(objectBytes));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        DataBuffer buff = new DataBuffer(objectByteList.get(segmentIndex).get(indexInSegment));
+        return serializer.deserialize(buff);
     }
 
     public int getSize() {
@@ -154,15 +166,11 @@ public class CasSequenceObjectMap<T extends WaitFreeComparable> {
 
         byte[] objectBytes = objectByteList.get(segmentIndex).get(indexInSegment);
         if (objectBytes != null) {
-            try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(objectBytes))) {
-                return Optional.of(serializer.deserialize(dis, WaitFreeComparable.digest(objectBytes)));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            DataBuffer buf = new DataBuffer(objectBytes);
+            return Optional.of(serializer.deserialize(buf));
         }
         return Optional.empty();
     }
-    ReentrantLock expandLock = new ReentrantLock();
 
     public boolean put(int sequence, T value) {
 
@@ -180,50 +188,43 @@ public class CasSequenceObjectMap<T extends WaitFreeComparable> {
             }
         }
         int indexInSegment = sequence % SEGMENT_SIZE;
-
-        try {
-            byte[] newBytes;
-            try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(128)) {
-                serializer.serialize(new DataOutputStream(byteArrayOutputStream), value);
-                newBytes = byteArrayOutputStream.toByteArray();
-            }
-
-            byte[] currentBytes = objectByteList.get(segmentIndex).get(indexInSegment);
-
-            long[] md5Data = null;
-            if (currentBytes != null) {
-                if (Arrays.equals(newBytes, currentBytes)) {
-                    return true;
-                }
-                md5Data = WaitFreeComparable.digest(currentBytes);
-            }
-            while (true) {
-                while (!value.verifyDigest(currentBytes)) {
-                    try (ByteArrayInputStream bais = new ByteArrayInputStream(currentBytes)) {
-                        T currentWrittenObject = serializer.deserialize(new DataInputStream(bais), md5Data);
-                        value = serializer.merge(value, currentWrittenObject, md5Data);
-                        currentBytes = objectByteList.get(segmentIndex).get(indexInSegment);
-                        md5Data = WaitFreeComparable.digest(currentBytes);
-                    }
-                }
-                try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(128)) {
-                    serializer.serialize(new DataOutputStream(byteArrayOutputStream), value);
-                    newBytes = byteArrayOutputStream.toByteArray();
-                    if (newBytes.length > 0) {
-                        if (objectByteList.get(segmentIndex).compareAndSet(indexInSegment, currentBytes, newBytes)) {
-                            changed.set(segmentIndex, Boolean.TRUE);
-                            return true;
-                        }
-                        currentBytes = objectByteList.get(segmentIndex).get(indexInSegment);
-                        md5Data = WaitFreeComparable.digest(currentBytes);
-                    } else {
-                        return false; // no write for null value...
-                    }
-                }
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        //
+        int oldWriteSequence = value.getWriteSequence();
+        int oldDataSize = 0;
+        byte[] oldData = objectByteList.get(segmentIndex).get(indexInSegment);
+        if (oldData != null) {
+            oldWriteSequence = getWriteSequence(oldData);
+            oldDataSize = oldData.length;
         }
+        
+        while (true) {
+            if (oldWriteSequence != value.getWriteSequence()) {
+                // need to merge.
+                DataBuffer oldDataBuffer = new DataBuffer(oldData);
+                T oldObject = serializer.deserialize(oldDataBuffer);
+                value = serializer.merge(value, oldObject, oldWriteSequence);
+            }
+            value.setWriteSequence(getWriteSequence(sequence));
+            
+            DataBuffer newDataBuffer = new DataBuffer(oldDataSize + 512);
+            serializer.serialize(newDataBuffer, value);
+            newDataBuffer.trimToSize();
+            if (objectByteList.get(segmentIndex).compareAndSet(indexInSegment, oldData, newDataBuffer.getData())) {
+                changed.set(segmentIndex, Boolean.TRUE);
+                return true;
+            }
+
+            // Try again.
+            oldData = objectByteList.get(segmentIndex).get(indexInSegment);
+            oldWriteSequence = getWriteSequence(oldData);
+        }
+
     }
 
+    public int getWriteSequence(byte[] data) {
+        return (((data[0]) << 24)
+                | ((data[1] & 0xff) << 16)
+                | ((data[2] & 0xff) << 8)
+                | ((data[3] & 0xff)));
+    }
 }

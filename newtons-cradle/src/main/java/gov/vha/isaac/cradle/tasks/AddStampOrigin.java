@@ -62,7 +62,8 @@ public class AddStampOrigin  extends Task<Void> {
         originCAB.getProperties().put(ComponentProperty.LONG_EXTENSION_1, originTime.getEpochSecond());
 
 
-        TerminologyBuilderBI builder = Ts.get().getTerminologyBuilder(EditCoordinates.getDefaultUserMetadata(),
+        TerminologyBuilderBI builder = Ts.get().getTerminologyBuilder(new EditCoordinate(
+                EditCoordinates.getDefaultUserMetadata()),
                 ViewCoordinates.getDevelopmentInferredLatest());
         builder.construct(originCAB);
         Ts.get().commit();

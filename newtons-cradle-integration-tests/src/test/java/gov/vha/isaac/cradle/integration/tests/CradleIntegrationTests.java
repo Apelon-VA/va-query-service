@@ -18,8 +18,8 @@ import static gov.vha.isaac.lookup.constants.Constants.CHRONICLE_COLLECTIONS_ROO
 
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
-import gov.vha.isaac.ochre.api.ObjectChronicleTaskServer;
-import gov.vha.isaac.ochre.api.SequenceProvider;
+import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
+import gov.vha.isaac.ochre.api.SequenceService;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -76,7 +76,7 @@ public class CradleIntegrationTests {
     Subscription tickSubscription;
     RunLevelController runLevelController;
     private boolean dbExists = false;
-    private static SequenceProvider sequenceProvider;
+    private static SequenceService sequenceProvider;
 
     @BeforeSuite
     public void setUpSuite() throws Exception {
@@ -98,7 +98,9 @@ public class CradleIntegrationTests {
         runLevelController.proceedTo(1);
         log.info("going to run level 2");
         runLevelController.proceedTo(2);
-        sequenceProvider = Hk2Looker.getService(SequenceProvider.class);
+        log.info("going to run level 3");
+        runLevelController.proceedTo(3);
+        sequenceProvider = Hk2Looker.getService(SequenceService.class);
         tickSubscription = EventStreams.ticks(Duration.ofSeconds(10))
                 .subscribe(tick -> {
                     Set<Task> taskSet = Hk2Looker.get().getService(ActiveTaskSet.class).get();
@@ -139,7 +141,7 @@ public class CradleIntegrationTests {
     public void testLoad() throws Exception {
 
         log.info("  Testing load...");
-        ObjectChronicleTaskServer tts = Hk2Looker.get().getService(ObjectChronicleTaskServer.class);
+        ObjectChronicleTaskService tts = Hk2Looker.get().getService(ObjectChronicleTaskService.class);
         PersistentStoreI ps = Hk2Looker.get().getService(PersistentStoreI.class);
 
         String mapDbFolder = System.getProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY);
@@ -249,7 +251,7 @@ public class CradleIntegrationTests {
         }
     }
 
-    private void loadDatabase(ObjectChronicleTaskServer tts, CradleExtensions ps) throws ExecutionException, IOException, MultiException, InterruptedException {
+    private void loadDatabase(ObjectChronicleTaskService tts, CradleExtensions ps) throws ExecutionException, IOException, MultiException, InterruptedException {
         Path snomedDataFile = Paths.get("target/data/sctSiEConcepts.jbin");
         Path isaacMetadataFile = Paths.get("target/data/isaac/metadata/econ/IsaacMetadataAuxiliary.econ");
 
@@ -274,7 +276,7 @@ public class CradleIntegrationTests {
         log.info("  sequences map: {}", sequenceProvider.getConceptSequenceStream().distinct().count());
     }
 
-    private boolean testLoad(ObjectChronicleTaskServer tts, CradleExtensions ps) throws ExecutionException, IOException, MultiException, InterruptedException {
+    private boolean testLoad(ObjectChronicleTaskService tts, CradleExtensions ps) throws ExecutionException, IOException, MultiException, InterruptedException {
         Path snomedDataFile = Paths.get("target/data/sctSiEConcepts.jbin");
         Path isaacMetadataFile = Paths.get("target/data/isaac/metadata/econ/IsaacMetadataAuxiliary.econ");
         Instant start = Instant.now();

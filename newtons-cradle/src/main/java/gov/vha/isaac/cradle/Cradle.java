@@ -1,5 +1,7 @@
 package gov.vha.isaac.cradle;
 
+import gov.vha.isaac.cradle.refex.RefexCollection;
+import gov.vha.isaac.cradle.sememe.SememeKey;
 import gov.vha.isaac.cradle.tasks.*;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
@@ -7,9 +9,9 @@ import gov.vha.isaac.cradle.collections.ConcurrentSequenceSerializedObjectMap;
 import gov.vha.isaac.cradle.collections.UuidIntMapMap;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEagerSerializer;
-import gov.vha.isaac.cradle.component.SememeSerializer;
+import org.ihtsdo.otf.tcc.model.cc.refex.RefexService;
 import gov.vha.isaac.cradle.taxonomy.DestinationOriginRecord;
-import gov.vha.isaac.cradle.taxonomy.TaxonomyService;
+import gov.vha.isaac.cradle.taxonomy.CradleTaxonomyProvider;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.ConceptProxy;
@@ -51,13 +53,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.beans.PropertyChangeListener;
 import java.beans.VetoableChangeListener;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.ParseException;
 import java.time.Instant;
@@ -67,16 +63,18 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import gov.vha.isaac.ochre.api.ObjectChronicleTaskServer;
-import gov.vha.isaac.ochre.api.SequenceProvider;
+import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
+import gov.vha.isaac.ochre.api.SequenceService;
 import gov.vha.isaac.ochre.api.StandardPaths;
-import gov.vha.isaac.ochre.api.TaxonomyProvider;
+import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.commit.CommitManager;
+import gov.vha.isaac.ochre.api.sememe.SememeService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
 import java.nio.file.Path;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.ihtsdo.otf.tcc.api.concept.ConceptFetcherBI;
 import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
@@ -92,7 +90,7 @@ import org.ihtsdo.otf.tcc.model.cc.component.ConceptComponent;
 @RunLevel(value = 1)
 public class Cradle
         extends Termstore
-        implements ObjectChronicleTaskServer, CradleExtensions {
+        implements ObjectChronicleTaskService, CradleExtensions {
 
     public static final String DEFAULT_CRADLE_FOLDER = "cradle";
     private static final Logger log = LogManager.getLogger();
@@ -100,29 +98,24 @@ public class Cradle
     final UuidIntMapMap uuidIntMap = new UuidIntMapMap();
 
     final ConcurrentSequenceSerializedObjectMap<ConceptChronicleDataEager> conceptMap;
-    final ConcurrentSequenceSerializedObjectMap<RefexMember<?, ?>> sememeMap;
 
     final ConcurrentSequenceIntMap nidCnidMap = new ConcurrentSequenceIntMap();
 
-    final ConcurrentSkipListSet<SememeKey> assemblageNidReferencedNidSememeSequenceMap = new ConcurrentSkipListSet<>();
-    final ConcurrentSkipListSet<SememeKey> referencedNidAssemblageNidSememeSequenceMap = new ConcurrentSkipListSet<>();
 
     transient HashMap<UUID, ViewCoordinate> viewCoordinates = new HashMap<>();
 
-    java.nio.file.Path dbFolderPath;
 
     AtomicBoolean loadExisting = new AtomicBoolean(false);
 
-    SequenceProvider sequenceProvider;
-    TaxonomyProvider taxonomyProvider;
+    SequenceService sequenceProvider;
+    TaxonomyService taxonomyProvider;
     CommitManager commitManager;
+    SememeService sememeProvider;
+    RefexService refexProvider;
 
     Cradle() throws IOException, NumberFormatException, ParseException {
-        dbFolderPath = IsaacDbFolder.get().getDbFolderPath();
         conceptMap = new ConcurrentSequenceSerializedObjectMap(new ConceptChronicleDataEagerSerializer(),
-                dbFolderPath, "concept-map/", ".concepts.map");
-        sememeMap = new ConcurrentSequenceSerializedObjectMap(new SememeSerializer(),
-                dbFolderPath, "sememe-map/", ".sememe.map");
+                IsaacDbFolder.get().getDbFolderPath(), "concept-map/", ".concepts.map");
 
     }
 
@@ -130,7 +123,9 @@ public class Cradle
     private void startMe() throws IOException {
         log.info("Starting Cradle post-construct");
         commitManager = LookupService.getService(CommitManager.class);
-        sequenceProvider = Hk2Looker.getService(SequenceProvider.class);
+        sequenceProvider = LookupService.getService(SequenceService.class);
+        sememeProvider = LookupService.getService(SememeService.class);
+        refexProvider = LookupService.getService(RefexService.class);
         if (!IsaacDbFolder.get().getPrimordial()) {
             loadExisting.set(!IsaacDbFolder.get().getPrimordial());
         }
@@ -138,32 +133,17 @@ public class Cradle
 
     @Override
     public void loadExistingDatabase() throws IOException {
-        taxonomyProvider = Hk2Looker.getService(TaxonomyProvider.class);
+        taxonomyProvider = Hk2Looker.getService(TaxonomyService.class);
         if (loadExisting.compareAndSet(true, false)) {
 
             log.info("Loading sequence-cnid-map.");
-            nidCnidMap.read(new File(dbFolderPath.toFile(), "sequence-cnid-map"));
+            nidCnidMap.read(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "sequence-cnid-map"));
 
             log.info("Loading concept-map.");
             conceptMap.read();
             log.info("Loading uuid-nid-map.");
-            uuidIntMap.read(new File(dbFolderPath.toFile(), "uuid-nid-map"));
+            uuidIntMap.read(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "uuid-nid-map"));
 
-            log.info("Loading sememeMap.");
-            sememeMap.read();
-
-            log.info("Loading SememeKeys.");
-
-            try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(dbFolderPath.toFile(), "sememe.keys"))))) {
-                int size = in.readInt();
-                for (int i = 0; i < size; i++) {
-                    int key1 = in.readInt();
-                    int key2 = in.readInt();
-                    int sequence = in.readInt();
-                    assemblageNidReferencedNidSememeSequenceMap.add(new SememeKey(key1, key2, sequence));
-                    referencedNidAssemblageNidSememeSequenceMap.add(new SememeKey(key2, key1, sequence));
-                }
-            }
             log.info("Finished load.");
         }
 
@@ -173,28 +153,15 @@ public class Cradle
     private void stopMe() throws IOException {
         log.info("Stopping Cradle pre-destroy. ");
 
-        log.info("sememeMap size: {}", sememeMap.getSize());
-
         log.info("writing concept-map.");
         conceptMap.write();
-        log.info("writing sememe-map.");
-        sememeMap.write();
 
-        log.info("writing SememeKeys.");
-        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(dbFolderPath.toFile(), "sememe.keys"))))) {
-            out.writeInt(assemblageNidReferencedNidSememeSequenceMap.size());
-            for (SememeKey key : assemblageNidReferencedNidSememeSequenceMap) {
-                out.writeInt(key.key1);
-                out.writeInt(key.key2);
-                out.writeInt(key.sememeSequence);
-            }
-        }
         log.info("writing uuid-nid-map.");
-        uuidIntMap.write(new File(dbFolderPath.toFile(), "uuid-nid-map"));
+        uuidIntMap.write(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "uuid-nid-map"));
 
         log.info("writing sequence-cnid-map.");
         //integrityTest();
-        nidCnidMap.write(new File(dbFolderPath.toFile(), "sequence-cnid-map"));
+        nidCnidMap.write(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "sequence-cnid-map"));
 
         log.info("Finished pre-destroy.");
     }
@@ -231,7 +198,7 @@ public class Cradle
             });
         });
 
-        getParallelSememeStream().forEach((RefexMember<?, ?> sememe) -> {
+        getParallelRefexStream().forEach((RefexMember<?, ?> sememe) -> {
             if (componentNidsNotSet.contains(sememe.getNid())) {
                 if (nidCnidMap.containsKey(sememe.getNid())) {
                     int key = nidCnidMap.get(sememe.getNid()).getAsInt();
@@ -254,26 +221,18 @@ public class Cradle
     }
 
     @Override
-    public void writeSememe(RefexMember<?, ?> sememe) {
-        int sequence = sequenceProvider.getSememeSequence(sememe.getNid());
-        if (!sememeMap.containsKey(sequence)) {
-            assemblageNidReferencedNidSememeSequenceMap.add(new SememeKey(sememe.assemblageNid,
-                    sememe.referencedComponentNid, sequence));
-            referencedNidAssemblageNidSememeSequenceMap.add(new SememeKey(sememe.referencedComponentNid,
-                    sememe.assemblageNid,
-                    sequence));
-        }
-        sememeMap.put(sequence, sememe);
+    public void writeRefex(RefexMember<?, ?> refex) {
+        refexProvider.writeRefex(refex);
     }
 
     @Override
-    public Stream<RefexMember<?, ?>> getSememeStream() {
-        return sememeMap.getStream();
+    public Stream<RefexMember<?, ?>> getRefexStream() {
+        return refexProvider.getRefexStream();
     }
 
     @Override
-    public Stream<RefexMember<?, ?>> getParallelSememeStream() {
-        return sememeMap.getParallelStream();
+    public Stream<RefexMember<?, ?>> getParallelRefexStream() {
+        return refexProvider.getParallelRefexStream();
     }
 
     @Override
@@ -664,10 +623,8 @@ public class Cradle
     }
 
     @Override
-    public void forgetXrefPair(int referencedComponentNid, NidPairForRefex nidPairForRefex) throws IOException {
-        int sequence = sequenceProvider.getSememeSequence(nidPairForRefex.getMemberNid());
-        assemblageNidReferencedNidSememeSequenceMap.remove(new SememeKey(nidPairForRefex.getRefexNid(), referencedComponentNid, sequence));
-        referencedNidAssemblageNidSememeSequenceMap.remove(new SememeKey(referencedComponentNid, nidPairForRefex.getRefexNid(), sequence));
+    public void forgetXrefPair(int referencedComponentNid, NidPairForRefex nidPairForRefex) throws IOException {        
+        refexProvider.forgetXrefPair(referencedComponentNid, nidPairForRefex);
     }
 
     @Override
@@ -981,39 +938,18 @@ public class Cradle
     }
 
     @Override
-    public RefexMember<?, ?> getSememe(int sememeId) {
-        if (sememeId < 0) {
-            sememeId = sequenceProvider.getSememeSequence(sememeId);
-        }
-        Optional<RefexMember<?, ?>> optionalResult = sememeMap.get(sememeId);
-        if (optionalResult.isPresent()) {
-            return optionalResult.get();
-        }
-        return null;
+    public RefexMember<?, ?> getRefex(int refexId) {
+        return refexProvider.getRefex(refexId);
     }
 
     @Override
-    public Collection<RefexMember<?, ?>> getSememesForAssemblage(int assemblageNid) {
-
-        SememeKey rangeStart = new SememeKey(assemblageNid, Integer.MIN_VALUE, Integer.MIN_VALUE); // yes
-        SememeKey rangeEnd = new SememeKey(assemblageNid, Integer.MAX_VALUE, Integer.MAX_VALUE); // no
-        NavigableSet<SememeKey> assemblageSememeKeys
-                = assemblageNidReferencedNidSememeSequenceMap.subSet(rangeStart, true,
-                        rangeEnd, true
-                );
-        return new SememeCollection(assemblageSememeKeys, sememeMap);
+    public Collection<RefexMember<?, ?>> getRefexesForAssemblage(int assemblageNid) {
+        return refexProvider.getRefexesFromAssemblage(assemblageNid).collect(Collectors.toList());
     }
 
     @Override
-    public Collection<RefexMember<?, ?>> getSememesForComponent(int componentNid) {
-
-        NavigableSet<SememeKey> assemblageSememeKeys
-                = referencedNidAssemblageNidSememeSequenceMap.subSet(
-                        new SememeKey(componentNid, Integer.MIN_VALUE, Integer.MIN_VALUE), true,
-                        new SememeKey(componentNid, Integer.MAX_VALUE, Integer.MAX_VALUE), true
-                );
-
-        return new SememeCollection(assemblageSememeKeys, sememeMap);
+    public Collection<RefexMember<?, ?>> getRefexesForComponent(int componentNid) {
+        return refexProvider.getRefexesForComponent(componentNid).collect(Collectors.toList());
     }
 
     @Override
@@ -1028,12 +964,12 @@ public class Cradle
 
     @Override
     public ConcurrentSkipListSet<DestinationOriginRecord> getDestinationOriginRecordSet() {
-        return ((TaxonomyService) taxonomyProvider).getDestinationOriginRecordSet();
+        return ((CradleTaxonomyProvider) taxonomyProvider).getDestinationOriginRecordSet();
     }
 
     @Override
     public CasSequenceObjectMap<TaxonomyRecordPrimitive> getOriginDestinationTaxonomyMap() {
-        return ((TaxonomyService) taxonomyProvider).getOriginDestinationTaxonomyRecords();
+        return ((CradleTaxonomyProvider) taxonomyProvider).getOriginDestinationTaxonomyRecords();
     }
 
     @Override
