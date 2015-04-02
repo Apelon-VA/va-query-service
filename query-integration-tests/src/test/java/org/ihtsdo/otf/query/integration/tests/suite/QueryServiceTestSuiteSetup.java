@@ -21,7 +21,7 @@ import javafx.embed.swing.JFXPanel;
 import org.glassfish.hk2.runlevel.RunLevelController;
 import static gov.vha.isaac.lookup.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
-import gov.vha.isaac.ochre.api.ObjectChronicleTaskServer;
+import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -82,7 +82,7 @@ public class QueryServiceTestSuiteSetup {
                     });
                 });
         
-        ObjectChronicleTaskServer tts = Hk2Looker.get().getService(ObjectChronicleTaskServer.class);
+        ObjectChronicleTaskService tts = Hk2Looker.get().getService(ObjectChronicleTaskService.class);
         TerminologyStoreDI store = Hk2Looker.get().getService(TerminologyStoreDI.class);
  
         if (!dbExists) {
@@ -125,7 +125,7 @@ public class QueryServiceTestSuiteSetup {
     }
     
     
-    private void loadDatabase(ObjectChronicleTaskServer tts) throws InterruptedException, ExecutionException  {
+    private void loadDatabase(ObjectChronicleTaskService tts) throws InterruptedException, ExecutionException  {
         Path snomedDataFile = Paths.get("target/test-resources/sctSiEConcepts.jbin");
         Path logicMetadataFile = Paths.get("target/test-resources/isaac/metadata/econ/IsaacMetadataAuxiliary.econ");
         Instant start = Instant.now();
