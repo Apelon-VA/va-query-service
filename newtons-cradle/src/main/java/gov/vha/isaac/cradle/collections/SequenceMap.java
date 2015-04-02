@@ -14,7 +14,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.OptionalInt;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.StampedLock;
 import java.util.stream.IntStream;
 
 /**
@@ -22,15 +22,14 @@ import java.util.stream.IntStream;
  * @author kec
  */
 public class SequenceMap {
-   
+
     private static final double minimumLoadFactor = 0.75;
     private static final double maximumLoadFactor = 0.9;
 
-    ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
+    StampedLock sl = new StampedLock();
 
     int nextSequence = 0;
 
- 
     final NativeIntIntHashMap nidSequenceMap;
     final NativeIntIntHashMap sequenceNidMap;
 
@@ -39,68 +38,94 @@ public class SequenceMap {
         sequenceNidMap = new NativeIntIntHashMap(defaultCapacity, minimumLoadFactor, maximumLoadFactor);
     }
 
-    
-    
     public int getNextSequence() {
         return nextSequence;
     }
 
-   public int getSize() {
+    public int getSize() {
         assert nidSequenceMap.size() == sequenceNidMap.size() : "nidSequenceMap.size() = "
                 + nidSequenceMap.size() + " sequenceNidMap.size() = " + sequenceNidMap.size();
         return sequenceNidMap.size();
     }
 
     public boolean containsNid(int nid) {
-        rwl.readLock().lock();
-        try {
-            return nidSequenceMap.containsKey(nid);
-        } finally {
-            rwl.readLock().unlock();
+        long stamp = sl.tryOptimisticRead();
+        boolean value = nidSequenceMap.containsKey(nid);
+        if (!sl.validate(stamp)) {
+            stamp = sl.readLock();
+            try {
+                value = nidSequenceMap.containsKey(nid);
+            } finally {
+                sl.unlockRead(stamp);
+            }
         }
+        return value;
     }
-    public int getSequenceFast(int nid) {
 
-        rwl.readLock().lock();
-        try {
-           return nidSequenceMap.get(nid);
-        } finally {
-            rwl.readLock().unlock();
+    public int getSequenceFast(int nid) {
+        long stamp = sl.tryOptimisticRead();
+        int value = nidSequenceMap.get(nid);
+        if (!sl.validate(stamp)) {
+            stamp = sl.readLock();
+            try {
+                value = nidSequenceMap.get(nid);
+            } finally {
+                sl.unlockRead(stamp);
+            }
         }
+        return value;
     }
 
     public OptionalInt getSequence(int nid) {
-
-        rwl.readLock().lock();
-        try {
-            if (nidSequenceMap.containsKey(nid)) {
-                return OptionalInt.of(nidSequenceMap.get(nid));
+        if (containsNid(nid)) {
+            long stamp = sl.tryOptimisticRead();
+            int value = nidSequenceMap.get(nid);
+            if (!sl.validate(stamp)) {
+                stamp = sl.readLock();
+                try {
+                    value = nidSequenceMap.get(nid);
+                } finally {
+                    sl.unlockRead(stamp);
+                }
             }
-            return OptionalInt.empty();
-        } finally {
-            rwl.readLock().unlock();
+            return OptionalInt.of(value);
         }
+        return OptionalInt.empty();
     }
 
     public OptionalInt getNid(int sequence) {
-        rwl.readLock().lock();
-        try {
-            if (sequenceNidMap.containsKey(sequence)) {
-                return OptionalInt.of(sequenceNidMap.get(sequence));
+        long stamp = sl.tryOptimisticRead();
+        int value = sequenceNidMap.get(sequence);
+        if (!sl.validate(stamp)) {
+            stamp = sl.readLock();
+            try {
+                value = sequenceNidMap.get(sequence);
+            } finally {
+                sl.unlockRead(stamp);
             }
-            return OptionalInt.empty();
-        } finally {
-            rwl.readLock().unlock();
         }
+        if (value == 0) {
+            return OptionalInt.empty();
+        }
+        return OptionalInt.of(value);
     }
 
-    
     public int getNidFast(int sequence) {
-        return sequenceNidMap.get(sequence);
+        long stamp = sl.tryOptimisticRead();
+        int value = sequenceNidMap.get(sequence);
+        if (!sl.validate(stamp)) {
+            stamp = sl.readLock();
+            try {
+                value = sequenceNidMap.get(sequence);
+            } finally {
+                sl.unlockRead(stamp);
+            }
+        }
+        return value;
     }
-    
+
     public int addNid(int nid) {
-        rwl.writeLock().lock();
+        long stamp = sl.writeLock();
         try {
             if (!nidSequenceMap.containsKey(nid)) {
                 int sequence = nextSequence++;
@@ -110,31 +135,28 @@ public class SequenceMap {
             }
             return nidSequenceMap.get(nid);
         } finally {
-            rwl.writeLock().unlock();
+            sl.unlockWrite(stamp);
         }
     }
 
     public int addNidIfMissing(int nid) {
-
-        rwl.readLock().lock();
+        long stamp = sl.tryOptimisticRead();
+        boolean containsKey = nidSequenceMap.containsKey(nid);
+        int value = nidSequenceMap.get(nid);
+        if (sl.validate(stamp) && containsKey) {
+            return value;
+        }
+        stamp = sl.writeLock();
         try {
             if (nidSequenceMap.containsKey(nid)) {
                 return nidSequenceMap.get(nid);
             }
+                value = nextSequence++;
+                nidSequenceMap.put(nid, value);
+                sequenceNidMap.put(value, nid);
+                return value;
         } finally {
-            rwl.readLock().unlock();
-        }
-        rwl.writeLock().lock();
-        try {
-            if (!nidSequenceMap.containsKey(nid)) {
-                int sequence = nextSequence++;
-                nidSequenceMap.put(nid, sequence);
-                sequenceNidMap.put(sequence, nid);
-                return sequence;
-            }
-            return nidSequenceMap.get(nid);
-        } finally {
-            rwl.writeLock().unlock();
+            sl.unlockWrite(stamp);
         }
     }
 
@@ -176,5 +198,4 @@ public class SequenceMap {
             }
         }
     }
-
 }

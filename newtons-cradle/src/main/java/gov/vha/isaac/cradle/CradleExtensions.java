@@ -30,10 +30,10 @@ public interface CradleExtensions extends PersistentStoreI {
     ConcurrentSkipListSet<DestinationOriginRecord> getDestinationOriginRecordSet();
     CasSequenceObjectMap<TaxonomyRecordPrimitive> getOriginDestinationTaxonomyMap();
 
-    void writeSememe(RefexMember<?, ?> sememe);
+    void writeRefex(RefexMember<?, ?> sememe);
     
-    Stream<RefexMember<?, ?>> getSememeStream();
-    Stream<RefexMember<?, ?>> getParallelSememeStream();
+    Stream<RefexMember<?, ?>> getRefexStream();
+    Stream<RefexMember<?, ?>> getParallelRefexStream();
 
     void loadExistingDatabase() throws IOException;  
     

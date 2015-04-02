@@ -7,7 +7,7 @@ import gov.vha.isaac.cradle.taxonomy.DestinationOriginRecord;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
-import gov.vha.isaac.ochre.api.SequenceProvider;
+import gov.vha.isaac.ochre.api.SequenceService;
 import java.io.IOException;
 
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
@@ -25,7 +25,7 @@ import org.ihtsdo.otf.tcc.model.cc.relationship.Relationship;
  */
 public class ImportEConcept implements Callable<Void> {
 
-    private static final SequenceProvider sequenceProvider = Hk2Looker.getService(SequenceProvider.class);
+    private static final SequenceService sequenceProvider = Hk2Looker.getService(SequenceService.class);
     private static final CradleExtensions cradle = Hk2Looker.getService(CradleExtensions.class);
 
     private static final int isaNid;

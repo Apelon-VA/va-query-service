@@ -6,9 +6,7 @@
 package gov.vha.isaac.cradle.taxonomy;
 
 import gov.vha.isaac.cradle.waitfree.WaitFreeMergeSerializer;
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
+import gov.vha.isaac.ochre.model.DataBuffer;
 
 /**
  *
@@ -17,42 +15,27 @@ import java.io.IOException;
 public class TaxonomyRecordSerializer implements WaitFreeMergeSerializer<TaxonomyRecordPrimitive> {
 
     @Override
-    public void serialize(DataOutput d, TaxonomyRecordPrimitive a) {
+    public void serialize(DataBuffer d, TaxonomyRecordPrimitive a) {
+        d.putInt(a.writeSequence);
         if (a.unpacked != null) {
             a.taxonomyData = a.unpacked.pack();
         }
-        try {
-            if (a.taxonomyData.length > 0) {
-                d.writeInt(a.taxonomyData.length);
-                for (int i : a.taxonomyData) {
-                    d.writeInt(i);
-                }
-            }
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        d.putIntArray(a.taxonomyData);
     }
 
     @Override
-    public TaxonomyRecordPrimitive merge(TaxonomyRecordPrimitive a, TaxonomyRecordPrimitive b, long[] md5Data) {
+    public TaxonomyRecordPrimitive merge(TaxonomyRecordPrimitive a, TaxonomyRecordPrimitive b, int writeSequence) {
         TaxonomyRecordUnpacked aRecords = a.getTaxonomyRecordUnpacked();
         TaxonomyRecordUnpacked bRecords = b.getTaxonomyRecordUnpacked();
         aRecords.merge(bRecords);
-        return new TaxonomyRecordPrimitive(aRecords.pack(), md5Data);
+        return new TaxonomyRecordPrimitive(aRecords.pack(), writeSequence);
     }
 
     @Override
-    public TaxonomyRecordPrimitive deserialize(DataInput di, long[] md5Data) {
-        try {
-            int length = di.readInt();
-            int[] result = new int[length];
-            for (int i = 0; i < length; i++) {
-                result[i] = di.readInt();
-            }
-            return new TaxonomyRecordPrimitive(result, md5Data);
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+    public TaxonomyRecordPrimitive deserialize(DataBuffer di) {
+        int writeSequence = di.getInt();
+        int[] result = di.getIntArray();
+        return new TaxonomyRecordPrimitive(result, writeSequence);
     }
 
 }

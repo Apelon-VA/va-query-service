@@ -2,6 +2,7 @@ package gov.vha.isaac.cradle.collections;
 
 import gov.vha.isaac.ochre.collections.uuidnidmap.ConcurrentUuidToIntHashMap;
 import gov.vha.isaac.ochre.collections.uuidnidmap.UuidToIntMap;
+import gov.vha.isaac.ochre.collections.uuidnidmap.UuidUtil;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -106,15 +107,18 @@ public class UuidIntMapMap implements UuidToIntMap {
         return maps[getMapIndex(key)].get(key);
     }
 
-    public int getWithGeneration(UUID key) {
-        int mapIndex = getMapIndex(key);
-        int nid = maps[mapIndex].get(key);
+    public int getWithGeneration(UUID uuidKey) {
+         
+        long[] keyAsArray = UuidUtil.convert(uuidKey);
+    
+        int mapIndex = getMapIndex(uuidKey);
+        int nid = maps[mapIndex].get(keyAsArray);
         if (nid != Integer.MAX_VALUE) {
             return nid;
         }
-        maps[mapIndex].getWriteLock().lock();
+        long stamp = maps[mapIndex].getStampedLock().writeLock();
         try {
-            nid = maps[mapIndex].get(key);
+            nid = maps[mapIndex].get(keyAsArray, stamp);
             if (nid != Integer.MAX_VALUE) {
                 return nid;
             }
@@ -122,21 +126,23 @@ public class UuidIntMapMap implements UuidToIntMap {
 //            if (nid == -2147483637) {
 //                System.out.println(nid + "->" + key);
 //            }
-            try {
-                maps[mapIndex].put(key, nid);
-            } catch (Throwable e) {
-                e.printStackTrace();
-                throw e;
-            }
+            maps[mapIndex].put(keyAsArray, nid, stamp);
             return nid;
         } finally {
-            maps[mapIndex].getWriteLock().unlock();
+            maps[mapIndex].getStampedLock().unlockWrite(stamp);
         }
     }
 
     @Override
-    public boolean put(UUID key, int value) {
-        return maps[getMapIndex(key)].put(key, value);
+    public boolean put(UUID uuidKey, int value) {
+        int mapIndex = getMapIndex(uuidKey);
+        long[] keyAsArray = UuidUtil.convert(uuidKey);
+        long stamp = maps[mapIndex].getStampedLock().writeLock();
+        try {
+            return maps[mapIndex].put(keyAsArray, value, stamp);
+        } finally {
+            maps[mapIndex].getStampedLock().unlockWrite(stamp);
+        }
     }
 
     public int size() {

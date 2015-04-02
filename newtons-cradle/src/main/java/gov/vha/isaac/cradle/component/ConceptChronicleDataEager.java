@@ -1,7 +1,7 @@
 package gov.vha.isaac.cradle.component;
 
 import gov.vha.isaac.cradle.CradleExtensions;
-import gov.vha.isaac.ochre.api.TaxonomyProvider;
+import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.ihtsdo.otf.tcc.api.nid.NidListBI;
@@ -28,7 +28,7 @@ import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
  */
 public class ConceptChronicleDataEager implements I_ManageConceptData {
     
-    private final static TaxonomyProvider taxonomyProvider = Hk2Looker.getService(TaxonomyProvider.class);
+    private final static TaxonomyService taxonomyProvider = Hk2Looker.getService(TaxonomyService.class);
     private static CradleExtensions cradle;
 
     private static CradleExtensions getCradle() {
@@ -102,7 +102,7 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
     
     @Override
     public void add(RefexMember<?, ?> refexMember) {
-        getCradle().writeSememe(refexMember);
+        getCradle().writeRefex(refexMember);
     }
 
     /**
@@ -114,7 +114,7 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
     @Override
     public RefexMember<?, ?> getRefsetMember(int nid) {
         
-        return (RefexMember<?, ?>) getCradle().getSememe(nid);
+        return (RefexMember<?, ?>) getCradle().getRefex(nid);
     }
 
     /**
@@ -132,7 +132,7 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
     
     @Override
     public Collection<RefexMember<?, ?>> getRefsetMembers() {
-        return (Collection<RefexMember<?, ?>>) Ts.get().getSememesForAssemblage(getNid());
+        return (Collection<RefexMember<?, ?>>) Ts.get().getRefexesForAssemblage(getNid());
     }
     
     @Override

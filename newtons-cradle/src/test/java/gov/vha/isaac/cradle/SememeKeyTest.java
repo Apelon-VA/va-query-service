@@ -15,6 +15,7 @@
  */
 package gov.vha.isaac.cradle;
 
+import gov.vha.isaac.cradle.sememe.SememeKey;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

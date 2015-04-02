@@ -1,4 +1,4 @@
-package gov.vha.isaac.cradle;
+package gov.vha.isaac.cradle.sememe;
 
 /**
  * Created by kec on 12/18/14.

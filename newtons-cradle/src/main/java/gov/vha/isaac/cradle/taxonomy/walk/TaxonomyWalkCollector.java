@@ -11,7 +11,7 @@ import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordUnpacked;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
-import gov.vha.isaac.ochre.api.SequenceProvider;
+import gov.vha.isaac.ochre.api.SequenceService;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,7 +29,7 @@ import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
  */
 public class TaxonomyWalkCollector implements 
         ObjIntConsumer<TaxonomyWalkAccumulator>, BiConsumer<TaxonomyWalkAccumulator,TaxonomyWalkAccumulator> {
-    private static final SequenceProvider sequenceProvider = Hk2Looker.getService(SequenceProvider.class);
+    private static final SequenceService sequenceProvider = Hk2Looker.getService(SequenceService.class);
     private static final CradleExtensions cradle = Hk2Looker.getService(CradleExtensions.class);;
     private static final int ISA_CONCEPT_SEQUENCE = IsaacMetadataAuxiliaryBinding.IS_A.getSequence();
 

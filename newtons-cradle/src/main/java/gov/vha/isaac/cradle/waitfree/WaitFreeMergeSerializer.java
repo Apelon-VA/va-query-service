@@ -5,8 +5,8 @@
  */
 package gov.vha.isaac.cradle.waitfree;
 
-import java.io.DataInput;
-import java.io.DataOutput;
+import gov.vha.isaac.ochre.model.DataBuffer;
+import gov.vha.isaac.ochre.model.WaitFreeComparable;
 
 /**
  * {@code WaitFreeMergeSerializer} objects enable wait-free serialization to
@@ -27,27 +27,25 @@ public interface WaitFreeMergeSerializer<T extends WaitFreeComparable> {
      * @param d the data output stream to write to. 
      * @param a the object to serialize to the data output stream. 
      */
-    void serialize(DataOutput d, T a);
+    void serialize(DataBuffer d, T a);
 
     /**
      * Support for merging objects when a compare and swap operation fails, 
      * enabling wait-free serialization. 
      * @param a the first object to merge. 
      * @param b the second object to merge. 
-     * @param md5Digest the md5 digest to use as the deserialization digest of 
+     * @param writeSequence  to use as origin of 
      * the merged object. 
      * @return the merged object. 
      */
-    T merge (T a, T b, long[] md5Digest);
+    T merge (T a, T b, int writeSequence);
 
     
     /**
      * 
      * @param di the data from which to deserialize the object. 
-     * @param md5Digest the md5 digest to use as the deserialization digest of 
-     * the created object. 
      * @return 
      */
-    T deserialize(DataInput di, long[] md5Digest);
+    T deserialize(DataBuffer di);
 
 }

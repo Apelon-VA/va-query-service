@@ -1,4 +1,4 @@
-package gov.vha.isaac.cradle;
+package gov.vha.isaac.cradle.refex;
 
 import gov.vha.isaac.cradle.collections.ConcurrentSequenceSerializedObjectMap;
 import org.ihtsdo.otf.tcc.api.store.Ts;
@@ -14,22 +14,22 @@ import java.util.stream.Stream;
 /**
  * Created by kec on 12/18/14.
  */
-public class SememeCollection implements Collection<RefexMember<?, ?>> {
+public class RefexCollection implements Collection<RefexMember<?, ?>> {
 
-    NavigableSet<SememeKey> keys;
-    ConcurrentSequenceSerializedObjectMap<RefexMember<?, ?>> sememeMap;
+    NavigableSet<RefexKey> keys;
+    ConcurrentSequenceSerializedObjectMap<RefexMember<?, ?>> refexMap;
 
 
-    public SememeCollection(NavigableSet<SememeKey> keys,
-                            ConcurrentSequenceSerializedObjectMap<RefexMember<?, ?>> sememeMap) {
+    public RefexCollection(NavigableSet<RefexKey> keys,
+                            ConcurrentSequenceSerializedObjectMap<RefexMember<?, ?>> refexMap) {
         this.keys = keys;
-        this.sememeMap = sememeMap;
+        this.refexMap = refexMap;
     }
 
 
-    private class SememeIterator implements Iterator<RefexMember<?, ?>> {
+    private class RefexIterator implements Iterator<RefexMember<?, ?>> {
 
-        Iterator<SememeKey> sememeNidIterator = keys.iterator();
+        Iterator<RefexKey> sememeNidIterator = keys.iterator();
 
         @Override
         public boolean hasNext() {
@@ -39,7 +39,7 @@ public class SememeCollection implements Collection<RefexMember<?, ?>> {
         @Override
         public RefexMember<?, ?> next() {
             return (RefexMember<?, ?>)
-                    Ts.get().getSememe(sememeNidIterator.next().getSememeSequence());
+                    Ts.get().getRefex(sememeNidIterator.next().getSememeSequence());
         }
     }
 
@@ -62,7 +62,7 @@ public class SememeCollection implements Collection<RefexMember<?, ?>> {
 
     @Override
     public Iterator<RefexMember<?, ?>> iterator() {
-        return new SememeIterator();
+        return new RefexIterator();
     }
 
     @Override
@@ -124,11 +124,11 @@ public class SememeCollection implements Collection<RefexMember<?, ?>> {
 
     @Override
     public Stream<RefexMember<?, ?>> stream() {
-        return keys.stream().map((sememeKey) -> {return sememeMap.get(sememeKey.sememeSequence).get();});
+        return keys.stream().map((refexKey) -> {return refexMap.get(refexKey.refexSequence).get();});
     }
 
     @Override
     public Stream<RefexMember<?, ?>> parallelStream() {
-        return keys.parallelStream().map((sememeKey) -> {return sememeMap.get(sememeKey.sememeSequence).get();});
+        return keys.parallelStream().map((refexKey) -> {return refexMap.get(refexKey.refexSequence).get();});
     }
 }

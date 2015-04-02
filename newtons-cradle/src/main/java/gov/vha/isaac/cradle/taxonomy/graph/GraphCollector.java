@@ -12,7 +12,7 @@ import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordUnpacked;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.SequenceProvider;
+import gov.vha.isaac.ochre.api.SequenceService;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -47,7 +47,7 @@ public class GraphCollector implements
         return isaacDb;
     }
 
-    final SequenceProvider sequenceProvider = LookupService.getService(SequenceProvider.class);
+    final SequenceService sequenceProvider = LookupService.getService(SequenceService.class);
     final CasSequenceObjectMap<TaxonomyRecordPrimitive> taxonomyMap;
     final TaxonomyCoordinate taxonomyCoordinate;
     final int taxonomyFlags;

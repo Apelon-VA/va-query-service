@@ -22,8 +22,9 @@ import gov.vha.isaac.cradle.version.StampSequenceComputer;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.SequenceProvider;
-import gov.vha.isaac.ochre.api.TaxonomyProvider;
+import gov.vha.isaac.ochre.api.SequenceService;
+import gov.vha.isaac.ochre.api.TaxonomyService;
+import gov.vha.isaac.ochre.api.TaxonomySnapshotService;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.api.tree.Tree;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
@@ -49,7 +50,7 @@ import org.jvnet.hk2.annotations.Service;
  */
 @Service
 @RunLevel(value = 1)
-public class TaxonomyService implements TaxonomyProvider {
+public class CradleTaxonomyProvider implements TaxonomyService {
     
     private static final Logger log = LogManager.getLogger();
 
@@ -61,13 +62,13 @@ public class TaxonomyService implements TaxonomyProvider {
     final CasSequenceObjectMap<TaxonomyRecordPrimitive> originDestinationTaxonomyRecordMap = new CasSequenceObjectMap(new TaxonomyRecordSerializer());
     final ConcurrentSkipListSet<DestinationOriginRecord> destinationOriginRecordSet = new ConcurrentSkipListSet<>();
 
-    private SequenceProvider sequenceProvider;
+    private SequenceService sequenceProvider;
     private CradleExtensions cradle;
 
     @PostConstruct
     private void startMe() throws IOException {
         log.info("Starting TaxonomyService post-construct");    
-        sequenceProvider = Hk2Looker.getService(SequenceProvider.class);
+        sequenceProvider = Hk2Looker.getService(SequenceService.class);
         cradle = LookupService.getService(CradleExtensions.class);
         if (!IsaacDbFolder.get().getPrimordial()) {
             log.info("Reading taxonomy.");
@@ -310,4 +311,57 @@ public class TaxonomyService implements TaxonomyProvider {
         return getOriginSequenceStream(destination).toArray();
     }
 
+    
+    @Override
+    public TaxonomySnapshotService getSnapshot(TaxonomyCoordinate tc) {
+        return new TaxonomySnapshotProvider(tc);
+    }
+
+    private class TaxonomySnapshotProvider implements TaxonomySnapshotService {
+        TaxonomyCoordinate tc;
+
+        public TaxonomySnapshotProvider(TaxonomyCoordinate tc) {
+            this.tc = tc;
+        }
+
+        @Override
+        public Tree getTaxonomyTree() {
+            return CradleTaxonomyProvider.this.getTaxonomyTree(tc);
+        }
+
+        @Override
+        public boolean isChildOf(int childId, int parentId) {
+            return CradleTaxonomyProvider.this.isChildOf(childId, parentId, tc);
+        }
+
+        @Override
+        public boolean isKindOf(int childId, int parentId) {
+            return CradleTaxonomyProvider.this.isKindOf(childId, parentId, tc);
+        }
+
+        @Override
+        public ConceptSequenceSet getKindOfSequenceSet(int rootId) {
+            return CradleTaxonomyProvider.this.getKindOfSequenceSet(rootId, tc);
+        }
+
+        @Override
+        public int[] getAllRelationshipOriginSequencesActive(int destination) {
+            throw new UnsupportedOperationException("Not supported yet."); 
+        }
+
+        @Override
+        public int[] getTaxonomyChildSequencesActive(int parentId) {
+            return CradleTaxonomyProvider.this.getTaxonomyChildSequencesActive(parentId, tc);
+        }
+
+        @Override
+        public int[] getTaxonomyParentSequencesActive(int childId) {
+            return CradleTaxonomyProvider.this.getTaxonomyParentSequencesActive(childId, tc);
+        }
+
+        @Override
+        public int[] getRoots() {
+            return CradleTaxonomyProvider.this.getRoots(tc);
+        }
+    }
 }

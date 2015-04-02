@@ -5,10 +5,8 @@
  */
 package gov.vha.isaac.cradle.collections;
 
-import gov.vha.isaac.cradle.waitfree.WaitFreeComparable;
 import gov.vha.isaac.cradle.waitfree.WaitFreeMergeSerializer;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
+import gov.vha.isaac.ochre.model.DataBuffer;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
@@ -20,6 +18,8 @@ import org.ihtsdo.otf.tcc.api.store.Ts;
  * @author kec
  */
 public class SerializedAtomicReferenceArray extends AtomicReferenceArray<byte[]> {
+    
+    
 
     WaitFreeMergeSerializer isaacSerializer;
     int segment;
@@ -53,11 +53,8 @@ public class SerializedAtomicReferenceArray extends AtomicReferenceArray<byte[]>
                 b.append(" ");
                 byte[] byteData = get(i);
                 if (byteData != null) {
-                    try (ByteArrayInputStream bais = new ByteArrayInputStream(byteData)) {
-                        b.append(isaacSerializer.deserialize(new DataInputStream(bais), WaitFreeComparable.digest(byteData)));
-                    } catch (IOException ex) {
-                        throw new RuntimeException(ex);
-                    }
+                    DataBuffer db = new DataBuffer(byteData);
+                    b.append(isaacSerializer.deserialize(db));
                 } else {
                     b.append("null");
                 }

@@ -12,6 +12,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.OptionalInt;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
@@ -26,13 +27,11 @@ public class ConcurrentSequenceIntMap {
     private static final int SEGMENT_SIZE = 128000;
     ReentrantLock lock = new ReentrantLock();
     
-    int[][] sequenceIntList = new int[1][];
-    boolean[] changed = new boolean[1];
+    CopyOnWriteArrayList<int[]> sequenceIntList = new CopyOnWriteArrayList();
     AtomicInteger size = new AtomicInteger(0);
     
     public ConcurrentSequenceIntMap() {
-        sequenceIntList[0] = new int[SEGMENT_SIZE];
-        changed[0] = false;
+        sequenceIntList.add(new int[SEGMENT_SIZE]);
     }
     
     public void read(File folder) throws IOException {
@@ -44,14 +43,12 @@ public class ConcurrentSequenceIntMap {
                 int segmentSize = in.readInt();
                 segments = in.readInt();
                 if (sequenceIntList == null) {
-                    sequenceIntList = new int[segments][];
-                    changed = new boolean[segments];
+                    sequenceIntList = new CopyOnWriteArrayList();
                 }
-                sequenceIntList[segment] = new int[segmentSize];
-                changed[segment] = false;
+                sequenceIntList.add(new int[segmentSize]);
                 
                 for (int indexInSegment = 0; indexInSegment < segmentSize; indexInSegment++) {
-                    sequenceIntList[segment][indexInSegment] = in.readInt();
+                    sequenceIntList.get(segment)[indexInSegment] = in.readInt();
                 }
                 size.set(in.readInt());
             }
@@ -60,14 +57,15 @@ public class ConcurrentSequenceIntMap {
     
     public void write(File folder) throws IOException {
         folder.mkdirs();
-        int segments = sequenceIntList.length;
+        int segments = sequenceIntList.size();
         for (int segment = 0; segment < segments; segment++) {
             try (DataOutputStream out = new DataOutputStream(
                     new BufferedOutputStream(new FileOutputStream(new File(folder, segment + ".sequence-int.map"))))) {                
                 out.writeInt(SEGMENT_SIZE);
                 out.writeInt(segments);
+                int[] segmentArray = sequenceIntList.get(segment);
                 for (int indexInSegment = 0; indexInSegment < SEGMENT_SIZE; indexInSegment++) {
-                    out.writeInt(sequenceIntList[segment][indexInSegment]);
+                    out.writeInt(segmentArray[indexInSegment]);
                 }
                 out.writeInt(size.get());
             }
@@ -84,10 +82,10 @@ public class ConcurrentSequenceIntMap {
         }   
         int segmentIndex = sequence / SEGMENT_SIZE;
         int indexInSegment = sequence % SEGMENT_SIZE;
-        if (segmentIndex >= sequenceIntList.length) {
+        if (segmentIndex >= sequenceIntList.size()) {
             return false;
         }
-        return sequenceIntList[segmentIndex][indexInSegment] != 0;
+        return sequenceIntList.get(segmentIndex)[indexInSegment] != 0;
     }
     
     public OptionalInt get(int sequence) {
@@ -95,12 +93,12 @@ public class ConcurrentSequenceIntMap {
             sequence = sequence - Integer.MIN_VALUE;
         }        
         int segmentIndex = sequence / SEGMENT_SIZE;
-        if (segmentIndex >= sequenceIntList.length) {
+        if (segmentIndex >= sequenceIntList.size()) {
             return OptionalInt.empty();
         }
         
         int indexInSegment = sequence % SEGMENT_SIZE;
-        int returnValue = sequenceIntList[segmentIndex][indexInSegment];
+        int returnValue = sequenceIntList.get(segmentIndex)[indexInSegment];
         if (returnValue == 0) {
             return OptionalInt.empty();
         }
@@ -114,23 +112,18 @@ public class ConcurrentSequenceIntMap {
         size.set(Math.max(sequence, size.get()));
         int segmentIndex = sequence / SEGMENT_SIZE;
         
-        if (segmentIndex >= sequenceIntList.length) {
+        if (segmentIndex >= sequenceIntList.size()) {
             lock.lock();
             try {
-                while (segmentIndex >= sequenceIntList.length) {
-                    changed = Arrays.copyOf(changed, sequenceIntList.length + 1);
-                    changed[sequenceIntList.length] = false;
-                    int[][] tempList = Arrays.copyOf(sequenceIntList, sequenceIntList.length + 1);
-                    tempList[tempList.length - 1] = new int[SEGMENT_SIZE];
-                    sequenceIntList = tempList;
+                while (segmentIndex >= sequenceIntList.size()) {
+                    sequenceIntList.add(new int[SEGMENT_SIZE]);
                 }
             } finally {
                 lock.unlock();
             }
         }
         int indexInSegment = sequence % SEGMENT_SIZE;
-        sequenceIntList[segmentIndex][indexInSegment] = value;
-        changed[segmentIndex] = true;
+        sequenceIntList.get(segmentIndex)[indexInSegment] = value;
         return true;
     }
     
@@ -140,8 +133,8 @@ public class ConcurrentSequenceIntMap {
         for (int i = 0; i < componentSize; i++) {
             int segmentIndex = i / SEGMENT_SIZE;
             int indexInSegment = i % SEGMENT_SIZE;
-            if (sequenceIntList[segmentIndex][indexInSegment] != 0) {
-                if (values.contains(sequenceIntList[segmentIndex][indexInSegment])) {
+            if (sequenceIntList.get(segmentIndex)[indexInSegment] != 0) {
+                if (values.contains(sequenceIntList.get(segmentIndex)[indexInSegment])) {
                     componentNids.set(i + Integer.MIN_VALUE);
                 }
             }
@@ -155,7 +148,7 @@ public class ConcurrentSequenceIntMap {
         for (int i = 0; i < componentSize; i++) {
             int segmentIndex = i / SEGMENT_SIZE;
             int indexInSegment = i % SEGMENT_SIZE;
-            if (sequenceIntList[segmentIndex][indexInSegment] != 0) {
+            if (sequenceIntList.get(segmentIndex)[indexInSegment] != 0) {
                 componentNids.set(i + Integer.MIN_VALUE);
             }
         }
@@ -169,7 +162,7 @@ public class ConcurrentSequenceIntMap {
         for (int i = 0; i < componentSize; i++) {
             int segmentIndex = i / SEGMENT_SIZE;
             int indexInSegment = i % SEGMENT_SIZE;
-            if (sequenceIntList[segmentIndex][indexInSegment] == 0) {
+            if (sequenceIntList.get(segmentIndex)[indexInSegment] == 0) {
                 builder.add(i);
             }
         }

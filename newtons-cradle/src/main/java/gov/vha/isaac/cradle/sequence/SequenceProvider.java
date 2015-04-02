@@ -17,8 +17,9 @@ package gov.vha.isaac.cradle.sequence;
 
 import gov.vha.isaac.cradle.IsaacDbFolder;
 import gov.vha.isaac.cradle.collections.SequenceMap;
-import gov.vha.isaac.ochre.api.SequenceProvider;
+import gov.vha.isaac.ochre.api.SequenceService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.collections.RefexSequenceSet;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
 import java.io.File;
 import java.io.IOException;
@@ -36,11 +37,12 @@ import org.jvnet.hk2.annotations.Service;
  */
 @Service
 @RunLevel(value = 0)
-public class SequenceService implements SequenceProvider {
+public class SequenceProvider implements SequenceService {
     private static final Logger log = LogManager.getLogger();
  
     final SequenceMap conceptSequenceMap = new SequenceMap(450000);
     final SequenceMap sememeSequenceMap = new SequenceMap(3000000);
+    final SequenceMap refexSequenceMap = new SequenceMap(3000000);
 
         @PostConstruct
     private void startMe() throws IOException {
@@ -50,6 +52,8 @@ public class SequenceService implements SequenceProvider {
            conceptSequenceMap.read(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "concept-sequence.map"));
             log.info("Loading sememe-sequence.map.");
             sememeSequenceMap.read(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "sememe-sequence.map"));
+            log.info("Loading refex-sequence.map.");
+            refexSequenceMap.read(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "refex-sequence.map"));
         }
     }
 
@@ -60,6 +64,8 @@ public class SequenceService implements SequenceProvider {
         conceptSequenceMap.write(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "concept-sequence.map"));
         log.info("writing sememe-sequence.map.");
         sememeSequenceMap.write(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "sememe-sequence.map"));
+        log.info("writing refex-sequence.map.");
+        refexSequenceMap.write(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "refex-sequence.map"));
 
     }
     
@@ -138,4 +144,44 @@ public class SequenceService implements SequenceProvider {
     public IntStream getSememeNidsForSequences(IntStream sememSequences) {
          return sememSequences.map((sequence)->{return getSememeNid(sequence);});
     }
+
+    @Override
+    public int getRefexSequence(int nid) {
+        if (nid >= 0) {
+            return nid;
+        }
+        return refexSequenceMap.addNidIfMissing(nid);
+    }
+
+    @Override
+    public int getRefexNid(int refexSequence) {
+        if (refexSequence < 0) {
+            return refexSequence;
+        }
+        return sememeSequenceMap.getNidFast(refexSequence);
+    }
+
+    @Override
+    public IntStream getRefexSequenceStream() {
+        return refexSequenceMap.getSequenceStream();
+    }
+
+    @Override
+    public IntStream getParallelRefexSequenceStream() {
+        return refexSequenceMap.getSequenceStream().parallel();
+    }
+
+    @Override
+    public IntStream getRefexNidsForSequences(IntStream refexSequences) {
+         return refexSequences.map((sequence)->{return getRefexNid(sequence);});
+    }
+
+    @Override
+    public RefexSequenceSet getRefexSequencesForNids(int[] refexNidArray) {
+        RefexSequenceSet sequences = new RefexSequenceSet();
+        IntStream.of(refexNidArray).forEach((nid) -> sequences.add(refexSequenceMap.getSequenceFast(nid)));
+        return sequences;
+    }
+    
+    
 }

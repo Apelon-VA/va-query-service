@@ -6,7 +6,7 @@
 package gov.vha.isaac.cradle.taxonomy;
 
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
-import gov.vha.isaac.cradle.waitfree.WaitFreeComparable;
+import gov.vha.isaac.ochre.model.WaitFreeComparable;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import java.util.Optional;
@@ -52,8 +52,7 @@ public class TaxonomyRecordPrimitive implements WaitFreeComparable {
         return Optional.empty();
     }
 
-    long msb = 0;
-    long lsb = 0;
+    int writeSequence;
     int[] taxonomyData;
     transient TaxonomyRecordUnpacked unpacked = null;
 
@@ -61,13 +60,10 @@ public class TaxonomyRecordPrimitive implements WaitFreeComparable {
         taxonomyData = new int[0];
     }
 
-    public TaxonomyRecordPrimitive(int[] taxonomyData, long[] md5Data) {
+    public TaxonomyRecordPrimitive(int[] taxonomyData, int writeSequence) {
 
-        if (md5Data != null) {
-            this.msb = md5Data[0];
-            this.lsb = md5Data[1];
-        }
         this.taxonomyData = taxonomyData;
+        this.writeSequence = writeSequence;
     }
 
     public int[] getArray() {
@@ -75,16 +71,6 @@ public class TaxonomyRecordPrimitive implements WaitFreeComparable {
             taxonomyData = unpacked.pack();
         }
         return taxonomyData;
-    }
-
-    @Override
-    public long getMd5Msb() {
-        return msb;
-    }
-
-    @Override
-    public long getMd5Lsb() {
-        return lsb;
     }
 
     public TaxonomyRecordUnpacked getTaxonomyRecordUnpacked() {
@@ -183,5 +169,15 @@ public class TaxonomyRecordPrimitive implements WaitFreeComparable {
     
     public boolean containsVisibleSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc, int flags) {
         return getTaxonomyRecordUnpacked().containsVisibleConceptSequenceViaType(conceptSequence, typeSequence, tc, flags);
+    }
+
+    @Override
+    public int getWriteSequence() {
+        return writeSequence;
+    }
+
+    @Override
+    public void setWriteSequence(int sequence) {
+        this.writeSequence = sequence;
     }
 }
