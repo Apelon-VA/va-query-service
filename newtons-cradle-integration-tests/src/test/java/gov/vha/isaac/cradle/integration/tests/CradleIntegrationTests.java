@@ -18,8 +18,9 @@ import static gov.vha.isaac.lookup.constants.Constants.CHRONICLE_COLLECTIONS_ROO
 
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
+import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
-import gov.vha.isaac.ochre.api.SequenceService;
+import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -74,9 +75,8 @@ public class CradleIntegrationTests {
 
     private static final Logger log = LogManager.getLogger();
     Subscription tickSubscription;
-    RunLevelController runLevelController;
     private boolean dbExists = false;
-    private static SequenceService sequenceProvider;
+    private static IdentifierService sequenceProvider;
 
     @BeforeSuite
     public void setUpSuite() throws Exception {
@@ -90,17 +90,8 @@ public class CradleIntegrationTests {
         dbExists = dbFolderPath.toFile().exists();
         System.out.println("termstore folder path: " + dbFolderPath.toFile().exists());
 
-        runLevelController = Hk2Looker.get().getService(RunLevelController.class);
-
-        log.info("going to run level 0");
-        runLevelController.proceedTo(0);
-        log.info("going to run level 1");
-        runLevelController.proceedTo(1);
-        log.info("going to run level 2");
-        runLevelController.proceedTo(2);
-        log.info("going to run level 3");
-        runLevelController.proceedTo(3);
-        sequenceProvider = Hk2Looker.getService(SequenceService.class);
+        LookupService.startupIsaac();
+        sequenceProvider = Hk2Looker.getService(IdentifierService.class);
         tickSubscription = EventStreams.ticks(Duration.ofSeconds(10))
                 .subscribe(tick -> {
                     Set<Task> taskSet = Hk2Looker.get().getService(ActiveTaskSet.class).get();
@@ -118,12 +109,7 @@ public class CradleIntegrationTests {
     @AfterSuite
     public void tearDownSuite() throws Exception {
         log.info("oneTimeTearDown");
-        log.info("going to run level 1");
-        runLevelController.proceedTo(1);
-        log.info("going to run level 0");
-        runLevelController.proceedTo(0);
-        log.info("going to run level -1");
-        runLevelController.proceedTo(-1);
+        LookupService.shutdownIsaac();
         tickSubscription.unsubscribe();
     }
 
@@ -171,8 +157,8 @@ public class CradleIntegrationTests {
         findRoots(mapDbService);
 
         HashTreeWithBitSets g = makeGraph(mapDbService);
-        log.info("    graph size:" + g.size());
-        log.info("    Graph roots: " + Arrays.toString(g.getRootSequences()));
+        log.info("    taxonomy graph size:" + g.size());
+        log.info("    taxonomy graph roots: " + Arrays.toString(g.getRootSequences()));
         for (int rootSequence : IntStream.of(g.getRootSequences()).limit(100).toArray()) {
             log.info("    rootSequence: " + rootSequence);
             ConceptChronicleBI aRoot = mapDbService.getConcept(rootSequence);
@@ -193,10 +179,10 @@ public class CradleIntegrationTests {
             log.info("\n\n");
         }
 
-        log.info("  Graph leaves: " + g.getLeafSequences().length);
-        log.info("  Graph size: " + g.size());
-        log.info("  Graph concepts with parents count: " + g.conceptSequencesWithParentsCount());
-        log.info("  Graph concepts with children count: " + g.conceptSequencesWithChildrenCount());
+        log.info("  Taxonomy graph leaves: " + g.getLeafSequences().length);
+        log.info("  Taxonomy graph size: " + g.size());
+        log.info("  Taxonomy graph concepts with parents count: " + g.conceptSequencesWithParentsCount());
+        log.info("  Taxonomy graph concepts with children count: " + g.conceptSequencesWithChildrenCount());
     }
 
     private void findRoots(CradleExtensions cradle) {
@@ -332,7 +318,7 @@ public class CradleIntegrationTests {
     }
 
     private HashTreeWithBitSets makeGraph(CradleExtensions cradle) throws IOException {
-        log.info("  Start to make graph.");
+        log.info("  Start to make taxonomy snapshot graph.");
         Instant collectStart = Instant.now();
         IntStream conceptSequenceStream = sequenceProvider.getParallelConceptSequenceStream();
         log.info("  conceptSequenceStream count 1:" + conceptSequenceStream.count());

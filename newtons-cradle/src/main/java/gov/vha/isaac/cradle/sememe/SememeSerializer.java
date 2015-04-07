@@ -27,7 +27,8 @@ public class SememeSerializer implements WaitFreeMergeSerializer<SememeChronicle
 
     @Override
     public void serialize(DataBuffer d, SememeChronicleImpl<?> a) {
-        a.writeChronicleData(d);
+        byte[] data = a.getDataToWrite();
+        d.put(data, 0, data.length);
     }
 
     @Override

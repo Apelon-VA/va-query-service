@@ -6,6 +6,7 @@
 package gov.vha.isaac.cradle.tasks;
 
 import gov.vha.isaac.cradle.CradleExtensions;
+import gov.vha.isaac.ochre.api.LookupService;
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
@@ -19,7 +20,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
-import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
 
 /**
@@ -48,7 +48,7 @@ public class ExportEConceptFile extends Task<Integer>{
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
-        Hk2Looker.get().getService(ActiveTaskSet.class).get().add(this);
+        LookupService.getService(ActiveTaskSet.class).get().add(this);
     }
 
 
@@ -80,7 +80,7 @@ public class ExportEConceptFile extends Task<Integer>{
 
             return processed.get();
         } finally {
-            Hk2Looker.get().getService(ActiveTaskSet.class).get().remove(this);
+            LookupService.getService(ActiveTaskSet.class).get().remove(this);
         }
     }
     

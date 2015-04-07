@@ -14,7 +14,7 @@ import gov.vha.isaac.cradle.collections.UuidIntMapMap;
 import gov.vha.isaac.cradle.component.StampSerializer;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
-import gov.vha.isaac.ochre.api.SequenceService;
+import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.chronicle.ChronicledConcept;
 import gov.vha.isaac.ochre.api.commit.Alert;
@@ -89,7 +89,7 @@ public class CradleCommitManager implements CommitManager {
     private final ReentrantLock stampLock = new ReentrantLock();
     private final AtomicLong databaseSequence = new AtomicLong();
     private final AtomicBoolean loadExisting = new AtomicBoolean(false);
-    private final SequenceService sequenceProvider;
+    private final IdentifierService sequenceProvider;
     private final ConcurrentSkipListSet<ChangeChecker> checkers = new ConcurrentSkipListSet<>();
     private final ConcurrentSkipListSet<Alert> alertCollection = new ConcurrentSkipListSet<>();
 
@@ -108,7 +108,7 @@ public class CradleCommitManager implements CommitManager {
         dbFolderPath = IsaacDbFolder.get().getDbFolderPath();
         inverseStampMap = new ConcurrentSequenceSerializedObjectMap<>(new StampSerializer(),
                 dbFolderPath, null, null);
-        sequenceProvider = Hk2Looker.getService(SequenceService.class);
+        sequenceProvider = Hk2Looker.getService(IdentifierService.class);
         commitManagerFolder = Paths.get(dbFolderPath.toString(), DEFAULT_CRADLE_COMMIT_MANAGER_FOLDER);
     }
 
@@ -196,7 +196,7 @@ public class CradleCommitManager implements CommitManager {
     }
 
     @Override
-    public long getSequence() {
+    public long getCommitManagerSequence() {
         return databaseSequence.get();
     }
 

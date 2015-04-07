@@ -31,7 +31,9 @@ public class ConcurrentSequenceIntMap {
     AtomicInteger size = new AtomicInteger(0);
     
     public ConcurrentSequenceIntMap() {
-        sequenceIntList.add(new int[SEGMENT_SIZE]);
+        int[] segmentArray = new int[SEGMENT_SIZE];
+        Arrays.fill(segmentArray, -1);
+        sequenceIntList.add(segmentArray);
     }
     
     public void read(File folder) throws IOException {
@@ -45,7 +47,9 @@ public class ConcurrentSequenceIntMap {
                 if (sequenceIntList == null) {
                     sequenceIntList = new CopyOnWriteArrayList();
                 }
-                sequenceIntList.add(new int[segmentSize]);
+                int[] segmentArray = new int[segmentSize];
+                Arrays.fill(segmentArray, -1);
+                sequenceIntList.add(segmentArray);
                 
                 for (int indexInSegment = 0; indexInSegment < segmentSize; indexInSegment++) {
                     sequenceIntList.get(segment)[indexInSegment] = in.readInt();
@@ -99,7 +103,7 @@ public class ConcurrentSequenceIntMap {
         
         int indexInSegment = sequence % SEGMENT_SIZE;
         int returnValue = sequenceIntList.get(segmentIndex)[indexInSegment];
-        if (returnValue == 0) {
+        if (returnValue == -1) {
             return OptionalInt.empty();
         }
         return OptionalInt.of(returnValue);
@@ -116,7 +120,9 @@ public class ConcurrentSequenceIntMap {
             lock.lock();
             try {
                 while (segmentIndex >= sequenceIntList.size()) {
-                    sequenceIntList.add(new int[SEGMENT_SIZE]);
+                    int[] segmentArray = new int[SEGMENT_SIZE];
+                    Arrays.fill(segmentArray, -1);
+                    sequenceIntList.add(segmentArray);
                 }
             } finally {
                 lock.unlock();
@@ -155,7 +161,7 @@ public class ConcurrentSequenceIntMap {
         return componentNids;
     }
 
-    IntStream getComponentsNotSet() {
+    public IntStream getComponentsNotSet() {
         IntStream.Builder builder = IntStream.builder();
         int componentSize = size.get();
         componentSize = componentSize - SEGMENT_SIZE;

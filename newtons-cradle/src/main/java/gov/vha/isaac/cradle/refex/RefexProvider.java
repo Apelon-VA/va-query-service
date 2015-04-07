@@ -19,7 +19,7 @@ import org.ihtsdo.otf.tcc.model.cc.refex.RefexService;
 import gov.vha.isaac.cradle.IsaacDbFolder;
 import gov.vha.isaac.cradle.collections.ConcurrentSequenceSerializedObjectMap;
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.SequenceService;
+import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.collections.RefexSequenceSet;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -52,12 +52,12 @@ public class RefexProvider implements RefexService {
     private static final Logger log = LogManager.getLogger();
 
     final ConcurrentSequenceSerializedObjectMap<RefexMember<?, ?>> refexMap;
-    final ConcurrentSkipListSet<RefexKey> assemblageNidReferencedNidRefexSequenceMap = new ConcurrentSkipListSet<>();
-    final ConcurrentSkipListSet<RefexKey> referencedNidAssemblageNidRefexSequenceMap = new ConcurrentSkipListSet<>();
-    final SequenceService sequenceProvider;
+    final ConcurrentSkipListSet<RefexKey> assemblageSequenceReferencedNidRefexSequenceMap = new ConcurrentSkipListSet<>();
+    final ConcurrentSkipListSet<RefexKey> referencedNidAssemblageSequenceRefexSequenceMap = new ConcurrentSkipListSet<>();
+    final IdentifierService sequenceProvider;
 
     public RefexProvider() throws IOException {
-        sequenceProvider = LookupService.getService(SequenceService.class);
+        sequenceProvider = LookupService.getService(IdentifierService.class);
         refexMap = new ConcurrentSequenceSerializedObjectMap(new RefexSerializer(),
                 IsaacDbFolder.get().getDbFolderPath(), "refex-map/", ".refex.map");
     }
@@ -76,8 +76,8 @@ public class RefexProvider implements RefexService {
                     int key1 = in.readInt();
                     int key2 = in.readInt();
                     int sequence = in.readInt();
-                    assemblageNidReferencedNidRefexSequenceMap.add(new RefexKey(key1, key2, sequence));
-                    referencedNidAssemblageNidRefexSequenceMap.add(new RefexKey(key2, key1, sequence));
+                    assemblageSequenceReferencedNidRefexSequenceMap.add(new RefexKey(key1, key2, sequence));
+                    referencedNidAssemblageSequenceRefexSequenceMap.add(new RefexKey(key2, key1, sequence));
                 }
             }
             log.info("Finished RefexProvider load.");
@@ -95,8 +95,8 @@ public class RefexProvider implements RefexService {
 
         log.info("writing RefexKeys.");
         try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "refex.keys"))))) {
-            out.writeInt(assemblageNidReferencedNidRefexSequenceMap.size());
-            for (RefexKey key : assemblageNidReferencedNidRefexSequenceMap) {
+            out.writeInt(assemblageSequenceReferencedNidRefexSequenceMap.size());
+            for (RefexKey key : assemblageSequenceReferencedNidRefexSequenceMap) {
                 out.writeInt(key.key1);
                 out.writeInt(key.key2);
                 out.writeInt(key.refexSequence);
@@ -123,7 +123,7 @@ public class RefexProvider implements RefexService {
         RefexKey rangeStart = new RefexKey(assemblageSequence, Integer.MIN_VALUE, Integer.MIN_VALUE); // yes
         RefexKey rangeEnd = new RefexKey(assemblageSequence, Integer.MAX_VALUE, Integer.MAX_VALUE); // no
         NavigableSet<RefexKey> assemblageRefexKeys
-                = assemblageNidReferencedNidRefexSequenceMap.subSet(rangeStart, true,
+                = assemblageSequenceReferencedNidRefexSequenceMap.subSet(rangeStart, true,
                         rangeEnd, true
                 );
         return RefexSequenceSet.of(assemblageRefexKeys.stream().mapToInt((RefexKey key) -> key.refexSequence));
@@ -141,7 +141,7 @@ public class RefexProvider implements RefexService {
             throw new IndexOutOfBoundsException("Component identifiers must be negative. Found: " + componentNid);
         }
         NavigableSet<RefexKey> assemblageRefexKeys
-                = referencedNidAssemblageNidRefexSequenceMap.subSet(
+                = referencedNidAssemblageSequenceRefexSequenceMap.subSet(
                         new RefexKey(componentNid, Integer.MIN_VALUE, Integer.MIN_VALUE), true,
                         new RefexKey(componentNid, Integer.MAX_VALUE, Integer.MAX_VALUE), true
                 );
@@ -163,7 +163,7 @@ public class RefexProvider implements RefexService {
         RefexKey rangeStart = new RefexKey(assemblageSequence, componentNid, Integer.MIN_VALUE); // yes
         RefexKey rangeEnd = new RefexKey(assemblageSequence, componentNid, Integer.MAX_VALUE); // no
         NavigableSet<RefexKey> assemblageRefexKeys
-                = assemblageNidReferencedNidRefexSequenceMap.subSet(rangeStart, true,
+                = assemblageSequenceReferencedNidRefexSequenceMap.subSet(rangeStart, true,
                         rangeEnd, true
                 );
         return RefexSequenceSet.of(assemblageRefexKeys.stream().mapToInt((RefexKey key) -> key.refexSequence));
@@ -174,9 +174,9 @@ public class RefexProvider implements RefexService {
         int sequence = sequenceProvider.getRefexSequence(refex.getNid());
         int assemblageSequence = sequenceProvider.getRefexSequence(refex.assemblageNid);
         if (!refexMap.containsKey(sequence)) {
-            assemblageNidReferencedNidRefexSequenceMap.add(new RefexKey(assemblageSequence,
+            assemblageSequenceReferencedNidRefexSequenceMap.add(new RefexKey(assemblageSequence,
                     refex.referencedComponentNid, sequence));
-            referencedNidAssemblageNidRefexSequenceMap.add(new RefexKey(refex.referencedComponentNid,
+            referencedNidAssemblageSequenceRefexSequenceMap.add(new RefexKey(refex.referencedComponentNid,
                     assemblageSequence,
                     sequence));
         }
@@ -197,8 +197,8 @@ public class RefexProvider implements RefexService {
     public void forgetXrefPair(int referencedComponentNid, NidPairForRefex nidPairForRefex) {
         int sequence = sequenceProvider.getSememeSequence(nidPairForRefex.getMemberNid());
         int assemblageSequence = sequenceProvider.getRefexSequence(nidPairForRefex.getRefexNid());
-        assemblageNidReferencedNidRefexSequenceMap.remove(new RefexKey(assemblageSequence, referencedComponentNid, sequence));
-        referencedNidAssemblageNidRefexSequenceMap.remove(new RefexKey(referencedComponentNid, assemblageSequence, sequence));
+        assemblageSequenceReferencedNidRefexSequenceMap.remove(new RefexKey(assemblageSequence, referencedComponentNid, sequence));
+        referencedNidAssemblageSequenceRefexSequenceMap.remove(new RefexKey(referencedComponentNid, assemblageSequence, sequence));
     }
 
 }

@@ -16,7 +16,7 @@
 package gov.vha.isaac.cradle.version;
 
 import gov.vha.isaac.cradle.CradleExtensions;
-import gov.vha.isaac.ochre.api.SequenceService;
+import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.collections.StampSequenceSet;
 import java.util.Arrays;
@@ -41,7 +41,7 @@ public class StampSequenceComputer {
 
     private static final ConcurrentHashMap<ViewPoint, StampSequenceComputer> sequenceComputerCache
             = new ConcurrentHashMap<>();
-    SequenceService sequenceProvider = Hk2Looker.getService(SequenceService.class);
+    IdentifierService sequenceProvider = Hk2Looker.getService(IdentifierService.class);
 
     
     //CradleExtensions termStore = Hk2Looker.getService(CradleExtensions.class);
