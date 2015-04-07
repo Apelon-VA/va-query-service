@@ -21,6 +21,7 @@ import javafx.embed.swing.JFXPanel;
 import org.glassfish.hk2.runlevel.RunLevelController;
 import static gov.vha.isaac.lookup.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
+import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -64,11 +65,7 @@ public class QueryServiceTestSuiteSetup {
         dbExists = dbFolderPath.toFile().exists();
         System.out.println("termstore folder path: " + dbFolderPath.toFile().exists());
 
-        RunLevelController runLevelController = Hk2Looker.get().getService(RunLevelController.class);
-        log.info("going to run level 1");
-        runLevelController.proceedTo(1);
-        log.info("going to run level 2");
-        runLevelController.proceedTo(2);
+        LookupService.startupIsaac();
         tickSubscription = EventStreams.ticks(Duration.ofSeconds(10))
                 .subscribe(tick -> {
                     Set<Task> taskSet = Hk2Looker.get().getService(ActiveTaskSet.class).get();
@@ -115,13 +112,7 @@ public class QueryServiceTestSuiteSetup {
       @AfterSuite
     public void tearDownSuite() throws Exception {
         log.info("oneTimeTearDown");
-        RunLevelController runLevelController = Hk2Looker.get().getService(RunLevelController.class);
-        log.info("going to run level 1");
-        runLevelController.proceedTo(1);
-        log.info("going to run level 0");
-        runLevelController.proceedTo(0);
-        log.info("going to run level -1");
-        runLevelController.proceedTo(-1);
+        LookupService.shutdownIsaac();
     }
     
     

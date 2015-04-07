@@ -16,7 +16,8 @@
 package org.ihtsdo.otf.query.implementation;
 
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
-import gov.vha.isaac.ochre.api.SequenceService;
+import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import org.ihtsdo.otf.query.implementation.clauses.*;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
@@ -44,7 +45,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 
 /**
  * Executes queries within the terminology hierarchy and returns the nids of the
@@ -59,7 +59,7 @@ import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 
 public abstract class Query {
 
-    private static SequenceService sequenceProvider = Hk2Looker.getService(SequenceService.class);
+    private static IdentifierService identifierService = LookupService.getService(IdentifierService.class);
 
     @XmlElementWrapper(name = "for")
     @XmlElement(name = "component")
@@ -232,7 +232,7 @@ public abstract class Query {
             NativeIdSetBI conceptsToIterateOver
                     = Ts.get().getConceptNidsForComponentNids(possibleComponents);
 
-            ConceptSequenceSet conceptSequences = sequenceProvider.getConceptSequencesForNids(conceptsToIterateOver.getSetValues());
+            ConceptSequenceSet conceptSequences = identifierService.getConceptSequencesForNids(conceptsToIterateOver.getSetValues());
             Ts.get().getParallelConceptStream(conceptSequences).forEach((concept) -> {
                 try {
                     for (Clause c : rootClause[0].getChildren()) {
