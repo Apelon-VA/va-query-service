@@ -22,7 +22,7 @@ import gov.vha.isaac.cradle.version.StampSequenceComputer;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.SequenceService;
+import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.TaxonomySnapshotService;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
@@ -62,13 +62,13 @@ public class CradleTaxonomyProvider implements TaxonomyService {
     final CasSequenceObjectMap<TaxonomyRecordPrimitive> originDestinationTaxonomyRecordMap = new CasSequenceObjectMap(new TaxonomyRecordSerializer());
     final ConcurrentSkipListSet<DestinationOriginRecord> destinationOriginRecordSet = new ConcurrentSkipListSet<>();
 
-    private SequenceService sequenceProvider;
+    private IdentifierService sequenceProvider;
     private CradleExtensions cradle;
 
     @PostConstruct
     private void startMe() throws IOException {
         log.info("Starting TaxonomyService post-construct");    
-        sequenceProvider = Hk2Looker.getService(SequenceService.class);
+        sequenceProvider = Hk2Looker.getService(IdentifierService.class);
         cradle = LookupService.getService(CradleExtensions.class);
         if (!IsaacDbFolder.get().getPrimordial()) {
             log.info("Reading taxonomy.");

@@ -15,11 +15,17 @@
  */
 package gov.vha.isaac.cradle.sememe;
 
+import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
+import gov.vha.isaac.ochre.api.commit.CommitManager;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.sememe.SememeService;
 import gov.vha.isaac.ochre.api.sememe.SememeSnapshotService;
 import gov.vha.isaac.ochre.api.sememe.version.SememeVersion;
+import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePositionCalculator;
+import gov.vha.isaac.ochre.collections.SememeSequenceSet;
+import gov.vha.isaac.ochre.collections.StampSequenceSet;
 import gov.vha.isaac.ochre.model.sememe.SememeChronicleImpl;
 import java.util.Optional;
 import java.util.stream.IntStream;
@@ -32,57 +38,146 @@ import java.util.stream.Stream;
  */
 public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSnapshotService<V> {
 
+    private static CommitManager commitManager;
+
+    private static CommitManager getCommitManager() {
+        if (commitManager == null) {
+            commitManager = LookupService.getService(CommitManager.class);
+        }
+        return commitManager;
+    }
     Class<V> versionType;
     StampCoordinate stampCoordinate;
     SememeService sememeProvider;
+    RelativePositionCalculator calculator;
 
     public SememeSnapshotProvider(Class<V> versionType, StampCoordinate stampCoordinate, SememeService sememeProvider) {
         this.versionType = versionType;
         this.stampCoordinate = stampCoordinate;
         this.sememeProvider = sememeProvider;
+        this.calculator = RelativePositionCalculator.getCalculator(stampCoordinate);
     }
-    
+
     @Override
     public Optional<LatestVersion<V>> getLatestSememeVersion(int sememeSequence) {
         SememeChronicleImpl sc = (SememeChronicleImpl) sememeProvider.getSememe(sememeSequence);
         IntStream stampSequences = sc.getVersionStampSequences();
-        
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        StampSequenceSet latestSequences = calculator.getLatestStampSequences(stampSequences);
+        if (latestSequences.isEmpty()) {
+            return Optional.empty();
+        }
+        LatestVersion<V> latest = new LatestVersion<>();
+        latestSequences.stream().forEach((stampSequence) -> {
+            latest.addLatest((V) sc.getVersionForStamp(stampSequence).get());
+        });
+
+        return Optional.of(latest);
     }
 
     @Override
     public Optional<LatestVersion<V>> getLatestSememeVersionIfActive(int sememeSequence) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        SememeChronicleImpl sc = (SememeChronicleImpl) sememeProvider.getSememe(sememeSequence);
+        IntStream stampSequences = sc.getVersionStampSequences();
+        StampSequenceSet latestSequences = calculator.getLatestStampSequences(stampSequences);
+        if (latestSequences.isEmpty()) {
+            return Optional.empty();
+        }
+        if (latestSequences.stream().noneMatch((int stampSequence) -> getCommitManager().getStatusForStamp(stampSequence) == State.ACTIVE)) {
+            return Optional.empty();
+        }
+        LatestVersion<V> latest = new LatestVersion<>();
+        latestSequences.stream().forEach((stampSequence) -> {
+            if (commitManager.getStatusForStamp(stampSequence) == State.ACTIVE) {
+                latest.addLatest((V) sc.getVersionForStamp(stampSequence).get());
+            }
+        });
+        if (latest.value() == null) {
+            return Optional.empty();
+        }
+        return Optional.of(latest);
     }
 
     @Override
     public Stream<LatestVersion<V>> getLatestSememeVersionsFromAssemblage(int assemblageSequence) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return getLatestSememeVersions(sememeProvider.getSememeSequencesFromAssemblage(assemblageSequence));
+    }
+    
+    private Stream<LatestVersion<V>> getLatestSememeVersions(SememeSequenceSet sememeSequenceSet) {
+        return sememeSequenceSet.stream()
+                .mapToObj((int sememeSequence) -> {
+                    SememeChronicleImpl sc = (SememeChronicleImpl) sememeProvider.getSememe(sememeSequence);
+                    IntStream stampSequences = sc.getVersionStampSequences();
+                    StampSequenceSet latestStampSequences = calculator.getLatestStampSequences(stampSequences);
+                    if (latestStampSequences.isEmpty()) {
+                        return Optional.empty();
+                    }
+                    LatestVersion<V> latest = new LatestVersion<>();
+                    latestStampSequences.stream().forEach((stampSequence) -> {
+                        latest.addLatest((V) sc.getVersionForStamp(stampSequence).get());
+                    });
+                    return Optional.of(latest);
+                }
+                ).filter((optional) -> {
+                    return optional.isPresent();
+                }).map((optional) -> (LatestVersion<V>) optional.get());
+        
     }
 
     @Override
     public Stream<LatestVersion<V>> getLatestActiveSememeVersionsFromAssemblage(int assemblageSequence) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return getLatestActiveSememeVersions(sememeProvider.getSememeSequencesFromAssemblage(assemblageSequence));
+    }
+    
+    private Stream<LatestVersion<V>> getLatestActiveSememeVersions(SememeSequenceSet sememeSequenceSet) {
+        return sememeSequenceSet.stream()
+                .mapToObj((int sememeSequence) -> {
+                    SememeChronicleImpl sc = (SememeChronicleImpl) sememeProvider.getSememe(sememeSequence);
+                    IntStream stampSequences = sc.getVersionStampSequences();
+                    StampSequenceSet latestStampSequences = calculator.getLatestStampSequences(stampSequences);
+                    if (latestStampSequences.isEmpty()) {
+                        return Optional.empty();
+                    }
+                    if (latestStampSequences.stream().noneMatch((int stampSequence) -> getCommitManager().getStatusForStamp(stampSequence) == State.ACTIVE)) {
+                        return Optional.empty();
+                    }
+
+                    LatestVersion<V> latest = new LatestVersion<>();
+                    
+                    // add active first, incase any contradictions are inactive. 
+                    latestStampSequences.stream().filter((int stampSequence) -> 
+                            getCommitManager().getStatusForStamp(stampSequence) == State.ACTIVE).forEach((stampSequence) -> {
+                        latest.addLatest((V) sc.getVersionForStamp(stampSequence).get());
+                    });                    
+                    latestStampSequences.stream().filter((int stampSequence) -> 
+                            getCommitManager().getStatusForStamp(stampSequence) == State.INACTIVE).forEach((stampSequence) -> {
+                        latest.addLatest((V) sc.getVersionForStamp(stampSequence).get());
+                    }); 
+                    
+                    return Optional.of(latest);
+                }
+                ).filter((optional) -> {
+                    return optional.isPresent();
+                }).map((optional) -> (LatestVersion<V>) optional.get());        
     }
 
     @Override
     public Stream<LatestVersion<V>> getLatestSememeVersionsForComponent(int componentNid) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return getLatestSememeVersions(sememeProvider.getSememeSequencesForComponent(componentNid));
     }
 
     @Override
     public Stream<LatestVersion<V>> getLatestActiveSememeVersionsForComponent(int componentNid) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return getLatestActiveSememeVersions(sememeProvider.getSememeSequencesForComponent(componentNid));
     }
 
     @Override
     public Stream<LatestVersion<V>> getLatestSememeVersionsForComponentFromAssemblage(int componentNid, int assemblageSequence) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return getLatestSememeVersions(sememeProvider.getSememeSequencesForComponentFromAssemblage(componentNid, assemblageSequence));
     }
 
     @Override
     public Stream<LatestVersion<V>> getLatestActiveSememeVersionsForComponentFromAssemblage(int componentNid, int assemblageSequence) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return getLatestActiveSememeVersions(sememeProvider.getSememeSequencesForComponentFromAssemblage(componentNid, assemblageSequence));
     }
-    
+
 }

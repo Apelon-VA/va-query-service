@@ -38,12 +38,17 @@ public class ConcurrentUuidIntMapSerializer implements CradleSerializer<Concurre
             int size = input.readInt();
             
             ConcurrentUuidToIntHashMap map = new ConcurrentUuidToIntHashMap(size);
+            long stamp = map.getStampedLock().writeLock();
+            try {
             long[] uuidData = new long[2];
             for (int i = 0; i < size; i++) {
                 uuidData[0] = input.readLong();
                 uuidData[1] = input.readLong();
                 int nid = input.readInt();
-                map.put(uuidData, nid);
+                map.put(uuidData, nid, stamp);
+            }
+            } finally {
+                map.getStampedLock().unlockWrite(stamp);
             }
             
             return map;

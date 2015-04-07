@@ -17,9 +17,12 @@ package gov.vha.isaac.cradle.sememe;
 
 import gov.vha.isaac.cradle.IsaacDbFolder;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
+import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.SequenceService;
+import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.commit.CommitManager;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
+import gov.vha.isaac.ochre.api.coordinate.StampPosition;
 import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
 import gov.vha.isaac.ochre.api.sememe.SememeService;
 import gov.vha.isaac.ochre.api.sememe.SememeSnapshotService;
@@ -54,13 +57,22 @@ public class SememeProvider implements SememeService {
 
     private static final Logger log = LogManager.getLogger();
 
+    private static CommitManager commitManager;
+
+    private static CommitManager getCommitManager() {
+        if (commitManager == null) {
+            commitManager = LookupService.getService(CommitManager.class);
+        }
+        return commitManager;
+    }
+
     final CasSequenceObjectMap<SememeChronicleImpl<?>> sememeMap;
-    final ConcurrentSkipListSet<SememeKey> assemblageNidReferencedNidSememeSequenceMap = new ConcurrentSkipListSet<>();
-    final ConcurrentSkipListSet<SememeKey> referencedNidAssemblageNidSememeSequenceMap = new ConcurrentSkipListSet<>();
-    final SequenceService sequenceProvider;
+    final ConcurrentSkipListSet<SememeKey> assemblageSequenceReferencedNidSememeSequenceMap = new ConcurrentSkipListSet<>();
+    final ConcurrentSkipListSet<SememeKey> referencedNidAssemblageSequenceSememeSequenceMap = new ConcurrentSkipListSet<>();
+    final IdentifierService sequenceProvider;
 
     public SememeProvider() throws IOException {
-        sequenceProvider = LookupService.getService(SequenceService.class);
+        sequenceProvider = LookupService.getService(IdentifierService.class);
         sememeMap = new CasSequenceObjectMap(new SememeSerializer());
     }
 
@@ -79,11 +91,21 @@ public class SememeProvider implements SememeService {
                     int key1 = in.readInt();
                     int key2 = in.readInt();
                     int sequence = in.readInt();
-                    assemblageNidReferencedNidSememeSequenceMap.add(new SememeKey(key1, key2, sequence));
-                    referencedNidAssemblageNidSememeSequenceMap.add(new SememeKey(key2, key1, sequence));
+                    assemblageSequenceReferencedNidSememeSequenceMap.add(new SememeKey(key1, key2, sequence));
+                    referencedNidAssemblageSequenceSememeSequenceMap.add(new SememeKey(key2, key1, sequence));
                 }
             }
         }
+
+        SememeSequenceSet statedGraphSequences = getSememeSequencesFromAssemblage(
+                sequenceProvider.getConceptSequence(sequenceProvider.getNidForUuids(IsaacMetadataAuxiliaryBinding.EL_PLUS_PLUS_STATED_FORM.getUuids())));
+        log.info("Stated logic graphs: " + statedGraphSequences.size());
+
+        SememeSequenceSet inferedGraphSequences = getSememeSequencesFromAssemblage(
+                sequenceProvider.getConceptSequence(sequenceProvider.getNidForUuids(IsaacMetadataAuxiliaryBinding.EL_PLUS_PLUS_INFERRED_FORM.getUuids())));
+
+        log.info("Inferred logic graphs: " + inferedGraphSequences.size());
+        log.info("Finished SememeProvider load.");
         log.info("Finished SememeProvider load.");
     }
 
@@ -97,13 +119,17 @@ public class SememeProvider implements SememeService {
 
         log.info("writing SememeKeys.");
         try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "sememe.keys"))))) {
-            out.writeInt(assemblageNidReferencedNidSememeSequenceMap.size());
-            for (SememeKey key : assemblageNidReferencedNidSememeSequenceMap) {
+            out.writeInt(assemblageSequenceReferencedNidSememeSequenceMap.size());
+            for (SememeKey key : assemblageSequenceReferencedNidSememeSequenceMap) {
                 out.writeInt(key.key1);
                 out.writeInt(key.key2);
                 out.writeInt(key.sememeSequence);
             }
         }
+        SememeSequenceSet statedGraphSequences = getSememeSequencesFromAssemblage(IsaacMetadataAuxiliaryBinding.EL_PLUS_PLUS_STATED_FORM.getSequence());
+        log.info("Stated logic graphs: " + statedGraphSequences.size());
+        SememeSequenceSet inferedGraphSequences = getSememeSequencesFromAssemblage(IsaacMetadataAuxiliaryBinding.EL_PLUS_PLUS_INFERRED_FORM.getSequence());
+        log.info("Inferred logic graphs: " + inferedGraphSequences.size());
         log.info("Finished SememeProvider stop.");
     }
 
@@ -130,7 +156,7 @@ public class SememeProvider implements SememeService {
         SememeKey rangeStart = new SememeKey(assemblageSequence, Integer.MIN_VALUE, Integer.MIN_VALUE); // yes
         SememeKey rangeEnd = new SememeKey(assemblageSequence, Integer.MAX_VALUE, Integer.MAX_VALUE); // no
         NavigableSet<SememeKey> assemblageSememeKeys
-                = assemblageNidReferencedNidSememeSequenceMap.subSet(rangeStart, true,
+                = assemblageSequenceReferencedNidSememeSequenceMap.subSet(rangeStart, true,
                         rangeEnd, true
                 );
         return SememeSequenceSet.of(assemblageSememeKeys.stream().mapToInt((SememeKey key) -> key.sememeSequence));
@@ -148,7 +174,7 @@ public class SememeProvider implements SememeService {
             throw new IndexOutOfBoundsException("Component identifiers must be negative. Found: " + componentNid);
         }
         NavigableSet<SememeKey> assemblageSememeKeys
-                = referencedNidAssemblageNidSememeSequenceMap.subSet(
+                = referencedNidAssemblageSequenceSememeSequenceMap.subSet(
                         new SememeKey(componentNid, Integer.MIN_VALUE, Integer.MIN_VALUE), true,
                         new SememeKey(componentNid, Integer.MAX_VALUE, Integer.MAX_VALUE), true
                 );
@@ -176,7 +202,7 @@ public class SememeProvider implements SememeService {
         SememeKey rangeStart = new SememeKey(assemblageSequence, componentNid, Integer.MIN_VALUE); // yes
         SememeKey rangeEnd = new SememeKey(assemblageSequence, componentNid, Integer.MAX_VALUE); // no
         NavigableSet<SememeKey> assemblageSememeKeys
-                = assemblageNidReferencedNidSememeSequenceMap.subSet(rangeStart, true,
+                = assemblageSequenceReferencedNidSememeSequenceMap.subSet(rangeStart, true,
                         rangeEnd, true
                 );
         return SememeSequenceSet.of(assemblageSememeKeys.stream().mapToInt((SememeKey key) -> key.sememeSequence));
@@ -184,7 +210,34 @@ public class SememeProvider implements SememeService {
 
     @Override
     public void writeSememe(SememeChronicle sememeChronicle) {
-        sememeMap.put(sememeChronicle.getSememeSequence(), 
+        assemblageSequenceReferencedNidSememeSequenceMap.add(
+                new SememeKey(sememeChronicle.getAssemblageSequence(),
+                        sememeChronicle.getReferencedComponentNid(),
+                        sememeChronicle.getSememeSequence()));
+        referencedNidAssemblageSequenceSememeSequenceMap.add(
+                new SememeKey(sememeChronicle.getReferencedComponentNid(),
+                        sememeChronicle.getAssemblageSequence(),
+                        sememeChronicle.getSememeSequence()));
+        sememeMap.put(sememeChronicle.getSememeSequence(),
                 (SememeChronicleImpl<?>) sememeChronicle);
     }
+
+    @Override
+    public SememeSequenceSet getSememeSequencesFromAssemblageModifiedAfterPosition(int assemblageSequence, StampPosition position) {
+        SememeSequenceSet sequencesToTest = getSememeSequencesFromAssemblage(assemblageSequence);
+        SememeSequenceSet sequencesThatPassedTest = new SememeSequenceSet();
+        getCommitManager();
+        sequencesToTest.stream().forEach((sememeSequence) -> {
+            SememeChronicleImpl<?> chronicle = (SememeChronicleImpl<?>) getSememe(sememeSequence);
+            if (chronicle.getVersionStampSequences().anyMatch((stampSequence) -> {
+                if ((position.getTime() > commitManager.getTimeForStamp(stampSequence)
+                        && (position.getStampPathSequence() == commitManager.getPathSequenceForStamp(stampSequence))));
+                return true;
+            })) {
+                sequencesThatPassedTest.add(sememeSequence);
+            }
+        });
+        return sequencesThatPassedTest;
+    }
+
 }

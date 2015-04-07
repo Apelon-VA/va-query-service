@@ -1,7 +1,7 @@
 package gov.vha.isaac.cradle;
 
 
-import gov.vha.isaac.ochre.api.SequenceService;
+import gov.vha.isaac.ochre.api.IdentifierService;
 import org.ihtsdo.otf.tcc.api.blueprint.*;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.ihtsdo.otf.tcc.api.conattr.ConceptAttributeChronicleBI;
@@ -47,7 +47,7 @@ import java.util.List;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 
 public class Builder implements TerminologyBuilderBI {
-    private static final SequenceService sequenceProvider = Hk2Looker.getService(SequenceService.class);
+    private static final IdentifierService sequenceProvider = Hk2Looker.getService(IdentifierService.class);
 
     Cradle cradle;
 
