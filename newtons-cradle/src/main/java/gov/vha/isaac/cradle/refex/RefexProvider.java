@@ -132,7 +132,8 @@ public class RefexProvider implements RefexService {
     @Override
     public Stream<RefexMember<?, ?>> getRefexesForComponent(int componentNid) {
         RefexSequenceSet refexSequences = getRefexSequencesForComponent(componentNid);
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return refexSequences.stream().mapToObj((refexSequence)-> getRefex(refexSequence));
+        
     }
 
     @Override
@@ -151,7 +152,7 @@ public class RefexProvider implements RefexService {
     @Override
     public Stream<RefexMember<?, ?>> getRefexsForComponentFromAssemblage(int componentNid, int assemblageSequence) {
         RefexSequenceSet refexSequences = getRefexSequencesForComponentFromAssemblage(componentNid, assemblageSequence);
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return refexSequences.stream().mapToObj((refexSequence)-> getRefex(refexSequence));
     }
 
     @Override

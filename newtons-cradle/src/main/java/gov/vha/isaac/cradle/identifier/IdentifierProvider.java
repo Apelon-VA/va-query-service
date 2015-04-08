@@ -72,7 +72,7 @@ public class IdentifierProvider implements IdentifierService {
         return ios;
     }
 
-    final UuidIntMapMap uuidIntMap = new UuidIntMapMap();
+    final UuidIntMapMap uuidIntMap = UuidIntMapMap.create(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "uuid-nid-map"));
     final SequenceMap conceptSequenceMap = new SequenceMap(450000);
     final SequenceMap sememeSequenceMap = new SequenceMap(3000000);
     final SequenceMap refexSequenceMap = new SequenceMap(3000000);
@@ -89,7 +89,7 @@ public class IdentifierProvider implements IdentifierService {
             log.info("Loading refex-sequence.map.");
             refexSequenceMap.read(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "refex-sequence.map"));
             log.info("Loading uuid-nid-map.");
-            uuidIntMap.read(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "uuid-nid-map"));
+            uuidIntMap.read();
             log.info("Loading sequence-cnid-map.");
             nidCnidMap.read(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "sequence-cnid-map"));
         }
@@ -97,6 +97,7 @@ public class IdentifierProvider implements IdentifierService {
 
     @PreDestroy
     private void stopMe() throws IOException {
+        uuidIntMap.setShutdown(true);
         log.info("conceptSequence: {}", conceptSequenceMap.getNextSequence());
         log.info("writing concept-sequence.map.");
         conceptSequenceMap.write(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "concept-sequence.map"));
@@ -105,7 +106,7 @@ public class IdentifierProvider implements IdentifierService {
         log.info("writing refex-sequence.map.");
         refexSequenceMap.write(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "refex-sequence.map"));
         log.info("writing uuid-nid-map.");
-        uuidIntMap.write(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "uuid-nid-map"));
+        uuidIntMap.write();
         log.info("writing sequence-cnid-map.");
         nidCnidMap.write(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "sequence-cnid-map"));
     }

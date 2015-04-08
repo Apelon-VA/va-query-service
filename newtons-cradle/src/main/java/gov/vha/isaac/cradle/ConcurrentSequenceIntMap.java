@@ -148,17 +148,17 @@ public class ConcurrentSequenceIntMap {
         return componentNids;
     }
 
-    public NativeIdSetBI getComponentNids() {
+    public IntStream getComponentNids() {
         int componentSize = size.get();
-        ConcurrentBitSet componentNids = new ConcurrentBitSet(size.get());
+        IntStream.Builder builder = IntStream.builder();
         for (int i = 0; i < componentSize; i++) {
             int segmentIndex = i / SEGMENT_SIZE;
             int indexInSegment = i % SEGMENT_SIZE;
             if (sequenceIntList.get(segmentIndex)[indexInSegment] != 0) {
-                componentNids.set(i + Integer.MIN_VALUE);
+                builder.accept(i + Integer.MIN_VALUE);
             }
         }
-        return componentNids;
+        return builder.build();
     }
 
     public IntStream getComponentsNotSet() {

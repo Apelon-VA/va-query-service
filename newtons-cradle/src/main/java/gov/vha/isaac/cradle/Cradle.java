@@ -1,5 +1,6 @@
 package gov.vha.isaac.cradle;
 
+import gov.vha.isaac.cradle.memory.MemoryManager;
 import gov.vha.isaac.cradle.tasks.*;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
@@ -124,6 +125,8 @@ public class Cradle
         if (!IsaacDbFolder.get().getPrimordial()) {
             loadExisting.set(!IsaacDbFolder.get().getPrimordial());
         }
+        MemoryManager.startListener();
+
     }
 
     @Override
@@ -814,7 +817,7 @@ public class Cradle
 
     @Override
     public int getConceptNidForNid(int nid) {
-        return identifierProvider.getConceptSequenceForComponentNid(nid);
+        return identifierProvider.getConceptNid(identifierProvider.getConceptSequenceForComponentNid(nid));
     }
 
     @Override
