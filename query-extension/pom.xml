@@ -1,51 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>gov.vha.isaac</groupId>
+        <groupId>gov.vha.isaac.query-service</groupId>
         <artifactId>query-parent</artifactId>
         <version>2.7-SNAPSHOT</version>
     </parent>
+
+    <groupId>gov.vha.isaac.query-service.modules</groupId>
     <artifactId>query-extension</artifactId>
     <packaging>jar</packaging>
     <name>${project.parent.artifactId}: ${project.artifactId}</name>
 
     <dependencies>
-        <dependency>
-            <groupId>org.apache.maven</groupId>
-            <artifactId>maven-core</artifactId>
-            <scope>compile</scope>
-        </dependency>
-
         <!-- dependency for plexus annotation -->
         <dependency>
             <groupId>org.codehaus.plexus</groupId>
             <artifactId>plexus-component-annotations</artifactId>
-            <version>1.5.5</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>junit</groupId>
-                    <artifactId>junit</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
-            <groupId>gov.vha.isaac</groupId>
+            <groupId>gov.vha.isaac.ochre.modules</groupId>
             <artifactId>tcc-build-extension</artifactId>
             <version>${ochre.version}</version>
         </dependency>
         <dependency>
-            <groupId>gov.vha.isaac</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>query-implementation</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
         </dependency>
     </dependencies>
 </project>

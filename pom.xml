@@ -1,29 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>gov.vha.isaac</groupId>
         <artifactId>isaac-parent</artifactId>
-        <version>1.3</version>
+        <version>1.4-SNAPSHOT</version>
     </parent>
+    
+    <groupId>gov.vha.isaac.query-service</groupId>
     <artifactId>query-parent</artifactId>
     <version>2.7-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>${project.artifactId}: (MMP)</name>
+
     <description>Parent project of modules that support query functions</description>
+
     <scm>
         <developerConnection>scm:git:http://informatics.com/stash/scm/otqstd/otf-query-services.git</developerConnection>
     </scm>
+
     <properties>
         <branch>QS ${project.scm.tag}</branch>
         <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
-        <ochre.version>2.21</ochre.version>
-        <isaac-metadata.version>1.22</isaac-metadata.version>
-        <newtons-cradle.version>1.10</newtons-cradle.version>
+        <ochre.version>2.22-SNAPSHOT</ochre.version>
+        <isaac-metadata.version>1.23-SNAPSHOT</isaac-metadata.version>
+        <newtons-cradle.version>1.11-SNAPSHOT</newtons-cradle.version>
         <org.apache.lucene.version>4.10.3</org.apache.lucene.version>
     </properties>
+
     <build>
-        <plugins> 
+        <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -50,22 +57,11 @@
             </plugin>
         </plugins>
     </build>
+
     <modules>
         <module>query-implementation</module>
         <module>query-integration-tests</module>
         <module>query-lucene</module>
         <module>query-extension</module>
     </modules>
-    <profiles>
-        <profile>
-            <id>all</id>
-            <modules>
-                <module>query-implementation</module>
-                <module>query-integration-tests</module>
-                <module>query-documentation</module>
-                <module>query-lucene</module>
-                <module>query-extension</module>
-            </modules>
-        </profile>
-    </profiles>
 </project>
