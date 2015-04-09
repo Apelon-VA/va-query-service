@@ -187,11 +187,20 @@ public class CradleIntegrationTests {
 
     private void findRoots(CradleExtensions cradle) {
         try {
+            log.info("Walking 10 concepts to root inferred.");
             IntStream conceptSequenceStream = sequenceProvider.getConceptSequenceStream().limit(10);
             CasSequenceObjectMap<TaxonomyRecordPrimitive> taxonomyMap = cradle.getOriginDestinationTaxonomyMap();
-            ViewCoordinate vc = ViewCoordinates.getDevelopmentInferredLatest();
+            ViewCoordinate vc = ViewCoordinates.getDevelopmentInferredLatestActiveOnly();
             conceptSequenceStream.forEach((int conceptSequence) -> {
                 walkToRoot(conceptSequence, taxonomyMap, vc, 0, new BitSet(), cradle);
+                System.out.println("\n\n");
+            });
+            log.info("Walking 10 concepts to root stated.");
+            conceptSequenceStream = sequenceProvider.getConceptSequenceStream().limit(10);
+            CasSequenceObjectMap<TaxonomyRecordPrimitive> taxonomyMap2 = cradle.getOriginDestinationTaxonomyMap();
+            ViewCoordinate vc2 = ViewCoordinates.getDevelopmentStatedLatestActiveOnly();
+            conceptSequenceStream.forEach((int conceptSequence) -> {
+                walkToRoot(conceptSequence, taxonomyMap2, vc2, 0, new BitSet(), cradle);
                 System.out.println("\n\n");
             });
         } catch (IOException ex) {
