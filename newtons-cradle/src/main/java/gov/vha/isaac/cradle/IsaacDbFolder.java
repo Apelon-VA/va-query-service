@@ -32,7 +32,7 @@ public class IsaacDbFolder {
     private static IsaacDbFolder singleton;
     private static final AtomicReference<Boolean> primordial = new AtomicReference<>();
     
-    public static IsaacDbFolder get() throws IOException {
+    public static IsaacDbFolder get() {
         if (singleton == null) {
             
             singleton = new IsaacDbFolder();
@@ -43,7 +43,7 @@ public class IsaacDbFolder {
     private Path dbFolderPath;
 
     
-    public IsaacDbFolder() throws IOException {
+    public IsaacDbFolder() {
         String issacDbRootFolder = System.getProperty(Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY);
         if (issacDbRootFolder == null || issacDbRootFolder.isEmpty()) {
                 throw new IllegalStateException(Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY + 
@@ -54,7 +54,11 @@ public class IsaacDbFolder {
         dbFolderPath = Paths.get(issacDbRootFolder, DEFAULT_CRADLE_FOLDER);
         primordial.compareAndSet(null, !Files.exists(dbFolderPath));
         if (primordial.get()) {
-            Files.createDirectories(dbFolderPath);
+            try {
+                Files.createDirectories(dbFolderPath);
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
         }        
     }
 
