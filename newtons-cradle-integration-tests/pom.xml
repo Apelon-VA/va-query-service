@@ -57,8 +57,8 @@
                                     <groupId>gov.vha.isaac.isaac-metadata.modules</groupId>
                                     <artifactId>isaac-metadata-artifacts</artifactId>
                                     <version>${isaac-metadata.version}</version>
-                                    <classifier>all.econ</classifier>
-                                    <type>zip</type>
+                                    <classifier>all</classifier>
+                                    <type>econ.zip</type>
                                 </artifact>
                            </artifactItems>
                            <outputDirectory>${project.build.directory}/data</outputDirectory>
