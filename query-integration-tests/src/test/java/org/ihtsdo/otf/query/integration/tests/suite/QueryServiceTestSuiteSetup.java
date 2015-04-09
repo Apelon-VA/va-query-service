@@ -15,6 +15,7 @@
  */
 package org.ihtsdo.otf.query.integration.tests.suite;
 
+import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.util.UUID;
 import javafx.embed.swing.JFXPanel;
@@ -23,6 +24,7 @@ import static gov.vha.isaac.lookup.constants.Constants.CHRONICLE_COLLECTIONS_ROO
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
+import gov.vha.isaac.ochre.util.HeadlessToolkit;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -40,6 +42,7 @@ import org.jvnet.testing.hk2testng.HK2;
 import org.reactfx.EventStreams;
 import org.reactfx.Subscription;
 import org.testng.annotations.*;
+import com.sun.javafx.application.PlatformImpl;
 
 /**
  * A test suite that establishes resources for use in tests that require the
@@ -56,8 +59,16 @@ public class QueryServiceTestSuiteSetup {
 
     @BeforeSuite
     public void setUpSuite() throws Exception {
-        JFXPanel panel = new JFXPanel();
         log.info("oneTimeSetUp");
+        
+        if (GraphicsEnvironment.isHeadless())
+        {
+            HeadlessToolkit.installToolkit();
+        }
+        PlatformImpl.startup(() -> {
+            // No need to do anything here
+        });
+        
         System.setProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY, "target/object-chronicles");
 
         
