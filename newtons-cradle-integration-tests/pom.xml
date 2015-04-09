@@ -29,8 +29,6 @@
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
-            <version>6.8.7</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.ihtsdo.sct.rf2</groupId>
@@ -95,6 +93,7 @@
                             <goal>unpack-dependencies</goal>
                         </goals>
                         <configuration>
+                            <skip>${skipTests}</skip>
                             <includeArtifactIds>rf-to-econcept-conversion,isaac-metadata-artifacts</includeArtifactIds>
                             <outputDirectory>${project.build.directory}/data</outputDirectory>
                         </configuration>
