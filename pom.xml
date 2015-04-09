@@ -10,14 +10,14 @@
     
     <groupId>gov.vha.isaac.newtons-cradle</groupId>
     <artifactId>newtons-cradle-parent</artifactId>
-    <version>1.11-SNAPSHOT</version>
+    <version>1.13-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>${project.artifactId}: (MMP)</name>
 
     <description>Newton's Cradle (ChRonicled Assertion Database of Logical Expressions) Parent Project </description>
 
     <properties>
-        <ochre.version>2.22-SNAPSHOT</ochre.version>
+        <ochre.version>2.23-SNAPSHOT</ochre.version>
         <isaac-metadata.version>1.25-SNAPSHOT</isaac-metadata.version>
     </properties>
 

@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -38,6 +39,23 @@ public class VerifyLoadEConceptFile
     private static final Set<UUID> watchSet = new HashSet<>();
 //            new HashSet<>(Arrays.asList(UUID.fromString("bcefc7ae-7512-3893-ade1-8eae817b4f0d"), 
 //            UUID.fromString("afee3454-a2ef-3d89-a51e-c3337317296a")));
+
+    private static final Set<UUID> whiteList = new HashSet<>(Arrays.asList(
+            UUID.fromString("ee9ac5d2-a07c-3981-a57a-f7f26baf38d8"), // health concept
+
+            UUID.fromString("3b0dbd3b-2e53-3a30-8576-6c7fa7773060"), // stated
+            UUID.fromString("00791270-77c9-32b6-b34f-d932569bd2bf"), // fsn
+            UUID.fromString("1290e6ba-48d0-31d2-8d62-e133373c63f5"), // inferred
+            UUID.fromString("8bfba944-3965-3946-9bcb-1e80a5da63a2"), // synonym
+            UUID.fromString("700546a3-09c7-3fc2-9eb9-53d318659a09"), // definition
+            UUID.fromString("12b9e103-060e-3256-9982-18c1191af60e"), // acceptable
+            UUID.fromString("266f1bc3-3361-39f3-bffe-69db9daea56e"), // preferred
+            UUID.fromString("c93a30b9-ba77-3adb-a9b8-4589c9f8fb25"), // is-a
+            UUID.fromString("6155818b-09ed-388e-82ce-caa143423e99"), // role
+            UUID.fromString("eb9a5e42-3cba-356d-b623-3ed472e20b30"), // GB Dialect
+            UUID.fromString("bca0a686-3516-3daf-8fcf-fe396d13cfad") // US dialect
+
+    ));
 
     Path[] paths;
     CradleExtensions termService;
@@ -89,10 +107,12 @@ public class VerifyLoadEConceptFile
 //                        if (watchSet.contains(eConcept.getPrimordialUuid())) {
 //                            System.out.println("Watch concept: " + eConcept);
 //                        }
-                        conversionPermits.acquire();
-                        conversionService.submit(new VerifyEConcept(termService, eConcept, conversionPermits, stampPath));
+                        if (!whiteList.contains(eConcept.getPrimordialUuid())) {
+                            conversionPermits.acquire();
+                            conversionService.submit(new VerifyEConcept(termService, eConcept, conversionPermits, stampPath));
+                            conceptCount++;
+                        }
 
-                        conceptCount++;
 
                         for (Future<Boolean> future = conversionService.poll(); future != null; future = conversionService.poll()) {
                                 Boolean verified = future.get();
