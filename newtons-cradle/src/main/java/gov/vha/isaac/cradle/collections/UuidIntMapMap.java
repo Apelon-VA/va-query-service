@@ -1,7 +1,6 @@
 package gov.vha.isaac.cradle.collections;
 
 import gov.vha.isaac.cradle.DiskSemaphore;
-import gov.vha.isaac.cradle.memory.MemoryManager;
 import gov.vha.isaac.ochre.collections.uuidnidmap.ConcurrentUuidToIntHashMap;
 import gov.vha.isaac.ochre.collections.uuidnidmap.UuidToIntMap;
 import gov.vha.isaac.ochre.collections.uuidnidmap.UuidUtil;
@@ -13,7 +12,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 
@@ -21,7 +19,6 @@ import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

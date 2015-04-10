@@ -19,6 +19,8 @@ import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
+import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
+import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeBuilder;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeWithBitSets;
@@ -31,7 +33,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.IntStream;
 import javafx.concurrent.Task;
@@ -46,8 +47,6 @@ import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.cc.termstore.PersistentStoreI;
 import org.jvnet.testing.hk2testng.HK2;
-import org.reactfx.EventStreams;
-import org.reactfx.Subscription;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeMethod;
@@ -76,14 +75,13 @@ public class CradleIntegrationTests {
     }
 
     private static final Logger log = LogManager.getLogger();
-    Subscription tickSubscription;
     private boolean dbExists = false;
     private static IdentifierService sequenceProvider;
 
     @BeforeSuite
     public void setUpSuite() throws Exception {
         log.info("oneTimeSetUp");
-        
+
         if (GraphicsEnvironment.isHeadless())
         {
             HeadlessToolkit.installToolkit();
@@ -91,6 +89,7 @@ public class CradleIntegrationTests {
         PlatformImpl.startup(() -> {
             // No need to do anything here
         });
+
         System.setProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY, "target/object-chronicles");
 
         java.nio.file.Path dbFolderPath = Paths.get(System.getProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY));
@@ -99,25 +98,16 @@ public class CradleIntegrationTests {
 
         LookupService.startupIsaac();
         sequenceProvider = Hk2Looker.getService(IdentifierService.class);
-        tickSubscription = EventStreams.ticks(Duration.ofSeconds(10))
-                .subscribe(tick -> {
-                    Set<Task> taskSet = Hk2Looker.get().getService(ActiveTaskSet.class).get();
-                    taskSet.stream().forEach((task) -> {
-                        double percentProgress = task.getProgress() * 100;
-                        if (percentProgress < 0) {
-                            percentProgress = 0;
-                        }
-                        log.printf(org.apache.logging.log4j.Level.INFO, "%n    %s%n    %s%n    %.1f%% complete",
-                                task.getTitle(), task.getMessage(), percentProgress);
-                    });
-                });
+        ActiveTasksTicker.start(10);
+        HeapUseTicker.start(10);
     }
 
     @AfterSuite
     public void tearDownSuite() throws Exception {
         log.info("oneTimeTearDown");
         LookupService.shutdownIsaac();
-        tickSubscription.unsubscribe();
+        ActiveTasksTicker.stop();
+        HeapUseTicker.stop();
     }
 
     @BeforeMethod      
