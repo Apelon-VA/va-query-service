@@ -1,33 +1,24 @@
 package gov.vha.isaac.cradle.collections;
 
-import gov.vha.isaac.cradle.DiskSemaphore;
+import gov.vha.isaac.cradle.memory.DiskSemaphore;
+import gov.vha.isaac.cradle.memory.HoldInMemoryCache;
+import gov.vha.isaac.cradle.memory.MemoryManagedReference;
+import gov.vha.isaac.cradle.memory.WriteToDiskCache;
 import gov.vha.isaac.ochre.collections.uuidnidmap.ConcurrentUuidToIntHashMap;
 import gov.vha.isaac.ochre.collections.uuidnidmap.UuidToIntMap;
 import gov.vha.isaac.ochre.collections.uuidnidmap.UuidUtil;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.lang.ref.ReferenceQueue;
-import java.lang.ref.SoftReference;
-
-import java.util.ArrayList;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by kec on 7/27/14.
  */
 public class UuidIntMapMap implements UuidToIntMap {
-    private static boolean DISABLE_SOFT_REFERENCES = true;
 
     private static final Logger log = LogManager.getLogger();
     private static final int DEFAULT_TOTAL_MAP_SIZE = 15000000;
@@ -45,86 +36,31 @@ public class UuidIntMapMap implements UuidToIntMap {
 
     public boolean shutdown = false;
 
-    private class MapSoftReference extends SoftReference<ConcurrentUuidToIntHashMap> {
-        int mapSequence;
-        AtomicBoolean modified = new AtomicBoolean(false);
-        ConcurrentUuidToIntHashMap theMap;
-
-        public MapSoftReference(int mapSequence, ConcurrentUuidToIntHashMap referent) {
-            super(referent, mapGcQueue);
-            this.mapSequence = mapSequence;
-            if (DISABLE_SOFT_REFERENCES) {
-                theMap = referent;
-            }
-        }
-    }
-    
-    private class MapWriter implements Runnable {
-
-        @Override
-        public void run() {
-            while (!shutdown) {
-                try {
-                    MapSoftReference reference = (MapSoftReference) mapGcQueue.remove();
-                    boolean present = reference.get() != null;
-                    log.info("UuidIntMapMap diet for " + reference.mapSequence +
-                        ". Referent is present: " + present);
-                    if (reference.modified.get()) {
-                        DiskSemaphore.acquire();
-                        log.info("UuidIntMapMap DiskSemaphore.acquire() for " + reference.mapSequence);
-                        try(DataOutputStream out = new DataOutputStream(new BufferedOutputStream(
-                                new FileOutputStream(new File(folder, reference.mapSequence + "-uuid-nid.map"))))) {
-                            serializer.serialize(out, reference.get());
-                        } finally {
-                            DiskSemaphore.release();
-                            log.info("UuidIntMapMap DiskSemaphore.release() for " + reference.mapSequence);
-                        }
-                        reference.modified.set(false);
-                    } else {
-                        log.info("UuidIntMapMap unmodified: " + reference.mapSequence);
-                    }
-                } catch (Throwable ex) {
-                    log.error("MapWriter error: ", ex);
-                }
-            }
-        }
-    }
-
     private static final ConcurrentUuidIntMapSerializer serializer = new ConcurrentUuidIntMapSerializer();
 
-    MapSoftReference[] maps = new MapSoftReference[NUMBER_OF_MAPS];
-    ReferenceQueue<ConcurrentUuidToIntHashMap> mapGcQueue = new ReferenceQueue();
+    MemoryManagedReference<ConcurrentUuidToIntHashMap>[] maps = new MemoryManagedReference[NUMBER_OF_MAPS];
     File folder;
-    Thread writerThread;
 
     private UuidIntMapMap(File folder) {
+        folder.mkdirs();
         this.folder = folder;
         for (int i = 0; i < maps.length; i++) {
-            maps[i] = new MapSoftReference(i, new ConcurrentUuidToIntHashMap(DEFAULT_MAP_SIZE, minLoadFactor, maxLoadFactor));
+            maps[i] = new MemoryManagedReference<ConcurrentUuidToIntHashMap>(
+                    new ConcurrentUuidToIntHashMap(DEFAULT_MAP_SIZE, minLoadFactor, maxLoadFactor),
+                    new File(folder, i + "-uuid-nid.map"), serializer);
+            WriteToDiskCache.addToCache(maps[i]);
         }
-        writerThread = new Thread(new MapWriter(), "UuidIntMapMap writer");
-        writerThread.setDaemon(true);
     }
     
     public static UuidIntMapMap create(File folder) {
-        UuidIntMapMap returnValue = new UuidIntMapMap(folder);
-        returnValue.writerThread.start();
-        return returnValue;
+        return new UuidIntMapMap(folder);
     }
     
     public void write() throws IOException {
-        folder.mkdirs();
         for (int i = 0; i < NUMBER_OF_MAPS; i++) {
             ConcurrentUuidToIntHashMap map = maps[i].get();
-            if (map != null && maps[i].modified.get()) {
-                DiskSemaphore.acquire();
-                try(DataOutputStream out = new DataOutputStream(new BufferedOutputStream(
-                    new FileOutputStream(new File(folder, i + "-uuid-nid.map"))))) {
-                    serializer.serialize(out, map);
-                    maps[i].modified.set(false);
-                } finally {
-                    DiskSemaphore.release();
-                }
+            if (map != null && !maps[i].timeSinceLastUnwrittenUpdate().isZero()) {
+                maps[i].write();
             }
         }
     }
@@ -138,13 +74,18 @@ public class UuidIntMapMap implements UuidToIntMap {
     }
 
     protected void readMapFromDisk(int i) throws IOException {
-        DiskSemaphore.acquire();
-        try(DataInputStream in = new DataInputStream(new BufferedInputStream(
-                new FileInputStream(new File(folder, i + "-uuid-nid.map"))))) {
-            maps[i] = new MapSoftReference(i, serializer.deserialize(in));
-            log.debug("UuidIntMapMap restored: " + i);
-        } finally {
-            DiskSemaphore.release();
+        File mapFile = new File(folder, i + "-uuid-nid.map");
+        if (mapFile.exists()) {
+            DiskSemaphore.acquire();
+            try(DataInputStream in = new DataInputStream(new BufferedInputStream(
+                    new FileInputStream(mapFile)))) {
+                maps[i] = new MemoryManagedReference<>(serializer.deserialize(in),
+                        mapFile, serializer);
+                WriteToDiskCache.addToCache(maps[i]);
+                log.debug("UuidIntMapMap restored: " + i);
+            } finally {
+                DiskSemaphore.release();
+            }
         }
     }
 
@@ -166,6 +107,8 @@ public class UuidIntMapMap implements UuidToIntMap {
                 throw new RuntimeException(ex);
             }
         }
+        maps[index].elementRead();
+        HoldInMemoryCache.addToCache(maps[index]);
         return result;
     }
 
@@ -204,8 +147,8 @@ public class UuidIntMapMap implements UuidToIntMap {
 //            if (nid == -2147483637) {
 //                System.out.println(nid + "->" + key);
 //            }
+            maps[mapIndex].elementUpdated();
             map.put(keyAsArray, nid, stamp);
-            maps[mapIndex].modified.set(true);
             return nid;
         } finally {
             map.getStampedLock().unlockWrite(stamp);
@@ -220,7 +163,7 @@ public class UuidIntMapMap implements UuidToIntMap {
         long stamp = map.getStampedLock().writeLock();
         try {
             boolean returnValue = map.put(keyAsArray, value, stamp);
-            maps[mapIndex].modified.set(true);
+            maps[mapIndex].elementUpdated();
             return returnValue;
         } finally {
             map.getStampedLock().unlockWrite(stamp);
