@@ -74,7 +74,7 @@
                     <reuseForks>true</reuseForks>
                     <useSystemClassLoader>true</useSystemClassLoader>
                     <useManifestOnlyJar>false</useManifestOnlyJar>
-                    <argLine>-ea -d64 -Xmx4g -Djavafx.toolkit=gov.vha.isaac.ochre.api.HeadlessToolkit</argLine>
+                    <argLine>-ea -d64 -Xmx4g</argLine>
                     <!-- <argLine>-Xmx6g -Xms6g -agentpath:/Applications/jprofiler8/bin/macos/libjprofilerti.jnilib=port=8849</argLine> -->
                     <!-- <debugForkedProcess>false</debugForkedProcess> -->
                     <includes>

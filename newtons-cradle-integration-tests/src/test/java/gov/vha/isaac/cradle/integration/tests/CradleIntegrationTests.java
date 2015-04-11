@@ -24,8 +24,6 @@ import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeBuilder;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeWithBitSets;
-import gov.vha.isaac.ochre.util.HeadlessToolkit;
-import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -52,7 +50,6 @@ import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
-import com.sun.javafx.application.PlatformImpl;
 
 /**
  *
@@ -81,14 +78,6 @@ public class CradleIntegrationTests {
     @BeforeSuite
     public void setUpSuite() throws Exception {
         log.info("oneTimeSetUp");
-
-        if (GraphicsEnvironment.isHeadless())
-        {
-            HeadlessToolkit.installToolkit();
-        }
-        PlatformImpl.startup(() -> {
-            // No need to do anything here
-        });
 
         System.setProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY, "target/object-chronicles");
 
