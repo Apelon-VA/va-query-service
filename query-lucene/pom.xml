@@ -35,6 +35,12 @@
             <version>${ochre.version}</version>
             <type>jar</type>
         </dependency>
+        <dependency>
+            <groupId>gov.vha.isaac</groupId>
+            <artifactId>isaac-metadata-artifacts</artifactId>
+            <version>${isaac-metadata.version}</version>
+            <type>jar</type>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

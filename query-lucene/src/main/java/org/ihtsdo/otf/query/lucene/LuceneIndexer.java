@@ -2,6 +2,7 @@ package org.ihtsdo.otf.query.lucene;
 
 //~--- non-JDK imports --------------------------------------------------------
 import static gov.vha.isaac.lookup.constants.Constants.SEARCH_ROOT_LOCATION_PROPERTY;
+import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -215,14 +216,7 @@ public abstract class LuceneIndexer implements IndexerBI {
             List<SearchResult> result;
 
             switch (field) {
-                case LONG_EXTENSION_1:
-                    long long1 = Long.parseLong(query);
-                    Query long1query = NumericRangeQuery.newLongRange(field.name(), long1, long1, true, true);
-
-                    result = search(long1query, sizeLimit, targetGeneration);
-
-                    break;
-
+                case STRING_EXTENSION_1:
                 case DESCRIPTION_TEXT:
                     Query q = new QueryParser(LuceneIndexer.luceneVersion, field.name(),
                             new StandardAnalyzer(LuceneIndexer.luceneVersion)).parse(query);
@@ -476,4 +470,64 @@ public abstract class LuceneIndexer implements IndexerBI {
             return Long.MIN_VALUE;
         }
     }
+
+    @Override
+    public Future<Long> index(SememeChronicle chronicle) {
+        if (!enabled) {
+            return null;
+        }
+
+        if (indexSememeChronicle(chronicle)) {
+            Future<Long> future = luceneWriterService.submit(new AddSememeDocument(chronicle));
+
+            luceneWriterFutureCheckerService.execute(new FutureChecker(future));
+
+            return future;
+        }
+
+        return unindexedFuture;
+    }
+    
+    protected abstract boolean indexSememeChronicle(SememeChronicle chronicle);
+    
+    protected abstract void addFields(SememeChronicle chronicle, Document doc);
+
+    private class AddSememeDocument implements Callable<Long> {
+
+        SememeChronicle chronicle;
+
+        public AddSememeDocument(SememeChronicle chronicle) {
+            this.chronicle = chronicle;
+        }
+
+        @Override
+        public Long call() throws Exception {
+            IndexedGenerationCallable latch = componentNidLatch.remove(chronicle.getNid());
+            Document doc = new Document();
+
+            doc.add(new IntField(ComponentProperty.COMPONENT_ID.name(), chronicle.getNid(),
+                    LuceneIndexer.indexedComponentNidType));
+            addFields(chronicle, doc);
+
+            // Note that the addDocument operation could cause duplicate documents to be
+            // added to the index if a new luceneVersion is added after initial index
+            // creation. It does this to avoid the performance penalty of
+            // finding and deleting documents prior to inserting a new one.
+            //
+            // At this point, the number of duplicates should be
+            // small, and we are willing to accept a small number of duplicates
+            // because the new versions are additive (we don't allow deletion of content)
+            // so the search results will be the same. Duplicates can be removed
+            // by regenerating the index.
+            long indexGeneration = trackingIndexWriter.addDocument(doc);
+
+            if (latch != null) {
+                latch.setIndexGeneration(indexGeneration);
+            }
+
+            return indexGeneration;
+        }
+    }
+
+    
 }

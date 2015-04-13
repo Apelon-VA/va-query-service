@@ -2,6 +2,7 @@ package org.ihtsdo.otf.query.lucene;
 
 //~--- non-JDK imports --------------------------------------------------------
 
+import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
@@ -69,6 +70,18 @@ public class LuceneDescriptionIndexer extends LuceneIndexer implements IndexerBI
     @PreDestroy
     private void stopMe() throws IOException {
         logger.info("Stopping LuceneDescriptionIndexer pre-destroy. ");
+        commitWriter();
+        closeWriter();
+    }
+
+    @Override
+    protected boolean indexSememeChronicle(SememeChronicle chronicle) {
+        return false;
+    }
+
+    @Override
+    protected void addFields(SememeChronicle chronicle, Document doc) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
 
