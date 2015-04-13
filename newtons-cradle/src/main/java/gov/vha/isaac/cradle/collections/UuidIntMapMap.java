@@ -14,6 +14,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by kec on 7/27/14.
@@ -45,8 +46,8 @@ public class UuidIntMapMap implements UuidToIntMap {
         folder.mkdirs();
         this.folder = folder;
         for (int i = 0; i < maps.length; i++) {
-            maps[i] = new MemoryManagedReference<ConcurrentUuidToIntHashMap>(
-                    new ConcurrentUuidToIntHashMap(DEFAULT_MAP_SIZE, minLoadFactor, maxLoadFactor),
+            maps[i] = new MemoryManagedReference<>(
+                    null,
                     new File(folder, i + "-uuid-nid.map"), serializer);
             WriteToDiskCache.addToCache(maps[i]);
         }
@@ -59,33 +60,41 @@ public class UuidIntMapMap implements UuidToIntMap {
     public void write() throws IOException {
         for (int i = 0; i < NUMBER_OF_MAPS; i++) {
             ConcurrentUuidToIntHashMap map = maps[i].get();
-            if (map != null && !maps[i].timeSinceLastUnwrittenUpdate().isZero()) {
+            if (map != null && maps[i].hasUnwrittenUpdate()) {
                 maps[i].write();
             }
         }
     }
-    
-    public void read() throws IOException {
-        log.info("Starting UuidIntMapMap load. ");
-        for (int i = 0; i < NUMBER_OF_MAPS; i++) {
-            readMapFromDisk(i);
-        }
-        log.info("Finished UuidIntMapMap load. ");
-    }
+
+
+    ReentrantLock lock = new ReentrantLock();
 
     protected void readMapFromDisk(int i) throws IOException {
-        File mapFile = new File(folder, i + "-uuid-nid.map");
-        if (mapFile.exists()) {
-            DiskSemaphore.acquire();
-            try(DataInputStream in = new DataInputStream(new BufferedInputStream(
-                    new FileInputStream(mapFile)))) {
-                maps[i] = new MemoryManagedReference<>(serializer.deserialize(in),
-                        mapFile, serializer);
-                WriteToDiskCache.addToCache(maps[i]);
-                log.debug("UuidIntMapMap restored: " + i);
-            } finally {
-                DiskSemaphore.release();
+        lock.lock();
+        try {
+            if (maps[i].get() == null) {
+                File mapFile = new File(folder, i + "-uuid-nid.map");
+                if (mapFile.exists()) {
+                    DiskSemaphore.acquire();
+                    try (DataInputStream in = new DataInputStream(new BufferedInputStream(
+                            new FileInputStream(mapFile)))) {
+                        maps[i] = new MemoryManagedReference<>(serializer.deserialize(in),
+                                mapFile, serializer);
+                        WriteToDiskCache.addToCache(maps[i]);
+                        log.debug("UuidIntMapMap restored: " + i);
+                    } finally {
+                        DiskSemaphore.release();
+                    }
+                } else {
+                    maps[i] = new MemoryManagedReference<>(
+                            new ConcurrentUuidToIntHashMap(DEFAULT_MAP_SIZE, minLoadFactor, maxLoadFactor),
+                            new File(folder, i + "-uuid-nid.map"), serializer);
+                    WriteToDiskCache.addToCache(maps[i]);
+
+                }
             }
+        } finally {
+            lock.unlock();
         }
     }
 

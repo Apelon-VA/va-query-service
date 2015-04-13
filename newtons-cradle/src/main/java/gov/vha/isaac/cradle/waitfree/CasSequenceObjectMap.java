@@ -5,17 +5,16 @@
  */
 package gov.vha.isaac.cradle.waitfree;
 
-import gov.vha.isaac.ochre.model.WaitFreeComparable;
+import gov.vha.isaac.cradle.collections.CradleSerializer;
 import gov.vha.isaac.cradle.collections.SerializedAtomicReferenceArray;
+import gov.vha.isaac.cradle.memory.DiskSemaphore;
+import gov.vha.isaac.cradle.memory.HoldInMemoryCache;
+import gov.vha.isaac.cradle.memory.MemoryManagedReference;
+import gov.vha.isaac.cradle.memory.WriteToDiskCache;
 import gov.vha.isaac.ochre.model.DataBuffer;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import gov.vha.isaac.ochre.model.WaitFreeComparable;
+
+import java.io.*;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -42,80 +41,86 @@ public class CasSequenceObjectMap<T extends WaitFreeComparable> {
 
     ReentrantLock expandLock = new ReentrantLock();
 
-    WaitFreeMergeSerializer<T> serializer;
-    CopyOnWriteArrayList<SerializedAtomicReferenceArray> objectByteList = new CopyOnWriteArrayList<>();
+    private final String filePrefix;
+    private final String fileSuffix;
+    private final Path dbFolderPath;
+    WaitFreeMergeSerializer<T> elementSerializer;
+    CasSequenceMapSerializer segmentSerializer = new CasSequenceMapSerializer();
 
-    CopyOnWriteArrayList<Boolean> changed = new CopyOnWriteArrayList<>();
+    CopyOnWriteArrayList<MemoryManagedReference<SerializedAtomicReferenceArray>> objectByteList = new CopyOnWriteArrayList<>();
 
-    public CasSequenceObjectMap(WaitFreeMergeSerializer<T> serializer) {
-        this.serializer = serializer;
-        objectByteList.add(new SerializedAtomicReferenceArray(SEGMENT_SIZE, serializer, objectByteList.size()));
-        changed.add(Boolean.FALSE);
+
+    public CasSequenceObjectMap(WaitFreeMergeSerializer<T> elementSerializer, Path dbFolderPath,
+                                String filePrefix, String fileSuffix) {
+        this.elementSerializer = elementSerializer;
+        this.dbFolderPath = dbFolderPath;
+        this.filePrefix = filePrefix;
+        this.fileSuffix = fileSuffix;
+
     }
 
     /**
      * Read from disk
      *
-     * @param dbFolderPath folder where the data is located
-     * @param filePrefix prefix for files that contain segment data
-     * @param fileSuffix suffix for files that contain segment data
      */
-    public void read(Path dbFolderPath, String filePrefix, String fileSuffix) {
+    public void initialize() {
         objectByteList.clear();
+        int segmentIndex = 0;
+        File segmentFile = new File(dbFolderPath.toFile(), filePrefix + segmentIndex + fileSuffix);
 
-        int segment = 0;
-        int segments = 1;
-
-        while (segment < segments) {
-            File segmentFile = new File(dbFolderPath.toFile(), filePrefix + segment + fileSuffix);
-            try (DataInputStream input = new DataInputStream(new BufferedInputStream(new FileInputStream(segmentFile)))) {
-                segments = input.readInt();
-                int segmentIndex = input.readInt();
-                int segmentArrayLength = input.readInt();
-
-                SerializedAtomicReferenceArray referenceArray = new SerializedAtomicReferenceArray(SEGMENT_SIZE, serializer, objectByteList.size());
-                objectByteList.add(referenceArray);
-
-                for (int i = 0; i < segmentArrayLength; i++) {
-                    int byteArrayLength = input.readInt();
-                    if (byteArrayLength > 0) {
-                        byte[] bytes = new byte[byteArrayLength];
-                        input.read(bytes);
-                        referenceArray.set(i, bytes);
-                    }
-                }
-
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
-            segment++;
+        while (segmentFile.exists()) {
+            MemoryManagedReference<SerializedAtomicReferenceArray> reference =
+                    new MemoryManagedReference<>(null, segmentFile, segmentSerializer);
+            objectByteList.add(segmentIndex, reference);
+            segmentIndex++;
+            segmentFile = new File(dbFolderPath.toFile(), filePrefix + segmentIndex + fileSuffix);
         }
-
     }
 
-    public void write(Path dbFolderPath, String folder, String suffix) {
-        int segments = objectByteList.size();
-        for (int segmentIndex = 0; segmentIndex < segments; segmentIndex++) {
-            File segmentFile = new File(dbFolderPath.toFile(), folder + segmentIndex + suffix);
-            segmentFile.getParentFile().mkdirs();
-            SerializedAtomicReferenceArray segmentArray = objectByteList.get(segmentIndex);
-            try (DataOutputStream output = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(segmentFile)))) {
-                output.writeInt(segments);
-                output.writeInt(segmentIndex);
-                output.writeInt(segmentArray.length());
+    private class CasSequenceMapSerializer implements CradleSerializer<SerializedAtomicReferenceArray> {
+
+        @Override
+        public void serialize(DataOutput out, SerializedAtomicReferenceArray segmentArray) {
+            try {
+                out.writeInt(segmentArray.getSegment());
                 for (int indexValue = 0; indexValue < SEGMENT_SIZE; indexValue++) {
                     byte[] value = segmentArray.get(indexValue);
                     if (value == null) {
-                        output.writeInt(-1);
+                        out.writeInt(-1);
                     } else {
-                        output.writeInt(value.length);
-                        output.write(value);
+                        out.writeInt(value.length);
+                        out.write(value);
                     }
                 }
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         }
+
+        @Override
+        public SerializedAtomicReferenceArray deserialize(DataInput in) {
+            try {
+                int segment = in.readInt();
+                SerializedAtomicReferenceArray referenceArray =
+                        new SerializedAtomicReferenceArray(SEGMENT_SIZE, elementSerializer, segment);
+
+                for (int i = 0; i < SEGMENT_SIZE; i++) {
+                    int byteArrayLength = in.readInt();
+                    if (byteArrayLength > 0) {
+                        byte[] bytes = new byte[byteArrayLength];
+                        in.readFully(bytes);
+                        referenceArray.set(i, bytes);
+                    }
+                }
+                return referenceArray;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public void write() {
+        objectByteList.stream().forEach((segment) -> segment.write());
     }
 
     public Stream<T> getStream() {
@@ -128,6 +133,45 @@ public class CasSequenceObjectMap<T extends WaitFreeComparable> {
         return sequences.filter(sequence -> containsKey(sequence)).mapToObj(sequence -> getQuick(sequence));
     }
 
+    protected SerializedAtomicReferenceArray readSegmentFromDisk(int segmentIndex) {
+        File segmentFile = new File(dbFolderPath.toFile(), filePrefix + segmentIndex + fileSuffix);
+        DiskSemaphore.acquire();
+        try (DataInputStream in = new DataInputStream(new BufferedInputStream(
+                new FileInputStream(segmentFile)))) {
+            SerializedAtomicReferenceArray segmentArray = segmentSerializer.deserialize(in);
+            MemoryManagedReference<SerializedAtomicReferenceArray> reference =
+                    new MemoryManagedReference<>(segmentArray, segmentFile, segmentSerializer);
+            if (objectByteList.size() > segmentArray.getSegment()) {
+                objectByteList.set(segmentArray.getSegment(), reference);
+            } else {
+                objectByteList.add(segmentArray.getSegment(), reference);
+            }
+
+            HoldInMemoryCache.addToCache(reference);
+            WriteToDiskCache.addToCache(reference);
+
+            return segmentArray;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            DiskSemaphore.release();
+        }
+
+    }
+
+    protected SerializedAtomicReferenceArray getSegment(int segmentIndex) {
+        SerializedAtomicReferenceArray referenceArray = objectByteList.get(segmentIndex).get();
+        if (referenceArray == null) {
+            referenceArray =
+                    readSegmentFromDisk(segmentIndex);
+
+        }
+        objectByteList.get(segmentIndex).elementRead();
+        return referenceArray;
+    }
+
+
+
     /**
      * Provides no range or null checking. For use with a stream that already
      * filters out null values and out of range sequences.
@@ -139,8 +183,8 @@ public class CasSequenceObjectMap<T extends WaitFreeComparable> {
         int segmentIndex = sequence / SEGMENT_SIZE;
         int indexInSegment = sequence % SEGMENT_SIZE;
 
-        DataBuffer buff = new DataBuffer(objectByteList.get(segmentIndex).get(indexInSegment));
-        return serializer.deserialize(buff);
+        DataBuffer buff = new DataBuffer(getSegment(segmentIndex).get(indexInSegment));
+        return elementSerializer.deserialize(buff);
     }
 
     public int getSize() {
@@ -153,7 +197,7 @@ public class CasSequenceObjectMap<T extends WaitFreeComparable> {
         if (segmentIndex >= objectByteList.size()) {
             return false;
         }
-        return objectByteList.get(segmentIndex).get(indexInSegment) != null;
+        return getSegment(segmentIndex).get(indexInSegment) != null;
     }
 
     public Optional<T> get(int sequence) {
@@ -164,10 +208,10 @@ public class CasSequenceObjectMap<T extends WaitFreeComparable> {
         }
         int indexInSegment = sequence % SEGMENT_SIZE;
 
-        byte[] objectBytes = objectByteList.get(segmentIndex).get(indexInSegment);
+        byte[] objectBytes = getSegment(segmentIndex).get(indexInSegment);
         if (objectBytes != null) {
             DataBuffer buf = new DataBuffer(objectBytes);
-            return Optional.of(serializer.deserialize(buf));
+            return Optional.of(elementSerializer.deserialize(buf));
         }
         return Optional.empty();
     }
@@ -179,43 +223,51 @@ public class CasSequenceObjectMap<T extends WaitFreeComparable> {
         if (segmentIndex >= objectByteList.size()) {
             expandLock.lock();
             try {
-                while (segmentIndex >= objectByteList.size()) {
-                    changed.add(Boolean.FALSE);
-                    objectByteList.add(new SerializedAtomicReferenceArray(SEGMENT_SIZE, serializer, objectByteList.size()));
+                int currentMaxSegment = objectByteList.size() -1;
+                while (segmentIndex > currentMaxSegment) {
+                    int newSegment = currentMaxSegment + 1;
+                    File segmentFile = new File(dbFolderPath.toFile(), filePrefix + newSegment + fileSuffix);
+                    MemoryManagedReference<SerializedAtomicReferenceArray> reference =
+                            new MemoryManagedReference<>(
+                                    new SerializedAtomicReferenceArray(SEGMENT_SIZE, elementSerializer, newSegment),
+                                    segmentFile, segmentSerializer);
+                    objectByteList.add(newSegment, reference);
+                    currentMaxSegment = objectByteList.size() -1;
                 }
             } finally {
                 expandLock.unlock();
             }
         }
         int indexInSegment = sequence % SEGMENT_SIZE;
+        SerializedAtomicReferenceArray segment = getSegment(segmentIndex);
         //
         int oldWriteSequence = value.getWriteSequence();
         int oldDataSize = 0;
-        byte[] oldData = objectByteList.get(segmentIndex).get(indexInSegment);
+        byte[] oldData = segment.get(indexInSegment);
         if (oldData != null) {
             oldWriteSequence = getWriteSequence(oldData);
             oldDataSize = oldData.length;
         }
-        
+
         while (true) {
             if (oldWriteSequence != value.getWriteSequence()) {
                 // need to merge.
                 DataBuffer oldDataBuffer = new DataBuffer(oldData);
-                T oldObject = serializer.deserialize(oldDataBuffer);
-                value = serializer.merge(value, oldObject, oldWriteSequence);
+                T oldObject = elementSerializer.deserialize(oldDataBuffer);
+                value = elementSerializer.merge(value, oldObject, oldWriteSequence);
             }
             value.setWriteSequence(getWriteSequence(sequence));
             
             DataBuffer newDataBuffer = new DataBuffer(oldDataSize + 512);
-            serializer.serialize(newDataBuffer, value);
+            elementSerializer.serialize(newDataBuffer, value);
             newDataBuffer.trimToSize();
-            if (objectByteList.get(segmentIndex).compareAndSet(indexInSegment, oldData, newDataBuffer.getData())) {
-                changed.set(segmentIndex, Boolean.TRUE);
+            if (segment.compareAndSet(indexInSegment, oldData, newDataBuffer.getData())) {
+                objectByteList.get(segmentIndex).elementUpdated();
                 return true;
             }
 
             // Try again.
-            oldData = objectByteList.get(segmentIndex).get(indexInSegment);
+            oldData = segment.get(indexInSegment);
             oldWriteSequence = getWriteSequence(oldData);
         }
 

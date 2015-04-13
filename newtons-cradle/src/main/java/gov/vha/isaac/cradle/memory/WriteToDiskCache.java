@@ -1,7 +1,5 @@
 package gov.vha.isaac.cradle.memory;
 
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentSkipListSet;
 
@@ -10,9 +8,9 @@ import java.util.concurrent.ConcurrentSkipListSet;
  */
 public class WriteToDiskCache {
 
-    private static final int WRITE_INTERVAL_IN_SECONDS = 15;
+    private static final int WRITE_INTERVAL_IN_MS = 15000;
 
-    static Thread writerThread;
+    static final Thread writerThread;
 
     static ConcurrentSkipListSet<MemoryManagedReference> cacheSet = new ConcurrentSkipListSet<>();
 
@@ -26,26 +24,34 @@ public class WriteToDiskCache {
         @Override
         public void run() {
             while (true) {
-                Optional<MemoryManagedReference> reference = cacheSet.stream().filter(memoryManagedReference -> {
+                Optional<MemoryManagedReference> optionalReference = cacheSet.stream().
+                        filter((memoryManagedReference) -> {
                     if (memoryManagedReference.get() == null) {
                         cacheSet.remove(memoryManagedReference);
                         return false;
                     }
-                    return false;
+                    
+                    return memoryManagedReference.hasUnwrittenUpdate();
                 }).max((o1, o2) -> {
-                    return o1.timeSinceLastUnwrittenUpdate().compareTo(o2.timeSinceLastUnwrittenUpdate());
+                    if (o1.msSinceLastUnwrittenUpdate() > o2.msSinceLastUnwrittenUpdate()) {
+                        return 1;
+                    }
+                    if (o1.msSinceLastUnwrittenUpdate() < o2.msSinceLastUnwrittenUpdate()) {
+                        return -1;
+                    }
+                    return 0;
                 });
                 boolean written = false;
-                if (reference.isPresent()) {
+                if (optionalReference.isPresent()) {
                     written = true;
-                    MemoryManagedReference ref = (MemoryManagedReference) reference.get();
-                    if (ref.timeSinceLastUnwrittenUpdate().compareTo(Duration.of(WRITE_INTERVAL_IN_SECONDS, ChronoUnit.SECONDS)) > 0) {
+                    MemoryManagedReference ref = (MemoryManagedReference) optionalReference.get();
+                    if (ref.msSinceLastUnwrittenUpdate() > WRITE_INTERVAL_IN_MS) {
                         ref.write();
                     }
                 }
                 if (!written) {
                     try {
-                        writerThread.wait(WRITE_INTERVAL_IN_SECONDS * 1000);
+                        writerThread.wait(WRITE_INTERVAL_IN_MS);
                     } catch (InterruptedException e) {
                         // continue work
                     }

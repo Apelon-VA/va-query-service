@@ -7,25 +7,29 @@ import java.io.*;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Created by kec on 4/10/15.
+ * @param <T>
  */
 public class MemoryManagedReference<T extends Object> extends SoftReference<T> implements
         Comparable<MemoryManagedReference> {
 
     private static final AtomicInteger objectIdSupplier = new AtomicInteger();
+    private static final AtomicInteger referenceSequenceSupplier = new AtomicInteger(Integer.MIN_VALUE + 1);
 
     private final int objectId = objectIdSupplier.getAndIncrement();
 
-    private final AtomicReference<Instant> lastWriteToDisk = new AtomicReference<>(Instant.now());
-
-    private final AtomicReference<Instant>  lastElementUpdate = new AtomicReference<>(Instant.now());
-    private final AtomicReference<Instant>  lastElementRead = new AtomicReference<>(Instant.now());
+    private int lastWriteToDiskSequence = referenceSequenceSupplier.getAndIncrement();
+    private long lastWriteToDiskTime = System.currentTimeMillis();
+    
+    private int  lastElementUpdateSequence = Integer.MIN_VALUE;
+    private long lastElementUpdateTime = System.currentTimeMillis();
+    
+    private long lastElementReadTime = Long.MIN_VALUE;
 
     private final AtomicReference<T> strongReferenceForUpdate = new AtomicReference<>();
     private final AtomicReference<T> strongReferenceForCache= new AtomicReference<>();
@@ -50,14 +54,18 @@ public class MemoryManagedReference<T extends Object> extends SoftReference<T> i
     }
 
     public void elementUpdated() {
-        if (this.strongReferenceForUpdate.compareAndSet(null, this.get())) {
-            lastElementUpdate.set(Instant.now());
-        }
+        this.strongReferenceForUpdate.set(this.get());
+        lastElementUpdateSequence = referenceSequenceSupplier.getAndIncrement();
+        lastElementUpdateTime = System.currentTimeMillis();
     }
 
     public void elementRead() {
         hits.increment();
-        this.lastElementRead.set(Instant.now());
+        this.lastElementReadTime = System.currentTimeMillis();
+    }
+
+    public Duration timeSinceLastRead() {
+        return Duration.ofMillis(System.currentTimeMillis() - lastElementReadTime);
     }
 
     public void cacheEntry() {
@@ -76,9 +84,12 @@ public class MemoryManagedReference<T extends Object> extends SoftReference<T> i
 
     public void write() {
         T objectToWrite = this.get();
-        if (objectToWrite != null && strongReferenceForUpdate.compareAndSet(objectToWrite, null)) {
+        if (objectToWrite != null) {
+            strongReferenceForUpdate.set(null);
             DiskSemaphore.acquire();
-            lastWriteToDisk.set(Instant.now());
+            lastWriteToDiskSequence = referenceSequenceSupplier.getAndIncrement();
+            lastWriteToDiskTime = System.currentTimeMillis();
+            diskLocation.getParentFile().mkdirs();
             try(DataOutputStream out = new DataOutputStream(new BufferedOutputStream(
                     new FileOutputStream(diskLocation)))) {
                 serializer.serialize(out, objectToWrite);
@@ -92,14 +103,16 @@ public class MemoryManagedReference<T extends Object> extends SoftReference<T> i
         }
     }
 
-    public Duration timeSinceLastUnwrittenUpdate() {
-        Instant lastUpdateInstant = lastElementUpdate.get();
-        Instant lastWriteInstant = lastWriteToDisk.get();
+    public boolean hasUnwrittenUpdate() {
+        return lastWriteToDiskSequence < lastElementUpdateSequence;
+    }
+    
+    public long msSinceLastUnwrittenUpdate() {
+        return lastElementUpdateTime - lastWriteToDiskTime;
+    }
 
-        if (lastUpdateInstant.isAfter(lastWriteInstant)) {
-            return Duration.between(lastUpdateInstant, Instant.now());
-        }
-        return Duration.ZERO;
+    public long getLastWriteToDiskTime() {
+        return lastWriteToDiskTime;
     }
 
     @Override
@@ -115,7 +128,6 @@ public class MemoryManagedReference<T extends Object> extends SoftReference<T> i
         MemoryManagedReference<?> that = (MemoryManagedReference<?>) o;
 
         return objectId == that.objectId;
-
     }
 
     @Override

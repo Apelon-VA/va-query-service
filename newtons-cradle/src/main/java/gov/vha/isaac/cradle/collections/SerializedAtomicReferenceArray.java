@@ -18,10 +18,9 @@ import org.ihtsdo.otf.tcc.api.store.Ts;
  * @author kec
  */
 public class SerializedAtomicReferenceArray extends AtomicReferenceArray<byte[]> {
-    
-    
 
     WaitFreeMergeSerializer isaacSerializer;
+
     int segment;
 
     public SerializedAtomicReferenceArray(int length, WaitFreeMergeSerializer isaacSerializer, int segment) {
@@ -67,4 +66,10 @@ public class SerializedAtomicReferenceArray extends AtomicReferenceArray<byte[]>
             }
         }
     }
+
+
+    public int getSegment() {
+        return segment;
+    }
+
 }

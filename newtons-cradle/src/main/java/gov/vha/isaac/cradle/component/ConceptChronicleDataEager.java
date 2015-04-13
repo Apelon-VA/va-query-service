@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.ihtsdo.otf.tcc.api.refex.RefexChronicleBI;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 
@@ -59,20 +60,41 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
         Stream.Builder<ConceptComponent<?, ?>> builder = Stream.builder();
         if (attributes != null) {
             builder.accept(attributes);
+            addAnnotations(builder, attributes.getAnnotations());
         }
         descriptions.stream().forEach((Description d) -> {
             builder.accept(d);
+            addAnnotations(builder, d.getAnnotations());
         });
         relationships.stream().forEach((Relationship r) -> {
             builder.accept(r);
+            addAnnotations(builder, r.getAnnotations());
         });
         media.stream().forEach((Media m) -> {
+            addAnnotations(builder, m.getAnnotations());
             builder.accept(m);
         });
         refexDynamicMembers.stream().forEach((RefexDynamicMember m) -> {
             builder.accept(m);
+            addAnnotations(builder, m.getAnnotations());
         });
+        
         return builder.build();
+    }
+    
+    private static void addAnnotations(Stream.Builder<ConceptComponent<?, ?>> builder, 
+            Collection<? extends RefexChronicleBI<?>> annotations) {
+        if (annotations != null) {
+            annotations.stream().forEach((refexChronicle) -> {
+                try {
+                    builder.accept((ConceptComponent<?, ?>) refexChronicle);
+                    addAnnotations(builder, refexChronicle.getAnnotations());
+                } catch (IOException ex) {
+                   throw new RuntimeException(ex);
+                }
+            });
+        }
+        
     }
     
     @Override
@@ -132,7 +154,11 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
     
     @Override
     public Collection<RefexMember<?, ?>> getRefsetMembers() {
-        return (Collection<RefexMember<?, ?>>) Ts.get().getRefexesForAssemblage(getNid());
+        return getRefsetMembers(getNid());
+    }
+    
+    private Collection<RefexMember<?, ?>> getRefsetMembers(int nid) {
+        return (Collection<RefexMember<?, ?>>) Ts.get().getRefexesForAssemblage(nid);
     }
     
     @Override
@@ -189,7 +215,7 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
         if (result.isPresent()) {
             return result.get();
         }
-        result = getComponent(nid, getRefsetMembers());
+        result = getComponent(nid, getRefsetMembers(nid));
         if (result.isPresent()) {
             return result.get();
         }
@@ -210,6 +236,9 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
     }
     
     public Optional<ComponentChronicleBI<?>> getComponent(int nid, ComponentChronicleBI<?> componentToSearch) {
+        if (componentToSearch == null) {
+            return Optional.empty();
+        }
         if (componentToSearch.getNid() == nid) {
             return Optional.of(componentToSearch);
         }

@@ -1,30 +1,40 @@
 package gov.vha.isaac.cradle.memory;
 
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Created by kec on 4/10/15.
  */
 public class HoldInMemoryCache {
-    private static final int CACHE_SIZE = 1024;
-    private static final AtomicReferenceArray<MemoryManagedReference> cache = new AtomicReferenceArray<MemoryManagedReference>(CACHE_SIZE);
-    private static final AtomicInteger cacheIndex = new AtomicInteger(0);
-    private static MemoryManagedReference lastAddition = null;
+    private static final int CACHE_SIZE = 512;
+    private static final int GENERATIONS = 3;
+    private static final LinkedBlockingDeque<Set<MemoryManagedReference>> queue = new LinkedBlockingDeque();
+
+
+    private static final AtomicReference<Set<MemoryManagedReference>> cacheRef = new AtomicReference<>(new ConcurrentSkipListSet<>());
+    private static final AtomicInteger cacheCount = new AtomicInteger();
 
     public static void addToCache(MemoryManagedReference newRef) {
-        if (newRef != lastAddition) {
-            lastAddition =  newRef;
-            int index = cacheIndex.getAndIncrement();
-            while (index >= CACHE_SIZE) {
-                cacheIndex.compareAndSet(index + 1, 0);
-                index = cacheIndex.getAndIncrement();
-            }
+
+        Set<MemoryManagedReference> cache = cacheRef.get();
+        if (!cache.contains(newRef)) {
             newRef.cacheEntry();
-            MemoryManagedReference oldRef = cache.getAndSet(index, newRef);
-            if (oldRef != null) {
-                oldRef.cacheExit();
+            cache.add(newRef);
+            int count = cacheCount.incrementAndGet();
+            if (count > CACHE_SIZE) {
+                if (cacheRef.compareAndSet(cache, new ConcurrentSkipListSet<>())) {
+                    queue.addFirst(cache);
+                    while (queue.size() > GENERATIONS) {
+                        Set<MemoryManagedReference> oldCache = queue.removeLast();
+                        oldCache.stream().forEach(memoryManagedReference -> {memoryManagedReference.cacheExit();});
+                    }
+                }
             }
         }
+
     }
 }

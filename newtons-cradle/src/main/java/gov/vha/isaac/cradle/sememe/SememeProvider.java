@@ -39,6 +39,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.NavigableSet;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.function.IntFunction;
 import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -73,15 +74,16 @@ public class SememeProvider implements SememeService {
 
     public SememeProvider() throws IOException {
         sequenceProvider = LookupService.getService(IdentifierService.class);
-        sememeMap = new CasSequenceObjectMap(new SememeSerializer());
+        sememeMap = new CasSequenceObjectMap(new SememeSerializer(),
+                IsaacDbFolder.get().getDbFolderPath().resolve("sememe"), "seg.", ".sememe.map");
     }
 
     @PostConstruct
     private void startMe() throws IOException {
         log.info("Loading sememeMap.");
         if (!IsaacDbFolder.get().getPrimordial()) {
-            log.info("Reading taxonomy.");
-            sememeMap.read(IsaacDbFolder.get().getDbFolderPath(), "sememe/", ".sememe.map");
+            log.info("Reading sememeMap.");
+            sememeMap.initialize();
 
             log.info("Loading SememeKeys.");
 
@@ -115,7 +117,7 @@ public class SememeProvider implements SememeService {
 
         log.info("sememeMap size: {}", sememeMap.getSize());
         log.info("writing sememe-map.");
-        sememeMap.write(IsaacDbFolder.get().getDbFolderPath(), "sememe/", ".sememe.map");
+        sememeMap.write();
 
         log.info("writing SememeKeys.");
         try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "sememe.keys"))))) {
@@ -238,6 +240,16 @@ public class SememeProvider implements SememeService {
             }
         });
         return sequencesThatPassedTest;
+    }
+
+    @Override
+    public Stream<SememeChronicle> getSememeStream() {
+        return sequenceProvider.getSememeSequenceStream().mapToObj((int sememeSequence) -> getSememe(sememeSequence));
+    }
+
+    @Override
+    public Stream<SememeChronicle> getParallelSememeStream() {
+        return sequenceProvider.getSememeSequenceStream().parallel().mapToObj((int sememeSequence) -> getSememe(sememeSequence));
     }
 
 }
