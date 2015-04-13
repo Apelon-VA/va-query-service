@@ -310,11 +310,17 @@ public class IdentifierProvider implements IdentifierService {
 
     @Override
     public boolean hasUuid(UUID... uuids) {
+        if (uuids == null) {
+            throw new IllegalArgumentException("A UUID must be specified.");
+        }
         return Arrays.stream(uuids).anyMatch((uuid) -> (uuidIntMap.containsKey(uuid)));
     }
 
     @Override
     public boolean hasUuid(Collection<UUID> uuids) {
+        if (uuids == null) {
+            throw new IllegalArgumentException("A UUID must be specified.");
+        }
         return uuids.stream().anyMatch((uuid) -> (uuidIntMap.containsKey(uuid)));
     }
 

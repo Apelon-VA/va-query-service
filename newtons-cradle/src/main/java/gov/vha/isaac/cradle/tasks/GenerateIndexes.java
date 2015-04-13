@@ -8,6 +8,7 @@ package gov.vha.isaac.cradle.tasks;
 import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import javafx.concurrent.Task;
@@ -17,6 +18,7 @@ import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.cc.component.ConceptComponent;
+import org.ihtsdo.otf.tcc.model.index.service.IndexStatusListenerBI;
 import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
 
 /**
@@ -32,12 +34,41 @@ public class GenerateIndexes extends Task<Void> {
     int conceptCount;
     AtomicInteger processed = new AtomicInteger(0);
 
-    public GenerateIndexes(CradleExtensions termService) {
+    public GenerateIndexes(CradleExtensions termService, Class<?> ... indexersToReindex) {
         updateTitle("Index generation");
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         this.termService = termService;
-        indexers = Hk2Looker.get().getAllServices(IndexerBI.class);
+        if (indexersToReindex == null || indexersToReindex.length == 0)
+        {
+            indexers = Hk2Looker.get().getAllServices(IndexerBI.class);
+        }
+        else
+        {
+            indexers = new ArrayList<>();
+            for (Class<?> clazz : indexersToReindex)
+            {
+                if (!IndexerBI.class.isAssignableFrom(clazz))
+                {
+                    throw new RuntimeException("Invalid Class passed in to the index generator.  Classes must implement IndexerBI ");
+                }
+                IndexerBI temp = (IndexerBI)Hk2Looker.get().getService(clazz);
+                if (temp != null)
+                {
+                    indexers.add(temp);
+                }
+            }
+        }
+        
+        List<IndexStatusListenerBI> islList = Hk2Looker.get().getAllServices(IndexStatusListenerBI.class);
+        
         indexers.stream().forEach((i) -> {
+            if (islList != null)
+            {
+                for (IndexStatusListenerBI isl : islList)
+                {
+                    isl.reindexBegan(i);
+                }
+            }
             log.info("Clearing index for: " + i.getIndexerName());
             i.clearIndex();
         });
@@ -55,7 +86,7 @@ public class GenerateIndexes extends Task<Void> {
             termService.getParallelConceptDataEagerStream().forEach((ConceptChronicleDataEager ccde) -> {
                 ccde.getConceptComponents().forEach((ConceptComponent<?, ?> cc) -> {
                     indexers.stream().forEach((i) -> {
-                        i.index((ComponentChronicleBI) cc);
+                        i.index((ComponentChronicleBI<?>) cc);
                     });
                 });
                 int processedCount = processed.incrementAndGet();
@@ -67,8 +98,17 @@ public class GenerateIndexes extends Task<Void> {
                     });
                 }
             });
+            
+            List<IndexStatusListenerBI> islList = Hk2Looker.get().getAllServices(IndexStatusListenerBI.class);
 
             indexers.stream().forEach((i) -> {
+                if (islList != null)
+                {
+                    for (IndexStatusListenerBI isl : islList)
+                    {
+                        isl.reindexCompleted(i);
+                    }
+                }
                 i.commitWriter();
                 i.forceMerge();
             });

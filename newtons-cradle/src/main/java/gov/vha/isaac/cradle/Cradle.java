@@ -36,6 +36,7 @@ import org.ihtsdo.otf.tcc.api.description.DescriptionVersionBI;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.tcc.api.nid.NidSetBI;
 import org.ihtsdo.otf.tcc.api.refex.RefexChronicleBI;
+import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicChronicleBI;
 import org.ihtsdo.otf.tcc.api.relationship.RelationshipVersionBI;
 import org.ihtsdo.otf.tcc.ddo.ComponentReference;
 import org.ihtsdo.otf.tcc.ddo.concept.ConceptChronicleDdo;
@@ -232,7 +233,7 @@ public class Cradle
 
 
     @Override
-    public int getNidForUuids(UUID... uuids) throws IOException {
+    public int getNidForUuids(UUID... uuids) {
         return identifierProvider.getNidForUuids(uuids);
 
     }
@@ -464,9 +465,20 @@ public class Cradle
     public int getMaxReadOnlyStamp() {
         throw new UnsupportedOperationException();
     }
+    
+    @Override
+    public boolean hasConcept(UUID cUUID) {
+        //first call hasUuid, because this checks if it exists without storing it.
+        if (!hasUuid(cUUID))
+        {
+            return false;
+        }
+        //If we do have a UUID, check if we have a concept.  Don't want to call this first, as it permanently stores the UUID as a side effect.
+        return hasConcept(getNidForUuids(cUUID));
+    }
 
     @Override
-    public boolean hasConcept(int i) throws IOException {
+    public boolean hasConcept(int i) {
         throw new UnsupportedOperationException();
     }
 
@@ -627,6 +639,11 @@ public class Cradle
     public void addPropertyChangeListener(CONCEPT_EVENT concept_event, PropertyChangeListener propertyChangeListener) {
         throw new UnsupportedOperationException();
     }
+    
+    @Override
+    public void removePropertyChangeListener( PropertyChangeListener l) {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public void addVetoablePropertyChangeListener(CONCEPT_EVENT concept_event, VetoableChangeListener vetoableChangeListener) {
@@ -660,6 +677,11 @@ public class Cradle
 
     @Override
     public void forget(RefexChronicleBI refexChronicleBI) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+    
+    @Override
+    public void forget(RefexDynamicChronicleBI refexDynamicChronicleBI) {
         throw new UnsupportedOperationException();
     }
 
@@ -877,16 +899,19 @@ public class Cradle
     }
 
     @Override
-    public void index() {
+    public void index(Class<?> ... indexersToReindex) {
         try {
-            startIndexTask().get();
+            startIndexTask(indexersToReindex).get();
         } catch (InterruptedException | ExecutionException ex) {
             throw new RuntimeException(ex);
         }
     }
 
+    /**
+     * @see ObjectChronicleTaskService#startIndexTask(Class...)
+     */
     @Override
-    public GenerateIndexes startIndexTask() {
+    public GenerateIndexes startIndexTask(Class<?> ... indexersToReindex) {
         GenerateIndexes indexingTask = new GenerateIndexes(this);
         ForkJoinPool.commonPool().execute(indexingTask);
         return indexingTask;
