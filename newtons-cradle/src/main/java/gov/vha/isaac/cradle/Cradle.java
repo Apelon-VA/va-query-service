@@ -1,12 +1,13 @@
 package gov.vha.isaac.cradle;
 
-import gov.vha.isaac.cradle.memory.MemoryManager;
+
 import gov.vha.isaac.cradle.tasks.*;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import gov.vha.isaac.cradle.collections.ConcurrentSequenceSerializedObjectMap;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEagerSerializer;
+import gov.vha.isaac.ochre.api.memory.MemoryUtil;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexService;
 import gov.vha.isaac.cradle.taxonomy.DestinationOriginRecord;
 import gov.vha.isaac.cradle.taxonomy.CradleTaxonomyProvider;
@@ -70,7 +71,6 @@ import gov.vha.isaac.ochre.api.chronicle.IdentifiedObjectLocal;
 import gov.vha.isaac.ochre.api.commit.CommitManager;
 import gov.vha.isaac.ochre.api.sememe.SememeService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
-import gov.vha.isaac.ochre.collections.NidSet;
 import java.nio.file.Path;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
@@ -80,7 +80,6 @@ import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.tcc.api.nid.IntSet;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
-import org.ihtsdo.otf.tcc.model.cc.component.ConceptComponent;
 
 /**
  * Created by kec on 12/18/14.
@@ -125,7 +124,7 @@ public class Cradle
         if (!IsaacDbFolder.get().getPrimordial()) {
             loadExisting.set(!IsaacDbFolder.get().getPrimordial());
         }
-        MemoryManager.startListener();
+        MemoryUtil.startListener();
 
     }
 

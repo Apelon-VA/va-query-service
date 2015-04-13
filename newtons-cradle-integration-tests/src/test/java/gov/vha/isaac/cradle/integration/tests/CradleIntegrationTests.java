@@ -5,7 +5,6 @@
  */
 package gov.vha.isaac.cradle.integration.tests;
 
-import com.sun.javafx.application.PlatformImpl;
 import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
@@ -33,6 +32,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.IntStream;
 
+import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
+import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeBuilder;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeWithBitSets;
@@ -40,7 +41,6 @@ import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.api.MultiException;
-import org.glassfish.hk2.runlevel.RunLevelController;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
@@ -74,16 +74,12 @@ public class CradleIntegrationTests {
     }
 
     private static final Logger log = LogManager.getLogger();
-    Subscription tickSubscription;
     private boolean dbExists = false;
     private static IdentifierService sequenceProvider;
 
     @BeforeSuite
     public void setUpSuite() throws Exception {
         log.info("oneTimeSetUp");
-        PlatformImpl.startup(() -> {
-            // No need to do anything here
-        });
         System.setProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY, "target/object-chronicles");
 
         java.nio.file.Path dbFolderPath = Paths.get(System.getProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY));
@@ -92,25 +88,16 @@ public class CradleIntegrationTests {
 
         LookupService.startupIsaac();
         sequenceProvider = Hk2Looker.getService(IdentifierService.class);
-        tickSubscription = EventStreams.ticks(Duration.ofSeconds(10))
-                .subscribe(tick -> {
-                    Set<Task> taskSet = Hk2Looker.get().getService(ActiveTaskSet.class).get();
-                    taskSet.stream().forEach((task) -> {
-                        double percentProgress = task.getProgress() * 100;
-                        if (percentProgress < 0) {
-                            percentProgress = 0;
-                        }
-                        log.printf(org.apache.logging.log4j.Level.INFO, "%n    %s%n    %s%n    %.1f%% complete",
-                                task.getTitle(), task.getMessage(), percentProgress);
-                    });
-                });
+        ActiveTasksTicker.start(10);
+        HeapUseTicker.start(10);
     }
 
     @AfterSuite
     public void tearDownSuite() throws Exception {
         log.info("oneTimeTearDown");
         LookupService.shutdownIsaac();
-        tickSubscription.unsubscribe();
+        ActiveTasksTicker.stop();
+        HeapUseTicker.stop();
     }
 
     @BeforeMethod      

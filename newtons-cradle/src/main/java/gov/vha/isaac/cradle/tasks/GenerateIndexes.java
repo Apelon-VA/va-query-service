@@ -7,6 +7,10 @@ package gov.vha.isaac.cradle.tasks;
 
 import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
+import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
+import gov.vha.isaac.ochre.api.sememe.SememeService;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -15,8 +19,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
-import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.cc.component.ConceptComponent;
+import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
+import org.ihtsdo.otf.tcc.model.cc.refex.RefexService;
 import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
 
 /**
@@ -24,29 +29,39 @@ import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
  * @author kec
  */
 public class GenerateIndexes extends Task<Void> {
+    private final static IdentifierService idProvider = LookupService.getService(IdentifierService.class);
+    private final static RefexService refexProvider = LookupService.getService(RefexService.class);
+    private final static SememeService sememeProvider = LookupService.getService(SememeService.class);
 
     private static final Logger log = LogManager.getLogger();
 
     CradleExtensions termService;
     List<IndexerBI> indexers;
-    int conceptCount;
+    int componentCount;
     AtomicInteger processed = new AtomicInteger(0);
 
     public GenerateIndexes(CradleExtensions termService) {
         updateTitle("Index generation");
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         this.termService = termService;
-        indexers = Hk2Looker.get().getAllServices(IndexerBI.class);
+        indexers = LookupService.get().getAllServices(IndexerBI.class);
         indexers.stream().forEach((i) -> {
             log.info("Clearing index for: " + i.getIndexerName());
             i.clearIndex();
         });
         try {
-            conceptCount = termService.getConceptCount();
+            int conceptCount = termService.getConceptCount();
+            log.info("Concepts to index: " + conceptCount);
+            int refexCount = (int) idProvider.getRefexSequenceStream().count();
+            log.info("Refexes to index: " + refexCount);
+            int sememeCount = (int) idProvider.getSememeSequenceStream().count();
+            log.info("Sememes to index: " + sememeCount);
+            componentCount = conceptCount + refexCount + sememeCount;
+            log.info("Components to index: " + componentCount);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
-        Hk2Looker.get().getService(ActiveTaskSet.class).get().add(this);
+        LookupService.get().getService(ActiveTaskSet.class).get().add(this);
     }
 
     @Override
@@ -58,14 +73,21 @@ public class GenerateIndexes extends Task<Void> {
                         i.index((ComponentChronicleBI) cc);
                     });
                 });
-                int processedCount = processed.incrementAndGet();
-                if (processedCount % 1000 == 0) {
-                    updateProgress(processedCount, conceptCount);
-                    updateMessage(String.format("Indexed %,d concepts...", processedCount));
-                    indexers.stream().forEach((i) -> {
-                        i.commitWriter();
-                    });
-                }
+                updateProcessedCount();
+            });
+            
+            refexProvider.getParallelRefexStream().forEach((RefexMember<?, ?> refex) -> {
+                indexers.stream().forEach((i) -> {
+                    i.index(refex);
+                });
+                updateProcessedCount();
+            });
+            
+            sememeProvider.getParallelSememeStream().forEach((SememeChronicle sememe) -> {
+                indexers.stream().forEach((i) -> {
+                    i.index(sememe);
+                });
+                updateProcessedCount();
             });
 
             indexers.stream().forEach((i) -> {
@@ -74,8 +96,18 @@ public class GenerateIndexes extends Task<Void> {
             });
             return null;
         } finally {
-            Hk2Looker.get().getService(ActiveTaskSet.class).get().remove(this);
+            LookupService.get().getService(ActiveTaskSet.class).get().remove(this);
         }
     }
 
+    protected void updateProcessedCount() {
+        int processedCount = processed.incrementAndGet();
+        if (processedCount % 1000 == 0) {
+            updateProgress(processedCount, componentCount);
+            updateMessage(String.format("Indexed %,d components...", processedCount));
+            indexers.stream().forEach((i) -> {
+                i.commitWriter();
+            });
+        }
+    }
 }
