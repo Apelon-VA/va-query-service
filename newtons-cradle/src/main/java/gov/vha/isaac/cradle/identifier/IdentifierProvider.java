@@ -72,7 +72,7 @@ public class IdentifierProvider implements IdentifierService {
         return ios;
     }
 
-    final UuidIntMapMap uuidIntMap = UuidIntMapMap.create(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "uuid-nid-map"));
+    final UuidIntMapMap uuidIntMapMap = UuidIntMapMap.create(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "uuid-nid-map"));
     final SequenceMap conceptSequenceMap = new SequenceMap(450000);
     final SequenceMap sememeSequenceMap = new SequenceMap(3000000);
     final SequenceMap refexSequenceMap = new SequenceMap(3000000);
@@ -88,8 +88,9 @@ public class IdentifierProvider implements IdentifierService {
             sememeSequenceMap.read(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "sememe-sequence.map"));
             log.info("Loading refex-sequence.map.");
             refexSequenceMap.read(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "refex-sequence.map"));
-            log.info("Loading uuid-nid-map.");
-            uuidIntMap.read();
+            // uuid-nid-map can do dynamic load, no need to read all at the beginning.
+            // log.info("Loading uuid-nid-map.");
+            // uuidIntMapMap.read();
             log.info("Loading sequence-cnid-map.");
             nidCnidMap.read(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "sequence-cnid-map"));
         }
@@ -97,7 +98,7 @@ public class IdentifierProvider implements IdentifierService {
 
     @PreDestroy
     private void stopMe() throws IOException {
-        uuidIntMap.setShutdown(true);
+        uuidIntMapMap.setShutdown(true);
         log.info("conceptSequence: {}", conceptSequenceMap.getNextSequence());
         log.info("writing concept-sequence.map.");
         conceptSequenceMap.write(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "concept-sequence.map"));
@@ -106,7 +107,7 @@ public class IdentifierProvider implements IdentifierService {
         log.info("writing refex-sequence.map.");
         refexSequenceMap.write(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "refex-sequence.map"));
         log.info("writing uuid-nid-map.");
-        uuidIntMap.write();
+        uuidIntMapMap.write();
         log.info("writing sequence-cnid-map.");
         nidCnidMap.write(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "sequence-cnid-map"));
     }
@@ -252,14 +253,14 @@ public class IdentifierProvider implements IdentifierService {
 //                System.out.println("Found watch: " + Arrays.asList(uuids));
 //                watchSet.remove(uuid);
 //            }
-            int nid = uuidIntMap.get(uuid);
+            int nid = uuidIntMapMap.get(uuid);
             if (nid != Integer.MAX_VALUE) {
                 return nid;
             }
         }
-        int nid = uuidIntMap.getWithGeneration(uuids[0]);
+        int nid = uuidIntMapMap.getWithGeneration(uuids[0]);
         for (int i = 1; i < uuids.length; i++) {
-            uuidIntMap.put(uuids[i], nid);
+            uuidIntMapMap.put(uuids[i], nid);
         }
         return nid;
     }
@@ -274,7 +275,7 @@ public class IdentifierProvider implements IdentifierService {
         if (optionalObj.isPresent()) {
             return Optional.of(optionalObj.get().getPrimordialUuid());
         }
-        UUID[] uuids = uuidIntMap.getKeysForValue(nid);
+        UUID[] uuids = uuidIntMapMap.getKeysForValue(nid);
         log.warn("[1] No object for nid: " + nid + " Found uuids: " + Arrays.asList(uuids));
 
         if (uuids.length > 0) {
@@ -303,7 +304,7 @@ public class IdentifierProvider implements IdentifierService {
             return optionalObj.get().getUUIDs();
         }
 
-        UUID[] uuids = uuidIntMap.getKeysForValue(nid);
+        UUID[] uuids = uuidIntMapMap.getKeysForValue(nid);
         log.warn("[3] No object for nid: " + nid + " Found uuids: " + Arrays.asList(uuids));
         return Arrays.asList(uuids);
     }
@@ -313,7 +314,7 @@ public class IdentifierProvider implements IdentifierService {
         if (uuids == null) {
             throw new IllegalArgumentException("A UUID must be specified.");
         }
-        return Arrays.stream(uuids).anyMatch((uuid) -> (uuidIntMap.containsKey(uuid)));
+        return Arrays.stream(uuids).anyMatch((uuid) -> (uuidIntMapMap.containsKey(uuid)));
     }
 
     @Override
@@ -321,12 +322,12 @@ public class IdentifierProvider implements IdentifierService {
         if (uuids == null) {
             throw new IllegalArgumentException("A UUID must be specified.");
         }
-        return uuids.stream().anyMatch((uuid) -> (uuidIntMap.containsKey(uuid)));
+        return uuids.stream().anyMatch((uuid) -> (uuidIntMapMap.containsKey(uuid)));
     }
 
     @Override
     public void addUuidForNid(UUID uuid, int nid) {
-        uuidIntMap.put(uuid, nid);
+        uuidIntMapMap.put(uuid, nid);
     }
 
     @Override

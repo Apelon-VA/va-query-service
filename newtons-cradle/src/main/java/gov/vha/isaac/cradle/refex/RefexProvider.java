@@ -42,7 +42,7 @@ import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
 import org.jvnet.hk2.annotations.Service;
 
 /**
- *
+ * TODO convert to CasSequenceObjectMap
  * @author kec
  */
 @Service
@@ -59,7 +59,7 @@ public class RefexProvider implements RefexService {
     public RefexProvider() throws IOException {
         sequenceProvider = LookupService.getService(IdentifierService.class);
         refexMap = new ConcurrentSequenceSerializedObjectMap(new RefexSerializer(),
-                IsaacDbFolder.get().getDbFolderPath(), "refex-map/", ".refex.map");
+                IsaacDbFolder.get().getDbFolderPath().resolve("refex-map"), "seg.", ".refex.map");
     }
 
     @PostConstruct
