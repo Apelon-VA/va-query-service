@@ -92,8 +92,9 @@ public class LuceneRefexIndexer extends LuceneIndexer {
             if (rxv instanceof RefexStringVersionBI) {
                 @SuppressWarnings("rawtypes")
                 RefexStringVersionBI rxvl = (RefexStringVersionBI) rxv;
-                doc.add(new TextField(ComponentProperty.STRING_EXTENSION_1.name(), rxvl.getString1(),
-                                      Field.Store.NO));
+                //TODO this will cause it to only be indexed with the standard analyzer - if we also want to use the whitespace analyzer, 
+                //this needs a second document add.  Need to ask Keith about what sort of data will be indexed here.
+                doc.add(new TextField(ComponentProperty.STRING_EXTENSION_1.name(), rxvl.getString1(), Field.Store.NO));
             }
         }
     }
