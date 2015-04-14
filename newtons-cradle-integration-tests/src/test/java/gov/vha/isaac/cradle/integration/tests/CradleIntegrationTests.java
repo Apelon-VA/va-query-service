@@ -45,10 +45,10 @@ import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.cc.termstore.PersistentStoreI;
 import org.jvnet.testing.hk2testng.HK2;
+import org.testng.annotations.AfterGroups;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.AfterSuite;
+import org.testng.annotations.BeforeGroups;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 
 /**
@@ -75,7 +75,7 @@ public class CradleIntegrationTests {
     private boolean dbExists = false;
     private static IdentifierService sequenceProvider;
 
-    @BeforeSuite
+    @BeforeGroups(groups = {"db"})
     public void setUpSuite() throws Exception {
         log.info("oneTimeSetUp");
 
@@ -91,7 +91,7 @@ public class CradleIntegrationTests {
         HeapUseTicker.start(10);
     }
 
-    @AfterSuite
+    @AfterGroups(groups = {"db"})
     public void tearDownSuite() throws Exception {
         log.info("oneTimeTearDown");
         LookupService.shutdownIsaac();
@@ -109,7 +109,7 @@ public class CradleIntegrationTests {
 
     }
 
-    @Test
+    @Test(groups = {"db"})
     public void testLoad() throws Exception {
 
         log.info("  Testing load...");

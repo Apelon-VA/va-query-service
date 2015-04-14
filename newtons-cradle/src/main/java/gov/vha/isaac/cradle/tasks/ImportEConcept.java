@@ -36,15 +36,11 @@ public class ImportEConcept implements Callable<Void> {
     public static ConcurrentSkipListSet<DestinationOriginRecord> destinationOriginRecordSet;
 
     static {
-        try {
-            originDestinationTaxonomyRecords = cradle.getOriginDestinationTaxonomyMap();
-            destinationOriginRecordSet = cradle.getDestinationOriginRecordSet();
-            isaNid = cradle.getNidForUuids(IsaacMetadataAuxiliaryBinding.IS_A.getUuids());
-            statedNid = cradle.getNidForUuids(IsaacMetadataAuxiliaryBinding.STATED.getUuids());
-            inferredNid = cradle.getNidForUuids(IsaacMetadataAuxiliaryBinding.INFERRED.getUuids());
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        originDestinationTaxonomyRecords = cradle.getOriginDestinationTaxonomyMap();
+        destinationOriginRecordSet = cradle.getDestinationOriginRecordSet();
+        isaNid = cradle.getNidForUuids(IsaacMetadataAuxiliaryBinding.IS_A.getUuids());
+        statedNid = cradle.getNidForUuids(IsaacMetadataAuxiliaryBinding.STATED.getUuids());
+        inferredNid = cradle.getNidForUuids(IsaacMetadataAuxiliaryBinding.INFERRED.getUuids());
     }
 
     TtkConceptChronicle eConcept;

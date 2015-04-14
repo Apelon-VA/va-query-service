@@ -72,6 +72,7 @@
                 <configuration>
                     <forkCount>1</forkCount>
                     <reuseForks>true</reuseForks>
+                    <parallel>false</parallel>
                     <useSystemClassLoader>true</useSystemClassLoader>
                     <useManifestOnlyJar>false</useManifestOnlyJar>
                     <argLine>-ea -d64 -Xmx4g</argLine>

@@ -63,12 +63,8 @@ public class GraphCollector implements
     }
 
     public final void addToWatchList(String uuid) throws RuntimeException {
-        try {
-            int nid = getIsaacDb().getNidForUuids(UUID.fromString(uuid));
-            watchList.add(sequenceProvider.getConceptSequence(nid));
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        int nid = getIsaacDb().getNidForUuids(UUID.fromString(uuid));
+        watchList.add(sequenceProvider.getConceptSequence(nid));
     }
 
     @Override
