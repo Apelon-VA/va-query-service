@@ -42,5 +42,11 @@
             <version>${isaac-metadata.version}</version>
             <type>jar</type>
         </dependency>
+        <dependency>
+            <groupId>gov.vha.isaac.isaac-metadata.modules</groupId>
+            <artifactId>isaac-metadata-coordinates</artifactId>
+            <version>${isaac-metadata.version}</version>
+            <type>jar</type>
+        </dependency>
     </dependencies>
 </project>

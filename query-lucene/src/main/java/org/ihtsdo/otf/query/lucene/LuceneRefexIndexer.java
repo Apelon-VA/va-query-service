@@ -24,12 +24,10 @@ import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-
 import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.ihtsdo.otf.tcc.api.refex.RefexChronicleBI;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
-
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexMemberVersion;
 import org.jvnet.hk2.annotations.Service;
 
@@ -37,13 +35,11 @@ import org.jvnet.hk2.annotations.Service;
 //~--- JDK imports ------------------------------------------------------------
 
 import java.io.IOException;
-
 import java.util.Iterator;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.apache.lucene.document.TextField;
 import org.glassfish.hk2.runlevel.RunLevel;
-import static org.ihtsdo.otf.query.lucene.LuceneIndexer.logger;
 import org.ihtsdo.otf.tcc.api.refex.type_string.RefexStringVersionBI;
 
 /**
@@ -74,9 +70,9 @@ public class LuceneRefexIndexer extends LuceneIndexer {
     }
 
     @Override
-    protected boolean indexChronicle(ComponentChronicleBI chronicle) {
+    protected boolean indexChronicle(ComponentChronicleBI<?> chronicle) {
         if (chronicle instanceof RefexChronicleBI) {
-            RefexMember rxc = (RefexMember) chronicle;
+            RefexMember<?, ?> rxc = (RefexMember<?, ?>) chronicle;
             if (snomedAssemblageNid == Integer.MIN_VALUE) {
                 snomedAssemblageNid = IsaacMetadataAuxiliaryBinding.SNOMED_INTEGER_ID.getNid();
             }
@@ -89,11 +85,12 @@ public class LuceneRefexIndexer extends LuceneIndexer {
     }
 
     @Override
-    protected void addFields(ComponentChronicleBI chronicle, Document doc) {
-        RefexMember rxc = (RefexMember) chronicle;
-        for (Iterator it = rxc.getVersions().iterator(); it.hasNext(); ) {
-            RefexMemberVersion rxv = (RefexMemberVersion) it.next();
+    protected void addFields(ComponentChronicleBI<?> chronicle, Document doc) {
+        RefexMember<?, ?> rxc = (RefexMember<?, ?>) chronicle;
+        for (Iterator<? extends RefexMemberVersion<?, ?>> it = rxc.getVersions().iterator(); it.hasNext(); ) {
+            RefexMemberVersion<?, ?> rxv = it.next();
             if (rxv instanceof RefexStringVersionBI) {
+                @SuppressWarnings("rawtypes")
                 RefexStringVersionBI rxvl = (RefexStringVersionBI) rxv;
                 doc.add(new TextField(ComponentProperty.STRING_EXTENSION_1.name(), rxvl.getString1(),
                                       Field.Store.NO));
@@ -102,12 +99,12 @@ public class LuceneRefexIndexer extends LuceneIndexer {
     }
 
     @Override
-    protected boolean indexSememeChronicle(SememeChronicle chronicle) {
+    protected boolean indexSememeChronicle(SememeChronicle<?> chronicle) {
         return false;
     }
 
     @Override
-    protected void addFields(SememeChronicle chronicle, Document doc) {
+    protected void addFields(SememeChronicle<?> chronicle, Document doc) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }
