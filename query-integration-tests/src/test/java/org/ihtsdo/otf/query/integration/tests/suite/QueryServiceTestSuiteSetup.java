@@ -18,9 +18,12 @@ package org.ihtsdo.otf.query.integration.tests.suite;
 import java.io.IOException;
 import java.util.UUID;
 import static gov.vha.isaac.lookup.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
+import static gov.vha.isaac.lookup.constants.Constants.SEARCH_ROOT_LOCATION_PROPERTY;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
+import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
+import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -57,6 +60,7 @@ public class QueryServiceTestSuiteSetup {
         log.info("oneTimeSetUp");
         
         System.setProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY, "target/object-chronicles");
+        System.setProperty(SEARCH_ROOT_LOCATION_PROPERTY, "target/search");
 
         
         java.nio.file.Path dbFolderPath = Paths.get(System.getProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY));
@@ -64,40 +68,26 @@ public class QueryServiceTestSuiteSetup {
         System.out.println("termstore folder path: " + dbFolderPath.toFile().exists());
 
         LookupService.startupIsaac();
-        tickSubscription = EventStreams.ticks(Duration.ofSeconds(10))
-                .subscribe(tick -> {
-                    Set<Task> taskSet = Hk2Looker.get().getService(ActiveTaskSet.class).get();
-                     taskSet.stream().forEach((task) -> {
-                        double percentProgress = task.getProgress() * 100;
-                        if (percentProgress < 0) {
-                            percentProgress = 0;
-                        }
-                        log.printf(org.apache.logging.log4j.Level.INFO, "%n    %s%n    %s%n    %.1f%% complete",
-                                task.getTitle(), task.getMessage(), percentProgress);
-                    });
-                });
+        ActiveTasksTicker.start(10);
+        HeapUseTicker.start(10);
         
         ObjectChronicleTaskService tts = Hk2Looker.get().getService(ObjectChronicleTaskService.class);
         TerminologyStoreDI store = Hk2Looker.get().getService(TerminologyStoreDI.class);
  
         if (!dbExists) {
             loadDatabase(tts);
+            indexDatabase(tts);
          }
         
         ConceptChronicleBI concept;
         try {
-            concept = store.getConcept(UUID.fromString("2faa9260-8fb2-11db-b606-0800200c9a66"));
-            log.info("WB concept: {0}", concept.toLongString());
+            concept = store.getConcept(IsaacMetadataAuxiliaryBinding.ISAAC_ROOT.getUuids());
+            log.info("Isaac Root concept: {0}", concept.toLongString());
 
-            concept = store.getConcept(UUID.fromString("45a8fde8-535d-3d2a-b76b-95ab67718b41"));
+            concept = store.getConcept(IsaacMetadataAuxiliaryBinding.HEALTH_CONCEPT.getUuids());
 
-            log.info("SNOMED concept: {0}", concept.toLongString());
+            log.info("Health concept: {0}", concept.toLongString());
 
-            for (RefexChronicleBI annotation: concept.getConceptAttributes().getAnnotations()) {
-                log.info("Annotation concept nid: {0}, annotation: {1}",
-                        new Object[] {Integer.toString(store.getConceptNidForNid(annotation.getNid())),
-                                annotation.toString()});
-            }
 
         } catch (IOException ex) {
             log.error(ex.getLocalizedMessage(), ex);
@@ -110,7 +100,22 @@ public class QueryServiceTestSuiteSetup {
       @AfterSuite
     public void tearDownSuite() throws Exception {
         log.info("oneTimeTearDown");
+        ActiveTasksTicker.stop();
+        HeapUseTicker.stop();
         LookupService.shutdownIsaac();
+    }
+    
+    
+    private void indexDatabase(ObjectChronicleTaskService tts) throws InterruptedException, ExecutionException {
+        Instant start = Instant.now();
+
+        Task<Void> indexTask = tts.startIndexTask();
+        indexTask.get();
+        Instant finish = Instant.now();
+        Duration duration = Duration.between(start, finish);
+        log.info("  Indexed db in: " + duration);
+        
+
     }
     
     
@@ -121,9 +126,7 @@ public class QueryServiceTestSuiteSetup {
 
         Task<Integer> loadTask = tts.startLoadTask(IsaacMetadataAuxiliaryBinding.DEVELOPMENT,
                 snomedDataFile, logicMetadataFile);
-        Hk2Looker.get().getService(ActiveTaskSet.class).get().add(loadTask);
         int conceptCount = loadTask.get();
-        Hk2Looker.get().getService(ActiveTaskSet.class).get().remove(loadTask);
         Instant finish = Instant.now();
         Duration duration = Duration.between(start, finish);
         log.info("  Loaded " + conceptCount + " concepts in: " + duration);
