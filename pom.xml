@@ -17,8 +17,8 @@
     <description>Newton's Cradle (ChRonicled Assertion Database of Logical Expressions) Parent Project </description>
 
     <properties>
-        <ochre.version>2.24-SNAPSHOT</ochre.version>
-        <isaac-metadata.version>1.26-SNAPSHOT</isaac-metadata.version>
+        <ochre.version>2.25-SNAPSHOT</ochre.version>
+        <isaac-metadata.version>1.27-SNAPSHOT</isaac-metadata.version>
     </properties>
 
     <dependencyManagement>
