@@ -22,29 +22,27 @@ package org.ihtsdo.otf.query.lucene;
 
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
+import gov.vha.isaac.ochre.api.sememe.SememeType;
+import gov.vha.isaac.ochre.api.sememe.version.StringSememe;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
 import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
-import org.ihtsdo.otf.tcc.api.refex.RefexChronicleBI;
-import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
-
-import org.ihtsdo.otf.tcc.model.cc.refex.RefexMemberVersion;
 import org.jvnet.hk2.annotations.Service;
 
 
 //~--- JDK imports ------------------------------------------------------------
 
 import java.io.IOException;
+import java.util.logging.Level;
 
-import java.util.Iterator;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.TextField;
 import org.glassfish.hk2.runlevel.RunLevel;
 import static org.ihtsdo.otf.query.lucene.LuceneIndexer.logger;
-import org.ihtsdo.otf.tcc.api.refex.type_string.RefexStringVersionBI;
 
 /**
  *
@@ -54,7 +52,7 @@ import org.ihtsdo.otf.tcc.api.refex.type_string.RefexStringVersionBI;
 @RunLevel(value = 2)
 public class LuceneRefexIndexer extends LuceneIndexer {
 
-    int snomedAssemblageNid = Integer.MIN_VALUE;
+    int snomedAssemblageSequence = Integer.MIN_VALUE;
 
     public LuceneRefexIndexer() throws IOException {
         super("refex");
@@ -75,13 +73,22 @@ public class LuceneRefexIndexer extends LuceneIndexer {
 
     @Override
     protected boolean indexChronicle(ComponentChronicleBI chronicle) {
-        if (chronicle instanceof RefexChronicleBI) {
-            RefexMember rxc = (RefexMember) chronicle;
-            if (snomedAssemblageNid == Integer.MIN_VALUE) {
-                snomedAssemblageNid = IsaacMetadataAuxiliaryBinding.SNOMED_INTEGER_ID.getNid();
+        return false;
+    }
+
+    @Override
+    protected void addFields(ComponentChronicleBI chronicle, Document doc) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    protected boolean indexSememeChronicle(SememeChronicle chronicle) {
+        if (chronicle.getSememeType() == SememeType.STRING) {
+            if (snomedAssemblageSequence == Integer.MIN_VALUE) {
+                snomedAssemblageSequence = IsaacMetadataAuxiliaryBinding.SNOMED_INTEGER_ID.getSequence();
             }
 
-            if (rxc.getAssemblageNid() == snomedAssemblageNid) {
+            if (chronicle.getAssemblageSequence() == snomedAssemblageSequence) {
                 return true;
             }
         }
@@ -89,25 +96,16 @@ public class LuceneRefexIndexer extends LuceneIndexer {
     }
 
     @Override
-    protected void addFields(ComponentChronicleBI chronicle, Document doc) {
-        RefexMember rxc = (RefexMember) chronicle;
-        for (Iterator it = rxc.getVersions().iterator(); it.hasNext(); ) {
-            RefexMemberVersion rxv = (RefexMemberVersion) it.next();
-            if (rxv instanceof RefexStringVersionBI) {
-                RefexStringVersionBI rxvl = (RefexStringVersionBI) rxv;
-                doc.add(new TextField(ComponentProperty.STRING_EXTENSION_1.name(), rxvl.getString1(),
+    protected void addFields(SememeChronicle chronicle, Document doc) {
+        doc.add(new IntField(ComponentProperty.COMPONENT_ID.name(), chronicle.getReferencedComponentNid(),
+                    LuceneIndexer.indexedComponentNidType));
+        
+        for (Object sv: chronicle.getVersions()) {
+            if (sv instanceof StringSememe) {
+                StringSememe ssv = (StringSememe) sv;
+                doc.add(new TextField(ComponentProperty.STRING_EXTENSION_1.name(), ssv.getString(),
                                       Field.Store.NO));
             }
         }
-    }
-
-    @Override
-    protected boolean indexSememeChronicle(SememeChronicle chronicle) {
-        return false;
-    }
-
-    @Override
-    protected void addFields(SememeChronicle chronicle, Document doc) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }
