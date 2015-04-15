@@ -129,7 +129,7 @@ public class ImportEConceptFile extends Task<Integer> {
                         }
                         TtkConceptChronicle eConcept = new TtkConceptChronicle(dis);
                         
-                        if (eConcept.getPrimordialUuid().equals(Snomed.ACCELERATION.getUuids()[0])) {
+                        if (eConcept.getPrimordialUuid().equals(Snomed.BLEEDING_FINDING.getUuids()[0])) {
                             log.info("Watch concept: " + eConcept);
                         }
 

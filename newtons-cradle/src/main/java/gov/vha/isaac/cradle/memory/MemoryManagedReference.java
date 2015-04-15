@@ -83,7 +83,7 @@ public class MemoryManagedReference<T extends Object> extends SoftReference<T> i
     }
 
     public void write() {
-        T objectToWrite = this.get();
+        T objectToWrite = strongReferenceForUpdate.get();
         if (objectToWrite != null) {
             strongReferenceForUpdate.set(null);
             DiskSemaphore.acquire();
