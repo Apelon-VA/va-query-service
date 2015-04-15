@@ -1,5 +1,6 @@
 package gov.vha.isaac.cradle;
 
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
 import gov.vha.isaac.ochre.collections.SequenceSet;
 import java.io.BufferedInputStream;
@@ -133,6 +134,22 @@ public class ConcurrentSequenceIntMap {
         return true;
     }
     
+    public NidSet getComponentNidsForConceptNids(ConceptSequenceSet conceptSequenceSet) {
+        NidSet conceptNids = NidSet.of(conceptSequenceSet);
+        NidSet results = new NidSet();
+        int componentSize = size.get();
+        for (int i = 0; i < componentSize; i++) {
+            int segmentIndex = i / SEGMENT_SIZE;
+            int indexInSegment = i % SEGMENT_SIZE;
+            if (sequenceIntList.get(segmentIndex)[indexInSegment] != 0) {
+                if (conceptNids.contains(sequenceIntList.get(segmentIndex)[indexInSegment])) {
+                    results.add(i + Integer.MIN_VALUE);
+                }
+            }
+        }
+        return results;
+    }
+    
     public NativeIdSetBI getKeysForValues(NativeIdSetBI values) {
         int componentSize = size.get();
         ConcurrentBitSet componentNids = new ConcurrentBitSet(size.get());
@@ -148,30 +165,25 @@ public class ConcurrentSequenceIntMap {
         return componentNids;
     }
 
-    public IntStream getComponentNids() {
+    public IntStream getComponentNidStream() {
         int componentSize = size.get();
-        IntStream.Builder builder = IntStream.builder();
-        for (int i = 0; i < componentSize; i++) {
-            int segmentIndex = i / SEGMENT_SIZE;
-            int indexInSegment = i % SEGMENT_SIZE;
-            if (sequenceIntList.get(segmentIndex)[indexInSegment] != 0) {
-                builder.accept(i + Integer.MIN_VALUE);
-            }
-        }
-        return builder.build();
+        return IntStream.of(Integer.MIN_VALUE, 
+                componentSize + Integer.MIN_VALUE).filter((nid) -> {
+                    int i = nid - Integer.MIN_VALUE;
+                    int segmentIndex = i / SEGMENT_SIZE;
+                    int indexInSegment = i % SEGMENT_SIZE;
+                    return sequenceIntList.get(segmentIndex)[indexInSegment] != 0;
+                });
     }
 
     public IntStream getComponentsNotSet() {
-        IntStream.Builder builder = IntStream.builder();
         int componentSize = size.get();
-        componentSize = componentSize - SEGMENT_SIZE;
-        for (int i = 0; i < componentSize; i++) {
-            int segmentIndex = i / SEGMENT_SIZE;
-            int indexInSegment = i % SEGMENT_SIZE;
-            if (sequenceIntList.get(segmentIndex)[indexInSegment] == 0) {
-                builder.add(i);
-            }
-        }
-        return builder.build();
+        return IntStream.of(Integer.MIN_VALUE, 
+                componentSize + Integer.MIN_VALUE).filter((nid) -> {
+                    int i = nid - Integer.MIN_VALUE;
+                    int segmentIndex = i / SEGMENT_SIZE;
+                    int indexInSegment = i % SEGMENT_SIZE;
+                    return sequenceIntList.get(segmentIndex)[indexInSegment] == 0;
+                });
     }
 }
