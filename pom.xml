@@ -23,9 +23,9 @@
     <properties>
         <branch>QS ${project.scm.tag}</branch>
         <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
-        <ochre.version>2.24-SNAPSHOT</ochre.version>
-        <isaac-metadata.version>1.26-SNAPSHOT</isaac-metadata.version>
-        <newtons-cradle.version>1.14-SNAPSHOT</newtons-cradle.version>
+        <ochre.version>2.25-SNAPSHOT</ochre.version>
+        <isaac-metadata.version>1.27-SNAPSHOT</isaac-metadata.version>
+        <newtons-cradle.version>1.15-SNAPSHOT</newtons-cradle.version>
         <org.apache.lucene.version>4.10.3</org.apache.lucene.version>
     </properties>
 
