@@ -16,6 +16,7 @@
 package org.ihtsdo.otf.query.implementation;
 
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import org.ihtsdo.otf.tcc.api.nid.IntSet;
 import gov.vha.isaac.ochre.collections.NidSet;
 import java.io.IOException;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
@@ -105,7 +106,8 @@ public class Not extends ParentClause {
         for (Clause c : getChildren()) {
             notSet.or(c.computeComponents(incomingComponents));
         }
-        forSet = new ConcurrentBitSet(NidSet.of(activeSet));
+        forSet = new IntSet(NidSet.of(activeSet).stream().toArray());
+        
         forSet.andNot(notSet);
         return forSet;
     }

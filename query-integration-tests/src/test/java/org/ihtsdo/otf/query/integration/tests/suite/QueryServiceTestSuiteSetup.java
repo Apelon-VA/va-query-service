@@ -16,7 +16,6 @@
 package org.ihtsdo.otf.query.integration.tests.suite;
 
 import java.io.IOException;
-import java.util.UUID;
 import javafx.embed.swing.JFXPanel;
 import static gov.vha.isaac.lookup.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
 import static gov.vha.isaac.lookup.constants.Constants.SEARCH_ROOT_LOCATION_PROPERTY;
@@ -29,17 +28,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
-import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
-import org.ihtsdo.otf.tcc.api.refex.RefexChronicleBI;
 import org.ihtsdo.otf.tcc.api.store.TerminologyStoreDI;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.jvnet.testing.hk2testng.HK2;
-import org.reactfx.EventStreams;
 import org.reactfx.Subscription;
 import org.testng.annotations.*;
 
@@ -72,8 +67,8 @@ public class QueryServiceTestSuiteSetup {
         ActiveTasksTicker.start(10);
         HeapUseTicker.start(10);
         
-        ObjectChronicleTaskService tts = Hk2Looker.get().getService(ObjectChronicleTaskService.class);
-        TerminologyStoreDI store = Hk2Looker.get().getService(TerminologyStoreDI.class);
+        ObjectChronicleTaskService tts = LookupService.getService(ObjectChronicleTaskService.class);
+        TerminologyStoreDI store = LookupService.getService(TerminologyStoreDI.class);
  
         if (!dbExists) {
             loadDatabase(tts);

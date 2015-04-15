@@ -81,7 +81,7 @@ public class LuceneDescriptionIndexer extends LuceneIndexer implements IndexerBI
 
     @Override
     protected void addFields(SememeChronicle chronicle, Document doc) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
 

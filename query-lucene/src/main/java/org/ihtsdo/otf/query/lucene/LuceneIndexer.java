@@ -69,8 +69,8 @@ public abstract class LuceneIndexer implements IndexerBI {
     private static final UnindexedFuture unindexedFuture = new UnindexedFuture();
     private static final ThreadGroup threadGroup = new ThreadGroup("Lucene");
     public static File root;
-    private static final FieldType indexedComponentNidType;
-    private static final FieldType referencedComponentNidType;
+    protected static final FieldType indexedComponentNidType;
+    protected static final FieldType referencedComponentNidType;
 
     static {
         indexedComponentNidType = new FieldType();
@@ -504,9 +504,6 @@ public abstract class LuceneIndexer implements IndexerBI {
         public Long call() throws Exception {
             IndexedGenerationCallable latch = componentNidLatch.remove(chronicle.getNid());
             Document doc = new Document();
-
-            doc.add(new IntField(ComponentProperty.COMPONENT_ID.name(), chronicle.getNid(),
-                    LuceneIndexer.indexedComponentNidType));
             addFields(chronicle, doc);
 
             // Note that the addDocument operation could cause duplicate documents to be
