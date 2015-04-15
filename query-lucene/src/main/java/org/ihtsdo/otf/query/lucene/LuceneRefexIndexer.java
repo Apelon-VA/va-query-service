@@ -22,25 +22,23 @@ package org.ihtsdo.otf.query.lucene;
 
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
+import gov.vha.isaac.ochre.api.sememe.SememeType;
+import gov.vha.isaac.ochre.api.sememe.version.StringSememe;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
-import org.ihtsdo.otf.tcc.api.refex.RefexChronicleBI;
-import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
-import org.ihtsdo.otf.tcc.model.cc.refex.RefexMemberVersion;
 import org.jvnet.hk2.annotations.Service;
 
 
 //~--- JDK imports ------------------------------------------------------------
 
 import java.io.IOException;
-import java.util.Iterator;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.TextField;
 import org.glassfish.hk2.runlevel.RunLevel;
-import org.ihtsdo.otf.tcc.api.refex.type_string.RefexStringVersionBI;
 
 /**
  *
@@ -50,7 +48,7 @@ import org.ihtsdo.otf.tcc.api.refex.type_string.RefexStringVersionBI;
 @RunLevel(value = 2)
 public class LuceneRefexIndexer extends LuceneIndexer {
 
-    int snomedAssemblageNid = Integer.MIN_VALUE;
+    int snomedAssemblageSequence = Integer.MIN_VALUE;
 
     public LuceneRefexIndexer() throws IOException {
         super("refex");
@@ -71,13 +69,22 @@ public class LuceneRefexIndexer extends LuceneIndexer {
 
     @Override
     protected boolean indexChronicle(ComponentChronicleBI<?> chronicle) {
-        if (chronicle instanceof RefexChronicleBI) {
-            RefexMember<?, ?> rxc = (RefexMember<?, ?>) chronicle;
-            if (snomedAssemblageNid == Integer.MIN_VALUE) {
-                snomedAssemblageNid = IsaacMetadataAuxiliaryBinding.SNOMED_INTEGER_ID.getNid();
+        return false;
+    }
+
+    @Override
+    protected void addFields(ComponentChronicleBI<?> chronicle, Document doc) {
+        throw new UnsupportedOperationException("Not supported yet."); 
+    }
+
+    @Override
+    protected boolean indexSememeChronicle(SememeChronicle<?> chronicle) {
+        if (chronicle.getSememeType() == SememeType.STRING) {
+            if (snomedAssemblageSequence == Integer.MIN_VALUE) {
+                snomedAssemblageSequence = IsaacMetadataAuxiliaryBinding.SNOMED_INTEGER_ID.getSequence();
             }
 
-            if (rxc.getAssemblageNid() == snomedAssemblageNid) {
+            if (chronicle.getAssemblageSequence() == snomedAssemblageSequence) {
                 return true;
             }
         }
@@ -85,27 +92,21 @@ public class LuceneRefexIndexer extends LuceneIndexer {
     }
 
     @Override
-    protected void addFields(ComponentChronicleBI<?> chronicle, Document doc) {
-        RefexMember<?, ?> rxc = (RefexMember<?, ?>) chronicle;
-        for (Iterator<? extends RefexMemberVersion<?, ?>> it = rxc.getVersions().iterator(); it.hasNext(); ) {
-            RefexMemberVersion<?, ?> rxv = it.next();
-            if (rxv instanceof RefexStringVersionBI) {
-                @SuppressWarnings("rawtypes")
-                RefexStringVersionBI rxvl = (RefexStringVersionBI) rxv;
+    protected void addFields(SememeChronicle<?> chronicle, Document doc) {
+        //TODO dan notes - this doesn't make sense - this field should be named REFERENCED_COMPONENT_ID, not COMPONENT_ID
+        //The query code makes assumptions about what sort of thing is in the component_id field - we can't have it be component id in one case, 
+        //and refereced componentid in another.
+        doc.add(new IntField(ComponentProperty.COMPONENT_ID.name(), chronicle.getReferencedComponentNid(),
+                    LuceneIndexer.indexedComponentNidType));
+        
+        for (Object sv: chronicle.getVersions()) {
+            if (sv instanceof StringSememe) {
+                StringSememe ssv = (StringSememe) sv;
                 //TODO this will cause it to only be indexed with the standard analyzer - if we also want to use the whitespace analyzer, 
-                //this needs a second document add.  Need to ask Keith about what sort of data will be indexed here.
-                doc.add(new TextField(ComponentProperty.STRING_EXTENSION_1.name(), rxvl.getString1(), Field.Store.NO));
+                //this needs a second document add.  Need to ask Keith about what sort of data will be indexed here.  I suspect, that since we are only 
+                //indexing SCTIDs at the moment, that we should only use the whitespace analyzer....
+                doc.add(new TextField(ComponentProperty.STRING_EXTENSION_1.name(), ssv.getString(), Field.Store.NO));
             }
         }
-    }
-
-    @Override
-    protected boolean indexSememeChronicle(SememeChronicle<?> chronicle) {
-        return false;
-    }
-
-    @Override
-    protected void addFields(SememeChronicle<?> chronicle, Document doc) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }

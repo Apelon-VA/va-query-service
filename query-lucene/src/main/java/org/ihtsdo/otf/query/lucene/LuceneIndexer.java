@@ -70,8 +70,8 @@ public abstract class LuceneIndexer implements IndexerBI {
     private static final UnindexedFuture unindexedFuture = new UnindexedFuture();
     private static final ThreadGroup threadGroup = new ThreadGroup("Lucene");
     public static File root;
-    private static final FieldType indexedComponentNidType;
-    private static final FieldType referencedComponentNidType;
+    protected static final FieldType indexedComponentNidType;
+    protected static final FieldType referencedComponentNidType;
 
     static {
         indexedComponentNidType = new FieldType();
@@ -592,14 +592,16 @@ public abstract class LuceneIndexer implements IndexerBI {
         @Override
         public Long call() throws Exception {
             Document doc = new Document();
-
-            doc.add(new IntField(ComponentProperty.COMPONENT_ID.name(), getNid(), LuceneIndexer.indexedComponentNidType));
+            
             if (chronicle == null)
             {
+                //TODO dan hacking - Keith question - for some reason, Keith isn't putting a field in sememe chronicles with the id???
+                //See other notes on issue in LuceneRefexIndexer
                 addFields(sememeChronicle, doc);
             }
             else
             {
+                doc.add(new IntField(ComponentProperty.COMPONENT_ID.name(), getNid(), LuceneIndexer.indexedComponentNidType));
                 addFields(chronicle, doc);
             }
 
