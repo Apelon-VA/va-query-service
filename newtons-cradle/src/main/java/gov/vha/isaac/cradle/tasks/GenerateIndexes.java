@@ -144,9 +144,13 @@ public class GenerateIndexes extends Task<Void> {
         if (processedCount % 1000 == 0) {
             updateProgress(processedCount, componentCount);
             updateMessage(String.format("Indexed %,d components...", processedCount));
-            indexers.stream().forEach((i) -> {
-                i.commitWriter();
-            });
+            //We were committing too often every 1000 components, it was bad for performance.
+            if (processedCount % 100000 == 0)
+            {
+                indexers.stream().forEach((i) -> {
+                    i.commitWriter();
+                });
+            }
         }
     }
 }
