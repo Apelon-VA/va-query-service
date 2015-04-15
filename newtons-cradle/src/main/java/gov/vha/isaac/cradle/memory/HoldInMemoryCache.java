@@ -10,10 +10,10 @@ import java.util.concurrent.atomic.AtomicReference;
  * Created by kec on 4/10/15.
  */
 public class HoldInMemoryCache {
+
     private static final int CACHE_SIZE = 512;
     private static final int GENERATIONS = 3;
     private static final LinkedBlockingDeque<Set<MemoryManagedReference>> queue = new LinkedBlockingDeque();
-
 
     private static final AtomicReference<Set<MemoryManagedReference>> cacheRef = new AtomicReference<>(new ConcurrentSkipListSet<>());
     private static final AtomicInteger cacheCount = new AtomicInteger();
@@ -30,11 +30,22 @@ public class HoldInMemoryCache {
                     queue.addFirst(cache);
                     while (queue.size() > GENERATIONS) {
                         Set<MemoryManagedReference> oldCache = queue.removeLast();
-                        oldCache.stream().forEach(memoryManagedReference -> {memoryManagedReference.cacheExit();});
+                        oldCache.stream().forEach(memoryManagedReference -> {
+                            memoryManagedReference.cacheExit();
+                        });
                     }
                 }
             }
         }
 
+    }
+
+    public static void clearCache() {
+        queue.stream().forEach((Set<MemoryManagedReference> referenceSet)-> {
+            referenceSet.stream().forEach((MemoryManagedReference ref) -> {
+                ref.cacheExit();
+                referenceSet.remove(ref);
+            });
+        }); 
     }
 }

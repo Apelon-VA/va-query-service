@@ -26,6 +26,7 @@ import gov.vha.isaac.ochre.api.chronicle.IdentifiedObjectLocal;
 import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
 import gov.vha.isaac.ochre.api.sememe.SememeService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.collections.NidSet;
 import gov.vha.isaac.ochre.collections.RefexSequenceSet;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
 import java.io.File;
@@ -378,4 +379,25 @@ public class IdentifierProvider implements IdentifierService {
     public ConcurrentSequenceIntMap getNidCnidMap() {
         return nidCnidMap;
     }   
+
+    @Override
+    public int getConceptSequenceForUuids(Collection<UUID> uuids) {
+        return getConceptSequenceForUuids(uuids.toArray(new UUID[uuids.size()]));
+    }
+
+    @Override
+    public int getConceptSequenceForUuids(UUID... uuids) {
+        return getConceptSequence(getNidForUuids(uuids));
+    }
+    
+    @Override
+    public IntStream getComponentNidStream() {
+        return nidCnidMap.getComponentNidStream();
+    }
+    
+    @Override
+    public NidSet getComponentNidsForConceptNids(ConceptSequenceSet conceptSequenceSet) {
+        return nidCnidMap.getComponentNidsForConceptNids(conceptSequenceSet);
+     }
+    
 }

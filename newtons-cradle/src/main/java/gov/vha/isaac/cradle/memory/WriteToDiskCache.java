@@ -26,21 +26,21 @@ public class WriteToDiskCache {
             while (true) {
                 Optional<MemoryManagedReference> optionalReference = cacheSet.stream().
                         filter((memoryManagedReference) -> {
-                    if (memoryManagedReference.get() == null) {
-                        cacheSet.remove(memoryManagedReference);
-                        return false;
-                    }
-                    
-                    return memoryManagedReference.hasUnwrittenUpdate();
-                }).max((o1, o2) -> {
-                    if (o1.msSinceLastUnwrittenUpdate() > o2.msSinceLastUnwrittenUpdate()) {
-                        return 1;
-                    }
-                    if (o1.msSinceLastUnwrittenUpdate() < o2.msSinceLastUnwrittenUpdate()) {
-                        return -1;
-                    }
-                    return 0;
-                });
+                            if (memoryManagedReference.get() == null) {
+                                cacheSet.remove(memoryManagedReference);
+                                return false;
+                            }
+
+                            return memoryManagedReference.hasUnwrittenUpdate();
+                        }).max((o1, o2) -> {
+                            if (o1.msSinceLastUnwrittenUpdate() > o2.msSinceLastUnwrittenUpdate()) {
+                                return 1;
+                            }
+                            if (o1.msSinceLastUnwrittenUpdate() < o2.msSinceLastUnwrittenUpdate()) {
+                                return -1;
+                            }
+                            return 0;
+                        });
                 boolean written = false;
                 if (optionalReference.isPresent()) {
                     written = true;
@@ -60,8 +60,19 @@ public class WriteToDiskCache {
         }
     }
 
-
     public static void addToCache(MemoryManagedReference newRef) {
         cacheSet.add(newRef);
+    }
+
+    public static void flushAndClearCache() {
+        cacheSet.stream().
+                forEach((memoryManagedReference) -> {
+                    
+                    cacheSet.remove(memoryManagedReference);
+                    while (memoryManagedReference.hasUnwrittenUpdate()) {
+                        memoryManagedReference.clear();
+                        memoryManagedReference.write();
+                    }
+                });
     }
 }

@@ -71,6 +71,7 @@ import gov.vha.isaac.ochre.api.chronicle.IdentifiedObjectLocal;
 import gov.vha.isaac.ochre.api.commit.CommitManager;
 import gov.vha.isaac.ochre.api.sememe.SememeService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.nio.file.Path;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
@@ -754,8 +755,13 @@ public class Cradle
 
     @Override
     public NativeIdSetBI getAllComponentNids() throws IOException {
-        throw new UnsupportedOperationException();
-        //return nidCnidMap.getComponentNids();
+        return new IntSet(identifierProvider.getComponentNidStream().toArray());
+    }
+
+    @Override
+    public NativeIdSetBI getComponentNidsForConceptNids(NativeIdSetBI conceptNidSet) throws IOException {
+        NidSet results = identifierProvider.getComponentNidsForConceptNids(conceptNidSet.toConceptSequenceSet());
+        return new IntSet(results.stream().toArray());
     }
 
     @Override
@@ -763,12 +769,6 @@ public class Cradle
         NativeIdSetBI conceptNids = new IntSet();
         IntStream.of(nativeIdSet.getSetValues()).forEach((componentNid) -> conceptNids.add(getConceptNidForNid(componentNid)));
         return conceptNids;
-    }
-
-    @Override
-    public NativeIdSetBI getComponentNidsForConceptNids(NativeIdSetBI conceptNidSet) throws IOException {
-        throw new UnsupportedOperationException();
-        //return nidCnidMap.getKeysForValues(conceptNidSet);
     }
 
     @Override
