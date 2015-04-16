@@ -4,7 +4,7 @@
     <parent>
         <groupId>gov.vha.isaac</groupId>
         <artifactId>isaac-parent</artifactId>
-        <version>1.4</version>
+        <version>1.5-SNAPSHOT</version>
     </parent>
     
     <groupId>gov.vha.isaac.newtons-cradle</groupId>
@@ -16,8 +16,8 @@
     <description>Newton's Cradle (ChRonicled Assertion Database of Logical Expressions) Parent Project </description>
 
     <properties>
-        <ochre.version>2.25</ochre.version>
-        <isaac-metadata.version>1.27</isaac-metadata.version>
+        <ochre.version>2.26-SNAPSHOT</ochre.version>
+        <isaac-metadata.version>1.28-SNAPSHOT</isaac-metadata.version>
     </properties>
 
     <dependencyManagement>
