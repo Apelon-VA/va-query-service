@@ -4,13 +4,13 @@
     <exportedPackages>
         <exportedPackage>org.ihtsdo.otf</exportedPackage>
         <exportedPackage>gov.vha.isaac</exportedPackage>
-         <exportedPackage>gov.vha.kbs</exportedPackage>
+        <exportedPackage>gov.vha.kbs</exportedPackage>
         <exportedPackage>org.glassfish</exportedPackage>
     </exportedPackages>
 
     <!-- the group & artifact ids to exclude from the class realms of build plugins because the extension provides them -->
     <exportedArtifacts>
-        <exportedArtifact>gov.vha.isaac:query-implementation</exportedArtifact>
-        <exportedArtifact>gov.vha.isaac:query-lucene</exportedArtifact>
+        <exportedArtifact>gov.vha.isaac.query-service.modules:query-implementation</exportedArtifact>
+        <exportedArtifact>gov.vha.isaac.query-service.modules:query-lucene</exportedArtifact>
     </exportedArtifacts>
 </extension>
