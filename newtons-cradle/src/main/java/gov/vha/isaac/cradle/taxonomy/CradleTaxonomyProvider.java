@@ -30,7 +30,11 @@ import gov.vha.isaac.ochre.api.tree.Tree;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeBuilder;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.NavigableSet;
 import java.util.Optional;
@@ -59,7 +63,9 @@ public class CradleTaxonomyProvider implements TaxonomyService {
      * primitive taxonomy record, which represents the destination, 
      * stamp, and taxonomy flags for parent and child concepts. 
      */
-    final CasSequenceObjectMap<TaxonomyRecordPrimitive> originDestinationTaxonomyRecordMap = new CasSequenceObjectMap(new TaxonomyRecordSerializer());
+    final CasSequenceObjectMap<TaxonomyRecordPrimitive> originDestinationTaxonomyRecordMap =
+            new CasSequenceObjectMap(new TaxonomyRecordSerializer(),
+                    IsaacDbFolder.get().getDbFolderPath().resolve("taxonomy"), "seg.", ".taxonomy.map");
     final ConcurrentSkipListSet<DestinationOriginRecord> destinationOriginRecordSet = new ConcurrentSkipListSet<>();
 
     private IdentifierService sequenceProvider;
@@ -72,14 +78,14 @@ public class CradleTaxonomyProvider implements TaxonomyService {
         cradle = LookupService.getService(CradleExtensions.class);
         if (!IsaacDbFolder.get().getPrimordial()) {
             log.info("Reading taxonomy.");
-            originDestinationTaxonomyRecordMap.read(IsaacDbFolder.get().getDbFolderPath(), "taxonomy/", ".taxonomy.map");
+            originDestinationTaxonomyRecordMap.initialize();
         }
     }
 
     @PreDestroy
     private void stopMe() throws IOException {
         log.info("Writing taxonomy.");
-        originDestinationTaxonomyRecordMap.write(IsaacDbFolder.get().getDbFolderPath(), "taxonomy/", ".taxonomy.map");
+        originDestinationTaxonomyRecordMap.write();
     }
 
     public ConcurrentSkipListSet<DestinationOriginRecord> getDestinationOriginRecordSet() {

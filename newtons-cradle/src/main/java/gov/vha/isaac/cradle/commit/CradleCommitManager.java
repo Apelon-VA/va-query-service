@@ -56,6 +56,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.mahout.math.map.OpenIntIntHashMap;
 import org.glassfish.hk2.runlevel.RunLevel;
 import org.ihtsdo.otf.tcc.api.coordinate.Status;
+import org.ihtsdo.otf.tcc.api.store.Ts;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.cc.change.CommitSequence;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
@@ -466,5 +467,22 @@ public class CradleCommitManager implements CommitManager {
             return false;
         }
         return getTimeForStamp(stamp) != Long.MIN_VALUE;
+    }
+
+    @Override
+    public String describeStampSequence(int stampSequence) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Stamp{s:");
+             sb.append(getStatusForStamp(stampSequence));
+             sb.append(", t:");
+             sb.append(Instant.ofEpochMilli(getTimeForStamp(stampSequence)));
+             sb.append(", a:");
+             sb.append(Ts.get().informAboutNid(getAuthorSequenceForStamp(stampSequence)));
+             sb.append(", m:");
+             sb.append(Ts.get().informAboutNid(getModuleSequenceForStamp(stampSequence)));
+             sb.append(", p: ");
+             sb.append(Ts.get().informAboutNid(getPathSequenceForStamp(stampSequence)));
+             sb.append('}');
+             return sb.toString();
     }
 }

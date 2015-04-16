@@ -5,23 +5,25 @@
  */
 package gov.vha.isaac.cradle.integration.tests;
 
-import com.sun.javafx.application.PlatformImpl;
+import static gov.vha.isaac.lookup.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
 import gov.vha.isaac.cradle.CradleExtensions;
-import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordUnpacked;
+import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
 import gov.vha.isaac.cradle.taxonomy.walk.TaxonomyWalkAccumulator;
 import gov.vha.isaac.cradle.taxonomy.walk.TaxonomyWalkCollector;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
-
-import static gov.vha.isaac.lookup.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
-
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
+import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
-import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
+import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
+import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
+import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
+import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeBuilder;
+import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeWithBitSets;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,18 +31,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.IntStream;
-
-import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
-import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeBuilder;
-import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeWithBitSets;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.api.MultiException;
-import org.glassfish.hk2.runlevel.RunLevelController;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
@@ -49,9 +45,11 @@ import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.cc.termstore.PersistentStoreI;
 import org.jvnet.testing.hk2testng.HK2;
-import org.reactfx.EventStreams;
-import org.reactfx.Subscription;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterGroups;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeGroups;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 /**
  *
@@ -74,16 +72,13 @@ public class CradleIntegrationTests {
     }
 
     private static final Logger log = LogManager.getLogger();
-    Subscription tickSubscription;
     private boolean dbExists = false;
     private static IdentifierService sequenceProvider;
 
-    @BeforeSuite
+    @BeforeGroups(groups = {"db"})
     public void setUpSuite() throws Exception {
         log.info("oneTimeSetUp");
-        PlatformImpl.startup(() -> {
-            // No need to do anything here
-        });
+
         System.setProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY, "target/object-chronicles");
 
         java.nio.file.Path dbFolderPath = Paths.get(System.getProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY));
@@ -92,25 +87,16 @@ public class CradleIntegrationTests {
 
         LookupService.startupIsaac();
         sequenceProvider = Hk2Looker.getService(IdentifierService.class);
-        tickSubscription = EventStreams.ticks(Duration.ofSeconds(10))
-                .subscribe(tick -> {
-                    Set<Task> taskSet = Hk2Looker.get().getService(ActiveTaskSet.class).get();
-                    taskSet.stream().forEach((task) -> {
-                        double percentProgress = task.getProgress() * 100;
-                        if (percentProgress < 0) {
-                            percentProgress = 0;
-                        }
-                        log.printf(org.apache.logging.log4j.Level.INFO, "%n    %s%n    %s%n    %.1f%% complete",
-                                task.getTitle(), task.getMessage(), percentProgress);
-                    });
-                });
+        ActiveTasksTicker.start(10);
+        HeapUseTicker.start(10);
     }
 
-    @AfterSuite
+    @AfterGroups(groups = {"db"})
     public void tearDownSuite() throws Exception {
         log.info("oneTimeTearDown");
         LookupService.shutdownIsaac();
-        tickSubscription.unsubscribe();
+        ActiveTasksTicker.stop();
+        HeapUseTicker.stop();
     }
 
     @BeforeMethod      
@@ -123,7 +109,7 @@ public class CradleIntegrationTests {
 
     }
 
-    @Test
+    @Test(groups = {"db"})
     public void testLoad() throws Exception {
 
         log.info("  Testing load...");

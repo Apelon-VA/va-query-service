@@ -15,7 +15,10 @@ import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 
 import java.util.UUID;
 import java.util.concurrent.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.tcc.api.coordinate.Status;
+import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.cc.attributes.ConceptAttributesVersion;
 import org.ihtsdo.otf.tcc.model.cc.relationship.Relationship;
@@ -24,6 +27,7 @@ import org.ihtsdo.otf.tcc.model.cc.relationship.Relationship;
  * Created by kec on 7/20/14.
  */
 public class ImportEConcept implements Callable<Void> {
+    private static final Logger log = LogManager.getLogger();
 
     private static final IdentifierService sequenceProvider = Hk2Looker.getService(IdentifierService.class);
     private static final CradleExtensions cradle = Hk2Looker.getService(CradleExtensions.class);
@@ -36,15 +40,11 @@ public class ImportEConcept implements Callable<Void> {
     public static ConcurrentSkipListSet<DestinationOriginRecord> destinationOriginRecordSet;
 
     static {
-        try {
-            originDestinationTaxonomyRecords = cradle.getOriginDestinationTaxonomyMap();
-            destinationOriginRecordSet = cradle.getDestinationOriginRecordSet();
-            isaNid = cradle.getNidForUuids(IsaacMetadataAuxiliaryBinding.IS_A.getUuids());
-            statedNid = cradle.getNidForUuids(IsaacMetadataAuxiliaryBinding.STATED.getUuids());
-            inferredNid = cradle.getNidForUuids(IsaacMetadataAuxiliaryBinding.INFERRED.getUuids());
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        originDestinationTaxonomyRecords = cradle.getOriginDestinationTaxonomyMap();
+        destinationOriginRecordSet = cradle.getDestinationOriginRecordSet();
+        isaNid = cradle.getNidForUuids(IsaacMetadataAuxiliaryBinding.IS_A.getUuids());
+        statedNid = cradle.getNidForUuids(IsaacMetadataAuxiliaryBinding.STATED.getUuids());
+        inferredNid = cradle.getNidForUuids(IsaacMetadataAuxiliaryBinding.INFERRED.getUuids());
     }
 
     TtkConceptChronicle eConcept;
@@ -139,6 +139,9 @@ public class ImportEConcept implements Callable<Void> {
                 }
                 originDestinationTaxonomyRecords.put(originSequence, parentTaxonomyRecord);
                 cradle.writeConceptData(conceptData);
+                        if (eConcept.getPrimordialUuid().equals(Snomed.BLEEDING_FINDING.getUuids()[0])) {
+                            log.info("Watch concept[2]: " + cc.toLongString());
+                        }
             }
             return null;
         } finally {

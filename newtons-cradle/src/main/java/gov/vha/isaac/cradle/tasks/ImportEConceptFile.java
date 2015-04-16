@@ -21,6 +21,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import javafx.application.Platform;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
+import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 
 /**
@@ -128,9 +129,9 @@ public class ImportEConceptFile extends Task<Integer> {
                         }
                         TtkConceptChronicle eConcept = new TtkConceptChronicle(dis);
                         
-//                        if (eConcept.getPrimordialUuid().equals(UUID.fromString("cd5710b4-d4d4-3582-9799-b9428f9b8938"))) {
-//                            log.info("Watch concept: " + eConcept);
-//                        }
+                        if (eConcept.getPrimordialUuid().equals(Snomed.BLEEDING_FINDING.getUuids()[0])) {
+                            log.info("Watch concept: " + eConcept);
+                        }
 
                         conversionPermits.acquire();
                         conversionService.submit(new ImportEConcept(eConcept, conversionPermits, stampPathUuid));

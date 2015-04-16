@@ -39,15 +39,11 @@ public class TaxonomyWalkCollector implements
     final OpenIntHashSet watchSequences = new OpenIntHashSet();
 
     public TaxonomyWalkCollector(CasSequenceObjectMap<TaxonomyRecordPrimitive> taxonomyMap, ViewCoordinate viewCoordinate) {
-        try {
-            this.taxonomyMap = taxonomyMap;
-            this.viewCoordinate = viewCoordinate;
-            taxonomyFlags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(viewCoordinate);
-            int watchNid = cradle.getNidForUuids(UUID.fromString("df79ab93-4436-35b8-be3f-2a8e5849d732"));
-            watchSequences.add(sequenceProvider.getConceptSequence(watchNid));
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        this.taxonomyMap = taxonomyMap;
+        this.viewCoordinate = viewCoordinate;
+        taxonomyFlags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(viewCoordinate);
+        int watchNid = cradle.getNidForUuids(UUID.fromString("df79ab93-4436-35b8-be3f-2a8e5849d732"));
+        watchSequences.add(sequenceProvider.getConceptSequence(watchNid));
     }
     
     @Override

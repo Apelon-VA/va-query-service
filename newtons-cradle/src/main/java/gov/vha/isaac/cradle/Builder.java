@@ -260,7 +260,7 @@ public class Builder implements TerminologyBuilderBI {
             PersistentStore.get().setConceptNidForNid(enclosingConceptNid, blueprint.getComponentNid());
         }
 
-        RefexDynamicMember newRefex = RefexDynamicMemberFactory.create(blueprint, ec);
+        RefexDynamicMember newRefex = RefexDynamicMemberFactory.create(blueprint, ec, vc);
 
         for (RefexCAB annotBp : blueprint.getAnnotationBlueprints()) {
             annotBp.setReferencedComponent(newRefex);

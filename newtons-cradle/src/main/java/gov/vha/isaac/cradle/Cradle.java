@@ -1,12 +1,13 @@
 package gov.vha.isaac.cradle;
 
-import gov.vha.isaac.cradle.memory.MemoryManager;
+
 import gov.vha.isaac.cradle.tasks.*;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import gov.vha.isaac.cradle.collections.ConcurrentSequenceSerializedObjectMap;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEagerSerializer;
+import gov.vha.isaac.ochre.api.memory.MemoryUtil;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexService;
 import gov.vha.isaac.cradle.taxonomy.DestinationOriginRecord;
 import gov.vha.isaac.cradle.taxonomy.CradleTaxonomyProvider;
@@ -35,6 +36,7 @@ import org.ihtsdo.otf.tcc.api.description.DescriptionVersionBI;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.tcc.api.nid.NidSetBI;
 import org.ihtsdo.otf.tcc.api.refex.RefexChronicleBI;
+import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicChronicleBI;
 import org.ihtsdo.otf.tcc.api.relationship.RelationshipVersionBI;
 import org.ihtsdo.otf.tcc.ddo.ComponentReference;
 import org.ihtsdo.otf.tcc.ddo.concept.ConceptChronicleDdo;
@@ -80,7 +82,6 @@ import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.tcc.api.nid.IntSet;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
-import org.ihtsdo.otf.tcc.model.cc.component.ConceptComponent;
 
 /**
  * Created by kec on 12/18/14.
@@ -125,7 +126,7 @@ public class Cradle
         if (!IsaacDbFolder.get().getPrimordial()) {
             loadExisting.set(!IsaacDbFolder.get().getPrimordial());
         }
-        MemoryManager.startListener();
+        MemoryUtil.startListener();
 
     }
 
@@ -233,7 +234,7 @@ public class Cradle
 
 
     @Override
-    public int getNidForUuids(UUID... uuids) throws IOException {
+    public int getNidForUuids(UUID... uuids) {
         return identifierProvider.getNidForUuids(uuids);
 
     }
@@ -465,9 +466,20 @@ public class Cradle
     public int getMaxReadOnlyStamp() {
         throw new UnsupportedOperationException();
     }
+    
+    @Override
+    public boolean hasConcept(UUID cUUID) {
+        //first call hasUuid, because this checks if it exists without storing it.
+        if (!hasUuid(cUUID))
+        {
+            return false;
+        }
+        //If we do have a UUID, check if we have a concept.  Don't want to call this first, as it permanently stores the UUID as a side effect.
+        return hasConcept(getNidForUuids(cUUID));
+    }
 
     @Override
-    public boolean hasConcept(int i) throws IOException {
+    public boolean hasConcept(int i) {
         throw new UnsupportedOperationException();
     }
 
@@ -628,6 +640,11 @@ public class Cradle
     public void addPropertyChangeListener(CONCEPT_EVENT concept_event, PropertyChangeListener propertyChangeListener) {
         throw new UnsupportedOperationException();
     }
+    
+    @Override
+    public void removePropertyChangeListener( PropertyChangeListener l) {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public void addVetoablePropertyChangeListener(CONCEPT_EVENT concept_event, VetoableChangeListener vetoableChangeListener) {
@@ -661,6 +678,11 @@ public class Cradle
 
     @Override
     public void forget(RefexChronicleBI refexChronicleBI) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+    
+    @Override
+    public void forget(RefexDynamicChronicleBI refexDynamicChronicleBI) {
         throw new UnsupportedOperationException();
     }
 
@@ -755,8 +777,13 @@ public class Cradle
 
     @Override
     public NativeIdSetBI getAllComponentNids() throws IOException {
-        throw new UnsupportedOperationException();
-        //return nidCnidMap.getComponentNids();
+        return new IntSet(identifierProvider.getComponentNidStream().toArray());
+    }
+
+    @Override
+    public NativeIdSetBI getComponentNidsForConceptNids(NativeIdSetBI conceptNidSet) throws IOException {
+        NidSet results = identifierProvider.getComponentNidsForConceptNids(conceptNidSet.toConceptSequenceSet());
+        return new IntSet(results.stream().toArray());
     }
 
     @Override
@@ -764,12 +791,6 @@ public class Cradle
         NativeIdSetBI conceptNids = new IntSet();
         IntStream.of(nativeIdSet.getSetValues()).forEach((componentNid) -> conceptNids.add(getConceptNidForNid(componentNid)));
         return conceptNids;
-    }
-
-    @Override
-    public NativeIdSetBI getComponentNidsForConceptNids(NativeIdSetBI conceptNidSet) throws IOException {
-        throw new UnsupportedOperationException();
-        //return nidCnidMap.getKeysForValues(conceptNidSet);
     }
 
     @Override
@@ -878,16 +899,19 @@ public class Cradle
     }
 
     @Override
-    public void index() {
+    public void index(Class<?> ... indexersToReindex) {
         try {
-            startIndexTask().get();
+            startIndexTask(indexersToReindex).get();
         } catch (InterruptedException | ExecutionException ex) {
             throw new RuntimeException(ex);
         }
     }
 
+    /**
+     * @see ObjectChronicleTaskService#startIndexTask(Class...)
+     */
     @Override
-    public GenerateIndexes startIndexTask() {
+    public GenerateIndexes startIndexTask(Class<?> ... indexersToReindex) {
         GenerateIndexes indexingTask = new GenerateIndexes(this);
         ForkJoinPool.commonPool().execute(indexingTask);
         return indexingTask;
