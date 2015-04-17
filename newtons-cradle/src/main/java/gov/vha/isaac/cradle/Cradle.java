@@ -47,9 +47,9 @@ import org.ihtsdo.otf.tcc.model.cc.NidPairForRefex;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
 import org.ihtsdo.otf.tcc.model.cc.relationship.Relationship;
+import org.ihtsdo.otf.tcc.model.cc.termstore.TerminologySnapshot;
 import org.ihtsdo.otf.tcc.model.cc.termstore.Termstore;
 import org.jvnet.hk2.annotations.Service;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.beans.PropertyChangeListener;
@@ -613,27 +613,45 @@ public class Cradle
 
     @Override
     public ConceptChronicleDdo getFxConcept(UUID uuid, ViewCoordinate viewCoordinate) throws IOException, ContradictionException {
-        throw new UnsupportedOperationException();
+        ConceptChronicleBI chronicle = this.getConcept(uuid);
+        TerminologySnapshot termSnap = new TerminologySnapshot(this, viewCoordinate);
+        ConceptChronicleDdo c = new ConceptChronicleDdo(termSnap, chronicle, VersionPolicy.ACTIVE_VERSIONS, RefexPolicy.REFEX_MEMBERS, 
+            RelationshipPolicy.ORIGINATING_RELATIONSHIPS);
+        return c;
     }
 
     @Override
-    public ConceptChronicleDdo getFxConcept(ComponentReference componentReference, UUID uuid, VersionPolicy versionPolicy, RefexPolicy refexPolicy, RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
-        throw new UnsupportedOperationException();
+    public ConceptChronicleDdo getFxConcept(ComponentReference componentReference, UUID viewCoordinateUuid, VersionPolicy versionPolicy, 
+            RefexPolicy refexPolicy, RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
+        int nid = componentReference.getNid();
+        ConceptChronicleBI chronicle = this.getConcept(nid);
+        TerminologySnapshot termSnap = new TerminologySnapshot(this, this.getViewCoordinate(viewCoordinateUuid));
+        return new ConceptChronicleDdo(termSnap, chronicle, VersionPolicy.ACTIVE_VERSIONS, RefexPolicy.REFEX_MEMBERS, RelationshipPolicy.ORIGINATING_RELATIONSHIPS);
     }
 
     @Override
-    public ConceptChronicleDdo getFxConcept(ComponentReference componentReference, ViewCoordinate viewCoordinate, VersionPolicy versionPolicy, RefexPolicy refexPolicy, RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
-        throw new UnsupportedOperationException();
+    public ConceptChronicleDdo getFxConcept(ComponentReference componentReference, ViewCoordinate viewCoordinate, VersionPolicy versionPolicy, 
+            RefexPolicy refexPolicy, RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
+        int nid = componentReference.getNid();
+        ConceptChronicleBI chronicle = this.getConcept(nid);
+        TerminologySnapshot termSnap = new TerminologySnapshot(this, viewCoordinate);
+        return new ConceptChronicleDdo(termSnap, chronicle, versionPolicy, refexPolicy, relationshipPolicy);
     }
 
     @Override
-    public ConceptChronicleDdo getFxConcept(UUID uuid, UUID uuid2, VersionPolicy versionPolicy, RefexPolicy refexPolicy, RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
-        throw new UnsupportedOperationException();
+    public ConceptChronicleDdo getFxConcept(UUID uuid, UUID viewCoordinateUuid, VersionPolicy versionPolicy, RefexPolicy refexPolicy,
+            RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
+        ConceptChronicleBI chronicle = this.getConcept(uuid);
+        TerminologySnapshot termSnap = new TerminologySnapshot(this, this.getViewCoordinate(viewCoordinateUuid));
+        return new ConceptChronicleDdo(termSnap, chronicle, versionPolicy, refexPolicy, relationshipPolicy);
     }
 
     @Override
-    public ConceptChronicleDdo getFxConcept(UUID uuid, ViewCoordinate viewCoordinate, VersionPolicy versionPolicy, RefexPolicy refexPolicy, RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
-        throw new UnsupportedOperationException();
+    public ConceptChronicleDdo getFxConcept(UUID uuid, ViewCoordinate viewCoordinate, VersionPolicy versionPolicy,
+            RefexPolicy refexPolicy, RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
+        ConceptChronicleBI chronicle = this.getConcept(uuid);
+        TerminologySnapshot termSnap = new TerminologySnapshot(this, viewCoordinate);
+        return new ConceptChronicleDdo(termSnap, chronicle, versionPolicy, refexPolicy, relationshipPolicy);
     }
 
     @Override
