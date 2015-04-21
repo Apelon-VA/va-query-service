@@ -15,11 +15,12 @@
  */
 package gov.vha.isaac.cradle.sememe;
 
-import gov.vha.isaac.cradle.IsaacDbFolder;
+import gov.vha.isaac.cradle.Cradle;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.commit.CommitManager;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampPosition;
@@ -37,6 +38,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.NavigableSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.function.IntFunction;
@@ -72,43 +74,60 @@ public class SememeProvider implements SememeService {
     final ConcurrentSkipListSet<SememeKey> referencedNidAssemblageSequenceSememeSequenceMap = new ConcurrentSkipListSet<>();
     final IdentifierService sequenceProvider;
 
-    public SememeProvider() throws IOException {
-        sequenceProvider = LookupService.getService(IdentifierService.class);
-        sememeMap = new CasSequenceObjectMap(new SememeSerializer(),
-                IsaacDbFolder.get().getDbFolderPath().resolve("sememe"), "seg.", ".sememe.map");
+    //For HK2
+    private SememeProvider() throws IOException {
+        try
+        {
+            sequenceProvider = LookupService.getService(IdentifierService.class);
+            
+            Path sememePath = Cradle.getCradlePath().resolve("sememe");
+            log.info("Setting up sememe provider at " + sememePath.toAbsolutePath().toString());
+            
+            sememeMap = new CasSequenceObjectMap(new SememeSerializer(), sememePath, "seg.", ".sememe.map");
+        }
+        catch (Exception e) {
+            LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Cradle Commit Manager", e);
+            throw e;
+        }
     }
 
     @PostConstruct
     private void startMe() throws IOException {
-        log.info("Loading sememeMap.");
-        if (!IsaacDbFolder.get().getPrimordial()) {
-            log.info("Reading sememeMap.");
-            sememeMap.initialize();
-
-            log.info("Loading SememeKeys.");
-
-            try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "sememe.keys"))))) {
-                int size = in.readInt();
-                for (int i = 0; i < size; i++) {
-                    int key1 = in.readInt();
-                    int key2 = in.readInt();
-                    int sequence = in.readInt();
-                    assemblageSequenceReferencedNidSememeSequenceMap.add(new SememeKey(key1, key2, sequence));
-                    referencedNidAssemblageSequenceSememeSequenceMap.add(new SememeKey(key2, key1, sequence));
+        try
+        {
+            log.info("Loading sememeMap.");
+            if (!Cradle.cradleStartedEmpty()) {
+                log.info("Reading sememeMap.");
+                sememeMap.initialize();
+    
+                log.info("Loading SememeKeys.");
+    
+                try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(Cradle.getCradlePath().toFile(), "sememe.keys"))))) {
+                    int size = in.readInt();
+                    for (int i = 0; i < size; i++) {
+                        int key1 = in.readInt();
+                        int key2 = in.readInt();
+                        int sequence = in.readInt();
+                        assemblageSequenceReferencedNidSememeSequenceMap.add(new SememeKey(key1, key2, sequence));
+                        referencedNidAssemblageSequenceSememeSequenceMap.add(new SememeKey(key2, key1, sequence));
+                    }
                 }
             }
+    
+            SememeSequenceSet statedGraphSequences = getSememeSequencesFromAssemblage(
+                    sequenceProvider.getConceptSequence(sequenceProvider.getNidForUuids(IsaacMetadataAuxiliaryBinding.EL_PLUS_PLUS_STATED_FORM.getUuids())));
+            log.info("Stated logic graphs: " + statedGraphSequences.size());
+    
+            SememeSequenceSet inferedGraphSequences = getSememeSequencesFromAssemblage(
+                    sequenceProvider.getConceptSequence(sequenceProvider.getNidForUuids(IsaacMetadataAuxiliaryBinding.EL_PLUS_PLUS_INFERRED_FORM.getUuids())));
+    
+            log.info("Inferred logic graphs: " + inferedGraphSequences.size());
+            log.info("Finished SememeProvider load.");
         }
-
-        SememeSequenceSet statedGraphSequences = getSememeSequencesFromAssemblage(
-                sequenceProvider.getConceptSequence(sequenceProvider.getNidForUuids(IsaacMetadataAuxiliaryBinding.EL_PLUS_PLUS_STATED_FORM.getUuids())));
-        log.info("Stated logic graphs: " + statedGraphSequences.size());
-
-        SememeSequenceSet inferedGraphSequences = getSememeSequencesFromAssemblage(
-                sequenceProvider.getConceptSequence(sequenceProvider.getNidForUuids(IsaacMetadataAuxiliaryBinding.EL_PLUS_PLUS_INFERRED_FORM.getUuids())));
-
-        log.info("Inferred logic graphs: " + inferedGraphSequences.size());
-        log.info("Finished SememeProvider load.");
-        log.info("Finished SememeProvider load.");
+        catch (Exception e) {
+            LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Cradle Commit Manager", e);
+            throw e;
+        }
     }
 
     @PreDestroy
@@ -120,7 +139,7 @@ public class SememeProvider implements SememeService {
         sememeMap.write();
 
         log.info("writing SememeKeys.");
-        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "sememe.keys"))))) {
+        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(Cradle.getCradlePath().toFile(), "sememe.keys"))))) {
             out.writeInt(assemblageSequenceReferencedNidSememeSequenceMap.size());
             for (SememeKey key : assemblageSequenceReferencedNidSememeSequenceMap) {
                 out.writeInt(key.key1);

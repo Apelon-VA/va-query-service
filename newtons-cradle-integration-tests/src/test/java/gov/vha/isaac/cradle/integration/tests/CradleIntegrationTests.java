@@ -5,7 +5,7 @@
  */
 package gov.vha.isaac.cradle.integration.tests;
 
-import static gov.vha.isaac.lookup.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
+import static gov.vha.isaac.ochre.api.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
 import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordUnpacked;

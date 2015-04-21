@@ -6,16 +6,16 @@
 package gov.vha.isaac.cradle.commit;
 
 import gov.vha.isaac.cradle.ConcurrentObjectIntMap;
-import gov.vha.isaac.cradle.IsaacDbFolder;
+import gov.vha.isaac.cradle.Cradle;
 import gov.vha.isaac.cradle.collections.ConcurrentSequenceSerializedObjectMap;
 import gov.vha.isaac.cradle.collections.StampAliasMap;
 import gov.vha.isaac.cradle.collections.StampCommentMap;
 import gov.vha.isaac.cradle.collections.UuidIntMapMap;
 import gov.vha.isaac.cradle.component.StampSerializer;
-import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.State;
+import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.chronicle.ChronicledConcept;
 import gov.vha.isaac.ochre.api.commit.Alert;
 import gov.vha.isaac.ochre.api.commit.AlertType;
@@ -43,10 +43,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import javafx.collections.ObservableList;
 import javax.annotation.PostConstruct;
@@ -77,8 +76,7 @@ public class CradleCommitManager implements CommitManager {
     private static final String STAMP_ALIAS_MAP_FILENAME = "stamp-alias.map";
     private static final String STAMP_COMMENT_MAP_FILENAME = "stamp-comment.map";
 
-    private static final Map<UncommittedStamp, Integer> uncomittedStampEntries
-            = new ConcurrentHashMap<>();
+    private static final Map<UncommittedStamp, Integer> uncomittedStampEntries = new ConcurrentHashMap<>();
 
     private final StampAliasMap stampAliasMap = new StampAliasMap();
     private final StampCommentMap stampCommentMap = new StampCommentMap();
@@ -89,7 +87,7 @@ public class CradleCommitManager implements CommitManager {
     private final AtomicInteger nextStamp = new AtomicInteger(1);
     private final ReentrantLock stampLock = new ReentrantLock();
     private final AtomicLong databaseSequence = new AtomicLong();
-    private final AtomicBoolean loadExisting = new AtomicBoolean(false);
+    private final AtomicReference<Boolean> loadExisting = new AtomicReference<>();
     private final IdentifierService sequenceProvider;
     private final ConcurrentSkipListSet<ChangeChecker> checkers = new ConcurrentSkipListSet<>();
     private final ConcurrentSkipListSet<Alert> alertCollection = new ConcurrentSkipListSet<>();
@@ -105,45 +103,59 @@ public class CradleCommitManager implements CommitManager {
 
     private long lastCommit = Long.MIN_VALUE;
 
-    public CradleCommitManager() throws IOException {
-        dbFolderPath = IsaacDbFolder.get().getDbFolderPath();
-        inverseStampMap = new ConcurrentSequenceSerializedObjectMap<>(new StampSerializer(),
-                dbFolderPath, null, null);
-        sequenceProvider = Hk2Looker.getService(IdentifierService.class);
-        commitManagerFolder = Paths.get(dbFolderPath.toString(), DEFAULT_CRADLE_COMMIT_MANAGER_FOLDER);
+    private CradleCommitManager() throws IOException {
+        try {
+            dbFolderPath = Cradle.getCradlePath();
+            commitManagerFolder = Paths.get(dbFolderPath.toString(), DEFAULT_CRADLE_COMMIT_MANAGER_FOLDER);
+            log.info("Setting up commit manager at " + commitManagerFolder.toAbsolutePath().toString());
+            inverseStampMap = new ConcurrentSequenceSerializedObjectMap<>(new StampSerializer(), dbFolderPath, null, null);
+            sequenceProvider = Hk2Looker.getService(IdentifierService.class);
+        }
+        catch (Exception e) {
+            LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Cradle Commit Manager", e);
+            throw e;
+        }
+        
     }
 
     @PostConstruct
     private void startMe() throws IOException {
-        log.info("Starting CradleCommitManager post-construct");
-        writeCompletionServicePool.submit(writeConceptCompletionService);
-        if (!IsaacDbFolder.get().getPrimordial()) {
-            loadExisting.set(!IsaacDbFolder.get().getPrimordial());
-            log.info("Loading existing commit manager data. ");
-            log.info("Loading " + COMMIT_MANAGER_DATA_FILENAME);
-            try (DataInputStream in = new DataInputStream(new FileInputStream(new File(commitManagerFolder.toFile(), COMMIT_MANAGER_DATA_FILENAME)))) {
-                nextStamp.set(in.readInt());
-                databaseSequence.set(in.readLong());
-                UuidIntMapMap.getNextNidProvider().set(in.readInt());
-                int stampMapSize = in.readInt();
-                for (int i = 0; i < stampMapSize; i++) {
-                    int stampSequence = in.readInt();
-                    Stamp stamp = new Stamp(in);
-                    stampMap.put(stamp, stampSequence);
-                    inverseStampMap.put(stampSequence, stamp);
+        try {
+            log.info("Starting CradleCommitManager post-construct");
+            writeCompletionServicePool.submit(writeConceptCompletionService);
+            if (loadExisting.compareAndSet(null, !Cradle.cradleStartedEmpty())) { 
+                if (loadExisting.get()) {
+                    log.info("Loading existing commit manager data. ");
+                    log.info("Loading " + COMMIT_MANAGER_DATA_FILENAME);
+                    try (DataInputStream in = new DataInputStream(new FileInputStream(new File(commitManagerFolder.toFile(), COMMIT_MANAGER_DATA_FILENAME)))) {
+                        nextStamp.set(in.readInt());
+                        databaseSequence.set(in.readLong());
+                        UuidIntMapMap.getNextNidProvider().set(in.readInt());
+                        int stampMapSize = in.readInt();
+                        for (int i = 0; i < stampMapSize; i++) {
+                            int stampSequence = in.readInt();
+                            Stamp stamp = new Stamp(in);
+                            stampMap.put(stamp, stampSequence);
+                            inverseStampMap.put(stampSequence, stamp);
+                        }
+                    }
+                    loadExisting.set(false);
                 }
             }
+    
+            if (Files.exists(commitManagerFolder)) {
+                log.info("Loading: " + STAMP_ALIAS_MAP_FILENAME);
+                stampAliasMap.read(new File(commitManagerFolder.toFile(), STAMP_ALIAS_MAP_FILENAME));
+                log.info("Loading: " + STAMP_COMMENT_MAP_FILENAME);
+                stampCommentMap.read(new File(commitManagerFolder.toFile(), STAMP_COMMENT_MAP_FILENAME));
+            } else {
+                Files.createDirectories(commitManagerFolder);
+            }
         }
-
-        if (Files.exists(commitManagerFolder)) {
-            log.info("Loading: " + STAMP_ALIAS_MAP_FILENAME);
-            stampAliasMap.read(new File(commitManagerFolder.toFile(), STAMP_ALIAS_MAP_FILENAME));
-            log.info("Loading: " + STAMP_COMMENT_MAP_FILENAME);
-            stampCommentMap.read(new File(commitManagerFolder.toFile(), STAMP_COMMENT_MAP_FILENAME));
-        } else {
-            Files.createDirectories(commitManagerFolder);
+        catch (Exception e) {
+            LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Cradle Commit Manager", e);
+            throw e;
         }
-
     }
 
     @PreDestroy

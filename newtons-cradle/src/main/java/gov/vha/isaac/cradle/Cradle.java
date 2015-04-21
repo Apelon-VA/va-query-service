@@ -62,20 +62,25 @@ import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.StandardPaths;
+import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.chronicle.IdentifiedObjectLocal;
 import gov.vha.isaac.ochre.api.commit.CommitManager;
 import gov.vha.isaac.ochre.api.sememe.SememeService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.ihtsdo.otf.tcc.api.concept.ConceptFetcherBI;
 import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
@@ -97,50 +102,98 @@ public class Cradle
 
     final ConcurrentSequenceSerializedObjectMap<ConceptChronicleDataEager> conceptMap;
 
-
-
     transient HashMap<UUID, ViewCoordinate> viewCoordinates = new HashMap<>();
 
-
-    AtomicBoolean loadExisting = new AtomicBoolean(false);
+    private static AtomicReference<Boolean> cradleStartedEmpty = new AtomicReference<>();
+    private static AtomicReference<Path> cradlePath_ = new AtomicReference<>();
+    
+    private AtomicBoolean loadRequired = new AtomicBoolean();
 
     IdentifierService identifierProvider;
     TaxonomyService taxonomyProvider;
     CommitManager commitManager;
     SememeService sememeProvider;
     RefexService refexProvider;
-
-    Cradle() throws IOException, NumberFormatException, ParseException {
-        conceptMap = new ConcurrentSequenceSerializedObjectMap(new ConceptChronicleDataEagerSerializer(),
-                IsaacDbFolder.get().getDbFolderPath(), "concept-map/", ".concepts.map");
-
+    
+    public static Path getCradlePath()
+    {
+        cradlePath_.compareAndSet(null, new Supplier<Path>() {
+            @Override
+            public Path get() {
+                ConfigurationService configurationService = LookupService.getService(ConfigurationService.class);
+                Path cradlePath = configurationService.getChronicleFolderPath().resolve(DEFAULT_CRADLE_FOLDER);
+        
+                if (cradleStartedEmpty.compareAndSet(null, !Files.exists(cradlePath))) {
+                    if (cradleStartedEmpty.get()) {
+                        try {
+                            Files.createDirectories(cradlePath);
+                        } catch (IOException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    }
+                }
+                return cradlePath;
+            }
+        }.get());
+        return cradlePath_.get();
+    }
+    
+    public static boolean cradleStartedEmpty()
+    {
+        if (cradleStartedEmpty.get() == null) {
+            //populated as a side effect
+            getCradlePath();
+        }
+        return cradleStartedEmpty.get();
+    }
+    
+    //For HK2
+    private Cradle() throws IOException, NumberFormatException, ParseException {
+        try {
+            log.info("Setting up cradle at " + getCradlePath().toAbsolutePath().toString());
+            conceptMap = new ConcurrentSequenceSerializedObjectMap(new ConceptChronicleDataEagerSerializer(),
+                    getCradlePath(), "concept-map/", ".concepts.map");
+        }
+        catch (Exception e) {
+            LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("ChRonicled Assertion Database of Logical Expressions", e);
+            throw e;
+        }
     }
 
     @PostConstruct
     private void startMe() throws IOException {
-        log.info("Starting Cradle post-construct");
-        commitManager = LookupService.getService(CommitManager.class);
-        identifierProvider = LookupService.getService(IdentifierService.class);
-        sememeProvider = LookupService.getService(SememeService.class);
-        refexProvider = LookupService.getService(RefexService.class);
-        if (!IsaacDbFolder.get().getPrimordial()) {
-            loadExisting.set(!IsaacDbFolder.get().getPrimordial());
+        try {
+            log.info("Starting Cradle post-construct");
+            loadRequired.set(!cradleStartedEmpty());
+            commitManager = LookupService.getService(CommitManager.class);
+            identifierProvider = LookupService.getService(IdentifierService.class);
+            sememeProvider = LookupService.getService(SememeService.class);
+            refexProvider = LookupService.getService(RefexService.class);
+            MemoryUtil.startListener();
         }
-        MemoryUtil.startListener();
+        catch (Exception e) {
+            LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("ChRonicled Assertion Database of Logical Expressions", e);
+            throw e;
+        }
 
     }
 
     @Override
     public void loadExistingDatabase() throws IOException {
-        taxonomyProvider = Hk2Looker.getService(TaxonomyService.class);
-        if (loadExisting.compareAndSet(true, false)) {
-
-            log.info("Loading concept-map.");
-            conceptMap.read();
-
-            log.info("Finished load.");
+        try {
+            taxonomyProvider = Hk2Looker.getService(TaxonomyService.class);
+            if (loadRequired.compareAndSet(true, false)) {
+    
+                log.info("Loading concept-map.");
+                conceptMap.read();
+    
+                log.info("Finished load.");
+            }
         }
-
+        catch (Exception e) {
+            LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("ChRonicled Assertion Database of Logical Expressions", e);
+            throw e;
+        }
     }
 
     @PreDestroy
@@ -151,6 +204,7 @@ public class Cradle
         conceptMap.write();
         //integrityTest();
 
+        cradleStartedEmpty.set(null);  //In case someone wants stop, then restart the service, we need to repopulate the vars about reading the DB.
         log.info("Finished pre-destroy.");
     }
 
