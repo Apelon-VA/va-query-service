@@ -3,6 +3,7 @@ package gov.vha.isaac.cradle.taxonomy;
 import gov.vha.isaac.cradle.taxonomy.TypeStampTaxonomyRecords.TypeStampTaxonomyRecord;
 import gov.vha.isaac.cradle.version.StampSequenceComputer;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
+import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import org.apache.mahout.math.function.IntObjectProcedure;
 import org.apache.mahout.math.list.IntArrayList;
@@ -64,6 +65,15 @@ public class TaxonomyRecordUnpacked {
         StampSequenceComputer computer = StampSequenceComputer.getComputer(tc.getStampCoordinate());
         if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
             return conceptSequenceRecordMap.get(conceptSequence).isActive(typeSequence, tc, computer);
+        }
+        return false;
+    }
+    
+    public boolean isConceptActive(int conceptSequence, StampCoordinate stampCoordinate) {
+        StampSequenceComputer computer = StampSequenceComputer.getComputer(stampCoordinate);
+        if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
+            return conceptSequenceRecordMap.get(conceptSequence).
+                    isActive(Integer.MAX_VALUE, TaxonomyFlags.CONCEPT_STATUS.bits, computer);
         }
         return false;
     }

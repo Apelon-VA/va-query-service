@@ -39,7 +39,7 @@ public class RefexCollection implements Collection<RefexMember<?, ?>> {
         @Override
         public RefexMember<?, ?> next() {
             return (RefexMember<?, ?>)
-                    Ts.get().getRefex(sememeNidIterator.next().getSememeSequence());
+                    Ts.get().getRefex(sememeNidIterator.next().getRefexSequence());
         }
     }
 

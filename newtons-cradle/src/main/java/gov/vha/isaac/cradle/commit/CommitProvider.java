@@ -12,8 +12,6 @@ import gov.vha.isaac.cradle.collections.StampAliasMap;
 import gov.vha.isaac.cradle.collections.StampCommentMap;
 import gov.vha.isaac.cradle.collections.UuidIntMapMap;
 import gov.vha.isaac.cradle.component.StampSerializer;
-import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.chronicle.ChronicledConcept;
@@ -23,6 +21,7 @@ import gov.vha.isaac.ochre.api.commit.ChangeChecker;
 import gov.vha.isaac.ochre.api.commit.CheckPhase;
 import gov.vha.isaac.ochre.api.commit.CommitManager;
 import gov.vha.isaac.ochre.api.commit.CommitRecord;
+import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.SequenceSet;
 import java.io.DataInputStream;
@@ -43,11 +42,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.IntStream;
 import javafx.collections.ObservableList;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -67,9 +66,9 @@ import org.jvnet.hk2.annotations.Service;
  *
  * @author kec
  */
-@Service(name = "Cradle Commit Manager")
+@Service(name = "Cradle Commit Provider")
 @RunLevel(value = 1)
-public class CradleCommitManager implements CommitManager {
+public class CommitProvider implements CommitService, CommitManager {
 
     private static final Logger log = LogManager.getLogger();
     public static final String DEFAULT_CRADLE_COMMIT_MANAGER_FOLDER = "commit-manager";
@@ -105,7 +104,7 @@ public class CradleCommitManager implements CommitManager {
 
     private long lastCommit = Long.MIN_VALUE;
 
-    public CradleCommitManager() throws IOException {
+    public CommitProvider() throws IOException {
         dbFolderPath = IsaacDbFolder.get().getDbFolderPath();
         inverseStampMap = new ConcurrentSequenceSerializedObjectMap<>(new StampSerializer(),
                 dbFolderPath, null, null);
@@ -227,31 +226,31 @@ public class CradleCommitManager implements CommitManager {
     }
 
     @Override
-    public int getPathSequenceForStamp(int stamp) {
-        Optional<Stamp> s = inverseStampMap.get(stamp);
+    public int getPathSequenceForStamp(int stampSequence) {
+        Optional<Stamp> s = inverseStampMap.get(stampSequence);
         if (s.isPresent()) {
             return sequenceProvider.getConceptSequence(
                     s.get().getPathNid());
         }
-        throw new NoSuchElementException("No stampSequence found: " + stamp);
+        throw new NoSuchElementException("No stampSequence found: " + stampSequence);
     }
 
     @Override
-    public State getStatusForStamp(int stamp) {
-        Optional<Stamp> s = inverseStampMap.get(stamp);
+    public State getStatusForStamp(int stampSequence) {
+        Optional<Stamp> s = inverseStampMap.get(stampSequence);
         if (s.isPresent()) {
             return s.get().getStatus().getState();
         }
-        throw new NoSuchElementException("No stampSequence found: " + stamp);
+        throw new NoSuchElementException("No stampSequence found: " + stampSequence);
     }
 
     @Override
-    public long getTimeForStamp(int stamp) {
-        Optional<Stamp> s = inverseStampMap.get(stamp);
+    public long getTimeForStamp(int stampSequence) {
+        Optional<Stamp> s = inverseStampMap.get(stampSequence);
         if (s.isPresent()) {
             return s.get().getTime();
         }
-        throw new NoSuchElementException("No stampSequence found: " + stamp);
+        throw new NoSuchElementException("No stampSequence found: " + stampSequence);
     }
 
     @Override
@@ -484,5 +483,11 @@ public class CradleCommitManager implements CommitManager {
              sb.append(Ts.get().informAboutNid(getPathSequenceForStamp(stampSequence)));
              sb.append('}');
              return sb.toString();
+    }
+
+    @Override
+    public IntStream getStampSequences() {
+        return IntStream.rangeClosed(1, nextStamp.get()).
+                filter((stampSequence) -> inverseStampMap.containsKey(stampSequence));
     }
 }
