@@ -23,6 +23,7 @@ import gov.vha.isaac.ochre.api.commit.ChangeChecker;
 import gov.vha.isaac.ochre.api.commit.CheckPhase;
 import gov.vha.isaac.ochre.api.commit.CommitManager;
 import gov.vha.isaac.ochre.api.commit.CommitRecord;
+import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.SequenceSet;
 import java.io.DataInputStream;
@@ -43,10 +44,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.IntStream;
 import javafx.collections.ObservableList;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -66,9 +68,9 @@ import org.jvnet.hk2.annotations.Service;
  *
  * @author kec
  */
-@Service(name = "Cradle Commit Manager")
+@Service(name = "Cradle Commit Provider")
 @RunLevel(value = 1)
-public class CradleCommitManager implements CommitManager {
+public class CommitProvider implements CommitService, CommitManager {
 
     private static final Logger log = LogManager.getLogger();
     public static final String DEFAULT_CRADLE_COMMIT_MANAGER_FOLDER = "commit-manager";
@@ -87,7 +89,6 @@ public class CradleCommitManager implements CommitManager {
     private final AtomicInteger nextStamp = new AtomicInteger(1);
     private final ReentrantLock stampLock = new ReentrantLock();
     private final AtomicLong databaseSequence = new AtomicLong();
-    private final AtomicReference<Boolean> loadExisting = new AtomicReference<>();
     private final IdentifierService sequenceProvider;
     private final ConcurrentSkipListSet<ChangeChecker> checkers = new ConcurrentSkipListSet<>();
     private final ConcurrentSkipListSet<Alert> alertCollection = new ConcurrentSkipListSet<>();
@@ -103,19 +104,18 @@ public class CradleCommitManager implements CommitManager {
 
     private long lastCommit = Long.MIN_VALUE;
 
-    private CradleCommitManager() throws IOException {
+    private CommitProvider() throws IOException {
         try {
             dbFolderPath = Cradle.getCradlePath();
-            commitManagerFolder = Paths.get(dbFolderPath.toString(), DEFAULT_CRADLE_COMMIT_MANAGER_FOLDER);
-            log.info("Setting up commit manager at " + commitManagerFolder.toAbsolutePath().toString());
-            inverseStampMap = new ConcurrentSequenceSerializedObjectMap<>(new StampSerializer(), dbFolderPath, null, null);
+            inverseStampMap = new ConcurrentSequenceSerializedObjectMap<>(new StampSerializer(),
+                    dbFolderPath, null, null);
             sequenceProvider = Hk2Looker.getService(IdentifierService.class);
+            commitManagerFolder = Paths.get(dbFolderPath.toString(), DEFAULT_CRADLE_COMMIT_MANAGER_FOLDER);
         }
         catch (Exception e) {
-            LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Cradle Commit Manager", e);
+            LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Cradle Commit Provider", e);
             throw e;
         }
-        
     }
 
     @PostConstruct
@@ -123,26 +123,24 @@ public class CradleCommitManager implements CommitManager {
         try {
             log.info("Starting CradleCommitManager post-construct");
             writeCompletionServicePool.submit(writeConceptCompletionService);
-            if (loadExisting.compareAndSet(null, !Cradle.cradleStartedEmpty())) { 
-                if (loadExisting.get()) {
-                    log.info("Loading existing commit manager data. ");
-                    log.info("Loading " + COMMIT_MANAGER_DATA_FILENAME);
-                    try (DataInputStream in = new DataInputStream(new FileInputStream(new File(commitManagerFolder.toFile(), COMMIT_MANAGER_DATA_FILENAME)))) {
-                        nextStamp.set(in.readInt());
-                        databaseSequence.set(in.readLong());
-                        UuidIntMapMap.getNextNidProvider().set(in.readInt());
-                        int stampMapSize = in.readInt();
-                        for (int i = 0; i < stampMapSize; i++) {
-                            int stampSequence = in.readInt();
-                            Stamp stamp = new Stamp(in);
-                            stampMap.put(stamp, stampSequence);
-                            inverseStampMap.put(stampSequence, stamp);
-                        }
+            if (!Cradle.cradleStartedEmpty()) {
+                log.info("Loading existing commit manager data. ");
+                log.info("Loading " + COMMIT_MANAGER_DATA_FILENAME);
+                try (DataInputStream in = new DataInputStream(new FileInputStream(new File(commitManagerFolder.toFile(), COMMIT_MANAGER_DATA_FILENAME)))) {
+                    nextStamp.set(in.readInt());
+                    databaseSequence.set(in.readLong());
+                    UuidIntMapMap.getNextNidProvider().set(in.readInt());
+                    int stampMapSize = in.readInt();
+                    for (int i = 0; i < stampMapSize; i++) {
+                        int stampSequence = in.readInt();
+                        Stamp stamp = new Stamp(in);
+                        stampMap.put(stamp, stampSequence);
+                        inverseStampMap.put(stampSequence, stamp);
                     }
-                    loadExisting.set(false);
                 }
             }
-    
+            
+
             if (Files.exists(commitManagerFolder)) {
                 log.info("Loading: " + STAMP_ALIAS_MAP_FILENAME);
                 stampAliasMap.read(new File(commitManagerFolder.toFile(), STAMP_ALIAS_MAP_FILENAME));
@@ -153,7 +151,7 @@ public class CradleCommitManager implements CommitManager {
             }
         }
         catch (Exception e) {
-            LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Cradle Commit Manager", e);
+            LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Cradle Commit Provider", e);
             throw e;
         }
     }
@@ -239,31 +237,31 @@ public class CradleCommitManager implements CommitManager {
     }
 
     @Override
-    public int getPathSequenceForStamp(int stamp) {
-        Optional<Stamp> s = inverseStampMap.get(stamp);
+    public int getPathSequenceForStamp(int stampSequence) {
+        Optional<Stamp> s = inverseStampMap.get(stampSequence);
         if (s.isPresent()) {
             return sequenceProvider.getConceptSequence(
                     s.get().getPathNid());
         }
-        throw new NoSuchElementException("No stampSequence found: " + stamp);
+        throw new NoSuchElementException("No stampSequence found: " + stampSequence);
     }
 
     @Override
-    public State getStatusForStamp(int stamp) {
-        Optional<Stamp> s = inverseStampMap.get(stamp);
+    public State getStatusForStamp(int stampSequence) {
+        Optional<Stamp> s = inverseStampMap.get(stampSequence);
         if (s.isPresent()) {
             return s.get().getStatus().getState();
         }
-        throw new NoSuchElementException("No stampSequence found: " + stamp);
+        throw new NoSuchElementException("No stampSequence found: " + stampSequence);
     }
 
     @Override
-    public long getTimeForStamp(int stamp) {
-        Optional<Stamp> s = inverseStampMap.get(stamp);
+    public long getTimeForStamp(int stampSequence) {
+        Optional<Stamp> s = inverseStampMap.get(stampSequence);
         if (s.isPresent()) {
             return s.get().getTime();
         }
-        throw new NoSuchElementException("No stampSequence found: " + stamp);
+        throw new NoSuchElementException("No stampSequence found: " + stampSequence);
     }
 
     @Override
@@ -496,5 +494,11 @@ public class CradleCommitManager implements CommitManager {
              sb.append(Ts.get().informAboutNid(getPathSequenceForStamp(stampSequence)));
              sb.append('}');
              return sb.toString();
+    }
+
+    @Override
+    public IntStream getStampSequences() {
+        return IntStream.rangeClosed(1, nextStamp.get()).
+                filter((stampSequence) -> inverseStampMap.containsKey(stampSequence));
     }
 }

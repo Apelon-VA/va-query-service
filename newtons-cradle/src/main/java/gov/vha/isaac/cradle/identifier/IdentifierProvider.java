@@ -19,6 +19,7 @@ import gov.vha.isaac.cradle.ConcurrentSequenceIntMap;
 import gov.vha.isaac.cradle.Cradle;
 import gov.vha.isaac.cradle.collections.SequenceMap;
 import gov.vha.isaac.cradle.collections.UuidIntMapMap;
+import gov.vha.isaac.ochre.api.ConceptProxy;
 import gov.vha.isaac.ochre.api.IdentifiedObjectService;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
@@ -417,5 +418,15 @@ public class IdentifierProvider implements IdentifierService {
     public NidSet getComponentNidsForConceptNids(ConceptSequenceSet conceptSequenceSet) {
         return nidCnidMap.getComponentNidsForConceptNids(conceptSequenceSet);
      }
+
+    @Override
+    public int getNidForProxy(ConceptProxy conceptProxy) {
+        return getNidForUuids(conceptProxy.getUuids());
+    }
+
+    @Override
+    public int getConceptSequenceForProxy(ConceptProxy conceptProxy) {
+        return getConceptSequence(getNidForProxy(conceptProxy));
+    }
     
 }

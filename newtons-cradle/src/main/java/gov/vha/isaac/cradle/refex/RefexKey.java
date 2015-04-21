@@ -22,12 +22,10 @@ package gov.vha.isaac.cradle.refex;
 public class RefexKey
     implements Comparable<RefexKey> {
     int key1;
-    int key2;
     int refexSequence;
 
-    public RefexKey(int key1, int key2, int refexSequence) {
+    public RefexKey(int key1, int refexSequence) {
         this.key1 = key1;
-        this.key2 = key2;
         this.refexSequence = refexSequence;
     }
 
@@ -35,12 +33,6 @@ public class RefexKey
     public int compareTo(RefexKey o) {
         if (key1 != o.key1) {
             if (key1 < o.key1) {
-                return -1;
-            }
-            return 1;
-        }
-        if (key2 != o.key2) {
-            if (key2 < o.key2) {
                 return -1;
             }
             return 1;
@@ -62,14 +54,12 @@ public class RefexKey
         RefexKey sememeKey = (RefexKey) o;
 
         if (key1 != sememeKey.key1) return false;
-        if (key2 != sememeKey.key2) return false;
         return refexSequence == sememeKey.refexSequence;
     }
 
     @Override
     public int hashCode() {
         int result = key1;
-        result = 31 * result + key2;
         result = 31 * result + refexSequence;
         return result;
     }
@@ -78,11 +68,7 @@ public class RefexKey
         return key1;
     }
 
-    public int getKey2() {
-        return key2;
-    }
-
-    public int getSememeSequence() {
+    public int getRefexSequence() {
         return refexSequence;
     }
 
@@ -90,8 +76,7 @@ public class RefexKey
     public String toString() {
         return "RefexKey{" +
                 "key1=" + key1 +
-                ", key2=" + key2 +
-                ", refexSequence=" + refexSequence +
+                 ", refexSequence=" + refexSequence +
                 '}';
     }
 }

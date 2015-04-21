@@ -54,26 +54,21 @@ public class SememeKeyTest {
     @Test
     public void testCompareTo() {
         System.out.println("compareTo");
-        SememeKey o = new SememeKey(1, 2, 3);
-        SememeKey instance = new SememeKey(1, 2, 3);
+        SememeKey o = new SememeKey(1, 3);
+        SememeKey instance = new SememeKey(1, 3);
         int expResult = 0;
         int result = instance.compareTo(o);
         assertEquals(expResult, result);
-        instance = new SememeKey(4, 2, 3);
+        instance = new SememeKey(4, 3);
         expResult = 1;
         result = instance.compareTo(o);
         assertEquals(expResult, result);
-        instance = new SememeKey(-1, 2, 3);
+        instance = new SememeKey(-1, 3);
         expResult = -1;
         result = instance.compareTo(o);
         assertEquals(expResult, result);
 
-        instance = new SememeKey(1, -2, 3);
-        expResult = -1;
-        result = instance.compareTo(o);
-        assertEquals(expResult, result);
-        
-        instance = new SememeKey(1, 2, -3);
+        instance = new SememeKey(1, -3);
         expResult = -1;
         result = instance.compareTo(o);
         assertEquals(expResult, result);
@@ -85,8 +80,8 @@ public class SememeKeyTest {
     @Test
     public void testEquals() {
         System.out.println("equals");
-        SememeKey o = new SememeKey(1, 2, 3);
-        SememeKey instance = new SememeKey(1, 2, 3);
+        SememeKey o = new SememeKey(1, 3);
+        SememeKey instance = new SememeKey(1, 3);
         boolean expResult = true;
         boolean result = instance.equals(o);
         assertEquals(expResult, result);
@@ -98,23 +93,12 @@ public class SememeKeyTest {
     @Test
     public void testGetKey1() {
         System.out.println("getKey1");
-        SememeKey instance = new SememeKey(1, 2, 3);
+        SememeKey instance = new SememeKey(1, 3);
         int expResult = 1;
         int result = instance.getKey1();
         assertEquals(expResult, result);
     }
 
-    /**
-     * Test of getKey2 method, of class SememeKey.
-     */
-    @Test
-    public void testGetKey2() {
-        System.out.println("getKey2");
-        SememeKey instance = new SememeKey(1, 2, 3);
-        int expResult = 2;
-        int result = instance.getKey2();
-        assertEquals(expResult, result);
-    }
 
     /**
      * Test of getSememeSequence method, of class SememeKey.
@@ -122,7 +106,7 @@ public class SememeKeyTest {
     @Test
     public void testGetSememeSequence() {
         System.out.println("getSememeSequence");
-        SememeKey instance = new SememeKey(1, 2, 3);
+        SememeKey instance = new SememeKey(1, 3);
         int expResult = 3;
         int result = instance.getSememeSequence();
         assertEquals(expResult, result);

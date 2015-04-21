@@ -5,12 +5,10 @@ package gov.vha.isaac.cradle.sememe;
  */
 public class SememeKey implements Comparable<SememeKey> {
     int key1;
-    int key2;
     int sememeSequence;
 
-    public SememeKey(int key1, int key2, int sememeSequence) {
+    public SememeKey(int key1, int sememeSequence) {
         this.key1 = key1;
-        this.key2 = key2;
         this.sememeSequence = sememeSequence;
     }
 
@@ -18,12 +16,6 @@ public class SememeKey implements Comparable<SememeKey> {
     public int compareTo(SememeKey o) {
         if (key1 != o.key1) {
             if (key1 < o.key1) {
-                return -1;
-            }
-            return 1;
-        }
-        if (key2 != o.key2) {
-            if (key2 < o.key2) {
                 return -1;
             }
             return 1;
@@ -45,24 +37,18 @@ public class SememeKey implements Comparable<SememeKey> {
         SememeKey sememeKey = (SememeKey) o;
 
         if (key1 != sememeKey.key1) return false;
-        if (key2 != sememeKey.key2) return false;
         return sememeSequence == sememeKey.sememeSequence;
     }
 
     @Override
     public int hashCode() {
         int result = key1;
-        result = 31 * result + key2;
         result = 31 * result + sememeSequence;
         return result;
     }
 
     public int getKey1() {
         return key1;
-    }
-
-    public int getKey2() {
-        return key2;
     }
 
     public int getSememeSequence() {
@@ -73,7 +59,6 @@ public class SememeKey implements Comparable<SememeKey> {
     public String toString() {
         return "SememeKey{" +
                 "key1=" + key1 +
-                ", key2=" + key2 +
                 ", sememeSequence=" + sememeSequence +
                 '}';
     }

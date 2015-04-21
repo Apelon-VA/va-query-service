@@ -139,9 +139,6 @@ public class ImportEConcept implements Callable<Void> {
                 }
                 originDestinationTaxonomyRecords.put(originSequence, parentTaxonomyRecord);
                 cradle.writeConceptData(conceptData);
-                        if (eConcept.getPrimordialUuid().equals(Snomed.BLEEDING_FINDING.getUuids()[0])) {
-                            log.info("Watch concept[2]: " + cc.toLongString());
-                        }
             }
             return null;
         } finally {
