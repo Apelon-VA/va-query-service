@@ -23,7 +23,7 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import org.glassfish.hk2.runlevel.RunLevelController;
 import org.ihtsdo.otf.query.implementation.JaxbForQuery;
-import static gov.vha.isaac.lookup.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
+import static gov.vha.isaac.ochre.api.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import java.util.Set;
 import javafx.concurrent.Task;
@@ -37,7 +37,6 @@ import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.jvnet.testing.hk2testng.HK2;
 import org.reactfx.EventStreams;
 import org.reactfx.Subscription;
-
 import static org.testng.Assert.*;
 import org.testng.annotations.*;
 

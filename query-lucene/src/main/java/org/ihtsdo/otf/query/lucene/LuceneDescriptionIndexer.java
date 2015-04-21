@@ -53,7 +53,7 @@ import org.jvnet.hk2.annotations.Service;
 @RunLevel(value = 2)
 public class LuceneDescriptionIndexer extends LuceneIndexer implements IndexerBI {
 	
-	private static final Logger logger = Logger.getLogger(LuceneDescriptionIndexer.class.getName());
+	private final Logger logger = Logger.getLogger(LuceneDescriptionIndexer.class.getName());
 	
 	private HashMap<Integer, String> nidTypeMap = new HashMap<>();
 	private int isANid;

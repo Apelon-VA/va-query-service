@@ -1,6 +1,8 @@
 package org.ihtsdo.otf.query.lucene;
 
-import static gov.vha.isaac.lookup.constants.Constants.SEARCH_ROOT_LOCATION_PROPERTY;
+import gov.vha.isaac.ochre.api.ConfigurationService;
+import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -38,6 +40,7 @@ import org.ihtsdo.otf.tcc.model.index.service.SearchResult;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -49,6 +52,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -63,13 +67,15 @@ import org.apache.lucene.search.SearcherManager;
 
 public abstract class LuceneIndexer implements IndexerBI {
 
-    public static final String LUCENE_ROOT_LOCATION_PROPERTY = SEARCH_ROOT_LOCATION_PROPERTY;
     public static final String DEFAULT_LUCENE_FOLDER = "lucene";
-    protected static final Logger logger = Logger.getLogger(LuceneIndexer.class.getName());
+    private static final Logger logger = Logger.getLogger(LuceneIndexer.class.getName());
     public static final Version luceneVersion = Version.LUCENE_4_10_3;
     private static final UnindexedFuture unindexedFuture = new UnindexedFuture();
     private static final ThreadGroup threadGroup = new ThreadGroup("Lucene");
-    public static File root;
+    
+    private static AtomicReference<File> luceneRootFolder_ = new AtomicReference<>();
+    private File indexFolder_ = null;
+    
     protected static final FieldType indexedComponentNidType;
     protected static final FieldType referencedComponentNidType;
 
@@ -89,70 +95,67 @@ public abstract class LuceneIndexer implements IndexerBI {
     }
 
     private final ConcurrentHashMap<Integer, IndexedGenerationCallable> componentNidLatch = new ConcurrentHashMap<>();
-    private boolean enabled = true;
+    private boolean enabled_ = true;
     protected final ExecutorService luceneWriterService;
     protected ExecutorService luceneWriterFutureCheckerService;
     private final ControlledRealTimeReopenThread<IndexSearcher> reopenThread;
     private final TrackingIndexWriter trackingIndexWriter;
     private final ReferenceManager<IndexSearcher> searcherManager;
-    private final String indexName;
+    private final String indexName_;
 
-    public LuceneIndexer(String indexName) throws IOException {
-        this.indexName = indexName;
-        luceneWriterService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(),
-                new NamedThreadFactory(threadGroup, indexName + " Lucene writer"));
-        luceneWriterFutureCheckerService = Executors.newFixedThreadPool(1,
-                new NamedThreadFactory(threadGroup, indexName + " Lucene future checker"));
-        setupRoot();
-
-        File indexDirectoryFile = new File(root.getPath() + "/" + indexName);
-        System.out.println("Index: " + indexDirectoryFile);
-        Directory indexDirectory = initDirectory(indexDirectoryFile);
-
-        indexDirectory.clearLock("write.lock");
-
-        IndexWriterConfig config = new IndexWriterConfig(luceneVersion, new PerFieldAnalyzer());
-        config.setRAMBufferSizeMB(256);
-        MergePolicy mergePolicy = new LogByteSizeMergePolicy();
-
-        config.setMergePolicy(mergePolicy);
-        config.setSimilarity(new ShortTextSimilarity());
-
-        IndexWriter indexWriter = new IndexWriter(indexDirectory, config);
-
-        trackingIndexWriter = new TrackingIndexWriter(indexWriter);
-
-        boolean applyAllDeletes = false;
-
-        searcherManager = new SearcherManager(indexWriter, applyAllDeletes, null);
-        // [3]: Create the ControlledRealTimeReopenThread that reopens the index periodically taking into 
-        //      account the changes made to the index and tracked by the TrackingIndexWriter instance
-        //      The index is refreshed every 60sc when nobody is waiting 
-        //      and every 100 millis whenever is someone waiting (see search method)
-        //      (see http://lucene.apache.org/core/4_3_0/core/org/apache/lucene/search/NRTManagerReopenThread.html)
-        reopenThread = new ControlledRealTimeReopenThread<>(trackingIndexWriter, searcherManager, 60.00, 0.1);
-    
-        this.startThread();
-    }
-
-    private static void setupRoot() {
-        String rootLocation = System.getProperty(LUCENE_ROOT_LOCATION_PROPERTY);
-
-        if (rootLocation != null) {
-            root = new File(rootLocation, DEFAULT_LUCENE_FOLDER);
-        } else {
-            rootLocation = System.getProperty("org.ihtsdo.otf.tcc.datastore.bdb-location");
-
-            if (rootLocation != null) {
-                root = new File(rootLocation, DEFAULT_LUCENE_FOLDER);
-            } else {
-                root = new File(DEFAULT_LUCENE_FOLDER);
+    protected LuceneIndexer(String indexName) throws IOException {
+        try {
+            indexName_ = indexName;
+            luceneWriterService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(),
+                    new NamedThreadFactory(threadGroup, indexName + " Lucene writer"));
+            luceneWriterFutureCheckerService = Executors.newFixedThreadPool(1,
+                    new NamedThreadFactory(threadGroup, indexName + " Lucene future checker"));
+            
+            Path searchFolder = LookupService.getService(ConfigurationService.class).getSearchFolderPath();
+            
+            if (luceneRootFolder_.compareAndSet(null, new File(searchFolder.toFile(), DEFAULT_LUCENE_FOLDER))) {
+                luceneRootFolder_.get().mkdirs();
             }
+            
+            indexFolder_ = new File(luceneRootFolder_.get(), indexName);
+            indexFolder_.mkdirs();
+
+            logger.info("Index: " + indexFolder_.getAbsolutePath());
+            Directory indexDirectory = new SimpleFSDirectory(indexFolder_); 
+
+            indexDirectory.clearLock("write.lock");
+
+            IndexWriterConfig config = new IndexWriterConfig(luceneVersion, new PerFieldAnalyzer());
+            config.setRAMBufferSizeMB(256);
+            MergePolicy mergePolicy = new LogByteSizeMergePolicy();
+
+            config.setMergePolicy(mergePolicy);
+            config.setSimilarity(new ShortTextSimilarity());
+
+            IndexWriter indexWriter = new IndexWriter(indexDirectory, config);
+
+            trackingIndexWriter = new TrackingIndexWriter(indexWriter);
+
+            boolean applyAllDeletes = false;
+
+            searcherManager = new SearcherManager(indexWriter, applyAllDeletes, null);
+            // [3]: Create the ControlledRealTimeReopenThread that reopens the index periodically taking into 
+            //      account the changes made to the index and tracked by the TrackingIndexWriter instance
+            //      The index is refreshed every 60sc when nobody is waiting 
+            //      and every 100 millis whenever is someone waiting (see search method)
+            //      (see http://lucene.apache.org/core/4_3_0/core/org/apache/lucene/search/NRTManagerReopenThread.html)
+            reopenThread = new ControlledRealTimeReopenThread<>(trackingIndexWriter, searcherManager, 60.00, 0.1);
+   
+            this.startThread();
+        }
+        catch (Exception e) {
+            LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure(indexName, e);
+            throw e;
         }
     }
 
     private void startThread() {
-        reopenThread.setName("Lucene " + indexName + " Reopen Thread");
+        reopenThread.setName("Lucene " + indexName_ + " Reopen Thread");
         reopenThread.setPriority(Math.min(Thread.currentThread().getPriority() + 2, Thread.MAX_PRIORITY));
         reopenThread.setDaemon(true);
         reopenThread.start();
@@ -160,16 +163,7 @@ public abstract class LuceneIndexer implements IndexerBI {
 
     @Override
     public String getIndexerName() {
-        return indexName;
-    }
-
-    private static Directory initDirectory(File luceneDirFile) throws IOException, CorruptIndexException, LockObtainFailedException {
-        if (luceneDirFile.exists()) {
-            return new SimpleFSDirectory(luceneDirFile);
-        } else {
-            luceneDirFile.mkdirs();
-            return new SimpleFSDirectory(luceneDirFile);
-        }
+        return indexName_;
     }
 
     /**
@@ -413,17 +407,17 @@ public abstract class LuceneIndexer implements IndexerBI {
 
     @Override
     public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
+        enabled_ = enabled;
     }
 
     @Override
     public boolean isEnabled() {
-        return enabled;
+        return enabled_;
     }
     
     @Override
     public File getIndexerFolder() {
-        return root;
+        return indexFolder_;
     }
 
     protected void releaseLatch(int latchNid, long indexGeneration)
@@ -462,7 +456,7 @@ public abstract class LuceneIndexer implements IndexerBI {
         return wrap;
     }
     
-    protected static Query buildPrefixQuery(String searchString, String field, Analyzer analyzer) throws IOException
+    protected Query buildPrefixQuery(String searchString, String field, Analyzer analyzer) throws IOException
     {
         StringReader textReader = new StringReader(searchString);
         TokenStream tokenStream = analyzer.tokenStream(field, textReader);
@@ -503,7 +497,7 @@ public abstract class LuceneIndexer implements IndexerBI {
     }
 
     private final Future<Long> index(Supplier<AddDocument> documentSupplier, BooleanSupplier indexChronicle, int chronicleNid) {
-        if (!enabled) {
+        if (!enabled_) {
             releaseLatch(chronicleNid, Long.MIN_VALUE);
             return null;
         }
@@ -556,16 +550,16 @@ public abstract class LuceneIndexer implements IndexerBI {
      */
     private static class FutureChecker implements Runnable {
 
-        Future<Long> future;
+        Future<Long> future_;
 
         public FutureChecker(Future<Long> future) {
-            this.future = future;
+            future_ = future;
         }
 
         @Override
         public void run() {
             try {
-                future.get();
+                future_.get();
             } catch (InterruptedException | ExecutionException ex) {
                 Logger.getLogger(LuceneIndexer.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -574,35 +568,35 @@ public abstract class LuceneIndexer implements IndexerBI {
     
     private class AddDocument implements Callable<Long> {
 
-        ComponentChronicleBI<?> chronicle = null;
-        SememeChronicle<?> sememeChronicle = null;
+        ComponentChronicleBI<?> chronicle_ = null;
+        SememeChronicle<?> sememeChronicle_ = null;
 
         public AddDocument(ComponentChronicleBI<?> chronicle) {
-            this.chronicle = chronicle;
+            chronicle_ = chronicle;
         }
         
         public AddDocument(SememeChronicle<?> chronicle) {
-            this.sememeChronicle = chronicle;
+            sememeChronicle_ = chronicle;
         }
         
         public int getNid() {
-            return chronicle == null ? sememeChronicle.getNid() : chronicle.getNid();
+            return chronicle_ == null ? sememeChronicle_.getNid() : chronicle_.getNid();
         }
 
         @Override
         public Long call() throws Exception {
             Document doc = new Document();
             
-            if (chronicle == null)
+            if (chronicle_ == null)
             {
                 //TODO dan hacking - Keith question - for some reason, Keith isn't putting a field in sememe chronicles with the id???
                 //See other notes on issue in LuceneRefexIndexer
-                addFields(sememeChronicle, doc);
+                addFields(sememeChronicle_, doc);
             }
             else
             {
                 doc.add(new IntField(ComponentProperty.COMPONENT_ID.name(), getNid(), LuceneIndexer.indexedComponentNidType));
-                addFields(chronicle, doc);
+                addFields(chronicle_, doc);
             }
 
             // Note that the addDocument operation could cause duplicate documents to be

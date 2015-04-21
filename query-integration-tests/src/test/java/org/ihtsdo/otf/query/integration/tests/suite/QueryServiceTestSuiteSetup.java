@@ -17,8 +17,8 @@ package org.ihtsdo.otf.query.integration.tests.suite;
 
 import java.io.IOException;
 import java.util.UUID;
-import static gov.vha.isaac.lookup.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
-import static gov.vha.isaac.lookup.constants.Constants.SEARCH_ROOT_LOCATION_PROPERTY;
+import static gov.vha.isaac.ochre.api.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
+import static gov.vha.isaac.ochre.api.constants.Constants.SEARCH_ROOT_LOCATION_PROPERTY;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
