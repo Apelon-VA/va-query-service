@@ -8,6 +8,7 @@ package gov.vha.isaac.cradle.taxonomy;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import gov.vha.isaac.ochre.model.WaitFreeComparable;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
+import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import java.util.Optional;
 import java.util.stream.IntStream;
@@ -50,6 +51,19 @@ public class TaxonomyRecordPrimitive implements WaitFreeComparable {
             }
         }
         return Optional.empty();
+    }
+    
+    public static boolean isConceptActive(int conceptSequence, 
+             CasSequenceObjectMap<TaxonomyRecordPrimitive> taxonomyMap, 
+            StampCoordinate sc) {
+        Optional<TaxonomyRecordPrimitive> optionalRecord = taxonomyMap.get(conceptSequence);
+        if (optionalRecord.isPresent()) {
+            TaxonomyRecordPrimitive record = optionalRecord.get();
+            if (record.isConceptActive(conceptSequence, sc)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     int writeSequence;
@@ -167,6 +181,11 @@ public class TaxonomyRecordPrimitive implements WaitFreeComparable {
         return getTaxonomyRecordUnpacked().containsActiveConceptSequenceViaType(conceptSequence, typeSequence, tc, flags);
     }
     
+    public boolean isConceptActive(int conceptSequence, StampCoordinate stampCoordinate) {
+        return getTaxonomyRecordUnpacked().isConceptActive(conceptSequence, stampCoordinate);
+    }
+    
+
     public boolean containsVisibleSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc, int flags) {
         return getTaxonomyRecordUnpacked().containsVisibleConceptSequenceViaType(conceptSequence, typeSequence, tc, flags);
     }

@@ -5,6 +5,8 @@
  */
 package gov.vha.isaac.cradle;
 
+import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.SystemStatusService;
 import java.io.IOException;
 import javax.annotation.PostConstruct;
 import org.glassfish.hk2.runlevel.RunLevel;
@@ -19,10 +21,20 @@ import org.jvnet.hk2.annotations.Service;
 @RunLevel(value = 2)
 public class DatabaseLoaderService implements DatabaseLoader {
     
+    private DatabaseLoaderService() {
+        //For HK2
+    }
+    
     @PostConstruct
     private void startMe() throws IOException {
-        CradleExtensions isaacDb = Hk2Looker.get().getService(CradleExtensions.class);
-        isaacDb.loadExistingDatabase();
+        try {
+            CradleExtensions isaacDb = Hk2Looker.get().getService(CradleExtensions.class);
+            isaacDb.loadExistingDatabase();
+        }
+        catch (Exception e) {
+            LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Database Loader", e);
+            throw e;
+        }
     }
 
 }

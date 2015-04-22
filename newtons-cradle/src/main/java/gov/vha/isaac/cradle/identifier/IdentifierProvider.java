@@ -16,12 +16,14 @@
 package gov.vha.isaac.cradle.identifier;
 
 import gov.vha.isaac.cradle.ConcurrentSequenceIntMap;
-import gov.vha.isaac.cradle.IsaacDbFolder;
+import gov.vha.isaac.cradle.Cradle;
 import gov.vha.isaac.cradle.collections.SequenceMap;
 import gov.vha.isaac.cradle.collections.UuidIntMapMap;
+import gov.vha.isaac.ochre.api.ConceptProxy;
 import gov.vha.isaac.ochre.api.IdentifiedObjectService;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.chronicle.IdentifiedObjectLocal;
 import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
 import gov.vha.isaac.ochre.api.sememe.SememeService;
@@ -73,27 +75,38 @@ public class IdentifierProvider implements IdentifierService {
         return ios;
     }
 
-    final UuidIntMapMap uuidIntMapMap = UuidIntMapMap.create(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "uuid-nid-map"));
+    final UuidIntMapMap uuidIntMapMap = UuidIntMapMap.create(new File(Cradle.getCradlePath().toFile(), "uuid-nid-map"));
     final SequenceMap conceptSequenceMap = new SequenceMap(450000);
     final SequenceMap sememeSequenceMap = new SequenceMap(3000000);
     final SequenceMap refexSequenceMap = new SequenceMap(3000000);
     final ConcurrentSequenceIntMap nidCnidMap = new ConcurrentSequenceIntMap();
+    
+    private IdentifierProvider() {
+        //for HK2
+        log.info("IdentifierProvider constructed");
+    }
 
     @PostConstruct
     private void startMe() throws IOException {
-        log.info("Starting SequenceService post-construct");
-        if (!IsaacDbFolder.get().getPrimordial()) {
-            log.info("Loading concept-sequence.map.");
-            conceptSequenceMap.read(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "concept-sequence.map"));
-            log.info("Loading sememe-sequence.map.");
-            sememeSequenceMap.read(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "sememe-sequence.map"));
-            log.info("Loading refex-sequence.map.");
-            refexSequenceMap.read(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "refex-sequence.map"));
-            // uuid-nid-map can do dynamic load, no need to read all at the beginning.
-            // log.info("Loading uuid-nid-map.");
-            // uuidIntMapMap.read();
-            log.info("Loading sequence-cnid-map.");
-            nidCnidMap.read(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "sequence-cnid-map"));
+        try {
+            log.info("Starting SequenceService post-construct - reading from " + Cradle.getCradlePath().toAbsolutePath().toString());
+            if (!Cradle.cradleStartedEmpty()) {
+                log.info("Loading concept-sequence.map.");
+                conceptSequenceMap.read(new File(Cradle.getCradlePath().toFile(), "concept-sequence.map"));
+                log.info("Loading sememe-sequence.map.");
+                sememeSequenceMap.read(new File(Cradle.getCradlePath().toFile(), "sememe-sequence.map"));
+                log.info("Loading refex-sequence.map.");
+                refexSequenceMap.read(new File(Cradle.getCradlePath().toFile(), "refex-sequence.map"));
+                // uuid-nid-map can do dynamic load, no need to read all at the beginning.
+                // log.info("Loading uuid-nid-map.");
+                // uuidIntMapMap.read();
+                log.info("Loading sequence-cnid-map.");
+                nidCnidMap.read(new File(Cradle.getCradlePath().toFile(), "sequence-cnid-map"));
+            }
+        }
+        catch (Exception e) {
+            LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Identifier Provider", e);
+            throw e;
         }
     }
 
@@ -102,15 +115,15 @@ public class IdentifierProvider implements IdentifierService {
         uuidIntMapMap.setShutdown(true);
         log.info("conceptSequence: {}", conceptSequenceMap.getNextSequence());
         log.info("writing concept-sequence.map.");
-        conceptSequenceMap.write(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "concept-sequence.map"));
+        conceptSequenceMap.write(new File(Cradle.getCradlePath().toFile(), "concept-sequence.map"));
         log.info("writing sememe-sequence.map.");
-        sememeSequenceMap.write(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "sememe-sequence.map"));
+        sememeSequenceMap.write(new File(Cradle.getCradlePath().toFile(), "sememe-sequence.map"));
         log.info("writing refex-sequence.map.");
-        refexSequenceMap.write(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "refex-sequence.map"));
+        refexSequenceMap.write(new File(Cradle.getCradlePath().toFile(), "refex-sequence.map"));
         log.info("writing uuid-nid-map.");
         uuidIntMapMap.write();
         log.info("writing sequence-cnid-map.");
-        nidCnidMap.write(new File(IsaacDbFolder.get().getDbFolderPath().toFile(), "sequence-cnid-map"));
+        nidCnidMap.write(new File(Cradle.getCradlePath().toFile(), "sequence-cnid-map"));
     }
 
     @Override
@@ -405,5 +418,15 @@ public class IdentifierProvider implements IdentifierService {
     public NidSet getComponentNidsForConceptNids(ConceptSequenceSet conceptSequenceSet) {
         return nidCnidMap.getComponentNidsForConceptNids(conceptSequenceSet);
      }
+
+    @Override
+    public int getNidForProxy(ConceptProxy conceptProxy) {
+        return getNidForUuids(conceptProxy.getUuids());
+    }
+
+    @Override
+    public int getConceptSequenceForProxy(ConceptProxy conceptProxy) {
+        return getConceptSequence(getNidForProxy(conceptProxy));
+    }
     
 }

@@ -38,6 +38,7 @@ import org.ihtsdo.otf.tcc.model.cc.refexDynamic.RefexDynamicMemberFactory;
 import org.ihtsdo.otf.tcc.model.cc.refexDynamic.RefexDynamicRevision;
 import org.ihtsdo.otf.tcc.model.cc.relationship.Relationship;
 import org.ihtsdo.otf.tcc.model.cc.relationship.RelationshipRevision;
+import org.ihtsdo.otf.tcc.model.cc.termstore.PersistentStoreI;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
@@ -49,12 +50,12 @@ import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 public class Builder implements TerminologyBuilderBI {
     private static final IdentifierService sequenceProvider = Hk2Looker.getService(IdentifierService.class);
 
-    Cradle cradle;
+    PersistentStoreI cradle;
 
     EditCoordinate ec;
     ViewCoordinate vc;
 
-    public Builder(EditCoordinate ec, ViewCoordinate vc, Cradle cradle) {
+    public Builder(EditCoordinate ec, ViewCoordinate vc, PersistentStoreI cradle) {
         this.ec = ec;
         this.vc = vc;
         this.cradle = cradle;
@@ -612,7 +613,7 @@ public class Builder implements TerminologyBuilderBI {
         if (cc == null) {
             return construct(blueprint);
         } else {
-            ConceptChronicle concept = cradle.getConcept(sequenceProvider.getConceptNid(cc.getNid()));
+            ConceptChronicleBI concept = cradle.getConcept(sequenceProvider.getConceptNid(cc.getNid()));
             if (concept.isCanceled() || concept.getPrimordialUuid().toString().length() == 0
                     || concept.getConceptAttributes().getVersions().isEmpty()) {
                 return construct(blueprint);
