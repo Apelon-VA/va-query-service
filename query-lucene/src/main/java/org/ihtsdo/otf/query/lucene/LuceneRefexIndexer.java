@@ -34,6 +34,7 @@ import org.jvnet.hk2.annotations.Service;
 //~--- JDK imports ------------------------------------------------------------
 
 import java.io.IOException;
+import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.apache.lucene.document.IntField;
@@ -48,9 +49,11 @@ import org.glassfish.hk2.runlevel.RunLevel;
 @RunLevel(value = 2)
 public class LuceneRefexIndexer extends LuceneIndexer {
 
+    private final Logger logger = Logger.getLogger(LuceneRefexIndexer.class.getName());
     int snomedAssemblageSequence = Integer.MIN_VALUE;
 
-    public LuceneRefexIndexer() throws IOException {
+    private LuceneRefexIndexer() throws IOException {
+        //For HK2
         super("refex");
     }
     

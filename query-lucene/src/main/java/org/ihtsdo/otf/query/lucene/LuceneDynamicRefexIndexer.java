@@ -78,7 +78,7 @@ import org.jvnet.hk2.annotations.Service;
 @RunLevel(value = 2)
 public class LuceneDynamicRefexIndexer extends LuceneIndexer
 {
-	private static final Logger logger = Logger.getLogger(LuceneDynamicRefexIndexer.class.getName());
+	private final Logger logger = Logger.getLogger(LuceneDynamicRefexIndexer.class.getName());
 	
 	public static final String INDEX_NAME = "dynamicRefex";
 	private static final String COLUMN_FIELD_DATA = "colData";
@@ -87,8 +87,9 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 	@Inject 
 	private LuceneDynamicRefexIndexerConfiguration lric;
 
-	public LuceneDynamicRefexIndexer() throws IOException
+	private LuceneDynamicRefexIndexer() throws IOException
 	{
+		//For HK2
 		super(INDEX_NAME);
 	}
 	
