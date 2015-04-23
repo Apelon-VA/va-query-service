@@ -124,7 +124,7 @@ public class ImportEConceptFile extends Task<Integer> {
                         if (conceptCount % 1000 == 0) {
                             updateProgress(bytesProcessedForLoad + bytesProcessedForPath, bytesToProcessForLoad);
 
-                            updateMessage(String.format("Loaded %,d concepts...", completionCount));
+                            updateMessage(String.format("Importing file: " + p.toFile().getName() + " Loaded %,d concepts...", completionCount));
                             updateValue(completionCount);
                         }
                         TtkConceptChronicle eConcept = new TtkConceptChronicle(dis);
