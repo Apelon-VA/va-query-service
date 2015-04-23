@@ -9,10 +9,8 @@ import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import java.io.IOException;
-
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
-
 import java.util.UUID;
 import java.util.concurrent.*;
 import org.apache.logging.log4j.LogManager;
@@ -141,6 +139,9 @@ public class ImportEConcept implements Callable<Void> {
                 cradle.writeConceptData(conceptData);
             }
             return null;
+        } catch (Exception e) {
+            System.err.println("Failure importing " + eConcept.toString());
+            throw e;
         } finally {
             permit.release();
         }
