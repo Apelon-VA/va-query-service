@@ -21,7 +21,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import javafx.application.Platform;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
-import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 
 /**

@@ -15,31 +15,30 @@
  */
 package gov.vha.isaac.cradle.commit;
 
-import gov.vha.isaac.cradle.CradleExtensions;
-import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
+import gov.vha.isaac.ochre.api.sememe.SememeService;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Semaphore;
 import javafx.concurrent.Task;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
-import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 
 /**
  *
  * @author kec
  */
-public class WriteConceptChronicle extends Task<Void>  implements Callable<Void>{
+public class WriteSememeChronicle extends Task<Void>  implements Callable<Void>{
     
-    private static final CradleExtensions cradle = LookupService.getService(CradleExtensions.class);
+    private static final SememeService sememeService = LookupService.getService(SememeService.class);
     
-    private final ConceptChronicle cc;
+    private final SememeChronicle sc;
     private final Semaphore writeSemaphore;
 
-    public WriteConceptChronicle(ConceptChronicle cc, Semaphore writeSemaphore) {
-        this.cc = cc;
+    public WriteSememeChronicle(SememeChronicle sc, Semaphore writeSemaphore) {
+        this.sc = sc;
         this.writeSemaphore = writeSemaphore;
-        updateTitle("Write concept");
-        updateMessage(cc.toUserString());
+        updateTitle("Write sememe");
+        updateMessage(sc.toUserString());
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         LookupService.getService(ActiveTaskSet.class).get().add(this);
     }
@@ -47,13 +46,12 @@ public class WriteConceptChronicle extends Task<Void>  implements Callable<Void>
     @Override
     public Void call() throws Exception {
         try {
-            cradle.writeConceptData((ConceptChronicleDataEager) cc.getData());
+            sememeService.writeSememe(sc);
             updateProgress(1, 1); 
             return null;
         } finally {
             writeSemaphore.release();
-            LookupService.getService(ActiveTaskSet.class).get().remove(this); 
+            LookupService.getService(ActiveTaskSet.class).get().remove(this);            
         }
     }
-    
 }

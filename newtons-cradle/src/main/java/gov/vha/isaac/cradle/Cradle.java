@@ -73,6 +73,7 @@ import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.chronicle.IdentifiedObjectLocal;
 import gov.vha.isaac.ochre.api.commit.CommitManager;
+import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.sememe.SememeService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
@@ -111,7 +112,7 @@ public class Cradle
 
     IdentifierService identifierProvider;
     TaxonomyService taxonomyProvider;
-    CommitManager commitManager;
+    CommitService commitService;
     SememeService sememeProvider;
     RefexService refexProvider;
     
@@ -165,7 +166,7 @@ public class Cradle
         try {
             log.info("Starting Cradle post-construct");
             loadRequired.set(!cradleStartedEmpty());
-            commitManager = LookupService.getService(CommitManager.class);
+            commitService = LookupService.getService(CommitService.class);
             identifierProvider = LookupService.getService(IdentifierService.class);
             sememeProvider = LookupService.getService(SememeService.class);
             refexProvider = LookupService.getService(RefexService.class);
@@ -266,6 +267,11 @@ public class Cradle
     }
 
     @Override
+    public CharSequence informAboutObject(int nid) {
+        return informAboutNid(nid);
+    }
+
+    @Override
     public Stream<ConceptChronicle> getConceptStream() {
         return conceptMap.getStream().map(ConceptChronicleDataEager::getConceptChronicle);
     }
@@ -352,7 +358,7 @@ public class Cradle
 
     @Override
     public void addUncommitted(ConceptChronicleBI conceptChronicleBI) throws IOException {
-        commitManager.addUncommitted(conceptChronicleBI);
+        commitService.addUncommitted(conceptChronicleBI);
     }
 
     /**
@@ -362,7 +368,7 @@ public class Cradle
      */
     @Override
     public void addUncommittedNoChecks(ConceptChronicleBI conceptChronicleBI) throws IOException {
-        commitManager.addUncommittedNoChecks(conceptChronicleBI);
+        commitService.addUncommittedNoChecks(conceptChronicleBI);
     }
 
     @Override
@@ -379,7 +385,7 @@ public class Cradle
 
     @Override
     public void cancel(ConceptChronicleBI conceptChronicleBI) throws IOException {
-        commitManager.cancel(conceptChronicleBI);
+        commitService.cancel(conceptChronicleBI);
         throw new UnsupportedOperationException();
     }
 
@@ -391,7 +397,7 @@ public class Cradle
 
     @Override
     public void commit(ConceptVersionBI conceptVersionBI) throws IOException {
-        commitManager.commit(conceptVersionBI, null);
+        commitService.commit(conceptVersionBI, null);
     }
 
     @Override
@@ -463,7 +469,7 @@ public class Cradle
 
     @Override
     public long getSequence() {
-        return commitManager.getCommitManagerSequence();
+        return commitService.getCommitManagerSequence();
     }
 
     @Override
@@ -549,7 +555,7 @@ public class Cradle
 
     @Override
     public long incrementAndGetSequence() {
-        return commitManager.incrementAndGetSequence();
+        return commitService.incrementAndGetSequence();
     }
 
     @Override
@@ -735,7 +741,7 @@ public class Cradle
 
     @Override
     public void commit() throws IOException {
-        commitManager.commit(null);
+        commitService.commit(null);
     }
 
     @Override
@@ -872,8 +878,7 @@ public class Cradle
 
     @Override
     public int getAuthorNidForStamp(int stamp) {
-        return identifierProvider.getConceptNid(
-                commitManager.getAuthorSequenceForStamp(stamp));
+        return identifierProvider.getConceptNid(commitService.getAuthorSequenceForStamp(stamp));
     }
 
     @Override
@@ -883,24 +888,22 @@ public class Cradle
 
     @Override
     public int getModuleNidForStamp(int stamp) {
-        return identifierProvider.getConceptNid(
-                commitManager.getModuleSequenceForStamp(stamp));
+        return identifierProvider.getConceptNid(commitService.getModuleSequenceForStamp(stamp));
     }
 
     @Override
     public int getPathNidForStamp(int stamp) {
-        return identifierProvider.getConceptNid(
-                commitManager.getPathSequenceForStamp(stamp));
+        return identifierProvider.getConceptNid(commitService.getPathSequenceForStamp(stamp));
     }
 
     @Override
     public Status getStatusForStamp(int stamp) {
-        return Status.getStatusFromState(commitManager.getStatusForStamp(stamp));
+        return Status.getStatusFromState(commitService.getStatusForStamp(stamp));
     }
 
     @Override
     public long getTimeForStamp(int stamp) {
-        return commitManager.getTimeForStamp(stamp);
+        return commitService.getTimeForStamp(stamp);
     }
 
     @Override
@@ -937,7 +940,7 @@ public class Cradle
 
     @Override
     public int getStamp(Status status, long time, int authorNid, int moduleNid, int pathNid) {
-        return commitManager.getStamp(status.getState(),
+        return commitService.getStamp(status.getState(),
                 time,
                 identifierProvider.getConceptSequence(authorNid),
                 identifierProvider.getConceptSequence(moduleNid),

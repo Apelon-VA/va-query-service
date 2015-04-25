@@ -428,5 +428,15 @@ public class IdentifierProvider implements IdentifierService {
     public int getConceptSequenceForProxy(ConceptProxy conceptProxy) {
         return getConceptSequence(getNidForProxy(conceptProxy));
     }
+
+    @Override
+    public int getSememeSequenceForUuids(Collection<UUID> uuids) {
+        return getSememeSequence(getNidForUuids(uuids));
+    }
+
+    @Override
+    public int getSememeSequenceForUuids(UUID... uuids) {
+        return getSememeSequence(getNidForUuids(uuids));
+    }
     
 }

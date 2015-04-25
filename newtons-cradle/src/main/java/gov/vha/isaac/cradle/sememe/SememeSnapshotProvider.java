@@ -27,6 +27,7 @@ import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePositionCalculator;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
 import gov.vha.isaac.ochre.collections.StampSequenceSet;
 import gov.vha.isaac.ochre.model.sememe.SememeChronicleImpl;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -146,11 +147,24 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
                     // add active first, incase any contradictions are inactive. 
                     latestStampSequences.stream().filter((int stampSequence) -> 
                             getCommitManager().getStatusForStamp(stampSequence) == State.ACTIVE).forEach((stampSequence) -> {
-                        latest.addLatest((V) sc.getVersionForStamp(stampSequence).get());
+                        Optional<V> version = sc.getVersionForStamp(stampSequence);
+                        if (version.isPresent()) {
+                            latest.addLatest(version.get());
+                        } else {
+                            throw new NoSuchElementException("No version for stamp: " + 
+                                    stampSequence + " in: " + sc);
+                        }
+                        
                     });                    
                     latestStampSequences.stream().filter((int stampSequence) -> 
                             getCommitManager().getStatusForStamp(stampSequence) == State.INACTIVE).forEach((stampSequence) -> {
-                        latest.addLatest((V) sc.getVersionForStamp(stampSequence).get());
+                        Optional<V> version = sc.getVersionForStamp(stampSequence);
+                        if (version.isPresent()) {
+                            latest.addLatest(version.get());
+                        } else {
+                            throw new NoSuchElementException("No version for stamp: " + 
+                                    stampSequence + " in: " + sc);
+                        }
                     }); 
                     
                     return Optional.of(latest);

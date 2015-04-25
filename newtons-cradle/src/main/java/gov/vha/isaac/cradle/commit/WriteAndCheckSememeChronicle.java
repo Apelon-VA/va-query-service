@@ -15,41 +15,40 @@
  */
 package gov.vha.isaac.cradle.commit;
 
-import gov.vha.isaac.cradle.CradleExtensions;
-import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.commit.Alert;
 import gov.vha.isaac.ochre.api.commit.ChangeChecker;
 import gov.vha.isaac.ochre.api.commit.CheckPhase;
+import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
+import gov.vha.isaac.ochre.api.sememe.SememeService;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Semaphore;
 import javafx.concurrent.Task;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
-import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 
 /**
  *
  * @author kec
  */
-public class WriteAndCheckConceptChronicle extends Task<Void> implements Callable<Void> {
+public class WriteAndCheckSememeChronicle extends Task<Void> implements Callable<Void> {
 
-    private static final CradleExtensions cradle = LookupService.getService(CradleExtensions.class);
+    private static final SememeService sememeService = LookupService.getService(SememeService.class);
 
-    private final ConceptChronicle cc;
+    private final SememeChronicle sc;
     private final ConcurrentSkipListSet<ChangeChecker> checkers;
     private final ConcurrentSkipListSet<Alert> alertCollection;
     private final Semaphore writeSemaphore;
 
-    public WriteAndCheckConceptChronicle(ConceptChronicle cc,
+    public WriteAndCheckSememeChronicle(SememeChronicle sc,
             ConcurrentSkipListSet<ChangeChecker> checkers,
             ConcurrentSkipListSet<Alert> alertCollection, Semaphore writeSemaphore) {
-        this.cc = cc;
+        this.sc = sc;
         this.checkers = checkers;
         this.alertCollection = alertCollection;
         this.writeSemaphore = writeSemaphore;
         updateTitle("Write and check concept");
-        updateMessage(cc.toUserString());
+        updateMessage(sc.toUserString());
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         LookupService.getService(ActiveTaskSet.class).get().add(this);
     }
@@ -57,18 +56,15 @@ public class WriteAndCheckConceptChronicle extends Task<Void> implements Callabl
     @Override
     public Void call() throws Exception {
         try {
-            cradle.writeConceptData((ConceptChronicleDataEager) cc.getData());
-            updateProgress(1, 2);
-            
-            if (cc.isUncommitted()) {
+            sememeService.writeSememe(sc);
+             updateProgress(1, 2);
+            if (sc.isUncommitted()) {
                 checkers.stream().forEach((check) -> {
-                    check.check(cc, alertCollection, CheckPhase.ADD_UNCOMMITTED);
+                    check.check(sc, alertCollection, CheckPhase.ADD_UNCOMMITTED);
                 });
             }
 
-            cradle.writeConceptData((ConceptChronicleDataEager) cc.getData());
-            updateProgress(2, 2);
-
+             updateProgress(2, 2);
             return null;
         } finally {
             writeSemaphore.release();

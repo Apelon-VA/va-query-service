@@ -17,6 +17,7 @@ package gov.vha.isaac.cradle.commit;
 
 import gov.vha.isaac.ochre.api.commit.Alert;
 import gov.vha.isaac.ochre.api.commit.ChangeChecker;
+import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
@@ -28,32 +29,32 @@ import java.util.concurrent.TimeUnit;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 
 /**
  *
  * @author kec
  */
-public class WriteConceptCompletionService implements Runnable {
+public class WriteSememeCompletionService implements Runnable {
     private static final Logger log = LogManager.getLogger();
-    private final ExecutorService writeConceptPool = Executors.newFixedThreadPool(2);
+    private final ExecutorService writeSememePool = Executors.newFixedThreadPool(2);
     private boolean run = true;
 
-    ExecutorCompletionService<Void> conversionService = new ExecutorCompletionService(writeConceptPool);
+    ExecutorCompletionService<Void> conversionService = new ExecutorCompletionService(writeSememePool);
     
-    public Task<Void> checkAndWrite(ConceptChronicle cc, 
+    public Task<Void> checkAndWrite(SememeChronicle sc, 
             ConcurrentSkipListSet<ChangeChecker> checkers,
             ConcurrentSkipListSet<Alert> alertCollection, Semaphore writeSemaphore) {
         writeSemaphore.acquireUninterruptibly();
-        WriteAndCheckConceptChronicle task = new WriteAndCheckConceptChronicle(
-                cc, checkers, alertCollection, writeSemaphore);
+        WriteAndCheckSememeChronicle task = 
+                new WriteAndCheckSememeChronicle(sc, checkers, alertCollection,
+                writeSemaphore);
         conversionService.submit(task);
         return task;
     }
 
-    public Task<Void> write(ConceptChronicle cc, Semaphore writeSemaphore) {
-        writeSemaphore.acquireUninterruptibly();        
-        WriteConceptChronicle task = new WriteConceptChronicle(cc, writeSemaphore);
+    public Task<Void> write(SememeChronicle sc, Semaphore writeSemaphore) {
+        writeSemaphore.acquireUninterruptibly();
+        WriteSememeChronicle task = new WriteSememeChronicle(sc, writeSemaphore);
         conversionService.submit(task);
         return task;
     }
@@ -66,7 +67,7 @@ public class WriteConceptCompletionService implements Runnable {
                 if (task != null) {
                     task.get();
                 }
-                if (writeConceptPool.isTerminated()) {
+                if (writeSememePool.isTerminated()) {
                     run = false;
                 }
             } catch (InterruptedException ex) {
@@ -80,12 +81,11 @@ public class WriteConceptCompletionService implements Runnable {
     
     public void cancel() {
         try {
-            writeConceptPool.shutdown();
-            writeConceptPool.awaitTermination(1, TimeUnit.DAYS);
+            writeSememePool.shutdown();
+            writeSememePool.awaitTermination(1, TimeUnit.DAYS);
         } catch (InterruptedException ex) {
             throw new RuntimeException(ex);
         }
     }
-
     
 }

@@ -13,7 +13,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import gov.vha.isaac.ochre.api.ConceptProxy;
-import org.ihtsdo.otf.tcc.api.coordinate.Status;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 

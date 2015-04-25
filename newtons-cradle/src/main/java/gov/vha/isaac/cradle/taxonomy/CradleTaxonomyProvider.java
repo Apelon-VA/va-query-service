@@ -17,7 +17,7 @@ package gov.vha.isaac.cradle.taxonomy;
 
 import gov.vha.isaac.cradle.Cradle;
 import gov.vha.isaac.cradle.CradleExtensions;
-import gov.vha.isaac.cradle.concept.ConceptActiveService;
+import gov.vha.isaac.cradle.builders.ConceptActiveService;
 import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
 import gov.vha.isaac.cradle.version.StampSequenceComputer;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
