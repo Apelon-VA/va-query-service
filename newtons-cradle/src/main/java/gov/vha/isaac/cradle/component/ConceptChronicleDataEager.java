@@ -1,6 +1,7 @@
 package gov.vha.isaac.cradle.component;
 
 import gov.vha.isaac.cradle.CradleExtensions;
+import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
@@ -20,15 +21,26 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.ihtsdo.otf.tcc.api.refex.RefexChronicleBI;
+import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicChronicleBI;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
+import org.ihtsdo.otf.tcc.model.cc.refex.RefexService;
 
 /**
  * Created by kec on 7/19/14.
  */
 public class ConceptChronicleDataEager implements I_ManageConceptData {
-    
+
+
+    private static RefexService refexService;
+
+    protected static RefexService getRefexService() {
+        if (refexService == null) {
+            refexService = LookupService.getService(RefexService.class);
+        }
+        return refexService;
+    }
+
     private final static TaxonomyService taxonomyProvider = Hk2Looker.getService(TaxonomyService.class);
     private static CradleExtensions cradle;
 
@@ -38,90 +50,66 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
         }
         return cradle;
     }
-    
+
     public static short CURRENT_FORMAT_VERSION = 1;
-    
+
     protected ConceptAttributes attributes;
     protected List<Description> descriptions = new ArrayList<>();
     protected List<Relationship> relationships = new ArrayList<>();
     protected List<Media> media = new ArrayList<>();
-    protected List<RefexDynamicMember> refexDynamicMembers = new ArrayList<>();
-    
+
     private boolean conceptForgotten = false;
     private boolean primordial;
     private boolean annotationStyleRefex;
     private long lastModified = Long.MIN_VALUE;
-    
+
     public ConceptChronicleDataEager(boolean primordial) {
         this.primordial = primordial;
     }
-    
+
     public Stream<ConceptComponent<?, ?>> getConceptComponents() {
         Stream.Builder<ConceptComponent<?, ?>> builder = Stream.builder();
         if (attributes != null) {
             builder.accept(attributes);
-            addAnnotations(builder, attributes.getAnnotations());
         }
         descriptions.stream().forEach((Description d) -> {
             builder.accept(d);
-            addAnnotations(builder, d.getAnnotations());
         });
         relationships.stream().forEach((Relationship r) -> {
             builder.accept(r);
-            addAnnotations(builder, r.getAnnotations());
         });
         media.stream().forEach((Media m) -> {
-            addAnnotations(builder, m.getAnnotations());
             builder.accept(m);
         });
-        refexDynamicMembers.stream().forEach((RefexDynamicMember m) -> {
-            builder.accept(m);
-            addAnnotations(builder, m.getAnnotations());
-        });
-        
+
         return builder.build();
     }
-    
-    private static void addAnnotations(Stream.Builder<ConceptComponent<?, ?>> builder, 
-            Collection<? extends RefexChronicleBI<?>> annotations) {
-        if (annotations != null) {
-            annotations.stream().forEach((refexChronicle) -> {
-                try {
-                    builder.accept((ConceptComponent<?, ?>) refexChronicle);
-                    addAnnotations(builder, refexChronicle.getAnnotations());
-                } catch (IOException ex) {
-                   throw new RuntimeException(ex);
-                }
-            });
-        }
-        
-    }
-    
+
     @Override
     public void forgetConcept() {
         conceptForgotten = true;
     }
-    
+
     @Override
     public boolean isConceptForgotten() {
         return conceptForgotten;
     }
-    
+
     @Override
     public List<Description> getDescriptions() {
         return descriptions;
     }
-    
+
     @Override
     public void add(Description desc) {
         this.descriptions.add(desc);
     }
-    
+
     @Override
     public void add(Media media) {
         this.media.add(media);
     }
-    
+
     @Override
     public void add(RefexMember<?, ?> refexMember) {
         getCradle().writeRefex(refexMember);
@@ -135,7 +123,7 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
      */
     @Override
     public RefexMember<?, ?> getRefsetMember(int nid) {
-        
+
         return (RefexMember<?, ?>) getCradle().getRefex(nid);
     }
 
@@ -151,52 +139,52 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
     public RefexMember<?, ?> getRefsetMemberForComponent(int componentNid) {
         throw new UnsupportedOperationException();
     }
-    
+
     @Override
     public Collection<RefexMember<?, ?>> getRefsetMembers() {
         return getRefsetMembers(getNid());
     }
-    
+
     private Collection<RefexMember<?, ?>> getRefsetMembers(int nid) {
         return (Collection<RefexMember<?, ?>>) Ts.get().getRefexesForAssemblage(nid);
     }
-    
+
     @Override
     public void add(RefexDynamicMember refexDynamicMember) {
-        this.refexDynamicMembers.add(refexDynamicMember);
+        getRefexService().writeDynamicRefex(refexDynamicMember);
     }
-    
+
     @Override
     public void add(Relationship rel) {
         this.relationships.add(rel);
     }
-    
+
     @Override
     public void cancel() throws IOException {
-        
+
     }
-    
+
     @Override
     public void modified(ComponentChronicleBI component) {
         lastModified = getCradle().incrementAndGetSequence();
     }
-    
+
     @Override
     public void modified(ConceptComponent component, long sequence) {
         lastModified = sequence;
     }
-    
+
     @Override
     public boolean readyToWrite() {
         return true;
     }
-    
+
     @Override
     public Collection<Integer> getAllNids() {
-        return getConceptComponents().mapToInt((ConceptComponent<?, ?> component) -> 
-                component.getNid()).boxed().collect(Collectors.toList());
+        return getConceptComponents().mapToInt((ConceptComponent<?, ?> component)
+                -> component.getNid()).boxed().collect(Collectors.toList());
     }
-    
+
     @Override
     public ComponentChronicleBI<?> getComponent(int nid) {
         Optional<ComponentChronicleBI<?>> result = getComponent(nid, attributes);
@@ -215,17 +203,9 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
         if (result.isPresent()) {
             return result.get();
         }
-        result = getComponent(nid, getRefsetMembers(nid));
-        if (result.isPresent()) {
-            return result.get();
-        }
-        result = getComponent(nid, getRefsetDynamicMembers());
-        if (result.isPresent()) {
-            return result.get();
-        }
         return null;
     }
-    
+
     public Optional<ComponentChronicleBI<?>> getComponent(int nid, Collection<? extends ComponentChronicleBI<?>> componentsToSearch) {
         for (ComponentChronicleBI<?> component : componentsToSearch) {
             if (component.getNid() == nid) {
@@ -234,7 +214,7 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
         }
         return Optional.empty();
     }
-    
+
     public Optional<ComponentChronicleBI<?>> getComponent(int nid, ComponentChronicleBI<?> componentToSearch) {
         if (componentToSearch == null) {
             return Optional.empty();
@@ -244,12 +224,12 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
         }
         return Optional.empty();
     }
-    
+
     @Override
     public ConceptAttributes getConceptAttributes() {
         return this.attributes;
     }
-    
+
     @Override
     public Collection<Integer> getConceptNidsAffectedByCommit() {
         return null;
@@ -265,7 +245,7 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
     public Set<Integer> getDescNids() {
         return getNidSet(getDescriptions());
     }
-    
+
     private Set<Integer> getNidSet(Collection<? extends ConceptComponent> components) {
         HashSet<Integer> nids = new HashSet<>();
         components.stream().forEach((component) -> {
@@ -273,125 +253,131 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
         });
         return nids;
     }
-    
+
     @Override
     public List<Relationship> getDestRels() {
-        ConceptSequenceSet relOriginConceptSequences = 
-                ConceptSequenceSet.of(taxonomyProvider.getAllRelationshipOriginSequences(this.getNid()));
-        
+        ConceptSequenceSet relOriginConceptSequences
+                = ConceptSequenceSet.of(taxonomyProvider.getAllRelationshipOriginSequences(this.getNid()));
+
         return getCradle().getConceptDataEagerStream(relOriginConceptSequences)
                 .map(ConceptChronicleDataEager::getSourceRels)
                 .flatMap(Collection::stream)
-                .filter((relationship) -> {return relationship.getDestinationNid() == getNid();})
+                .filter((relationship) -> {
+                    return relationship.getDestinationNid() == getNid();
+                })
                 .collect(Collectors.toList());
-        
+
     }
-    
+
     @Override
     public List<Relationship> getDestRels(NidSetBI allowedTypes) {
         throw new UnsupportedOperationException();
     }
-    
+
     @Override
     public Set<Integer> getImageNids() {
         return getNidSet(getMedia());
     }
-    
+
     @Override
     public List<Media> getMedia() {
         return this.media;
     }
-    
+
     @Override
     public Set<Integer> getMemberNids() {
         return getNidSet(getRefsetMembers());
     }
-    
+
     @Override
     public int getNid() {
         return this.attributes.getNid();
     }
-    
+
     @Override
     public RefexDynamicMember getRefsetDynamicMember(int memberNid) {
-        return null;
+        return getRefexService().getDynamicRefexesFromAssemblage(this.getNid())
+                .map((RefexDynamicChronicleBI<?> rdc) -> (RefexDynamicMember) rdc)
+                .filter((rdc)-> rdc.getNid() == memberNid).findFirst().get();
     }
-    
+
     @Override
     public Collection<RefexDynamicMember> getRefsetDynamicMembers() {
-        return this.refexDynamicMembers;
+        return getRefexService().getDynamicRefexesFromAssemblage(this.getNid())
+                .map((RefexDynamicChronicleBI<?> rdc) -> (RefexDynamicMember) rdc)
+                .collect(Collectors.toList());
     }
-    
+
     @Override
     public Collection<Relationship> getSourceRels() {
         return this.relationships;
     }
-    
+
     @Override
     public Set<Integer> getSrcRelNids() {
         return getNidSet(getSourceRels());
     }
-    
+
     @Override
     public NidListBI getUncommittedNids() {
         return null;
     }
-    
+
     @Override
     public boolean isAnnotationStyleRefex() {
         return this.annotationStyleRefex;
     }
-    
+
     @Override
     public boolean isPrimordial() {
         return primordial;
     }
-    
+
     @Override
     public boolean isUncommitted() {
-        
+
         return getConceptComponents().anyMatch((ConceptComponent<?, ?> component) -> {
             return component.isUncommitted();
         });
     }
-    
+
     @Override
     public boolean isUnwritten() {
         return false;
     }
-    
+
     @Override
     public void setConceptAttributes(ConceptAttributes attr) {
         this.attributes = attr;
     }
-    
+
     @Override
     public void setDescriptions(Set<Description> descriptions) {
         this.descriptions.clear();
         this.descriptions.addAll(descriptions);
     }
-    
+
     @Override
     public void setSourceRels(Set<Relationship> relationships) {
         this.relationships.clear();
         this.relationships.addAll(relationships);
     }
-    
+
     @Override
     public void setIsAnnotationStyleRefex(boolean annotationStyleRefex) {
         this.annotationStyleRefex = annotationStyleRefex;
     }
-    
+
     @Override
     public void setPrimordial(boolean isPrimordial) {
         this.primordial = isPrimordial;
     }
-    
+
     @Override
     public NidSetBI setCommitTime(long time) {
         return null;
     }
-    
+
     @Override
     public ConceptChronicle getConceptChronicle() {
         try {
@@ -400,9 +386,9 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
             throw new RuntimeException(ex);
         }
     }
-    
+
     @Override
     public String toString() {
-        return "ConceptChronicleDataEager{" + "attributes=" + attributes + ", descriptions=" + descriptions + ", relationships=" + relationships + ", media=" + media + ", refexDynamicMembers=" + refexDynamicMembers + ", conceptForgotten=" + conceptForgotten + ", primordial=" + primordial + ", annotationStyleRefex=" + annotationStyleRefex + '}';
+        return "ConceptChronicleDataEager{" + "attributes=" + attributes + ", descriptions=" + descriptions + ", relationships=" + relationships + ", media=" + media +  ", conceptForgotten=" + conceptForgotten + ", primordial=" + primordial + ", annotationStyleRefex=" + annotationStyleRefex + '}';
     }
 }

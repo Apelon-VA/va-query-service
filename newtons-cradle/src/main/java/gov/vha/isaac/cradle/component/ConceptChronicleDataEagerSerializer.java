@@ -33,7 +33,6 @@ public class ConceptChronicleDataEagerSerializer implements CradleSerializer<Con
             DescriptionSerializer.get().serialize(dataOutput,conceptChronicleData.getDescriptions());
             RelationshipSerializer.get().serialize(dataOutput,conceptChronicleData.getSourceRels());
             MediaSerializer.get().serialize(dataOutput,conceptChronicleData.getMedia());
-            RefexDynamicSerializer.get().serialize(dataOutput,conceptChronicleData.getRefsetDynamicMembers());
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -60,9 +59,6 @@ public class ConceptChronicleDataEagerSerializer implements CradleSerializer<Con
             MediaSerializer.get().deserialize(dataInput, mediaArrayListCollector, conceptChronicleData);
             conceptChronicleData.media = new CopyOnWriteArrayList<>(mediaArrayListCollector.getCollection());
             
-            ArrayListCollector<RefexDynamicMember> refexDynamicArrayListCollector = new ArrayListCollector<>();
-            RefexDynamicSerializer.get().deserialize(dataInput, refexDynamicArrayListCollector, conceptChronicleData);
-            conceptChronicleData.refexDynamicMembers = new CopyOnWriteArrayList<>(refexDynamicArrayListCollector.getCollection());
             
             return conceptChronicleData;
         } catch (IOException ex) {
