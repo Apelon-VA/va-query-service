@@ -16,7 +16,7 @@
     <description>Parent project of modules that support query functions</description>
 
     <scm>
-        <developerConnection>scm:git:https://github.com/Apelon-VA/va-logic.git</developerConnection>
+        <url>https://github.com/Apelon-VA/va-query-service.git</url>
     </scm>
 
     <properties>
