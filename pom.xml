@@ -14,6 +14,10 @@
     <name>${project.artifactId}: (MMP)</name>
 
     <description>Newton's Cradle (ChRonicled Assertion Database of Logical Expressions) Parent Project </description>
+    
+    <scm>
+        <url>https://github.com/Apelon-VA/va-newtons-cradle.git</url>
+    </scm>
 
     <properties>
         <ochre.version>2.27-SNAPSHOT</ochre.version>
