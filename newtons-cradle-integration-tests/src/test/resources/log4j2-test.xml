@@ -8,6 +8,7 @@
     <Loggers>
         <Logger name="gov.vha.isaac.cradle.tasks.LoadEConceptFile" level="info"/>
         <Logger name="gov.vha.isaac.cradle.integration.tests.CradleIntegrationTests" level="info"/>
+        <Logger name="gov.va.oia.HK2Utilities" level="info"/>
         <Root level="debug">
             <AppenderRef ref="STDOUT"/>
         </Root>
