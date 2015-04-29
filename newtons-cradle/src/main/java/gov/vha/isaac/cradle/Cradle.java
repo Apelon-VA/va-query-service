@@ -540,7 +540,7 @@ public class Cradle
 
     @Override
     public boolean hasConcept(int i) {
-        throw new UnsupportedOperationException();
+        return identifierProvider.getUuidPrimordialForNid(i).isPresent();
     }
 
     @Override
