@@ -105,7 +105,8 @@ public class ConceptBuilderImpl extends ComponentBuilder<ChronicledConcept> impl
 
 
     @Override
-    public ChronicledConcept build(EditCoordinate editCoordinate, ChangeCheckerMode changeCheckerMode) throws IllegalStateException {
+    public ChronicledConcept build(EditCoordinate editCoordinate, ChangeCheckerMode changeCheckerMode,
+            List builtObjects) throws IllegalStateException {
         
         try {
             ConceptChronicle cc = new ConceptChronicle(this.getNid());
@@ -125,19 +126,22 @@ public class ConceptBuilderImpl extends ComponentBuilder<ChronicledConcept> impl
             }
             ca.setDefined(false);
             cc.setConceptAttributes(ca);
-            
+            builtObjects.add(ca);
+           
             descriptionBuilders.add(getFullySpecifiedDescriptionBuilder());
             descriptionBuilders.add(getPreferredDescriptionBuilder());
              
-            descriptionBuilders.forEach((builder) -> cc.getDescriptions().
-                    add((Description) builder.build(editCoordinate, changeCheckerMode)));
+            descriptionBuilders.forEach((builder) -> {
+                cc.getDescriptions().add((Description) builder.build(editCoordinate, changeCheckerMode, builtObjects));
+            });
+            getCommitService().addUncommitted(cc);
             
-            SememeBuilderService builderService = LookupService.getService(SememeBuilderService.class)    ;        
+            SememeBuilderService builderService = LookupService.getService(SememeBuilderService.class);        
             logicalConceptDefinitionBuilders.add(builderService.
                     getLogicalExpressionSememeBuilder(logicalExpression, this, defaultLogicCoordinate.getStatedAssemblageSequence()));
             
-            logicalConceptDefinitionBuilders.forEach((builder) -> builder.build(editCoordinate, changeCheckerMode));
-            getCommitService().addUncommitted(cc);
+            logicalConceptDefinitionBuilders.forEach((builder) -> builder.build(editCoordinate, changeCheckerMode, builtObjects));
+            builtObjects.add(cc);
             return cc;
         } catch (IOException ex) {
             throw new RuntimeException(ex);

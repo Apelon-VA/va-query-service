@@ -16,7 +16,6 @@
 package gov.vha.isaac.cradle.taxonomy;
 
 import gov.vha.isaac.cradle.Cradle;
-import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.cradle.builders.ConceptActiveService;
 import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
 import gov.vha.isaac.cradle.version.StampSequenceComputer;
@@ -33,10 +32,7 @@ import gov.vha.isaac.ochre.api.tree.Tree;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeBuilder;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.NavigableSet;
 import java.util.Optional;
@@ -71,7 +67,6 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     final ConcurrentSkipListSet<DestinationOriginRecord> destinationOriginRecordSet = new ConcurrentSkipListSet<>();
 
     private IdentifierService sequenceProvider;
-    private CradleExtensions cradle;
     
     private CradleTaxonomyProvider()
     {
@@ -83,7 +78,6 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
         try {
             log.info("Starting TaxonomyService post-construct");    
             sequenceProvider = Hk2Looker.getService(IdentifierService.class);
-            cradle = LookupService.getService(CradleExtensions.class);
             if (!Cradle.cradleStartedEmpty()) {
                 log.info("Reading taxonomy.");
                 originDestinationTaxonomyRecordMap.initialize();

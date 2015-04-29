@@ -28,6 +28,7 @@ import gov.vha.isaac.ochre.api.description.DescriptionBuilder;
 import gov.vha.isaac.ochre.api.sememe.SememeBuilderService;
 import java.beans.PropertyVetoException;
 import java.util.ArrayList;
+import java.util.List;
 import org.ihtsdo.otf.tcc.model.cc.description.Description;
 
 /**
@@ -79,7 +80,8 @@ public class DescriptionBuilderImpl extends ComponentBuilder<ChronicledObjectLoc
     }
 
     @Override
-    public Description build(EditCoordinate editCoordinate, ChangeCheckerMode changeCheckerMode) throws IllegalStateException {
+    public Description build(EditCoordinate editCoordinate, ChangeCheckerMode changeCheckerMode,
+            List builtObjects) throws IllegalStateException {
         try {
             if (conceptSequence == Integer.MAX_VALUE) {
                 conceptSequence = getIdentifierService().getConceptSequenceForUuids(conceptBuilder.getUuids());
@@ -105,15 +107,15 @@ public class DescriptionBuilderImpl extends ComponentBuilder<ChronicledObjectLoc
                 sememeBuilderService.getConceptSememeBuilder(
                         IsaacMetadataAuxiliaryBinding.PREFERRED, this, 
                         getIdentifierService().getConceptSequenceForProxy(assemblageProxy)).
-                        build(editCoordinate, changeCheckerMode);
+                        build(editCoordinate, changeCheckerMode, builtObjects);
             });
             acceptableInDialectAssemblages.forEach(( assemblageProxy) -> {
                 sememeBuilderService.getConceptSememeBuilder(
                         IsaacMetadataAuxiliaryBinding.ACCEPTABLE, this, 
                         getIdentifierService().getConceptSequenceForProxy(assemblageProxy)).
-                        build(editCoordinate, changeCheckerMode);
+                        build(editCoordinate, changeCheckerMode, builtObjects);
             });
-
+            builtObjects.add(desc);
             return desc;
         } catch (PropertyVetoException ex) {
             throw new RuntimeException(ex);

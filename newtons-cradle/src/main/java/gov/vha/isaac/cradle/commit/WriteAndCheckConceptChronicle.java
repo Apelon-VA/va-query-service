@@ -20,7 +20,9 @@ import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.commit.Alert;
 import gov.vha.isaac.ochre.api.commit.ChangeChecker;
+import gov.vha.isaac.ochre.api.commit.ChangeListener;
 import gov.vha.isaac.ochre.api.commit.CheckPhase;
+import java.lang.ref.WeakReference;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Semaphore;
@@ -40,14 +42,17 @@ public class WriteAndCheckConceptChronicle extends Task<Void> implements Callabl
     private final ConcurrentSkipListSet<ChangeChecker> checkers;
     private final ConcurrentSkipListSet<Alert> alertCollection;
     private final Semaphore writeSemaphore;
+    private final ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners;
 
     public WriteAndCheckConceptChronicle(ConceptChronicle cc,
             ConcurrentSkipListSet<ChangeChecker> checkers,
-            ConcurrentSkipListSet<Alert> alertCollection, Semaphore writeSemaphore) {
+            ConcurrentSkipListSet<Alert> alertCollection, Semaphore writeSemaphore,
+            ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners) {
         this.cc = cc;
         this.checkers = checkers;
         this.alertCollection = alertCollection;
         this.writeSemaphore = writeSemaphore;
+        this.changeListeners = changeListeners;
         updateTitle("Write and check concept");
         updateMessage(cc.toUserString());
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
@@ -58,7 +63,8 @@ public class WriteAndCheckConceptChronicle extends Task<Void> implements Callabl
     public Void call() throws Exception {
         try {
             cradle.writeConceptData((ConceptChronicleDataEager) cc.getData());
-            updateProgress(1, 2);
+            updateProgress(1, 3);
+            updateMessage("checking: " + cc.toUserString());
             
             if (cc.isUncommitted()) {
                 checkers.stream().forEach((check) -> {
@@ -67,9 +73,22 @@ public class WriteAndCheckConceptChronicle extends Task<Void> implements Callabl
             }
 
             cradle.writeConceptData((ConceptChronicleDataEager) cc.getData());
-            updateProgress(2, 2);
+            updateProgress(2, 3);
+            updateMessage("notifying: " + cc.toUserString());
 
-            return null;
+             changeListeners.forEach((listenerRef) -> {
+                ChangeListener listener = listenerRef.get();
+                if (listener == null) {
+                    changeListeners.remove(listenerRef);
+                } else {
+                    listener.handleChange(cc);
+                }
+             });
+
+            updateProgress(3, 3);
+            updateMessage("complete: " + cc.toUserString());
+            
+             return null;
         } finally {
             writeSemaphore.release();
             LookupService.getService(ActiveTaskSet.class).get().remove(this);

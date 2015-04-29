@@ -19,7 +19,7 @@ import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.chronicle.ChronicledConcept;
 import gov.vha.isaac.ochre.api.commit.Alert;
 import gov.vha.isaac.ochre.api.commit.ChangeChecker;
-import gov.vha.isaac.ochre.api.commit.CommitManager;
+import gov.vha.isaac.ochre.api.commit.ChangeListener;
 import gov.vha.isaac.ochre.api.commit.CommitRecord;
 import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
@@ -31,6 +31,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,8 +40,10 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
@@ -70,7 +74,7 @@ import org.jvnet.hk2.annotations.Service;
  */
 @Service(name = "Cradle Commit Provider")
 @RunLevel(value = 1)
-public class CommitProvider implements CommitService, CommitManager {
+public class CommitProvider implements CommitService {
 
     private static final Logger log = LogManager.getLogger();
 
@@ -116,6 +120,8 @@ public class CommitProvider implements CommitService, CommitManager {
     private final ExecutorService commitExecutorPool = Executors.newSingleThreadExecutor((Runnable r) -> {
         return new Thread(r, "commit executor");
     });
+    
+    ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners = new ConcurrentSkipListSet<>();
 
     private long lastCommit = Long.MIN_VALUE;
 
@@ -455,14 +461,14 @@ public class CommitProvider implements CommitService, CommitManager {
     public Task<Void> addUncommitted(SememeChronicle sc) {
         handleUncommittedSequenceSet(sc, uncommittedSememesWithChecksSequenceSet);
         return writeSememeCompletionService.checkAndWrite(sc, checkers, alertCollection,
-                writePermitReference.get());
+                writePermitReference.get(), changeListeners);
     }
 
     @Override
     public Task<Void> addUncommittedNoChecks(SememeChronicle sc) {
         handleUncommittedSequenceSet(sc, uncommittedSememesNoChecksSequenceSet);
         return writeSememeCompletionService.write(sc,
-                writePermitReference.get());
+                writePermitReference.get(), changeListeners);
     }
 
     @Override
@@ -470,7 +476,7 @@ public class CommitProvider implements CommitService, CommitManager {
         ConceptChronicle concept = (ConceptChronicle) cc;
         handleUncommittedSequenceSet(concept, uncommittedConceptsWithChecksSequenceSet);
         return writeConceptCompletionService.checkAndWrite(concept, checkers, alertCollection,
-                writePermitReference.get());
+                writePermitReference.get(), changeListeners);
     }
 
     @Override
@@ -478,7 +484,7 @@ public class CommitProvider implements CommitService, CommitManager {
         ConceptChronicle concept = (ConceptChronicle) cc;
         handleUncommittedSequenceSet(concept, uncommittedConceptsNoChecksSequenceSet);
         return writeConceptCompletionService.write(concept,
-                writePermitReference.get());
+                writePermitReference.get(), changeListeners);
     }
 
     private void handleUncommittedSequenceSet(SememeChronicle sememeChronicle, SememeSequenceSet set) {
@@ -531,4 +537,53 @@ public class CommitProvider implements CommitService, CommitManager {
         inverseStampMap.put(stampSequence, stamp);
     }
 
+    @Override
+    public void addChangeListener(ChangeListener changeListener) {
+        changeListeners.add(new ChangeListenerReference(changeListener));
+    }
+
+    @Override
+    public void removeChangeListener(ChangeListener changeListener) {
+        changeListeners.remove(new ChangeListenerReference(changeListener));
+    }
+
+    private static class ChangeListenerReference extends WeakReference<ChangeListener> implements Comparable<ChangeListenerReference> {
+
+        UUID listenerUuid;
+        public ChangeListenerReference(ChangeListener referent) {
+            super(referent);
+            this.listenerUuid = referent.getListenerUuid();
+        }
+
+        public ChangeListenerReference(ChangeListener referent, ReferenceQueue<? super ChangeListener> q) {
+            super(referent, q);
+            this.listenerUuid = referent.getListenerUuid();
+        }
+
+        @Override
+        public int compareTo(ChangeListenerReference o) {
+            return this.listenerUuid.compareTo(o.listenerUuid);
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = 3;
+            hash = 67 * hash + Objects.hashCode(this.listenerUuid);
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+            final ChangeListenerReference other = (ChangeListenerReference) obj;
+            return Objects.equals(this.listenerUuid, other.listenerUuid);
+        }
+    
+    }
+    
 }

@@ -16,9 +16,12 @@
 package gov.vha.isaac.cradle.commit;
 
 import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.commit.ChangeListener;
 import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
 import gov.vha.isaac.ochre.api.sememe.SememeService;
+import java.lang.ref.WeakReference;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Semaphore;
 import javafx.concurrent.Task;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
@@ -33,11 +36,14 @@ public class WriteSememeChronicle extends Task<Void>  implements Callable<Void>{
     
     private final SememeChronicle sc;
     private final Semaphore writeSemaphore;
+    private final ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners;
 
-    public WriteSememeChronicle(SememeChronicle sc, Semaphore writeSemaphore) {
+    public WriteSememeChronicle(SememeChronicle sc, Semaphore writeSemaphore,
+            ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners) {
         this.sc = sc;
         this.writeSemaphore = writeSemaphore;
-        updateTitle("Write sememe");
+        this.changeListeners = changeListeners;
+        updateTitle("Write and notify sememe change");
         updateMessage(sc.toUserString());
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         LookupService.getService(ActiveTaskSet.class).get().add(this);
@@ -47,7 +53,20 @@ public class WriteSememeChronicle extends Task<Void>  implements Callable<Void>{
     public Void call() throws Exception {
         try {
             sememeService.writeSememe(sc);
-            updateProgress(1, 1); 
+            updateProgress(1, 2); 
+            updateMessage("notifying: " + sc.toUserString());
+             
+             changeListeners.forEach((listenerRef) -> {
+                ChangeListener listener = listenerRef.get();
+                if (listener == null) {
+                    changeListeners.remove(listenerRef);
+                } else {
+                    listener.handleChange(sc);
+                }
+             });
+            updateProgress(2, 2); 
+            updateMessage("complete: " + sc.toUserString());
+
             return null;
         } finally {
             writeSemaphore.release();

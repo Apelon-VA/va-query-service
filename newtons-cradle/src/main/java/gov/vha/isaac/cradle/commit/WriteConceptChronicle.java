@@ -18,7 +18,10 @@ package gov.vha.isaac.cradle.commit;
 import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.commit.ChangeListener;
+import java.lang.ref.WeakReference;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Semaphore;
 import javafx.concurrent.Task;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
@@ -34,10 +37,13 @@ public class WriteConceptChronicle extends Task<Void>  implements Callable<Void>
     
     private final ConceptChronicle cc;
     private final Semaphore writeSemaphore;
+    private final ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners;
 
-    public WriteConceptChronicle(ConceptChronicle cc, Semaphore writeSemaphore) {
+    public WriteConceptChronicle(ConceptChronicle cc, Semaphore writeSemaphore,
+            ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners) {
         this.cc = cc;
         this.writeSemaphore = writeSemaphore;
+        this.changeListeners = changeListeners;
         updateTitle("Write concept");
         updateMessage(cc.toUserString());
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
@@ -48,8 +54,22 @@ public class WriteConceptChronicle extends Task<Void>  implements Callable<Void>
     public Void call() throws Exception {
         try {
             cradle.writeConceptData((ConceptChronicleDataEager) cc.getData());
-            updateProgress(1, 1); 
-            return null;
+            updateProgress(1, 2); 
+            updateMessage("notifying: " + cc.toUserString());
+
+             changeListeners.forEach((listenerRef) -> {
+                ChangeListener listener = listenerRef.get();
+                if (listener == null) {
+                    changeListeners.remove(listenerRef);
+                } else {
+                    listener.handleChange(cc);
+                }
+             });
+
+            updateProgress(2, 2); 
+            updateMessage("complete: " + cc.toUserString());
+             
+             return null;
         } finally {
             writeSemaphore.release();
             LookupService.getService(ActiveTaskSet.class).get().remove(this); 

@@ -38,7 +38,6 @@ import org.apache.logging.log4j.Logger;
 import org.apache.mahout.math.map.OpenIntIntHashMap;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.api.coordinate.Status;
-import org.ihtsdo.otf.tcc.model.cc.change.CommitSequence;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 import org.ihtsdo.otf.tcc.model.version.Stamp;
 
@@ -172,7 +171,6 @@ public class CommitTask extends Task<Optional<CommitRecord>> {
 //                }
 //            }
 //            GlobalPropertyChange.firePropertyChange(TerminologyStoreDI.CONCEPT_EVENT.POST_COMMIT, null, conceptsToCommit);
-            CommitSequence.nextSequence();
             return Optional.ofNullable(commitRecord);
         } catch (Exception e1) {
             throw new RuntimeException(e1);

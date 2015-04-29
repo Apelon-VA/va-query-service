@@ -19,7 +19,10 @@ import gov.vha.isaac.ochre.api.ConceptProxy;
 import gov.vha.isaac.ochre.api.IdentifiedComponentBuilder;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.chronicle.IdentifiedObjectLocal;
+import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
 import gov.vha.isaac.ochre.api.commit.CommitService;
+import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,7 +34,7 @@ import java.util.stream.Stream;
  * @author kec
  * @param <T>
  */
-public abstract class ComponentBuilder<T> implements IdentifiedComponentBuilder<T> {
+public abstract class ComponentBuilder<T extends IdentifiedObjectLocal> implements IdentifiedComponentBuilder<T> {
     private static final IdentifierService identifierService = LookupService.getService(IdentifierService.class);
 
     public static IdentifierService getIdentifierService() {
@@ -81,6 +84,11 @@ public abstract class ComponentBuilder<T> implements IdentifiedComponentBuilder<
     public IdentifiedComponentBuilder<T> setPrimordialUuid(UUID uuid) {
         this.primordialUuid = uuid;
         return this;
+    }
+
+    @Override
+    public final T build(EditCoordinate editCoordinate, ChangeCheckerMode changeCheckerMode) throws IllegalStateException {
+        return build(editCoordinate, changeCheckerMode, new ArrayList());
     }
     
 }
