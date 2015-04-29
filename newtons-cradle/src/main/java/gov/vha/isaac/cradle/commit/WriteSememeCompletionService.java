@@ -17,7 +17,9 @@ package gov.vha.isaac.cradle.commit;
 
 import gov.vha.isaac.ochre.api.commit.Alert;
 import gov.vha.isaac.ochre.api.commit.ChangeChecker;
+import gov.vha.isaac.ochre.api.commit.ChangeListener;
 import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
+import java.lang.ref.WeakReference;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
@@ -43,18 +45,21 @@ public class WriteSememeCompletionService implements Runnable {
     
     public Task<Void> checkAndWrite(SememeChronicle sc, 
             ConcurrentSkipListSet<ChangeChecker> checkers,
-            ConcurrentSkipListSet<Alert> alertCollection, Semaphore writeSemaphore) {
+            ConcurrentSkipListSet<Alert> alertCollection, Semaphore writeSemaphore, 
+            ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners) {
         writeSemaphore.acquireUninterruptibly();
         WriteAndCheckSememeChronicle task = 
                 new WriteAndCheckSememeChronicle(sc, checkers, alertCollection,
-                writeSemaphore);
+                writeSemaphore, changeListeners);
         conversionService.submit(task);
         return task;
     }
 
-    public Task<Void> write(SememeChronicle sc, Semaphore writeSemaphore) {
+    public Task<Void> write(SememeChronicle sc, Semaphore writeSemaphore, 
+            ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners) {
         writeSemaphore.acquireUninterruptibly();
-        WriteSememeChronicle task = new WriteSememeChronicle(sc, writeSemaphore);
+        WriteSememeChronicle task = new WriteSememeChronicle(sc, writeSemaphore,
+            changeListeners);
         conversionService.submit(task);
         return task;
     }

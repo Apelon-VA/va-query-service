@@ -17,6 +17,8 @@ package gov.vha.isaac.cradle.commit;
 
 import gov.vha.isaac.ochre.api.commit.Alert;
 import gov.vha.isaac.ochre.api.commit.ChangeChecker;
+import gov.vha.isaac.ochre.api.commit.ChangeListener;
+import java.lang.ref.WeakReference;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
@@ -43,17 +45,20 @@ public class WriteConceptCompletionService implements Runnable {
     
     public Task<Void> checkAndWrite(ConceptChronicle cc, 
             ConcurrentSkipListSet<ChangeChecker> checkers,
-            ConcurrentSkipListSet<Alert> alertCollection, Semaphore writeSemaphore) {
+            ConcurrentSkipListSet<Alert> alertCollection, Semaphore writeSemaphore,
+            ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners) {
         writeSemaphore.acquireUninterruptibly();
         WriteAndCheckConceptChronicle task = new WriteAndCheckConceptChronicle(
-                cc, checkers, alertCollection, writeSemaphore);
+                cc, checkers, alertCollection, writeSemaphore, changeListeners);
         conversionService.submit(task);
         return task;
     }
 
-    public Task<Void> write(ConceptChronicle cc, Semaphore writeSemaphore) {
+    public Task<Void> write(ConceptChronicle cc, Semaphore writeSemaphore,
+            ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners) {
         writeSemaphore.acquireUninterruptibly();        
-        WriteConceptChronicle task = new WriteConceptChronicle(cc, writeSemaphore);
+        WriteConceptChronicle task = new WriteConceptChronicle(cc, writeSemaphore,
+                changeListeners);
         conversionService.submit(task);
         return task;
     }

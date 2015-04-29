@@ -18,9 +18,11 @@ package gov.vha.isaac.cradle.commit;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.commit.Alert;
 import gov.vha.isaac.ochre.api.commit.ChangeChecker;
+import gov.vha.isaac.ochre.api.commit.ChangeListener;
 import gov.vha.isaac.ochre.api.commit.CheckPhase;
 import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
 import gov.vha.isaac.ochre.api.sememe.SememeService;
+import java.lang.ref.WeakReference;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Semaphore;
@@ -39,16 +41,19 @@ public class WriteAndCheckSememeChronicle extends Task<Void> implements Callable
     private final ConcurrentSkipListSet<ChangeChecker> checkers;
     private final ConcurrentSkipListSet<Alert> alertCollection;
     private final Semaphore writeSemaphore;
+    private final ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners;
 
     public WriteAndCheckSememeChronicle(SememeChronicle sc,
             ConcurrentSkipListSet<ChangeChecker> checkers,
-            ConcurrentSkipListSet<Alert> alertCollection, Semaphore writeSemaphore) {
+            ConcurrentSkipListSet<Alert> alertCollection, Semaphore writeSemaphore,
+            ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners) {
         this.sc = sc;
         this.checkers = checkers;
         this.alertCollection = alertCollection;
         this.writeSemaphore = writeSemaphore;
-        updateTitle("Write and check concept");
-        updateMessage(sc.toUserString());
+        this.changeListeners = changeListeners;
+        updateTitle("Write, check, and notify for sememe change");
+        updateMessage("write: " + sc.toUserString());
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         LookupService.getService(ActiveTaskSet.class).get().add(this);
     }
@@ -57,14 +62,28 @@ public class WriteAndCheckSememeChronicle extends Task<Void> implements Callable
     public Void call() throws Exception {
         try {
             sememeService.writeSememe(sc);
-             updateProgress(1, 2);
+            updateProgress(1, 3);
+            updateMessage("checking: " + sc.toUserString());
             if (sc.isUncommitted()) {
                 checkers.stream().forEach((check) -> {
                     check.check(sc, alertCollection, CheckPhase.ADD_UNCOMMITTED);
                 });
             }
 
-             updateProgress(2, 2);
+            updateProgress(2, 3);
+            updateMessage("notifying: " + sc.toUserString());
+             
+             changeListeners.forEach((listenerRef) -> {
+                ChangeListener listener = listenerRef.get();
+                if (listener == null) {
+                    changeListeners.remove(listenerRef);
+                } else {
+                    listener.handleChange(sc);
+                }
+             });
+             
+            updateProgress(3, 3);
+            updateMessage("completed change: " + sc.toUserString());
             return null;
         } finally {
             writeSemaphore.release();

@@ -5,7 +5,6 @@ import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.cradle.taxonomy.DestinationOriginRecord;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
-import java.io.IOException;
 import java.util.concurrent.ConcurrentSkipListSet;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
 import org.ihtsdo.otf.tcc.model.cc.termstore.PersistentStoreI;
@@ -34,8 +33,6 @@ public interface CradleExtensions extends PersistentStoreI {
     
     Stream<RefexMember<?, ?>> getRefexStream();
     Stream<RefexMember<?, ?>> getParallelRefexStream();
-
-    void loadExistingDatabase() throws IOException;  
     
     void reportStats();
 }

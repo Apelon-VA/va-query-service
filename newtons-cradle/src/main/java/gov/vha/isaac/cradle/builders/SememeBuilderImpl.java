@@ -31,6 +31,7 @@ import gov.vha.isaac.ochre.model.sememe.version.ConceptSequenceTimeSememeImpl;
 import gov.vha.isaac.ochre.model.sememe.version.LogicGraphSememeImpl;
 import gov.vha.isaac.ochre.model.sememe.version.SememeVersionImpl;
 import gov.vha.isaac.ochre.model.sememe.version.StringSememeImpl;
+import java.util.List;
 import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
 
 /**
@@ -66,7 +67,9 @@ public class SememeBuilderImpl extends ComponentBuilder<SememeChronicle> impleme
     
 
     @Override
-    public SememeChronicle build(EditCoordinate editCoordinate, ChangeCheckerMode changeCheckerMode) throws IllegalStateException {
+    public SememeChronicle build(EditCoordinate editCoordinate, 
+            ChangeCheckerMode changeCheckerMode,
+            List builtObjects) throws IllegalStateException {
         if (referencedComponentNid == Integer.MAX_VALUE) {
             referencedComponentNid = getIdentifierService().getNidForUuids(referencedComponentBuilder.getUuids());
         }
@@ -120,7 +123,7 @@ public class SememeBuilderImpl extends ComponentBuilder<SememeChronicle> impleme
         } else {
             getCommitService().addUncommittedNoChecks(sememeChronicle);
         }
-        
+        builtObjects.add(sememeChronicle);
         return sememeChronicle;
     }
     
