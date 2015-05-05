@@ -221,8 +221,8 @@ public class LuceneDynamicRefexIndexerConfiguration
 		
 		Ts.get().addUncommitted(assemblageConceptC);
 		Ts.get().addUncommitted(referencedAssemblageConceptC);
-		Ts.get().commit(assemblageConceptC);
-		Ts.get().commit(referencedAssemblageConceptC);
+		Ts.get().commit(/* assemblageConceptC */);
+		Ts.get().commit(/* referencedAssemblageConceptC */);
 		if (!skipReindex)
 		{
 			Ts.get().index(new Class[] {LuceneDynamicRefexIndexer.class});
@@ -294,8 +294,8 @@ public class LuceneDynamicRefexIndexerConfiguration
 
 			Ts.get().addUncommitted(indexConfigConceptC);
 			Ts.get().addUncommitted(referencedAssemblageConceptC);
-			Ts.get().commit(indexConfigConceptC);
-			Ts.get().commit(referencedAssemblageConceptC);
+			Ts.get().commit(/* indexConfigConceptC */);
+			Ts.get().commit(/* referencedAssemblageConceptC */);
 			Ts.get().index(new Class[] {LuceneDynamicRefexIndexer.class});
 			return;
 		}
