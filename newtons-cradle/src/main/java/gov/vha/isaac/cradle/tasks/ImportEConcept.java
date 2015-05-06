@@ -65,7 +65,7 @@ public class ImportEConcept implements Callable<Void> {
 
     @Override
     public Void call() throws Exception {
-        System.out.println("Processing with permit");
+
         try {
             if (this.newPathUuid != null) {
                 eConcept.processComponentRevisions(r -> r.setPathUuid(newPathUuid));
