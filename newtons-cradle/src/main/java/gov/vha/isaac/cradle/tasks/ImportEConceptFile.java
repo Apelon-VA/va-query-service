@@ -103,6 +103,7 @@ public class ImportEConceptFile extends Task<Integer> {
         try {
             Instant start = Instant.now();
             Semaphore conversionPermits = new Semaphore(Runtime.getRuntime().availableProcessors());
+            System.out.println(Runtime.getRuntime().availableProcessors() + " permits: " + conversionPermits.availablePermits());
             ExecutorCompletionService conversionService = new ExecutorCompletionService(ForkJoinPool.commonPool());
 
             long bytesToProcessForLoad = 0;
@@ -132,7 +133,9 @@ public class ImportEConceptFile extends Task<Integer> {
 //                            log.info("Watch concept: " + eConcept);
 //                        }
 
+                        System.out.println("taking permit");
                         conversionPermits.acquire();
+                        System.out.println("took permit");
                         conversionService.submit(new ImportEConcept(eConcept, conversionPermits, stampPathUuid));
 
                         conceptCount++;
