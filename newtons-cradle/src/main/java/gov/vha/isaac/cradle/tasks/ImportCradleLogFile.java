@@ -8,6 +8,8 @@ package gov.vha.isaac.cradle.tasks;
 import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.cradle.log.CradleCommitRecord;
 import gov.vha.isaac.cradle.log.LogEntry;
+import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.util.WorkExecutors;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -52,8 +54,7 @@ public class ImportCradleLogFile extends Task<Integer> {
     protected Integer call() throws Exception {
         try {
             Instant start = Instant.now();
-            Semaphore conversionPermits = new Semaphore(Runtime.getRuntime().availableProcessors());
-            ExecutorCompletionService conversionService = new ExecutorCompletionService(ForkJoinPool.commonPool());
+            ExecutorCompletionService conversionService = new ExecutorCompletionService(LookupService.getService(WorkExecutors.class).getPotentiallyBlockingExecutor());
 
             long bytesToProcessForLoad = 0;
             long bytesProcessedForLoad = 0;
@@ -81,13 +82,11 @@ public class ImportCradleLogFile extends Task<Integer> {
                         switch (logEntry) {
                             case COMMIT_RECORD:
                                 CradleCommitRecord ccr = new CradleCommitRecord(dis, (Termstore) termService);
-                                conversionPermits.acquire();
-                                conversionService.submit(new ImportCradleCommitRecord(ccr, conversionPermits));
+                                conversionService.submit(new ImportCradleCommitRecord(ccr));
                                 break;
                             case CONCEPT:
                                 TtkConceptChronicle eConcept = new TtkConceptChronicle(dis);
-                                conversionPermits.acquire();
-                                conversionService.submit(new ImportEConcept(eConcept, conversionPermits));
+                                conversionService.submit(new ImportEConcept(eConcept));
                                 break;
                             default:
                                 throw new UnsupportedOperationException("Can't handle: " + logEntry);

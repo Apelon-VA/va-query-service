@@ -26,55 +26,47 @@ public class VerifyEConcept implements Callable<Boolean> {
 
     CradleExtensions termService;
     TtkConceptChronicle eConcept;
-    Semaphore permit;
 
     ConceptProxy newPath = null;
     UUID newPathUuid = null;
 
     public VerifyEConcept(CradleExtensions termService,
                           TtkConceptChronicle eConcept,
-                          Semaphore permit, ConceptProxy newPath) {
-        this(termService, eConcept, permit);
+                          ConceptProxy newPath) {
+        this(termService, eConcept);
         this.newPath = newPath;
         if (this.newPath != null) {
             this.newPathUuid = this.newPath.getUuids()[0];
         }
     }
 
-    public VerifyEConcept(CradleExtensions termService,
-            TtkConceptChronicle eConcept,
-            Semaphore permit) {
+    public VerifyEConcept(CradleExtensions termService, TtkConceptChronicle eConcept) {
         this.termService = termService;
         this.eConcept = eConcept;
-        this.permit = permit;
     }
 
     @Override
     public Boolean call() throws Exception {
-        try {
-            if (this.newPath != null) {
-                eConcept.processComponentRevisions(r -> r.setPathUuid(newPathUuid));
-            }
-            int conceptNid = termService.getNidForUuids(eConcept.getPrimordialUuid());
-
-            ConceptChronicle cc = ConceptChronicle.get(conceptNid);
-            TtkConceptChronicle remadeEConcept = new TtkConceptChronicle(cc);
-            if (!remadeEConcept.equals(eConcept)) {
-                StringBuilder builder = new StringBuilder();
-                builder.append("\n\nVerify failure: ");
-                builder.append(failureCount.incrementAndGet());
-                builder.append(" Remade: \n");
-                builder.append(remadeEConcept.toString());
-                builder.append("\nOriginal: \n");
-                builder.append(eConcept);
-                builder.append("\n");
-                System.err.append(builder.toString());
-                return Boolean.FALSE;
-            }
-            return Boolean.TRUE;
-        } finally {
-            permit.release();
+        if (this.newPath != null) {
+            eConcept.processComponentRevisions(r -> r.setPathUuid(newPathUuid));
         }
+        int conceptNid = termService.getNidForUuids(eConcept.getPrimordialUuid());
+
+        ConceptChronicle cc = ConceptChronicle.get(conceptNid);
+        TtkConceptChronicle remadeEConcept = new TtkConceptChronicle(cc);
+        if (!remadeEConcept.equals(eConcept)) {
+            StringBuilder builder = new StringBuilder();
+            builder.append("\n\nVerify failure: ");
+            builder.append(failureCount.incrementAndGet());
+            builder.append(" Remade: \n");
+            builder.append(remadeEConcept.toString());
+            builder.append("\nOriginal: \n");
+            builder.append(eConcept);
+            builder.append("\n");
+            System.err.append(builder.toString());
+            return Boolean.FALSE;
+        }
+        return Boolean.TRUE;
     }
 }
 

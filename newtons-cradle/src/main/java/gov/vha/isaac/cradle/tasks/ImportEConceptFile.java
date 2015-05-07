@@ -2,11 +2,12 @@ package gov.vha.isaac.cradle.tasks;
 
 import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.ochre.api.ConceptProxy;
+import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.util.WorkExecutors;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
-
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -102,8 +103,7 @@ public class ImportEConceptFile extends Task<Integer> {
     protected Integer call() throws Exception {
         try {
             Instant start = Instant.now();
-            Semaphore conversionPermits = new Semaphore(Runtime.getRuntime().availableProcessors());
-            ExecutorCompletionService conversionService = new ExecutorCompletionService(ForkJoinPool.commonPool());
+            ExecutorCompletionService conversionService = new ExecutorCompletionService(LookupService.getService(WorkExecutors.class).getPotentiallyBlockingExecutor());
 
             long bytesToProcessForLoad = 0;
             long bytesProcessedForLoad = 0;
@@ -132,8 +132,7 @@ public class ImportEConceptFile extends Task<Integer> {
 //                            log.info("Watch concept: " + eConcept);
 //                        }
 
-                        conversionPermits.acquire();
-                        conversionService.submit(new ImportEConcept(eConcept, conversionPermits, stampPathUuid));
+                        conversionService.submit(new ImportEConcept(eConcept, stampPathUuid));
 
                         conceptCount++;
 

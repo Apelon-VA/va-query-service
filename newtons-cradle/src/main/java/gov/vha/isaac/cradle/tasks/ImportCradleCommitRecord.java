@@ -19,31 +19,24 @@ public class ImportCradleCommitRecord implements Callable<Void> {
 
 
     CradleCommitRecord ccr;
-    Semaphore permit;
 
-    public ImportCradleCommitRecord(CradleCommitRecord ccr,
-            Semaphore permit) {
+    public ImportCradleCommitRecord(CradleCommitRecord ccr) {
         this.ccr = ccr;
-        this.permit = permit;
     }
 
     @Override
     public Void call() throws Exception {
-        try {
-            CommitService commitManager = Hk2Looker.getService(CommitService.class);
-            String comment = ccr.getCommitComment();
-            ccr.getStampsInCommit().forEachKey((int stamp) -> {
-                commitManager.setComment(stamp, comment);
-                return true;
-            });
-            
-            ccr.getStampAliases().forEachPair((int stamp, int alias) -> {
-                commitManager.addAlias(stamp, alias, comment);
-                return true;
-            });
-        } finally {
-            permit.release();
-        }
+        CommitService commitManager = Hk2Looker.getService(CommitService.class);
+        String comment = ccr.getCommitComment();
+        ccr.getStampsInCommit().forEachKey((int stamp) -> {
+            commitManager.setComment(stamp, comment);
+            return true;
+        });
+        
+        ccr.getStampAliases().forEachPair((int stamp, int alias) -> {
+            commitManager.addAlias(stamp, alias, comment);
+            return true;
+        });
         return null;
     }
 

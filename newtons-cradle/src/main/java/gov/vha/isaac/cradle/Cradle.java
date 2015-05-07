@@ -72,6 +72,7 @@ import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.sememe.SememeService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
+import gov.vha.isaac.ochre.util.WorkExecutors;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ForkJoinPool;
@@ -265,21 +266,21 @@ public class Cradle
     @Override
     public Task<Integer> startImportLogTask(Path... paths) {
         ImportCradleLogFile importCradleLogFile = new ImportCradleLogFile(paths, this);
-        ForkJoinPool.commonPool().execute(importCradleLogFile);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(importCradleLogFile);
         return importCradleLogFile;
     }
 
     @Override
     public Task<Integer> startLoadTask(java.nio.file.Path... paths) {
         ImportEConceptFile loaderTask = new ImportEConceptFile(paths, this);
-        ForkJoinPool.commonPool().execute(loaderTask);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(loaderTask);
         return loaderTask;
     }
 
     @Override
     public Task<Integer> startExportTask(Path path) {
         ExportEConceptFile exporterTask = new ExportEConceptFile(path, this);
-        ForkJoinPool.commonPool().execute(exporterTask);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(exporterTask);
         return exporterTask;
     }
 
@@ -289,7 +290,7 @@ public class Cradle
                 (Consumer<TtkConceptChronicle>) (TtkConceptChronicle t) -> {
                     t.setRelationships(null);
                 });
-        ForkJoinPool.commonPool().execute(exporterTask);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(exporterTask);
         return exporterTask;
     }
 
@@ -881,7 +882,7 @@ public class Cradle
     @Override
     public Task<Boolean> startVerifyTask(java.nio.file.Path... paths) {
         VerifyLoadEConceptFile loaderTask = new VerifyLoadEConceptFile(paths, this);
-        ForkJoinPool.commonPool().execute(loaderTask);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(loaderTask);
         return loaderTask;
     }
 
@@ -908,21 +909,21 @@ public class Cradle
     @Override
     public GenerateIndexes startIndexTask(Class<?> ... indexersToReindex) {
         GenerateIndexes indexingTask = new GenerateIndexes(this);
-        ForkJoinPool.commonPool().execute(indexingTask);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(indexingTask);
         return indexingTask;
     }
 
     @Override
     public Task<Integer> startLoadTask(ConceptProxy stampPath, Path... filePaths) {
         ImportEConceptFile loaderTask = new ImportEConceptFile(filePaths, this, stampPath);
-        ForkJoinPool.commonPool().execute(loaderTask);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(loaderTask);
         return loaderTask;
     }
 
     @Override
     public Task<Boolean> startVerifyTask(ConceptProxy stampPath, Path... filePaths) {
         VerifyLoadEConceptFile loaderTask = new VerifyLoadEConceptFile(filePaths, this, stampPath);
-        ForkJoinPool.commonPool().execute(loaderTask);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(loaderTask);
         return loaderTask;
 
     }
@@ -934,7 +935,7 @@ public class Cradle
                 r.setPathUuid(stampPath.getUuids()[0]);
             });
         });
-        ForkJoinPool.commonPool().execute(exporterTask);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(exporterTask);
         return exporterTask;
     }
 
@@ -949,14 +950,14 @@ public class Cradle
                         r.setPathUuid(pathUuid);
                     });
                 });
-        ForkJoinPool.commonPool().execute(exporterTask);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(exporterTask);
         return exporterTask;
     }
 
     @Override
     public Task<Void> addStampPathOrigin(ConceptProxy stampPath, ConceptProxy originStampPath, Instant originTime) {
         AddStampOrigin addStampOrigin = new AddStampOrigin(stampPath, originStampPath, originTime, this);
-        ForkJoinPool.commonPool().execute(addStampOrigin);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(addStampOrigin);
         return addStampOrigin;
     }
 
