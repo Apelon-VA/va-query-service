@@ -101,9 +101,7 @@ public class DefaultConfigurationService implements ConfigurationService
 	@Override
 	public void setDataStoreFolderPath(Path dataStoreFolderPath) throws IllegalStateException, IllegalArgumentException
 	{
-		//The starting runlevel of HK2 is -2, before you do anything.  The stop level of isaac 
-		//is -1, so we will never go back to -2.
-		if (LookupService.getRunLevelController().getCurrentRunLevel() != -2)
+		if (LookupService.hasIssacBeenStartedAtLeastOnce())
 		{
 			throw new IllegalStateException("Can only set the dbFolderPath prior to starting Isaac");
 		}
