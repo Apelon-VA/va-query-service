@@ -319,6 +319,7 @@ public class Cradle
         commitService.addUncommittedNoChecks(conceptChronicleBI);
     }
 
+    // TODO getUncommittedConcepts() is unsupported.  Should be implemented or removed.
     @Override
     public Collection<? extends ConceptChronicleBI> getUncommittedConcepts() {
         throw new UnsupportedOperationException();
