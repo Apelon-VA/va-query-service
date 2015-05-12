@@ -20,16 +20,16 @@ import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.ConceptProxy;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.State;
-import gov.vha.isaac.ochre.api.chronicle.ChronicledConcept;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
-import gov.vha.isaac.ochre.api.concept.ConceptBuilder;
+import gov.vha.isaac.ochre.api.component.concept.ConceptBuilder;
 import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
-import gov.vha.isaac.ochre.api.description.DescriptionBuilder;
-import gov.vha.isaac.ochre.api.description.DescriptionBuilderService;
+import gov.vha.isaac.ochre.api.component.concept.description.DescriptionBuilder;
+import gov.vha.isaac.ochre.api.component.concept.description.DescriptionBuilderService;
 import gov.vha.isaac.ochre.api.logic.LogicalExpression;
-import gov.vha.isaac.ochre.api.sememe.SememeBuilder;
-import gov.vha.isaac.ochre.api.sememe.SememeBuilderService;
+import gov.vha.isaac.ochre.api.component.sememe.SememeBuilder;
+import gov.vha.isaac.ochre.api.component.sememe.SememeBuilderService;
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -42,7 +42,7 @@ import org.ihtsdo.otf.tcc.model.cc.description.Description;
  *
  * @author kec
  */
-public class ConceptBuilderImpl extends ComponentBuilder<ChronicledConcept> implements ConceptBuilder {
+public class ConceptBuilderImpl extends ComponentBuilder<ConceptChronology> implements ConceptBuilder {
     private final String conceptName;
     private final String semanticTag;
     private final ConceptProxy defaultLanguageForDescriptions;
@@ -105,7 +105,7 @@ public class ConceptBuilderImpl extends ComponentBuilder<ChronicledConcept> impl
 
 
     @Override
-    public ChronicledConcept build(EditCoordinate editCoordinate, ChangeCheckerMode changeCheckerMode,
+    public ConceptChronology build(EditCoordinate editCoordinate, ChangeCheckerMode changeCheckerMode,
             List builtObjects) throws IllegalStateException {
         
         try {

@@ -18,7 +18,7 @@ package gov.vha.isaac.cradle.commit;
 import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.commit.ChangeListener;
+import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -37,10 +37,10 @@ public class WriteConceptChronicle extends Task<Void>  implements Callable<Void>
     
     private final ConceptChronicle cc;
     private final Semaphore writeSemaphore;
-    private final ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners;
+    private final ConcurrentSkipListSet<WeakReference<ChronologyChangeListener>> changeListeners;
 
     public WriteConceptChronicle(ConceptChronicle cc, Semaphore writeSemaphore,
-            ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners) {
+            ConcurrentSkipListSet<WeakReference<ChronologyChangeListener>> changeListeners) {
         this.cc = cc;
         this.writeSemaphore = writeSemaphore;
         this.changeListeners = changeListeners;
@@ -58,7 +58,7 @@ public class WriteConceptChronicle extends Task<Void>  implements Callable<Void>
             updateMessage("notifying: " + cc.toUserString());
 
              changeListeners.forEach((listenerRef) -> {
-                ChangeListener listener = listenerRef.get();
+                ChronologyChangeListener listener = listenerRef.get();
                 if (listener == null) {
                     changeListeners.remove(listenerRef);
                 } else {

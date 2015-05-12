@@ -18,7 +18,7 @@ import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
-import gov.vha.isaac.ochre.api.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
 import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
@@ -73,6 +73,7 @@ public class CradleIntegrationTests {
         } catch (Exception ex) {
             log.fatal(ex.getLocalizedMessage(), ex);
         }
+        System.exit(0);
     }
 
     private static final Logger log = LogManager.getLogger();

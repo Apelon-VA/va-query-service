@@ -22,8 +22,8 @@ import gov.vha.isaac.ochre.api.commit.AlertType;
 import gov.vha.isaac.ochre.api.commit.ChangeChecker;
 import gov.vha.isaac.ochre.api.commit.CheckPhase;
 import gov.vha.isaac.ochre.api.commit.CommitRecord;
-import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
-import gov.vha.isaac.ochre.api.sememe.SememeService;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
 import gov.vha.isaac.ochre.collections.SequenceSet;
@@ -118,7 +118,7 @@ public class CommitTask extends Task<Optional<CommitRecord>> {
                 }
             });
             sememesToCommit.stream().forEach((sememeSequence) -> {
-                SememeChronicle sc = sememeService.getSememe(sememeSequence);
+                SememeChronology sc = sememeService.getSememe(sememeSequence);
                 if (sememesToCheck.contains(sememeSequence)) {
                     checkers.stream().forEach((check) -> {
                         check.check(sc, alertCollection, CheckPhase.COMMIT);

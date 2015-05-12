@@ -18,14 +18,14 @@ package gov.vha.isaac.cradle.builders;
 import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
 import gov.vha.isaac.ochre.api.ConceptProxy;
 import gov.vha.isaac.ochre.api.State;
-import gov.vha.isaac.ochre.api.chronicle.ChronicledObjectLocal;
-import gov.vha.isaac.ochre.api.concept.ConceptBuilder;
+import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
+import gov.vha.isaac.ochre.api.component.concept.ConceptBuilder;
 import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
 import gov.vha.isaac.metadata.coordinates.LanguageCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.description.DescriptionBuilder;
-import gov.vha.isaac.ochre.api.sememe.SememeBuilderService;
+import gov.vha.isaac.ochre.api.component.concept.description.DescriptionBuilder;
+import gov.vha.isaac.ochre.api.component.sememe.SememeBuilderService;
 import java.beans.PropertyVetoException;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +35,7 @@ import org.ihtsdo.otf.tcc.model.cc.description.Description;
  *
  * @author kec
  */
-public class DescriptionBuilderImpl extends ComponentBuilder<ChronicledObjectLocal> implements DescriptionBuilder {
+public class DescriptionBuilderImpl extends ComponentBuilder<ObjectChronology> implements DescriptionBuilder {
     
     
     private final ArrayList<ConceptProxy> preferredInDialectAssemblages = new ArrayList<>();

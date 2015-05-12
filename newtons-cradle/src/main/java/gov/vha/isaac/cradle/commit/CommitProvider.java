@@ -16,13 +16,13 @@ import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.SystemStatusService;
-import gov.vha.isaac.ochre.api.chronicle.ChronicledConcept;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.commit.Alert;
 import gov.vha.isaac.ochre.api.commit.ChangeChecker;
-import gov.vha.isaac.ochre.api.commit.ChangeListener;
+import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
 import gov.vha.isaac.ochre.api.commit.CommitRecord;
 import gov.vha.isaac.ochre.api.commit.CommitService;
-import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
 import java.io.DataInputStream;
@@ -121,7 +121,7 @@ public class CommitProvider implements CommitService {
         return new Thread(r, "commit executor");
     });
     
-    ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners = new ConcurrentSkipListSet<>();
+    ConcurrentSkipListSet<WeakReference<ChronologyChangeListener>> changeListeners = new ConcurrentSkipListSet<>();
 
     private long lastCommit = Long.MIN_VALUE;
 
@@ -341,12 +341,12 @@ public class CommitProvider implements CommitService {
     }
 
     @Override
-    public Task<Void> cancel(ChronicledConcept cc) {
+    public Task<Void> cancel(ConceptChronology cc) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public Task<Void> cancel(SememeChronicle sememeChronicle) {
+    public Task<Void> cancel(SememeChronology sememeChronicle) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
@@ -397,12 +397,12 @@ public class CommitProvider implements CommitService {
     }
 
     @Override
-    public Task<Optional<CommitRecord>> commit(ChronicledConcept cc, String commitComment) {
+    public Task<Optional<CommitRecord>> commit(ConceptChronology cc, String commitComment) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public Task<Optional<CommitRecord>> commit(SememeChronicle cc, String commitComment) {
+    public Task<Optional<CommitRecord>> commit(SememeChronology cc, String commitComment) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
@@ -458,21 +458,21 @@ public class CommitProvider implements CommitService {
     }
 
     @Override
-    public Task<Void> addUncommitted(SememeChronicle sc) {
+    public Task<Void> addUncommitted(SememeChronology sc) {
         handleUncommittedSequenceSet(sc, uncommittedSememesWithChecksSequenceSet);
         return writeSememeCompletionService.checkAndWrite(sc, checkers, alertCollection,
                 writePermitReference.get(), changeListeners);
     }
 
     @Override
-    public Task<Void> addUncommittedNoChecks(SememeChronicle sc) {
+    public Task<Void> addUncommittedNoChecks(SememeChronology sc) {
         handleUncommittedSequenceSet(sc, uncommittedSememesNoChecksSequenceSet);
         return writeSememeCompletionService.write(sc,
                 writePermitReference.get(), changeListeners);
     }
 
     @Override
-    public Task<Void> addUncommitted(ChronicledConcept cc) {
+    public Task<Void> addUncommitted(ConceptChronology cc) {
         ConceptChronicle concept = (ConceptChronicle) cc;
         handleUncommittedSequenceSet(concept, uncommittedConceptsWithChecksSequenceSet);
         return writeConceptCompletionService.checkAndWrite(concept, checkers, alertCollection,
@@ -480,14 +480,14 @@ public class CommitProvider implements CommitService {
     }
 
     @Override
-    public Task<Void> addUncommittedNoChecks(ChronicledConcept cc) {
+    public Task<Void> addUncommittedNoChecks(ConceptChronology cc) {
         ConceptChronicle concept = (ConceptChronicle) cc;
         handleUncommittedSequenceSet(concept, uncommittedConceptsNoChecksSequenceSet);
         return writeConceptCompletionService.write(concept,
                 writePermitReference.get(), changeListeners);
     }
 
-    private void handleUncommittedSequenceSet(SememeChronicle sememeChronicle, SememeSequenceSet set) {
+    private void handleUncommittedSequenceSet(SememeChronology sememeChronicle, SememeSequenceSet set) {
         if (sememeChronicle.isUncommitted()) {
             uncommittedSequenceLock.lock();
             try {
@@ -538,24 +538,24 @@ public class CommitProvider implements CommitService {
     }
 
     @Override
-    public void addChangeListener(ChangeListener changeListener) {
+    public void addChangeListener(ChronologyChangeListener changeListener) {
         changeListeners.add(new ChangeListenerReference(changeListener));
     }
 
     @Override
-    public void removeChangeListener(ChangeListener changeListener) {
+    public void removeChangeListener(ChronologyChangeListener changeListener) {
         changeListeners.remove(new ChangeListenerReference(changeListener));
     }
 
-    private static class ChangeListenerReference extends WeakReference<ChangeListener> implements Comparable<ChangeListenerReference> {
+    private static class ChangeListenerReference extends WeakReference<ChronologyChangeListener> implements Comparable<ChangeListenerReference> {
 
         UUID listenerUuid;
-        public ChangeListenerReference(ChangeListener referent) {
+        public ChangeListenerReference(ChronologyChangeListener referent) {
             super(referent);
             this.listenerUuid = referent.getListenerUuid();
         }
 
-        public ChangeListenerReference(ChangeListener referent, ReferenceQueue<? super ChangeListener> q) {
+        public ChangeListenerReference(ChronologyChangeListener referent, ReferenceQueue<? super ChronologyChangeListener> q) {
             super(referent, q);
             this.listenerUuid = referent.getListenerUuid();
         }

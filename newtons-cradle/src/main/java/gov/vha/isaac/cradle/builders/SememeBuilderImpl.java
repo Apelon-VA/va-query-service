@@ -21,9 +21,10 @@ import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
 import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
 import gov.vha.isaac.ochre.api.logic.LogicalExpression;
-import gov.vha.isaac.ochre.api.sememe.SememeBuilder;
-import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
-import gov.vha.isaac.ochre.api.sememe.SememeType;
+import gov.vha.isaac.ochre.api.component.sememe.SememeBuilder;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.api.component.sememe.SememeType;
+import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
 import gov.vha.isaac.ochre.model.sememe.SememeChronicleImpl;
 import gov.vha.isaac.ochre.model.sememe.version.ComponentNidSememeImpl;
 import gov.vha.isaac.ochre.model.sememe.version.ConceptSequenceSememeImpl;
@@ -38,7 +39,7 @@ import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
  *
  * @author kec
  */
-public class SememeBuilderImpl extends ComponentBuilder<SememeChronicle> implements SememeBuilder {
+public class SememeBuilderImpl extends ComponentBuilder<SememeChronology<? extends SememeVersion>> implements SememeBuilder {
 
     IdentifiedComponentBuilder referencedComponentBuilder;
     int referencedComponentNid = Integer.MAX_VALUE;
@@ -67,7 +68,7 @@ public class SememeBuilderImpl extends ComponentBuilder<SememeChronicle> impleme
     
 
     @Override
-    public SememeChronicle build(EditCoordinate editCoordinate, 
+    public SememeChronology build(EditCoordinate editCoordinate, 
             ChangeCheckerMode changeCheckerMode,
             List builtObjects) throws IllegalStateException {
         if (referencedComponentNid == Integer.MAX_VALUE) {

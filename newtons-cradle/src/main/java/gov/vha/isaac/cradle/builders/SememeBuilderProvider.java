@@ -18,9 +18,9 @@ package gov.vha.isaac.cradle.builders;
 import gov.vha.isaac.ochre.api.ConceptProxy;
 import gov.vha.isaac.ochre.api.IdentifiedComponentBuilder;
 import gov.vha.isaac.ochre.api.logic.LogicalExpression;
-import gov.vha.isaac.ochre.api.sememe.SememeBuilder;
-import gov.vha.isaac.ochre.api.sememe.SememeBuilderService;
-import gov.vha.isaac.ochre.api.sememe.SememeType;
+import gov.vha.isaac.ochre.api.component.sememe.SememeBuilder;
+import gov.vha.isaac.ochre.api.component.sememe.SememeBuilderService;
+import gov.vha.isaac.ochre.api.component.sememe.SememeType;
 import org.jvnet.hk2.annotations.Service;
 
 /**

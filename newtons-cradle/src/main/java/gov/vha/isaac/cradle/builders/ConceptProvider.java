@@ -22,9 +22,9 @@ import gov.vha.isaac.cradle.component.ConceptChronicleDataEagerSerializer;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SystemStatusService;
-import gov.vha.isaac.ochre.api.chronicle.ChronicledConcept;
-import gov.vha.isaac.ochre.api.concept.ConceptService;
-import gov.vha.isaac.ochre.api.concept.ConceptSnapshotService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshotService;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import java.io.IOException;
@@ -104,7 +104,7 @@ public class ConceptProvider implements ConceptService {
     }
 
     @Override
-    public ChronicledConcept getConcept(int conceptSequence) {
+    public ConceptChronology getConcept(int conceptSequence) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 

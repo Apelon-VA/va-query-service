@@ -20,7 +20,7 @@ import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.commit.Alert;
 import gov.vha.isaac.ochre.api.commit.ChangeChecker;
-import gov.vha.isaac.ochre.api.commit.ChangeListener;
+import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
 import gov.vha.isaac.ochre.api.commit.CheckPhase;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.Callable;
@@ -42,12 +42,12 @@ public class WriteAndCheckConceptChronicle extends Task<Void> implements Callabl
     private final ConcurrentSkipListSet<ChangeChecker> checkers;
     private final ConcurrentSkipListSet<Alert> alertCollection;
     private final Semaphore writeSemaphore;
-    private final ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners;
+    private final ConcurrentSkipListSet<WeakReference<ChronologyChangeListener>> changeListeners;
 
     public WriteAndCheckConceptChronicle(ConceptChronicle cc,
             ConcurrentSkipListSet<ChangeChecker> checkers,
             ConcurrentSkipListSet<Alert> alertCollection, Semaphore writeSemaphore,
-            ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners) {
+            ConcurrentSkipListSet<WeakReference<ChronologyChangeListener>> changeListeners) {
         this.cc = cc;
         this.checkers = checkers;
         this.alertCollection = alertCollection;
@@ -77,7 +77,7 @@ public class WriteAndCheckConceptChronicle extends Task<Void> implements Callabl
             updateMessage("notifying: " + cc.toUserString());
 
              changeListeners.forEach((listenerRef) -> {
-                ChangeListener listener = listenerRef.get();
+                ChronologyChangeListener listener = listenerRef.get();
                 if (listener == null) {
                     changeListeners.remove(listenerRef);
                 } else {

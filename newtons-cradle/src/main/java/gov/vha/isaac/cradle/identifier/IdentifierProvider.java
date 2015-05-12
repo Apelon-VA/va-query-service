@@ -25,8 +25,9 @@ import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.chronicle.IdentifiedObjectLocal;
-import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
-import gov.vha.isaac.ochre.api.sememe.SememeService;
+import gov.vha.isaac.ochre.api.chronicle.ObjectChronologyType;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
 import gov.vha.isaac.ochre.collections.RefexSequenceSet;
@@ -124,6 +125,17 @@ public class IdentifierProvider implements IdentifierService {
         uuidIntMapMap.write();
         log.info("writing sequence-cnid-map.");
         nidCnidMap.write(new File(Cradle.getCradlePath().toFile(), "sequence-cnid-map"));
+    }
+
+    @Override
+    public ObjectChronologyType getChronologyTypeForNid(int nid) {
+        if (sememeSequenceMap.containsNid(nid)) {
+            return ObjectChronologyType.SEMEME;
+        }
+        if (conceptSequenceMap.containsNid(nid)) {
+            return ObjectChronologyType.CONCEPT;
+        }
+        return ObjectChronologyType.DESCRIPTION;
     }
 
     @Override
@@ -349,7 +361,7 @@ public class IdentifierProvider implements IdentifierService {
         ConceptSequenceSet sequences = new ConceptSequenceSet();
         getSememeService(); // make sure static is initialized. 
         sememeSequences.stream().forEach((sememeSequence) -> {
-            SememeChronicle<?> chronicle = sememeProvider.getSememe(sememeSequence);
+            SememeChronology<?> chronicle = sememeProvider.getSememe(sememeSequence);
             sequences.add(getConceptSequenceForComponentNid(chronicle.getReferencedComponentNid()));
         });
         return sequences;

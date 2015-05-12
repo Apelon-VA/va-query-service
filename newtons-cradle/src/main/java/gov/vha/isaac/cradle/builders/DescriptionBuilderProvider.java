@@ -16,9 +16,9 @@
 package gov.vha.isaac.cradle.builders;
 
 import gov.vha.isaac.ochre.api.ConceptProxy;
-import gov.vha.isaac.ochre.api.concept.ConceptBuilder;
-import gov.vha.isaac.ochre.api.description.DescriptionBuilder;
-import gov.vha.isaac.ochre.api.description.DescriptionBuilderService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptBuilder;
+import gov.vha.isaac.ochre.api.component.concept.description.DescriptionBuilder;
+import gov.vha.isaac.ochre.api.component.concept.description.DescriptionBuilderService;
 import org.jvnet.hk2.annotations.Service;
 
 /**

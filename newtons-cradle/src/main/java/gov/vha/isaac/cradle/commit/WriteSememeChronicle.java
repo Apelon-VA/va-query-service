@@ -16,9 +16,9 @@
 package gov.vha.isaac.cradle.commit;
 
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.commit.ChangeListener;
-import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
-import gov.vha.isaac.ochre.api.sememe.SememeService;
+import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -34,12 +34,12 @@ public class WriteSememeChronicle extends Task<Void>  implements Callable<Void>{
     
     private static final SememeService sememeService = LookupService.getService(SememeService.class);
     
-    private final SememeChronicle sc;
+    private final SememeChronology sc;
     private final Semaphore writeSemaphore;
-    private final ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners;
+    private final ConcurrentSkipListSet<WeakReference<ChronologyChangeListener>> changeListeners;
 
-    public WriteSememeChronicle(SememeChronicle sc, Semaphore writeSemaphore,
-            ConcurrentSkipListSet<WeakReference<ChangeListener>> changeListeners) {
+    public WriteSememeChronicle(SememeChronology sc, Semaphore writeSemaphore,
+            ConcurrentSkipListSet<WeakReference<ChronologyChangeListener>> changeListeners) {
         this.sc = sc;
         this.writeSemaphore = writeSemaphore;
         this.changeListeners = changeListeners;
@@ -57,7 +57,7 @@ public class WriteSememeChronicle extends Task<Void>  implements Callable<Void>{
             updateMessage("notifying: " + sc.toUserString());
              
              changeListeners.forEach((listenerRef) -> {
-                ChangeListener listener = listenerRef.get();
+                ChronologyChangeListener listener = listenerRef.get();
                 if (listener == null) {
                     changeListeners.remove(listenerRef);
                 } else {
