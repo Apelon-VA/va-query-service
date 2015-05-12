@@ -101,7 +101,7 @@ public class DefaultConfigurationService implements ConfigurationService
 	@Override
 	public void setDataStoreFolderPath(Path dataStoreFolderPath) throws IllegalStateException, IllegalArgumentException
 	{
-		if (LookupService.hasIssacBeenStartedAtLeastOnce())
+		if (LookupService.hasIsaacBeenStartedAtLeastOnce())
 		{
 			throw new IllegalStateException("Can only set the dbFolderPath prior to starting Isaac");
 		}
