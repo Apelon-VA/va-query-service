@@ -46,21 +46,17 @@ public class ImportEConcept implements Callable<Void> {
     }
 
     TtkConceptChronicle eConcept;
-    Semaphore permit;
     UUID newPathUuid = null;
     int lastRelCharacteristic = Integer.MAX_VALUE;
     int recordFlags = Integer.MAX_VALUE;
 
-    public ImportEConcept(TtkConceptChronicle eConcept,
-            Semaphore permit, UUID newPathUuid) {
-        this(eConcept, permit);
+    public ImportEConcept(TtkConceptChronicle eConcept, UUID newPathUuid) {
+        this(eConcept);
         this.newPathUuid = newPathUuid;
     }
 
-    public ImportEConcept(TtkConceptChronicle eConcept,
-            Semaphore permit) {
+    public ImportEConcept(TtkConceptChronicle eConcept) {
         this.eConcept = eConcept;
-        this.permit = permit;
     }
 
     @Override
@@ -142,8 +138,6 @@ public class ImportEConcept implements Callable<Void> {
         } catch (Exception e) {
             System.err.println("Failure importing " + eConcept.toString());
             throw e;
-        } finally {
-            permit.release();
         }
     }
 
