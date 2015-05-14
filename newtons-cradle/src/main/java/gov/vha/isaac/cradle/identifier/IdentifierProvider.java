@@ -450,5 +450,15 @@ public class IdentifierProvider implements IdentifierService {
     public int getSememeSequenceForUuids(UUID... uuids) {
         return getSememeSequence(getNidForUuids(uuids));
     }
+
+    @Override
+    public int getConceptNidForDescriptionNid(int nid) {
+        return getConceptNid(getConceptSequenceForComponentNid(nid));
+    }
+
+    @Override
+    public int getConceptSequenceForDescriptionNid(int nid) {
+        return getConceptSequenceForComponentNid(nid);
+    }
     
 }

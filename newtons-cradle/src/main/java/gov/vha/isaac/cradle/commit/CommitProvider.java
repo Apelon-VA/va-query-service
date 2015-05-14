@@ -22,6 +22,7 @@ import gov.vha.isaac.ochre.api.commit.ChangeChecker;
 import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
 import gov.vha.isaac.ochre.api.commit.CommitRecord;
 import gov.vha.isaac.ochre.api.commit.CommitService;
+import gov.vha.isaac.ochre.api.commit.CommitStates;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
@@ -488,7 +489,7 @@ public class CommitProvider implements CommitService {
     }
 
     private void handleUncommittedSequenceSet(SememeChronology sememeChronicle, SememeSequenceSet set) {
-        if (sememeChronicle.isUncommitted()) {
+        if (sememeChronicle.getCommitState() == CommitStates.UNCOMMITTED) {
             uncommittedSequenceLock.lock();
             try {
                 set.add(sequenceProvider.getSememeSequence(sememeChronicle.getNid()));

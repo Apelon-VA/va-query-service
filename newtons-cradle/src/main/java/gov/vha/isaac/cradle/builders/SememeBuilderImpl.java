@@ -38,8 +38,9 @@ import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
 /**
  *
  * @author kec
+ * @param <C>
  */
-public class SememeBuilderImpl extends ComponentBuilder<SememeChronology<? extends SememeVersion>> implements SememeBuilder {
+public class SememeBuilderImpl<C extends SememeChronology<? extends SememeVersion>> extends ComponentBuilder<C> implements SememeBuilder<C> {
 
     IdentifiedComponentBuilder referencedComponentBuilder;
     int referencedComponentNid = Integer.MAX_VALUE;
@@ -68,7 +69,7 @@ public class SememeBuilderImpl extends ComponentBuilder<SememeChronology<? exten
     
 
     @Override
-    public SememeChronology build(EditCoordinate editCoordinate, 
+    public C build(EditCoordinate editCoordinate, 
             ChangeCheckerMode changeCheckerMode,
             List builtObjects) throws IllegalStateException {
         if (referencedComponentNid == Integer.MAX_VALUE) {
@@ -125,7 +126,8 @@ public class SememeBuilderImpl extends ComponentBuilder<SememeChronology<? exten
             getCommitService().addUncommittedNoChecks(sememeChronicle);
         }
         builtObjects.add(sememeChronicle);
-        return sememeChronicle;
+        return (C) sememeChronicle;
     }
-    
+
+
 }

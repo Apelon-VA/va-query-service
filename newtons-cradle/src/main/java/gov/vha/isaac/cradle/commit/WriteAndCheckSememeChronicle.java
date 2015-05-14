@@ -20,6 +20,7 @@ import gov.vha.isaac.ochre.api.commit.Alert;
 import gov.vha.isaac.ochre.api.commit.ChangeChecker;
 import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
 import gov.vha.isaac.ochre.api.commit.CheckPhase;
+import gov.vha.isaac.ochre.api.commit.CommitStates;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import java.lang.ref.WeakReference;
@@ -64,7 +65,7 @@ public class WriteAndCheckSememeChronicle extends Task<Void> implements Callable
             sememeService.writeSememe(sc);
             updateProgress(1, 3);
             updateMessage("checking: " + sc.toUserString());
-            if (sc.isUncommitted()) {
+            if (sc.getCommitState() == CommitStates.UNCOMMITTED) {
                 checkers.stream().forEach((check) -> {
                     check.check(sc, alertCollection, CheckPhase.ADD_UNCOMMITTED);
                 });
