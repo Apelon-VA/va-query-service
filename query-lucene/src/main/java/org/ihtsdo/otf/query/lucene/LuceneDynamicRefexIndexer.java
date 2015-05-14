@@ -19,7 +19,7 @@
 
 package org.ihtsdo.otf.query.lucene;
 
-import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.util.Iterator;
@@ -109,12 +109,12 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 	}
 	
 	@Override
-	protected boolean indexSememeChronicle(SememeChronicle<?> chronicle) {
+	protected boolean indexSememeChronicle(SememeChronology<?> chronicle) {
 		return false;
 	}
 
 	@Override
-	protected void addFields(SememeChronicle<?> chronicle, Document doc) {
+	protected void addFields(SememeChronology<?> chronicle, Document doc) {
 		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
 	}
 

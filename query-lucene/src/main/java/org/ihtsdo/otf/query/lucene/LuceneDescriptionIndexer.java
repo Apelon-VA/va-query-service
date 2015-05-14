@@ -1,7 +1,7 @@
 package org.ihtsdo.otf.query.lucene;
 
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
-import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -315,12 +315,12 @@ public class LuceneDescriptionIndexer extends LuceneIndexer implements IndexerBI
 	}
 
 	@Override
-	protected boolean indexSememeChronicle(SememeChronicle<?> chronicle) {
+	protected boolean indexSememeChronicle(SememeChronology<?> chronicle) {
 		return false;
 	}
 
 	@Override
-	protected void addFields(SememeChronicle<?> chronicle, Document doc) {
+	protected void addFields(SememeChronology<?> chronicle, Document doc) {
 		throw new UnsupportedOperationException("Not supported yet.");
 	}
 }

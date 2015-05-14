@@ -3,7 +3,7 @@ package org.ihtsdo.otf.query.lucene;
 import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SystemStatusService;
-import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.util.WorkExecutors;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -490,7 +490,7 @@ public abstract class LuceneIndexer implements IndexerBI {
     }
     
     @Override
-    public Future<Long> index(SememeChronicle<?> chronicle) {
+    public Future<Long> index(SememeChronology<?> chronicle) {
         return index((() -> new AddDocument(chronicle)), (() -> indexSememeChronicle(chronicle)), chronicle.getNid());
     }
 
@@ -567,13 +567,13 @@ public abstract class LuceneIndexer implements IndexerBI {
     private class AddDocument implements Callable<Long> {
 
         ComponentChronicleBI<?> chronicle_ = null;
-        SememeChronicle<?> sememeChronicle_ = null;
+        SememeChronology<?> sememeChronicle_ = null;
 
         public AddDocument(ComponentChronicleBI<?> chronicle) {
             chronicle_ = chronicle;
         }
         
-        public AddDocument(SememeChronicle<?> chronicle) {
+        public AddDocument(SememeChronology<?> chronicle) {
             sememeChronicle_ = chronicle;
         }
         
@@ -616,7 +616,7 @@ public abstract class LuceneIndexer implements IndexerBI {
     }
 
     protected abstract boolean indexChronicle(ComponentChronicleBI<?> chronicle);
-    protected abstract boolean indexSememeChronicle(SememeChronicle<?> chronicle);
-    protected abstract void addFields(SememeChronicle<?> chronicle, Document doc);
+    protected abstract boolean indexSememeChronicle(SememeChronology<?> chronicle);
+    protected abstract void addFields(SememeChronology<?> chronicle, Document doc);
     protected abstract void addFields(ComponentChronicleBI<?> chronicle, Document doc);
 }

@@ -21,9 +21,9 @@ package org.ihtsdo.otf.query.lucene;
 //~--- non-JDK imports --------------------------------------------------------
 
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
-import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
-import gov.vha.isaac.ochre.api.sememe.SememeType;
-import gov.vha.isaac.ochre.api.sememe.version.StringSememe;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.api.component.sememe.SememeType;
+import gov.vha.isaac.ochre.api.component.sememe.version.StringSememe;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
@@ -81,7 +81,7 @@ public class LuceneRefexIndexer extends LuceneIndexer {
     }
 
     @Override
-    protected boolean indexSememeChronicle(SememeChronicle<?> chronicle) {
+    protected boolean indexSememeChronicle(SememeChronology<?> chronicle) {
         if (chronicle.getSememeType() == SememeType.STRING) {
             if (snomedAssemblageSequence == Integer.MIN_VALUE) {
                 snomedAssemblageSequence = IsaacMetadataAuxiliaryBinding.SNOMED_INTEGER_ID.getSequence();
@@ -95,7 +95,7 @@ public class LuceneRefexIndexer extends LuceneIndexer {
     }
 
     @Override
-    protected void addFields(SememeChronicle<?> chronicle, Document doc) {
+    protected void addFields(SememeChronology<?> chronicle, Document doc) {
         //TODO dan notes - this doesn't make sense - this field should be named REFERENCED_COMPONENT_ID, not COMPONENT_ID
         //The query code makes assumptions about what sort of thing is in the component_id field - we can't have it be component id in one case, 
         //and refereced componentid in another.
