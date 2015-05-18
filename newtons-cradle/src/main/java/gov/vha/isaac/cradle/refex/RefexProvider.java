@@ -158,14 +158,21 @@ public class RefexProvider implements RefexService {
     @Override
     public RefexMember<?, ?> getRefex(int refexSequence) {
         refexSequence = sequenceProvider.getRefexSequence(refexSequence);
-        return (RefexMember<?, ?>) refexMap.getQuick(refexSequence);
+        return castConceptChronicleToRefexMember(refexMap.getQuick(refexSequence));
+    }
+
+    private static RefexMember<?, ?> castConceptChronicleToRefexMember(ComponentChronicleBI<?> cc) {
+        if (cc != null && !(cc instanceof RefexMember)) {
+            log.error("Attempting cast of {} \"{}\" to RefexMember", cc.getClass().getName(), cc);
+        }
+
+        return (RefexMember<?, ?>)cc;
     }
 
     @Override
     public Stream<RefexMember<?, ?>> getRefexesFromAssemblage(int assemblageSequence) {
         RefexSequenceSet refexSequences = getRefexSequencesFromAssemblage(assemblageSequence);
-        return refexSequences.stream().mapToObj((int value) -> 
-                (RefexMember<?, ?>) refexMap.getQuick(value));
+        return refexSequences.stream().mapToObj((int value) -> castConceptChronicleToRefexMember(refexMap.getQuick(value)));
     }
 
     @Override
@@ -235,14 +242,14 @@ public class RefexProvider implements RefexService {
     public Stream<RefexMember<?, ?>> getRefexStream() {
         return refexMap.getStream()
                 .filter((component) ->{return component instanceof RefexMember;})
-                .map((component) -> {return (RefexMember<?, ?>) component;});
+                .map((component) -> {return castConceptChronicleToRefexMember(component);});
     }
 
     @Override
     public Stream<RefexMember<?, ?>> getParallelRefexStream() {
         return refexMap.getParallelStream()
                 .filter((component) ->{return component instanceof RefexMember;})
-                .map((component) -> {return (RefexMember<?, ?>) component;});
+                .map((component) -> {return castConceptChronicleToRefexMember(component);});
     }
 
     @Override
