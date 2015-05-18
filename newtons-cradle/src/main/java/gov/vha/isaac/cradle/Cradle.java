@@ -634,7 +634,7 @@ public class Cradle
         int nid = componentReference.getNid();
         ConceptChronicleBI chronicle = this.getConcept(nid);
         TerminologySnapshot termSnap = new TerminologySnapshot(this, this.getViewCoordinate(viewCoordinateUuid));
-        return new ConceptChronicleDdo(termSnap, chronicle, VersionPolicy.ACTIVE_VERSIONS, RefexPolicy.REFEX_MEMBERS, RelationshipPolicy.ORIGINATING_RELATIONSHIPS);
+        return new ConceptChronicleDdo(termSnap, chronicle, VersionPolicy.ACTIVE_VERSIONS, refexPolicy, RelationshipPolicy.ORIGINATING_RELATIONSHIPS);
     }
 
     @Override
