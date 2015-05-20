@@ -3,14 +3,14 @@ package org.ihtsdo.otf.query.lucene;
 import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SystemStatusService;
-import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.util.WorkExecutors;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
@@ -27,7 +27,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.Version;
 import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
@@ -106,8 +105,7 @@ public abstract class LuceneIndexer implements IndexerBI {
     protected LuceneIndexer(String indexName) throws IOException {
         try {
             indexName_ = indexName;
-            luceneWriterService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(),
-                    new NamedThreadFactory(threadGroup, indexName + " Lucene writer"));
+            luceneWriterService = LookupService.getService(WorkExecutors.class).getExecutor();
             luceneWriterFutureCheckerService = Executors.newFixedThreadPool(1,
                     new NamedThreadFactory(threadGroup, indexName + " Lucene future checker"));
             
@@ -290,8 +288,8 @@ public abstract class LuceneIndexer implements IndexerBI {
     public final void closeWriter() {
         try {
             reopenThread.close();
-            luceneWriterService.shutdown();
-            luceneWriterService.awaitTermination(15, TimeUnit.MINUTES);
+            //We don't shutdown the writer service we are using, because it is the core isaac thread pool.
+            //waiting for the future checker service is sufficient to ensure that all write operations are complete.
             luceneWriterFutureCheckerService.shutdown();
             luceneWriterFutureCheckerService.awaitTermination(15, TimeUnit.MINUTES);
             trackingIndexWriter.getIndexWriter().close();
@@ -492,7 +490,7 @@ public abstract class LuceneIndexer implements IndexerBI {
     }
     
     @Override
-    public Future<Long> index(SememeChronicle<?> chronicle) {
+    public Future<Long> index(SememeChronology<?> chronicle) {
         return index((() -> new AddDocument(chronicle)), (() -> indexSememeChronicle(chronicle)), chronicle.getNid());
     }
 
@@ -569,13 +567,13 @@ public abstract class LuceneIndexer implements IndexerBI {
     private class AddDocument implements Callable<Long> {
 
         ComponentChronicleBI<?> chronicle_ = null;
-        SememeChronicle<?> sememeChronicle_ = null;
+        SememeChronology<?> sememeChronicle_ = null;
 
         public AddDocument(ComponentChronicleBI<?> chronicle) {
             chronicle_ = chronicle;
         }
         
-        public AddDocument(SememeChronicle<?> chronicle) {
+        public AddDocument(SememeChronology<?> chronicle) {
             sememeChronicle_ = chronicle;
         }
         
@@ -618,7 +616,7 @@ public abstract class LuceneIndexer implements IndexerBI {
     }
 
     protected abstract boolean indexChronicle(ComponentChronicleBI<?> chronicle);
-    protected abstract boolean indexSememeChronicle(SememeChronicle<?> chronicle);
-    protected abstract void addFields(SememeChronicle<?> chronicle, Document doc);
+    protected abstract boolean indexSememeChronicle(SememeChronology<?> chronicle);
+    protected abstract void addFields(SememeChronology<?> chronicle, Document doc);
     protected abstract void addFields(ComponentChronicleBI<?> chronicle, Document doc);
 }

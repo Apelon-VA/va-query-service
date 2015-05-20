@@ -19,6 +19,7 @@
 package org.ihtsdo.otf.query.lucene;
 
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
+import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.util.Arrays;
@@ -36,7 +37,6 @@ import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.coordinate.EditCoordinate;
 import org.ihtsdo.otf.tcc.api.coordinate.Status;
 import org.ihtsdo.otf.tcc.api.metadata.binding.RefexDynamic;
-import org.ihtsdo.otf.tcc.api.metadata.binding.TermAux;
 import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicChronicleBI;
 import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicVersionBI;
 import org.ihtsdo.otf.tcc.api.refexDynamic.data.RefexDynamicDataBI;
@@ -89,12 +89,12 @@ public class LuceneDynamicRefexIndexerConfiguration
 			{
 				HashMap<Integer, Integer[]> updatedWhatToIndex = new HashMap<>();
 
-				ConceptVersionBI c = Ts.get().getConceptVersion(ViewCoordinates.getMetadataViewCoordinate(), RefexDynamic.REFEX_DYNAMIC_INDEX_CONFIGURATION.getUuids()[0]);
+				ConceptVersionBI c = Ts.get().getConceptVersion(ViewCoordinates.getMetadataViewCoordinate(), RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getUuids()[0]);
 
 				for (RefexDynamicChronicleBI<?> r : c.getRefsetDynamicMembers())
 				{
 					RefexDynamicVersionBI<?> rdv = r.getVersion(ViewCoordinates.getMetadataViewCoordinate());
-					if (rdv == null || !rdv.isActive() || rdv.getAssemblageNid() != RefexDynamic.REFEX_DYNAMIC_INDEX_CONFIGURATION.getNid())
+					if (rdv == null || !rdv.isActive() || rdv.getAssemblageNid() != RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid())
 					{
 						continue;
 					}
@@ -163,7 +163,7 @@ public class LuceneDynamicRefexIndexerConfiguration
 		ConceptChronicleBI referencedAssemblageConceptC = Ts.get().getConcept(assemblageNid);
 		
 		ConceptVersionBI assemblageConceptC = Ts.get().getConceptVersion(ViewCoordinates.getMetadataViewCoordinate(),
-				RefexDynamic.REFEX_DYNAMIC_INDEX_CONFIGURATION.getNid());
+				RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid());
 		
 		logger.info("Configuring index for dynamic refex assemblage '" + referencedAssemblageConceptC.toUserString() + "' on columns " + Arrays.deepToString(columnsToIndex));
 
@@ -210,19 +210,19 @@ public class LuceneDynamicRefexIndexerConfiguration
 		}
 		else
 		{
-			rdb = new RefexDynamicCAB(assemblageNid, RefexDynamic.REFEX_DYNAMIC_INDEX_CONFIGURATION.getNid());
+			rdb = new RefexDynamicCAB(assemblageNid, RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid());
 		}
 		rdb.setData(data, null);
 		
-		Ts.get().getTerminologyBuilder(new EditCoordinate(TermAux.USER.getLenient().getConceptNid(), 
-				TermAux.TERM_AUX_MODULE.getLenient().getNid(), 
-				TermAux.WB_AUX_PATH.getLenient().getConceptNid()),
+		Ts.get().getTerminologyBuilder(new EditCoordinate(IsaacMetadataAuxiliaryBinding.USER.getLenient().getConceptNid(), 
+				IsaacMetadataAuxiliaryBinding.ISAAC_MODULE.getLenient().getNid(), 
+				IsaacMetadataAuxiliaryBinding.MASTER.getLenient().getConceptNid()),
 				ViewCoordinates.getMetadataViewCoordinate()).construct(rdb);
 		
 		Ts.get().addUncommitted(assemblageConceptC);
 		Ts.get().addUncommitted(referencedAssemblageConceptC);
-		Ts.get().commit(assemblageConceptC);
-		Ts.get().commit(referencedAssemblageConceptC);
+		Ts.get().commit(/* assemblageConceptC */);
+		Ts.get().commit(/* referencedAssemblageConceptC */);
 		if (!skipReindex)
 		{
 			Ts.get().index(new Class[] {LuceneDynamicRefexIndexer.class});
@@ -244,15 +244,15 @@ public class LuceneDynamicRefexIndexerConfiguration
 	private static RefexDynamicVersionBI<?> findCurrentIndexConfigRefex(int assemblageNid) throws ValidationException, IOException, ContradictionException
 	{
 		ConceptVersionBI indexConfigConcept = Ts.get().getConceptVersion(ViewCoordinates.getMetadataViewCoordinate(),
-				RefexDynamic.REFEX_DYNAMIC_INDEX_CONFIGURATION.getNid());
+				RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid());
 
 		for (RefexDynamicChronicleBI<?> r : indexConfigConcept.getRefsetDynamicMembers())
 		{
-			if (r.getAssemblageNid() == RefexDynamic.REFEX_DYNAMIC_INDEX_CONFIGURATION.getNid() && r.getReferencedComponentNid() == assemblageNid)
+			if (r.getAssemblageNid() == RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid() && r.getReferencedComponentNid() == assemblageNid)
 			{
 				RefexDynamicVersionBI<?> rdv = r.getVersion(ViewCoordinates.getMetadataViewCoordinate());
 				
-				if (rdv != null && rdv.getAssemblageNid() == RefexDynamic.REFEX_DYNAMIC_INDEX_CONFIGURATION.getNid() && rdv.getReferencedComponentNid() == assemblageNid)
+				if (rdv != null && rdv.getAssemblageNid() == RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid() && rdv.getReferencedComponentNid() == assemblageNid)
 				{
 					return rdv;
 				}
@@ -284,18 +284,18 @@ public class LuceneDynamicRefexIndexerConfiguration
 			RefexDynamicCAB rb = rdv.makeBlueprint(ViewCoordinates.getMetadataViewCoordinate(), IdDirective.PRESERVE, RefexDirective.EXCLUDE);
 			rb.setStatus(Status.INACTIVE);
 			ConceptVersionBI indexConfigConceptC = Ts.get().getConceptVersion(ViewCoordinates.getMetadataViewCoordinate(),
-					RefexDynamic.REFEX_DYNAMIC_INDEX_CONFIGURATION.getNid());
+					RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid());
 			ConceptChronicleBI referencedAssemblageConceptC = Ts.get().getConcept(assemblageNid);
 			
-			Ts.get().getTerminologyBuilder(new EditCoordinate(TermAux.USER.getLenient().getConceptNid(), 
-					TermAux.TERM_AUX_MODULE.getLenient().getNid(), 
-					TermAux.WB_AUX_PATH.getLenient().getConceptNid()),
+			Ts.get().getTerminologyBuilder(new EditCoordinate(IsaacMetadataAuxiliaryBinding.USER.getLenient().getConceptNid(), 
+					IsaacMetadataAuxiliaryBinding.ISAAC_MODULE.getLenient().getNid(), 
+					IsaacMetadataAuxiliaryBinding.MASTER.getLenient().getConceptNid()),
 					ViewCoordinates.getMetadataViewCoordinate()).construct(rb);
 
 			Ts.get().addUncommitted(indexConfigConceptC);
 			Ts.get().addUncommitted(referencedAssemblageConceptC);
-			Ts.get().commit(indexConfigConceptC);
-			Ts.get().commit(referencedAssemblageConceptC);
+			Ts.get().commit(/* indexConfigConceptC */);
+			Ts.get().commit(/* referencedAssemblageConceptC */);
 			Ts.get().index(new Class[] {LuceneDynamicRefexIndexer.class});
 			return;
 		}

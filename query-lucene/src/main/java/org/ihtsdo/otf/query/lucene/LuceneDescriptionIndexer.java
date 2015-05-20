@@ -1,6 +1,7 @@
 package org.ihtsdo.otf.query.lucene;
 
-import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
+import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -20,8 +21,6 @@ import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.ihtsdo.otf.tcc.api.description.DescriptionChronicleBI;
 import org.ihtsdo.otf.tcc.api.description.DescriptionVersionBI;
-import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
-import org.ihtsdo.otf.tcc.api.metadata.binding.SnomedMetadataRf2;
 import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicChronicleBI;
 import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicVersionBI;
 import org.ihtsdo.otf.tcc.api.relationship.RelationshipChronicleBI;
@@ -82,20 +81,11 @@ public class LuceneDescriptionIndexer extends LuceneIndexer implements IndexerBI
 		{
 			return;
 		}
-		nidTypeMap.put(Snomed.FULLY_SPECIFIED_DESCRIPTION_TYPE.getNid(), LuceneDescriptionType.FSN.name());
-		nidTypeMap.put(Snomed.DEFINITION_DESCRIPTION_TYPE.getNid(), LuceneDescriptionType.DEFINITION.name());
-		nidTypeMap.put(Snomed.SYNONYM_DESCRIPTION_TYPE.getNid(), LuceneDescriptionType.SYNONYM.name());
-		isANid = Snomed.IS_A.getNid();
-		//Snomed doesn't have this yet
-		if (Ts.get().hasConcept(SnomedMetadataRf2.DESCRIPTION_SOURCE_TYPE_RF2.getPrimodialUuid()))
-		{
-			descSourceTypeNid = SnomedMetadataRf2.DESCRIPTION_SOURCE_TYPE_RF2.getNid();
-		}
-		else
-		{
-			descSourceTypeNid = Integer.MIN_VALUE;
-		}
-
+		nidTypeMap.put(IsaacMetadataAuxiliaryBinding.FULLY_SPECIFIED_NAME.getNid(), LuceneDescriptionType.FSN.name());
+		nidTypeMap.put(IsaacMetadataAuxiliaryBinding.DEFINITION.getNid(), LuceneDescriptionType.DEFINITION.name());
+		nidTypeMap.put(IsaacMetadataAuxiliaryBinding.SYNONYM.getNid(), LuceneDescriptionType.SYNONYM.name());
+		isANid = IsaacMetadataAuxiliaryBinding.IS_A.getNid();
+		descSourceTypeNid = IsaacMetadataAuxiliaryBinding.DESCRIPTION_SOURCE_TYPE_REFERENCE_SETS.getNid();
 		
 		haveNids = true;
 	}
@@ -134,58 +124,54 @@ public class LuceneDescriptionIndexer extends LuceneIndexer implements IndexerBI
 				}
 			}
 			
-			//If this concept didn't exist, there won't be anything to index
-			if (descSourceTypeNid != Integer.MIN_VALUE)
+			try
 			{
-				try
+				//index the extended description types - matching the text values and times above with the times of these annotations.
+				String lastExtendedDescType = null;
+				String lastValue = null;
+				for (RefexDynamicChronicleBI<?> rdc : desc.getRefexDynamicAnnotations())
 				{
-					//index the extended description types - matching the text values and times above with the times of these annotations.
-					String lastExtendedDescType = null;
-					String lastValue = null;
-					for (RefexDynamicChronicleBI<?> rdc : desc.getRefexDynamicAnnotations())
+					for (RefexDynamicVersionBI<?> rdv : rdc.getVersions())
 					{
-						for (RefexDynamicVersionBI<?> rdv : rdc.getVersions())
+						if (isKindOf(rdv.getAssemblageNid(), descSourceTypeNid))
 						{
-							if (isKindOf(rdv.getAssemblageNid(), descSourceTypeNid))
+							//this is a UUID, but we want to treat it as a string anyway
+							String extendedDescType = rdv.getData()[0].getDataObject().toString();
+							String value = null;
+							
+							//Find the text that was active at the time of this refex - timestamp on the refex must not be 
+							//greater than the timestamp on the value
+							for (Entry<Long, String> x : uniqueTextValues.entrySet())
 							{
-								//this is a UUID, but we want to treat it as a string anyway
-								String extendedDescType = rdv.getData()[0].getDataObject().toString();
-								String value = null;
-								
-								//Find the text that was active at the time of this refex - timestamp on the refex must not be 
-								//greater than the timestamp on the value
-								for (Entry<Long, String> x : uniqueTextValues.entrySet())
+								if (value == null || x.getKey() <= rdv.getTime())
 								{
-									if (value == null || x.getKey() <= rdv.getTime())
-									{
-										value = x.getValue();
-									}
-									else if (x.getKey() > rdv.getTime())
-									{
-										break;
-									}
+									value = x.getValue();
 								}
-								
-								if (lastExtendedDescType == null || lastValue == null ||
-										!lastExtendedDescType.equals(extendedDescType) ||
-										!lastValue.equals(value))
+								else if (x.getKey() > rdv.getTime())
 								{
-									if (extendedDescType == null || value == null)
-									{
-										throw new RuntimeException("design failure");
-									}
-									addField(doc, ComponentProperty.DESCRIPTION_TEXT.name() + "_" + extendedDescType, value);
-									lastValue = value;
-									lastExtendedDescType = extendedDescType;
+									break;
 								}
+							}
+							
+							if (lastExtendedDescType == null || lastValue == null ||
+									!lastExtendedDescType.equals(extendedDescType) ||
+									!lastValue.equals(value))
+							{
+								if (extendedDescType == null || value == null)
+								{
+									throw new RuntimeException("design failure");
+								}
+								addField(doc, ComponentProperty.DESCRIPTION_TEXT.name() + "_" + extendedDescType, value);
+								lastValue = value;
+								lastExtendedDescType = extendedDescType;
 							}
 						}
 					}
 				}
-				catch (Exception e)
-				{
-					logger.log(Level.WARNING, "Failure Indexing Extended Description Type", e);
-				}
+			}
+			catch (Exception e)
+			{
+				logger.log(Level.WARNING, "Failure Indexing Extended Description Type", e);
 			}
 		}
 	}
@@ -329,12 +315,12 @@ public class LuceneDescriptionIndexer extends LuceneIndexer implements IndexerBI
 	}
 
 	@Override
-	protected boolean indexSememeChronicle(SememeChronicle<?> chronicle) {
+	protected boolean indexSememeChronicle(SememeChronology<?> chronicle) {
 		return false;
 	}
 
 	@Override
-	protected void addFields(SememeChronicle<?> chronicle, Document doc) {
+	protected void addFields(SememeChronology<?> chronicle, Document doc) {
 		throw new UnsupportedOperationException("Not supported yet.");
 	}
 }
