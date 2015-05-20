@@ -726,7 +726,7 @@ public class Cradle
         }
 
         @Override
-        public ConceptVersionBI fetch(ViewCoordinate vc) {
+        public Optional<ConceptVersionBI> fetch(ViewCoordinate vc) {
             return eager.getConceptChronicle().getVersion(vc);
         }
 
