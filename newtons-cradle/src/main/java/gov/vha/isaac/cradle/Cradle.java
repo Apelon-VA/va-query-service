@@ -1,12 +1,11 @@
 package gov.vha.isaac.cradle;
 
 
+import gov.vha.isaac.cradle.builders.ConceptProvider;
 import gov.vha.isaac.cradle.tasks.*;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
-import gov.vha.isaac.cradle.collections.ConcurrentSequenceSerializedObjectMap;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
-import gov.vha.isaac.cradle.component.ConceptChronicleDataEagerSerializer;
 import gov.vha.isaac.ochre.api.memory.MemoryUtil;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexService;
 import gov.vha.isaac.cradle.taxonomy.DestinationOriginRecord;
@@ -52,8 +51,6 @@ import org.ihtsdo.otf.tcc.model.cc.termstore.Termstore;
 import org.jvnet.hk2.annotations.Service;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.beans.PropertyChangeListener;
-import java.beans.VetoableChangeListener;
 import java.io.File;
 import java.io.IOException;
 import java.text.ParseException;
@@ -61,7 +58,6 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -72,10 +68,11 @@ import gov.vha.isaac.ochre.api.StandardPaths;
 import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.chronicle.IdentifiedObjectLocal;
-import gov.vha.isaac.ochre.api.commit.CommitManager;
-import gov.vha.isaac.ochre.api.sememe.SememeService;
+import gov.vha.isaac.ochre.api.commit.CommitService;
+import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
+import gov.vha.isaac.ochre.util.WorkExecutors;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ForkJoinPool;
@@ -86,13 +83,12 @@ import org.ihtsdo.otf.tcc.api.concept.ConceptFetcherBI;
 import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.tcc.api.nid.IntSet;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
-import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 
 /**
  * Created by kec on 12/18/14.
  */
 @Service(name = "ChRonicled Assertion Database of Logical Expressions")
-@RunLevel(value = 1)
+@RunLevel(value = 2)
 public class Cradle
         extends Termstore
         implements ObjectChronicleTaskService, CradleExtensions, IdentifiedObjectService {
@@ -100,18 +96,16 @@ public class Cradle
     public static final String DEFAULT_CRADLE_FOLDER = "cradle";
     private static final Logger log = LogManager.getLogger();
 
-    final ConcurrentSequenceSerializedObjectMap<ConceptChronicleDataEager> conceptMap;
-
     transient HashMap<UUID, ViewCoordinate> viewCoordinates = new HashMap<>();
 
-    private static AtomicReference<Boolean> cradleStartedEmpty = new AtomicReference<>();
-    private static AtomicReference<Path> cradlePath_ = new AtomicReference<>();
+    private static final AtomicReference<Boolean> cradleStartedEmpty = new AtomicReference<>();
+    private static final AtomicReference<Path> cradlePath_ = new AtomicReference<>();
     
-    private AtomicBoolean loadRequired = new AtomicBoolean();
 
+    ConceptProvider conceptProvider;
     IdentifierService identifierProvider;
     TaxonomyService taxonomyProvider;
-    CommitManager commitManager;
+    CommitService commitService;
     SememeService sememeProvider;
     RefexService refexProvider;
     
@@ -151,8 +145,6 @@ public class Cradle
     private Cradle() throws IOException, NumberFormatException, ParseException {
         try {
             log.info("Setting up cradle at " + getCradlePath().toAbsolutePath().toString());
-            conceptMap = new ConcurrentSequenceSerializedObjectMap(new ConceptChronicleDataEagerSerializer(),
-                    getCradlePath(), "concept-map/", ".concepts.map");
         }
         catch (Exception e) {
             LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("ChRonicled Assertion Database of Logical Expressions", e);
@@ -164,11 +156,12 @@ public class Cradle
     private void startMe() throws IOException {
         try {
             log.info("Starting Cradle post-construct");
-            loadRequired.set(!cradleStartedEmpty());
-            commitManager = LookupService.getService(CommitManager.class);
+            conceptProvider = LookupService.getService(ConceptProvider.class);
+            commitService = LookupService.getService(CommitService.class);
             identifierProvider = LookupService.getService(IdentifierService.class);
             sememeProvider = LookupService.getService(SememeService.class);
             refexProvider = LookupService.getService(RefexService.class);
+            taxonomyProvider = LookupService.getService(TaxonomyService.class);
             MemoryUtil.startListener();
         }
         catch (Exception e) {
@@ -178,30 +171,10 @@ public class Cradle
 
     }
 
-    @Override
-    public void loadExistingDatabase() throws IOException {
-        try {
-            taxonomyProvider = Hk2Looker.getService(TaxonomyService.class);
-            if (loadRequired.compareAndSet(true, false)) {
-    
-                log.info("Loading concept-map.");
-                conceptMap.read();
-    
-                log.info("Finished load.");
-            }
-        }
-        catch (Exception e) {
-            LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("ChRonicled Assertion Database of Logical Expressions", e);
-            throw e;
-        }
-    }
 
     @PreDestroy
     private void stopMe() throws IOException {
         log.info("Stopping Cradle pre-destroy. ");
-
-        log.info("writing concept-map.");
-        conceptMap.write();
         //integrityTest();
 
         cradleStartedEmpty.set(null);  //In case someone wants stop, then restart the service, we need to repopulate the vars about reading the DB.
@@ -230,59 +203,47 @@ public class Cradle
 
     @Override
     public Stream<ConceptChronicleDataEager> getConceptDataEagerStream() {
-        return conceptMap.getStream();
+        return conceptProvider.getConceptDataEagerStream();
     }
 
     @Override
     public Stream<ConceptChronicleDataEager> getConceptDataEagerStream(ConceptSequenceSet conceptSequences) {
-        return identifierProvider.getConceptSequenceStream()
-                .filter((int sequence) -> conceptSequences.contains(sequence))
-                .mapToObj((int sequence) -> {
-                    Optional<ConceptChronicleDataEager> result = conceptMap.get(sequence);
-                    if (result.isPresent()) {
-                        return conceptMap.get(sequence).get();
-                    }
-                    throw new IllegalStateException("No concept for sequence: " + sequence);
-                });
-
+        return conceptProvider.getConceptDataEagerStream(conceptSequences);
     }
 
     @Override
     public Stream<ConceptChronicleDataEager> getParallelConceptDataEagerStream(ConceptSequenceSet conceptSequences) {
-        return identifierProvider.getParallelConceptSequenceStream()
-                .filter((int sequence) -> conceptSequences.contains(sequence))
-                .mapToObj((int sequence) -> {
-                    Optional<ConceptChronicleDataEager> result = conceptMap.get(sequence);
-                    if (result.isPresent()) {
-                        return conceptMap.get(sequence).get();
-                    }
-                    throw new IllegalStateException("No concept for sequence: " + sequence);
-                });
+        return conceptProvider.getParallelConceptDataEagerStream(conceptSequences);
     }
 
     @Override
     public Stream<ConceptChronicleDataEager> getParallelConceptDataEagerStream() {
-        return conceptMap.getParallelStream();
+        return conceptProvider.getParallelConceptDataEagerStream();
+    }
+
+    @Override
+    public CharSequence informAboutObject(int nid) {
+        return informAboutNid(nid);
     }
 
     @Override
     public Stream<ConceptChronicle> getConceptStream() {
-        return conceptMap.getStream().map(ConceptChronicleDataEager::getConceptChronicle);
+        return conceptProvider.getConceptStream();
     }
 
     @Override
     public Stream<ConceptChronicle> getParallelConceptStream() {
-        return conceptMap.getParallelStream().map(ConceptChronicleDataEager::getConceptChronicle);
+        return conceptProvider.getParallelConceptStream();
     }
 
     @Override
     public Stream<? extends ConceptChronicleBI> getConceptStream(ConceptSequenceSet conceptSequences) throws IOException {
-        return conceptSequences.stream().mapToObj((int sequence) -> conceptMap.getQuick(sequence).getConceptChronicle());
+        return conceptProvider.getConceptStream(conceptSequences);
     }
 
     @Override
     public Stream<? extends ConceptChronicleBI> getParallelConceptStream(ConceptSequenceSet conceptSequences) throws IOException {
-        return conceptSequences.stream().parallel().mapToObj((int sequence) -> conceptMap.getQuick(sequence).getConceptChronicle());
+        return conceptProvider.getParallelConceptStream(conceptSequences);
     }
 
 
@@ -305,21 +266,21 @@ public class Cradle
     @Override
     public Task<Integer> startImportLogTask(Path... paths) {
         ImportCradleLogFile importCradleLogFile = new ImportCradleLogFile(paths, this);
-        ForkJoinPool.commonPool().execute(importCradleLogFile);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(importCradleLogFile);
         return importCradleLogFile;
     }
 
     @Override
     public Task<Integer> startLoadTask(java.nio.file.Path... paths) {
         ImportEConceptFile loaderTask = new ImportEConceptFile(paths, this);
-        ForkJoinPool.commonPool().execute(loaderTask);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(loaderTask);
         return loaderTask;
     }
 
     @Override
     public Task<Integer> startExportTask(Path path) {
         ExportEConceptFile exporterTask = new ExportEConceptFile(path, this);
-        ForkJoinPool.commonPool().execute(exporterTask);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(exporterTask);
         return exporterTask;
     }
 
@@ -329,7 +290,7 @@ public class Cradle
                 (Consumer<TtkConceptChronicle>) (TtkConceptChronicle t) -> {
                     t.setRelationships(null);
                 });
-        ForkJoinPool.commonPool().execute(exporterTask);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(exporterTask);
         return exporterTask;
     }
 
@@ -340,19 +301,12 @@ public class Cradle
 
     @Override
     public ConceptChronicleDataEager getConceptData(int i) throws IOException {
-        if (i < 0) {
-            i = identifierProvider.getConceptSequence(i);
-        }
-        Optional<ConceptChronicleDataEager> data = conceptMap.get(i);
-        if (data.isPresent()) {
-            return data.get();
-        }
-        return new ConceptChronicleDataEager(true);
+        return conceptProvider.getConceptData(i);
     }
 
     @Override
     public void addUncommitted(ConceptChronicleBI conceptChronicleBI) throws IOException {
-        commitManager.addUncommitted(conceptChronicleBI);
+        commitService.addUncommitted(conceptChronicleBI);
     }
 
     /**
@@ -362,9 +316,10 @@ public class Cradle
      */
     @Override
     public void addUncommittedNoChecks(ConceptChronicleBI conceptChronicleBI) throws IOException {
-        commitManager.addUncommittedNoChecks(conceptChronicleBI);
+        commitService.addUncommittedNoChecks(conceptChronicleBI);
     }
 
+    // TODO getUncommittedConcepts() is unsupported.  Should be implemented or removed.
     @Override
     public Collection<? extends ConceptChronicleBI> getUncommittedConcepts() {
         throw new UnsupportedOperationException();
@@ -379,19 +334,18 @@ public class Cradle
 
     @Override
     public void cancel(ConceptChronicleBI conceptChronicleBI) throws IOException {
-        commitManager.cancel(conceptChronicleBI);
+        commitService.cancel(conceptChronicleBI);
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void commit(ConceptChronicleBI cc) throws IOException {
-        int sequence = identifierProvider.getConceptSequence(cc.getNid());
-        conceptMap.put(sequence, (ConceptChronicleDataEager) ((ConceptChronicle) cc).getData());
+        commitService.commit(cc, null);
     }
 
     @Override
     public void commit(ConceptVersionBI conceptVersionBI) throws IOException {
-        commitManager.commit(conceptVersionBI, null);
+        commitService.commit(conceptVersionBI, null);
     }
 
     @Override
@@ -463,12 +417,12 @@ public class Cradle
 
     @Override
     public long getSequence() {
-        return commitManager.getCommitManagerSequence();
+        return commitService.getCommitManagerSequence();
     }
 
     @Override
     public int getConceptCount() throws IOException {
-        return conceptMap.getSize();
+        return conceptProvider.getConceptCount();
     }
 
     @Override
@@ -534,7 +488,7 @@ public class Cradle
 
     @Override
     public boolean hasConcept(int i) {
-        throw new UnsupportedOperationException();
+        return identifierProvider.getUuidPrimordialForNid(i).isPresent();
     }
 
     @Override
@@ -549,7 +503,7 @@ public class Cradle
 
     @Override
     public long incrementAndGetSequence() {
-        return commitManager.incrementAndGetSequence();
+        return commitService.incrementAndGetSequence();
     }
 
     @Override
@@ -680,7 +634,7 @@ public class Cradle
         int nid = componentReference.getNid();
         ConceptChronicleBI chronicle = this.getConcept(nid);
         TerminologySnapshot termSnap = new TerminologySnapshot(this, this.getViewCoordinate(viewCoordinateUuid));
-        return new ConceptChronicleDdo(termSnap, chronicle, VersionPolicy.ACTIVE_VERSIONS, RefexPolicy.REFEX_MEMBERS, RelationshipPolicy.ORIGINATING_RELATIONSHIPS);
+        return new ConceptChronicleDdo(termSnap, chronicle, VersionPolicy.ACTIVE_VERSIONS, refexPolicy, RelationshipPolicy.ORIGINATING_RELATIONSHIPS);
     }
 
     @Override
@@ -708,20 +662,6 @@ public class Cradle
         return new ConceptChronicleDdo(termSnap, chronicle, versionPolicy, refexPolicy, relationshipPolicy);
     }
 
-    @Override
-    public void addPropertyChangeListener(CONCEPT_EVENT concept_event, PropertyChangeListener propertyChangeListener) {
-        throw new UnsupportedOperationException();
-    }
-    
-    @Override
-    public void removePropertyChangeListener( PropertyChangeListener l) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void addVetoablePropertyChangeListener(CONCEPT_EVENT concept_event, VetoableChangeListener vetoableChangeListener) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public void cancel() throws IOException {
@@ -735,7 +675,7 @@ public class Cradle
 
     @Override
     public void commit() throws IOException {
-        commitManager.commit(null);
+        commitService.commit(null);
     }
 
     @Override
@@ -815,17 +755,7 @@ public class Cradle
     }
 
     @Override
-    public void resumeChangeNotifications() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public boolean satisfiesDependencies(Collection<DbDependency> dbDependencies) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void suspendChangeNotifications() {
         throw new UnsupportedOperationException();
     }
 
@@ -872,8 +802,7 @@ public class Cradle
 
     @Override
     public int getAuthorNidForStamp(int stamp) {
-        return identifierProvider.getConceptNid(
-                commitManager.getAuthorSequenceForStamp(stamp));
+        return identifierProvider.getConceptNid(commitService.getAuthorSequenceForStamp(stamp));
     }
 
     @Override
@@ -883,24 +812,22 @@ public class Cradle
 
     @Override
     public int getModuleNidForStamp(int stamp) {
-        return identifierProvider.getConceptNid(
-                commitManager.getModuleSequenceForStamp(stamp));
+        return identifierProvider.getConceptNid(commitService.getModuleSequenceForStamp(stamp));
     }
 
     @Override
     public int getPathNidForStamp(int stamp) {
-        return identifierProvider.getConceptNid(
-                commitManager.getPathSequenceForStamp(stamp));
+        return identifierProvider.getConceptNid(commitService.getPathSequenceForStamp(stamp));
     }
 
     @Override
     public Status getStatusForStamp(int stamp) {
-        return Status.getStatusFromState(commitManager.getStatusForStamp(stamp));
+        return Status.getStatusFromState(commitService.getStatusForStamp(stamp));
     }
 
     @Override
     public long getTimeForStamp(int stamp) {
-        return commitManager.getTimeForStamp(stamp);
+        return commitService.getTimeForStamp(stamp);
     }
 
     @Override
@@ -915,9 +842,7 @@ public class Cradle
 
     @Override
     public void writeConceptData(ConceptChronicleDataEager conceptData) {
-        int sequence = identifierProvider.getConceptSequence(conceptData.getNid());
-        conceptMap.put(sequence, conceptData);
-        conceptData.setPrimordial(false);
+        conceptProvider.writeConceptData(conceptData);
     }
 
     @Override
@@ -937,7 +862,7 @@ public class Cradle
 
     @Override
     public int getStamp(Status status, long time, int authorNid, int moduleNid, int pathNid) {
-        return commitManager.getStamp(status.getState(),
+        return commitService.getStamp(status.getState(),
                 time,
                 identifierProvider.getConceptSequence(authorNid),
                 identifierProvider.getConceptSequence(moduleNid),
@@ -958,7 +883,7 @@ public class Cradle
     @Override
     public Task<Boolean> startVerifyTask(java.nio.file.Path... paths) {
         VerifyLoadEConceptFile loaderTask = new VerifyLoadEConceptFile(paths, this);
-        ForkJoinPool.commonPool().execute(loaderTask);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(loaderTask);
         return loaderTask;
     }
 
@@ -985,21 +910,21 @@ public class Cradle
     @Override
     public GenerateIndexes startIndexTask(Class<?> ... indexersToReindex) {
         GenerateIndexes indexingTask = new GenerateIndexes(this);
-        ForkJoinPool.commonPool().execute(indexingTask);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(indexingTask);
         return indexingTask;
     }
 
     @Override
     public Task<Integer> startLoadTask(ConceptProxy stampPath, Path... filePaths) {
         ImportEConceptFile loaderTask = new ImportEConceptFile(filePaths, this, stampPath);
-        ForkJoinPool.commonPool().execute(loaderTask);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(loaderTask);
         return loaderTask;
     }
 
     @Override
     public Task<Boolean> startVerifyTask(ConceptProxy stampPath, Path... filePaths) {
         VerifyLoadEConceptFile loaderTask = new VerifyLoadEConceptFile(filePaths, this, stampPath);
-        ForkJoinPool.commonPool().execute(loaderTask);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(loaderTask);
         return loaderTask;
 
     }
@@ -1011,7 +936,7 @@ public class Cradle
                 r.setPathUuid(stampPath.getUuids()[0]);
             });
         });
-        ForkJoinPool.commonPool().execute(exporterTask);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(exporterTask);
         return exporterTask;
     }
 
@@ -1026,14 +951,14 @@ public class Cradle
                         r.setPathUuid(pathUuid);
                     });
                 });
-        ForkJoinPool.commonPool().execute(exporterTask);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(exporterTask);
         return exporterTask;
     }
 
     @Override
     public Task<Void> addStampPathOrigin(ConceptProxy stampPath, ConceptProxy originStampPath, Instant originTime) {
         AddStampOrigin addStampOrigin = new AddStampOrigin(stampPath, originStampPath, originTime, this);
-        ForkJoinPool.commonPool().execute(addStampOrigin);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(addStampOrigin);
         return addStampOrigin;
     }
 

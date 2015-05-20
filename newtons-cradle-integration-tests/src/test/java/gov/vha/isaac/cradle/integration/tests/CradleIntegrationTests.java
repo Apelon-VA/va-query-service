@@ -18,7 +18,7 @@ import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
-import gov.vha.isaac.ochre.api.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
 import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
@@ -32,8 +32,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.concurrent.ExecutionException;
-import java.util.function.IntPredicate;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
@@ -44,6 +45,7 @@ import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
+import org.ihtsdo.otf.tcc.api.relationship.RelationshipChronicleBI;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.cc.termstore.PersistentStoreI;
 import org.jvnet.testing.hk2testng.HK2;
@@ -71,6 +73,7 @@ public class CradleIntegrationTests {
         } catch (Exception ex) {
             log.fatal(ex.getLocalizedMessage(), ex);
         }
+        System.exit(0);
     }
 
     private static final Logger log = LogManager.getLogger();
@@ -117,8 +120,8 @@ public class CradleIntegrationTests {
     public void testLoad() throws Exception {
 
         log.info("  Testing load...");
-        ObjectChronicleTaskService tts = Hk2Looker.get().getService(ObjectChronicleTaskService.class);
-        PersistentStoreI ps = Hk2Looker.get().getService(PersistentStoreI.class);
+        ObjectChronicleTaskService tts = LookupService.get().getService(ObjectChronicleTaskService.class);
+        PersistentStoreI ps = LookupService.get().getService(PersistentStoreI.class);
 
         String mapDbFolder = System.getProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY);
         if (mapDbFolder == null || mapDbFolder.isEmpty()) {
@@ -173,6 +176,22 @@ public class CradleIntegrationTests {
         log.info("  Taxonomy graph size: " + g.size());
         log.info("  Taxonomy graph concepts with parents count: " + g.conceptSequencesWithParentsCount());
         log.info("  Taxonomy graph concepts with children count: " + g.conceptSequencesWithChildrenCount());
+        
+        
+        StringBuilder sb = new StringBuilder();
+        ConceptChronicleBI root = ps.getConcept(IsaacMetadataAuxiliaryBinding.ISAAC_ROOT.getNid());
+        Collection<? extends RelationshipChronicleBI> incomingRels = root.getRelationshipsIncoming();
+        AtomicInteger relCount = new AtomicInteger(1);
+        if (incomingRels.isEmpty()) {
+            log.info(" No incoming rels for: " + root);
+        } else {
+            log.info(" Found " + incomingRels.size() + " incoming rels for: " + root);
+            incomingRels.forEach((rel) -> {
+                sb.append(relCount.getAndIncrement()).append(": ").append(rel).append("\n");});
+            
+        }
+        log.info(sb.toString());
+        //
     }
 
     private void findRoots(CradleExtensions cradle) {

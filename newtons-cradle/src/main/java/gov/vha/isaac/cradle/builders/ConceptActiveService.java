@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package gov.vha.isaac.cradle.concept;
+package gov.vha.isaac.cradle.builders;
 
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import org.jvnet.hk2.annotations.Contract;

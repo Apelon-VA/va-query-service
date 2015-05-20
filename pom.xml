@@ -4,20 +4,24 @@
     <parent>
         <groupId>gov.vha.isaac</groupId>
         <artifactId>isaac-parent</artifactId>
-        <version>1.5</version>
+        <version>1.6</version>
     </parent>
     
     <groupId>gov.vha.isaac.newtons-cradle</groupId>
     <artifactId>newtons-cradle-parent</artifactId>
-    <version>1.16</version>
+    <version>1.17</version>
     <packaging>pom</packaging>
     <name>${project.artifactId}: (MMP)</name>
 
     <description>Newton's Cradle (ChRonicled Assertion Database of Logical Expressions) Parent Project </description>
+    
+    <scm>
+        <url>https://github.com/Apelon-VA/va-newtons-cradle.git</url>
+    </scm>
 
     <properties>
-        <ochre.version>2.26</ochre.version>
-        <isaac-metadata.version>1.28</isaac-metadata.version>
+        <ochre.version>2.27</ochre.version>
+        <isaac-metadata.version>1.29</isaac-metadata.version>
     </properties>
 
     <dependencyManagement>

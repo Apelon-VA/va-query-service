@@ -15,46 +15,46 @@
  */
 package gov.vha.isaac.cradle.commit;
 
-import gov.vha.isaac.cradle.CradleExtensions;
-import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.commit.Alert;
 import gov.vha.isaac.ochre.api.commit.ChangeChecker;
 import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
 import gov.vha.isaac.ochre.api.commit.CheckPhase;
+import gov.vha.isaac.ochre.api.commit.CommitStates;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Semaphore;
 import javafx.concurrent.Task;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
-import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 
 /**
  *
  * @author kec
  */
-public class WriteAndCheckConceptChronicle extends Task<Void> implements Callable<Void> {
+public class WriteAndCheckSememeChronicle extends Task<Void> implements Callable<Void> {
 
-    private static final CradleExtensions cradle = LookupService.getService(CradleExtensions.class);
+    private static final SememeService sememeService = LookupService.getService(SememeService.class);
 
-    private final ConceptChronicle cc;
+    private final SememeChronology sc;
     private final ConcurrentSkipListSet<ChangeChecker> checkers;
     private final ConcurrentSkipListSet<Alert> alertCollection;
     private final Semaphore writeSemaphore;
     private final ConcurrentSkipListSet<WeakReference<ChronologyChangeListener>> changeListeners;
 
-    public WriteAndCheckConceptChronicle(ConceptChronicle cc,
+    public WriteAndCheckSememeChronicle(SememeChronology sc,
             ConcurrentSkipListSet<ChangeChecker> checkers,
             ConcurrentSkipListSet<Alert> alertCollection, Semaphore writeSemaphore,
             ConcurrentSkipListSet<WeakReference<ChronologyChangeListener>> changeListeners) {
-        this.cc = cc;
+        this.sc = sc;
         this.checkers = checkers;
         this.alertCollection = alertCollection;
         this.writeSemaphore = writeSemaphore;
         this.changeListeners = changeListeners;
-        updateTitle("Write and check concept");
-        updateMessage(cc.toUserString());
+        updateTitle("Write, check, and notify for sememe change");
+        updateMessage("write: " + sc.toUserString());
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         LookupService.getService(ActiveTaskSet.class).get().add(this);
     }
@@ -62,33 +62,30 @@ public class WriteAndCheckConceptChronicle extends Task<Void> implements Callabl
     @Override
     public Void call() throws Exception {
         try {
-            cradle.writeConceptData((ConceptChronicleDataEager) cc.getData());
+            sememeService.writeSememe(sc);
             updateProgress(1, 3);
-            updateMessage("checking: " + cc.toUserString());
-            
-            if (cc.isUncommitted()) {
+            updateMessage("checking: " + sc.toUserString());
+            if (sc.getCommitState() == CommitStates.UNCOMMITTED) {
                 checkers.stream().forEach((check) -> {
-                    check.check(cc, alertCollection, CheckPhase.ADD_UNCOMMITTED);
+                    check.check(sc, alertCollection, CheckPhase.ADD_UNCOMMITTED);
                 });
             }
 
-            cradle.writeConceptData((ConceptChronicleDataEager) cc.getData());
             updateProgress(2, 3);
-            updateMessage("notifying: " + cc.toUserString());
-
+            updateMessage("notifying: " + sc.toUserString());
+             
              changeListeners.forEach((listenerRef) -> {
                 ChronologyChangeListener listener = listenerRef.get();
                 if (listener == null) {
                     changeListeners.remove(listenerRef);
                 } else {
-                    listener.handleChange(cc);
+                    listener.handleChange(sc);
                 }
              });
-
+             
             updateProgress(3, 3);
-            updateMessage("complete: " + cc.toUserString());
-            
-             return null;
+            updateMessage("completed change: " + sc.toUserString());
+            return null;
         } finally {
             writeSemaphore.release();
             LookupService.getService(ActiveTaskSet.class).get().remove(this);

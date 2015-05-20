@@ -92,7 +92,7 @@ public class DefaultConfigurationService implements ConfigurationService
 				}
 			}
 		}
-		return Optional.of(dataStoreFolderPath_);
+		return Optional.ofNullable(dataStoreFolderPath_);
 	}
 
 	/**
@@ -101,22 +101,19 @@ public class DefaultConfigurationService implements ConfigurationService
 	@Override
 	public void setDataStoreFolderPath(Path dataStoreFolderPath) throws IllegalStateException, IllegalArgumentException
 	{
-		//The starting runlevel of HK2 is -2, before you do anything.  The stop level of isaac 
-		//is -1, so we will never go back to -2.
-		if (LookupService.getRunLevelController().getCurrentRunLevel() != -2)
+		if (LookupService.hasIsaacBeenStartedAtLeastOnce())
 		{
 			throw new IllegalStateException("Can only set the dbFolderPath prior to starting Isaac");
 		}
-
+		
 		if (Files.exists(dataStoreFolderPath) && !Files.isDirectory(dataStoreFolderPath))
 		{
 			throw new IllegalArgumentException("The specified path to the db folder appears to be a file, rather than a folder, as expected.  " + " Found: "
 					+ dataStoreFolderPath_.toAbsolutePath().toString());
 		}
-		
 		try
 		{
-			Files.createDirectories(dataStoreFolderPath_);
+			Files.createDirectories(dataStoreFolderPath);
 		}
 		catch (IOException e)
 		{

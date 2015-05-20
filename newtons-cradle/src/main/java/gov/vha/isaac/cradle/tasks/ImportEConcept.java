@@ -9,10 +9,8 @@ import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import java.io.IOException;
-
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
-
 import java.util.UUID;
 import java.util.concurrent.*;
 import org.apache.logging.log4j.LogManager;
@@ -48,21 +46,17 @@ public class ImportEConcept implements Callable<Void> {
     }
 
     TtkConceptChronicle eConcept;
-    Semaphore permit;
     UUID newPathUuid = null;
     int lastRelCharacteristic = Integer.MAX_VALUE;
     int recordFlags = Integer.MAX_VALUE;
 
-    public ImportEConcept(TtkConceptChronicle eConcept,
-            Semaphore permit, UUID newPathUuid) {
-        this(eConcept, permit);
+    public ImportEConcept(TtkConceptChronicle eConcept, UUID newPathUuid) {
+        this(eConcept);
         this.newPathUuid = newPathUuid;
     }
 
-    public ImportEConcept(TtkConceptChronicle eConcept,
-            Semaphore permit) {
+    public ImportEConcept(TtkConceptChronicle eConcept) {
         this.eConcept = eConcept;
-        this.permit = permit;
     }
 
     @Override
@@ -141,8 +135,9 @@ public class ImportEConcept implements Callable<Void> {
                 cradle.writeConceptData(conceptData);
             }
             return null;
-        } finally {
-            permit.release();
+        } catch (Exception e) {
+            System.err.println("Failure importing " + eConcept.toString());
+            throw e;
         }
     }
 

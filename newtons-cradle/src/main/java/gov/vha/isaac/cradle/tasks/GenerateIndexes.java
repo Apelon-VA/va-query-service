@@ -9,8 +9,8 @@ import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.sememe.SememeChronicle;
-import gov.vha.isaac.ochre.api.sememe.SememeService;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -113,7 +113,7 @@ public class GenerateIndexes extends Task<Void> {
                 updateProcessedCount();
             });
             
-            sememeProvider.getParallelSememeStream().forEach((SememeChronicle sememe) -> {
+            sememeProvider.getParallelSememeStream().forEach((SememeChronology sememe) -> {
                 indexers.stream().forEach((i) -> {
                     i.index(sememe);
                 });

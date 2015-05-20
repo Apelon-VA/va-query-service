@@ -16,8 +16,7 @@
 package gov.vha.isaac.cradle.taxonomy;
 
 import gov.vha.isaac.cradle.Cradle;
-import gov.vha.isaac.cradle.CradleExtensions;
-import gov.vha.isaac.cradle.concept.ConceptActiveService;
+import gov.vha.isaac.cradle.builders.ConceptActiveService;
 import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
 import gov.vha.isaac.cradle.version.StampSequenceComputer;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
@@ -33,10 +32,14 @@ import gov.vha.isaac.ochre.api.tree.Tree;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeBuilder;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.NavigableSet;
 import java.util.Optional;
@@ -67,29 +70,35 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
      */
     final CasSequenceObjectMap<TaxonomyRecordPrimitive> originDestinationTaxonomyRecordMap
             = new CasSequenceObjectMap(new TaxonomyRecordSerializer(),
-                    Cradle.getCradlePath().resolve("taxonomy"), "seg.", ".taxonomy.map");
+                    Cradle.getCradlePath().resolve(TAXONOMY), "seg.", ".taxonomy.map");
+    private static final String TAXONOMY = "taxonomy";
     final ConcurrentSkipListSet<DestinationOriginRecord> destinationOriginRecordSet = new ConcurrentSkipListSet<>();
 
     private IdentifierService sequenceProvider;
-    private CradleExtensions cradle;
-    
-    private CradleTaxonomyProvider()
-    {
+
+    private CradleTaxonomyProvider() {
         log.info("CradleTaxonomyProvider constructed");
     }
 
     @PostConstruct
     private void startMe() throws IOException {
         try {
-            log.info("Starting TaxonomyService post-construct");    
+            log.info("Starting TaxonomyService post-construct");
             sequenceProvider = Hk2Looker.getService(IdentifierService.class);
-            cradle = LookupService.getService(CradleExtensions.class);
             if (!Cradle.cradleStartedEmpty()) {
                 log.info("Reading taxonomy.");
                 originDestinationTaxonomyRecordMap.initialize();
+                File inputFile = new File(Cradle.getCradlePath().resolve(TAXONOMY).toFile(), ORIGIN_DESTINATION_MAP);
+                try (DataInputStream in = new DataInputStream(new BufferedInputStream(
+                        new FileInputStream(inputFile)))) {
+                    int size = in.readInt(); 
+                    for (int i = 0; i < size; i++) {
+                        destinationOriginRecordSet.add(new DestinationOriginRecord(in.readInt(), in.readInt()));
+                    }
+                }
             }
-        }
-        catch (Exception e) {
+
+        } catch (Exception e) {
             LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Cradle Taxonomy Provider", e);
             throw e;
         }
@@ -99,7 +108,22 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     private void stopMe() throws IOException {
         log.info("Writing taxonomy.");
         originDestinationTaxonomyRecordMap.write();
+        File outputFile = new File(Cradle.getCradlePath().resolve(TAXONOMY).toFile(), ORIGIN_DESTINATION_MAP);
+        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(
+                new FileOutputStream(outputFile)))) {
+            out.writeInt(destinationOriginRecordSet.size());
+            destinationOriginRecordSet.forEach((rec) -> {
+                try {
+                    out.writeInt(rec.getDestinationSequence());
+                    out.writeInt(rec.getOriginSequence());
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+
+            });
+        }
     }
+    private static final String ORIGIN_DESTINATION_MAP = "origin-destination.map";
 
     public ConcurrentSkipListSet<DestinationOriginRecord> getDestinationOriginRecordSet() {
         return destinationOriginRecordSet;

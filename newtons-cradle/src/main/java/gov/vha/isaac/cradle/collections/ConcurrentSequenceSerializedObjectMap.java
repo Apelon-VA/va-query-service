@@ -139,7 +139,13 @@ public class ConcurrentSequenceSerializedObjectMap<T> {
         if (storeObjects) {
             return (T) objectListList.get(segmentIndex)[indexInSegment];
         }
+        if (segmentIndex >= objectByteList.length) {
+            return null;
+        }
         byte[] objectBytes = objectByteList[segmentIndex][indexInSegment];
+        if (objectBytes == null) {
+            return null;
+        }
         try (DataInputStream dis = new DataInputStream(new ByteArrayInputStream(objectBytes))) {
             return serializer.deserialize(dis);
         } catch (IOException e) {

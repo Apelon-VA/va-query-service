@@ -39,6 +39,8 @@ import javax.annotation.PreDestroy;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.runlevel.RunLevel;
+import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
+import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicChronicleBI;
 import org.ihtsdo.otf.tcc.model.cc.NidPairForRefex;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
 import org.jvnet.hk2.annotations.Service;
@@ -53,9 +55,10 @@ public class RefexProvider implements RefexService {
 
     private static final Logger log = LogManager.getLogger();
 
-    final ConcurrentSequenceSerializedObjectMap<RefexMember<?, ?>> refexMap;
+    final ConcurrentSequenceSerializedObjectMap<ComponentChronicleBI<?>> refexMap;
     final ConcurrentSkipListSet<RefexKey> assemblageSequenceRefexSequenceMap = new ConcurrentSkipListSet<>();
     final ConcurrentSkipListSet<RefexKey> referencedNidRefexSequenceMap = new ConcurrentSkipListSet<>();
+    final ConcurrentSkipListSet<Integer> dynamicMembers = new ConcurrentSkipListSet<>();
     final IdentifierService sequenceProvider;
 
     //For HK2 only
@@ -63,7 +66,7 @@ public class RefexProvider implements RefexService {
         try {
             sequenceProvider = LookupService.getService(IdentifierService.class);
             
-            Path refexMapPath = Cradle.getCradlePath().resolve("refex-map");
+            Path refexMapPath = Cradle.getCradlePath().resolve(REFEX_MAP);
             log.info("Starting RefexProvider - using from " + refexMapPath.toAbsolutePath().toString());
             
             refexMap = new ConcurrentSequenceSerializedObjectMap(new RefexSerializer(), refexMapPath, "seg.", ".refex.map");
@@ -73,6 +76,10 @@ public class RefexProvider implements RefexService {
             throw e;
         }
     }
+    private static final String REFEX_MAP = "refex-map";
+    private static final String ASSEMBLAGE_REFEX_KEYS = "assemblage-refex.keys";
+    private static final String COMPONENT_REFEX_KEYS = "component-refex.keys";
+    private static final String DYNAMIC_REFEX_KEYS = "dynamic-refex.keys";
 
     @PostConstruct
     private void startMe() throws IOException {
@@ -83,7 +90,7 @@ public class RefexProvider implements RefexService {
     
                 log.info("Loading RefexKeys.");
     
-                try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(Cradle.getCradlePath().toFile(), "assemblage-refex.keys"))))) {
+                try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(Cradle.getCradlePath().toFile(), ASSEMBLAGE_REFEX_KEYS))))) {
                     int size = in.readInt();
                     for (int i = 0; i < size; i++) {
                         int key1 = in.readInt();
@@ -91,12 +98,19 @@ public class RefexProvider implements RefexService {
                         assemblageSequenceRefexSequenceMap.add(new RefexKey(key1, sequence));
                     }
                 }
-                try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(Cradle.getCradlePath().toFile(), "component-refex.keys"))))) {
+                try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(Cradle.getCradlePath().toFile(), COMPONENT_REFEX_KEYS))))) {
                     int size = in.readInt();
                     for (int i = 0; i < size; i++) {
                         int key1 = in.readInt();
                         int sequence = in.readInt();
                         referencedNidRefexSequenceMap.add(new RefexKey(key1, sequence));
+                    }
+                }
+                try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(Cradle.getCradlePath().toFile(), DYNAMIC_REFEX_KEYS))))) {
+                    int size = in.readInt();
+                    for (int i = 0; i < size; i++) {
+                        int sequence = in.readInt();
+                        dynamicMembers.add(sequence);
                     }
                 }
                 log.info("Finished RefexProvider load.");
@@ -118,18 +132,24 @@ public class RefexProvider implements RefexService {
         refexMap.write();
 
         log.info("writing RefexKeys.");
-        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(Cradle.getCradlePath().toFile(), "assemblage-refex.keys"))))) {
+        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(Cradle.getCradlePath().toFile(), ASSEMBLAGE_REFEX_KEYS))))) {
             out.writeInt(assemblageSequenceRefexSequenceMap.size());
             for (RefexKey key : assemblageSequenceRefexSequenceMap) {
                 out.writeInt(key.key1);
                 out.writeInt(key.refexSequence);
             }
         }        
-        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(Cradle.getCradlePath().toFile(), "component-refex.keys"))))) {
+        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(Cradle.getCradlePath().toFile(), COMPONENT_REFEX_KEYS))))) {
             out.writeInt(referencedNidRefexSequenceMap.size());
             for (RefexKey key : referencedNidRefexSequenceMap) {
                 out.writeInt(key.key1);
                 out.writeInt(key.refexSequence);
+            }
+        }
+        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(Cradle.getCradlePath().toFile(), DYNAMIC_REFEX_KEYS))))) {
+            out.writeInt(dynamicMembers.size());
+            for (int sequence : dynamicMembers) {
+                out.writeInt(sequence);
             }
         }
         log.info("Finished RefexProvider stop.");
@@ -138,13 +158,14 @@ public class RefexProvider implements RefexService {
     @Override
     public RefexMember<?, ?> getRefex(int refexSequence) {
         refexSequence = sequenceProvider.getRefexSequence(refexSequence);
-        return refexMap.getQuick(refexSequence);
+        return (RefexMember<?, ?>) refexMap.getQuick(refexSequence);
     }
 
     @Override
     public Stream<RefexMember<?, ?>> getRefexesFromAssemblage(int assemblageSequence) {
         RefexSequenceSet refexSequences = getRefexSequencesFromAssemblage(assemblageSequence);
-        return refexSequences.stream().mapToObj((int value) -> refexMap.getQuick(value));
+        return refexSequences.stream().mapToObj((int value) -> 
+                (RefexMember<?, ?>) refexMap.getQuick(value));
     }
 
     @Override
@@ -180,7 +201,7 @@ public class RefexProvider implements RefexService {
     }
 
     @Override
-    public Stream<RefexMember<?, ?>> getRefexsForComponentFromAssemblage(int componentNid, int assemblageSequence) {
+    public Stream<RefexMember<?, ?>> getRefexesForComponentFromAssemblage(int componentNid, int assemblageSequence) {
         RefexSequenceSet refexSequences = getRefexSequencesForComponentFromAssemblage(componentNid, assemblageSequence);
         return refexSequences.stream().mapToObj((refexSequence)-> getRefex(refexSequence));
     }
@@ -209,6 +230,57 @@ public class RefexProvider implements RefexService {
         return assemblageSet;
     }
 
+
+    @Override
+    public Stream<RefexMember<?, ?>> getRefexStream() {
+        return refexMap.getStream()
+                .filter((component) ->{return component instanceof RefexMember;})
+                .map((component) -> {return (RefexMember<?, ?>) component;});
+    }
+
+    @Override
+    public Stream<RefexMember<?, ?>> getParallelRefexStream() {
+        return refexMap.getParallelStream()
+                .filter((component) ->{return component instanceof RefexMember;})
+                .map((component) -> {return (RefexMember<?, ?>) component;});
+    }
+
+    @Override
+    public void forgetXrefPair(int referencedComponentNid, NidPairForRefex nidPairForRefex) {
+        int sequence = sequenceProvider.getSememeSequence(nidPairForRefex.getMemberNid());
+        int assemblageSequence = sequenceProvider.getRefexSequence(nidPairForRefex.getRefexNid());
+        assemblageSequenceRefexSequenceMap.remove(new RefexKey(assemblageSequence, sequence));
+        referencedNidRefexSequenceMap.remove(new RefexKey(referencedComponentNid, sequence));
+    }
+
+    @Override
+    public Stream<RefexDynamicChronicleBI<?>> getDynamicRefexesForComponent(int componentNid) {
+        return getRefexSequencesForComponent(componentNid).stream()
+                .filter((sequence) -> dynamicMembers.contains(sequence))
+                .mapToObj((sequence) -> (RefexDynamicChronicleBI<?>) refexMap.getQuick(sequence));
+    }
+
+    @Override
+    public Stream<RefexDynamicChronicleBI<?>> getDynamicRefexesFromAssemblage(int assemblageSequence) {
+        return getRefexSequencesFromAssemblage(assemblageSequence).stream()
+                .filter((sequence) -> dynamicMembers.contains(sequence))
+                .mapToObj((sequence) -> (RefexDynamicChronicleBI<?>) refexMap.getQuick(sequence));
+    }
+
+    @Override
+    public void writeDynamicRefex(RefexDynamicChronicleBI<?> refex) {
+        int sequence = sequenceProvider.getRefexSequence(refex.getNid());
+        int assemblageSequence = sequenceProvider.getRefexSequence(refex.getAssemblageNid());
+        if (!refexMap.containsKey(sequence)) {
+            assemblageSequenceRefexSequenceMap.add(new RefexKey(assemblageSequence,
+                    sequence));
+            referencedNidRefexSequenceMap.add(new RefexKey(refex.getReferencedComponentNid(),
+                    sequence));
+            dynamicMembers.add(sequence);
+        }
+        refexMap.put(sequence, refex);
+    }
+    
     @Override
     public void writeRefex(RefexMember<?, ?> refex) {
         int sequence = sequenceProvider.getRefexSequence(refex.getNid());
@@ -220,24 +292,6 @@ public class RefexProvider implements RefexService {
                     sequence));
         }
         refexMap.put(sequence, refex);
-    }
-
-    @Override
-    public Stream<RefexMember<?, ?>> getRefexStream() {
-        return refexMap.getStream();
-    }
-
-    @Override
-    public Stream<RefexMember<?, ?>> getParallelRefexStream() {
-        return refexMap.getParallelStream();
-    }
-
-    @Override
-    public void forgetXrefPair(int referencedComponentNid, NidPairForRefex nidPairForRefex) {
-        int sequence = sequenceProvider.getSememeSequence(nidPairForRefex.getMemberNid());
-        int assemblageSequence = sequenceProvider.getRefexSequence(nidPairForRefex.getRefexNid());
-        assemblageSequenceRefexSequenceMap.remove(new RefexKey(assemblageSequence, sequence));
-        referencedNidRefexSequenceMap.remove(new RefexKey(referencedComponentNid, sequence));
     }
 
 }

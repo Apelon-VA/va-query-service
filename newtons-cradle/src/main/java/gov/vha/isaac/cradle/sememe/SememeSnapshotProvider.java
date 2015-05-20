@@ -18,15 +18,16 @@ package gov.vha.isaac.cradle.sememe;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
-import gov.vha.isaac.ochre.api.commit.CommitManager;
+import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
-import gov.vha.isaac.ochre.api.sememe.SememeService;
-import gov.vha.isaac.ochre.api.sememe.SememeSnapshotService;
-import gov.vha.isaac.ochre.api.sememe.version.SememeVersion;
+import gov.vha.isaac.ochre.api.component.sememe.SememeService;
+import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
+import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePositionCalculator;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
 import gov.vha.isaac.ochre.collections.StampSequenceSet;
 import gov.vha.isaac.ochre.model.sememe.SememeChronicleImpl;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -38,13 +39,13 @@ import java.util.stream.Stream;
  */
 public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSnapshotService<V> {
 
-    private static CommitManager commitManager;
+    private static CommitService commitService;
 
-    private static CommitManager getCommitManager() {
-        if (commitManager == null) {
-            commitManager = LookupService.getService(CommitManager.class);
+    private static CommitService getCommitService() {
+        if (commitService == null) {
+            commitService = LookupService.getService(CommitService.class);
         }
-        return commitManager;
+        return commitService;
     }
     Class<V> versionType;
     StampCoordinate stampCoordinate;
@@ -82,12 +83,12 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
         if (latestSequences.isEmpty()) {
             return Optional.empty();
         }
-        if (latestSequences.stream().noneMatch((int stampSequence) -> getCommitManager().getStatusForStamp(stampSequence) == State.ACTIVE)) {
+        if (latestSequences.stream().noneMatch((int stampSequence) -> getCommitService().getStatusForStamp(stampSequence) == State.ACTIVE)) {
             return Optional.empty();
         }
         LatestVersion<V> latest = new LatestVersion<>();
         latestSequences.stream().forEach((stampSequence) -> {
-            if (commitManager.getStatusForStamp(stampSequence) == State.ACTIVE) {
+            if (commitService.getStatusForStamp(stampSequence) == State.ACTIVE) {
                 latest.addLatest((V) sc.getVersionForStamp(stampSequence).get());
             }
         });
@@ -137,7 +138,7 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
                     if (latestStampSequences.isEmpty()) {
                         return Optional.empty();
                     }
-                    if (latestStampSequences.stream().noneMatch((int stampSequence) -> getCommitManager().getStatusForStamp(stampSequence) == State.ACTIVE)) {
+                    if (latestStampSequences.stream().noneMatch((int stampSequence) -> getCommitService().getStatusForStamp(stampSequence) == State.ACTIVE)) {
                         return Optional.empty();
                     }
 
@@ -145,12 +146,25 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
                     
                     // add active first, incase any contradictions are inactive. 
                     latestStampSequences.stream().filter((int stampSequence) -> 
-                            getCommitManager().getStatusForStamp(stampSequence) == State.ACTIVE).forEach((stampSequence) -> {
-                        latest.addLatest((V) sc.getVersionForStamp(stampSequence).get());
+                            getCommitService().getStatusForStamp(stampSequence) == State.ACTIVE).forEach((stampSequence) -> {
+                        Optional<V> version = sc.getVersionForStamp(stampSequence);
+                        if (version.isPresent()) {
+                            latest.addLatest(version.get());
+                        } else {
+                            throw new NoSuchElementException("No version for stamp: " + 
+                                    stampSequence + " in: " + sc);
+                        }
+                        
                     });                    
                     latestStampSequences.stream().filter((int stampSequence) -> 
-                            getCommitManager().getStatusForStamp(stampSequence) == State.INACTIVE).forEach((stampSequence) -> {
-                        latest.addLatest((V) sc.getVersionForStamp(stampSequence).get());
+                            getCommitService().getStatusForStamp(stampSequence) == State.INACTIVE).forEach((stampSequence) -> {
+                        Optional<V> version = sc.getVersionForStamp(stampSequence);
+                        if (version.isPresent()) {
+                            latest.addLatest(version.get());
+                        } else {
+                            throw new NoSuchElementException("No version for stamp: " + 
+                                    stampSequence + " in: " + sc);
+                        }
                     }); 
                     
                     return Optional.of(latest);
