@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.ihtsdo.otf.tcc.api.blueprint.IdDirective;
@@ -93,14 +94,14 @@ public class LuceneDynamicRefexIndexerConfiguration
 
 				for (RefexDynamicChronicleBI<?> r : c.getRefsetDynamicMembers())
 				{
-					RefexDynamicVersionBI<?> rdv = r.getVersion(ViewCoordinates.getMetadataViewCoordinate());
-					if (rdv == null || !rdv.isActive() || rdv.getAssemblageNid() != RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid())
+					Optional<? extends RefexDynamicVersionBI> rdv = r.getVersion(ViewCoordinates.getMetadataViewCoordinate());
+					if (!rdv.isPresent() || !rdv.get().isActive() || rdv.get().getAssemblageNid() != RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid())
 					{
 						continue;
 					}
-					int assemblageToIndex = rdv.getReferencedComponentNid();
+					int assemblageToIndex = rdv.get().getReferencedComponentNid();
 					Integer[] finalCols = new Integer[] {};
-					RefexDynamicDataBI[] data = rdv.getData();
+					RefexDynamicDataBI[] data = rdv.get().getData();
 					if (data != null && data.length > 0)
 					{
 						String colsToIndex = ((RefexDynamicStringBI) data[0]).getDataString();
@@ -250,11 +251,11 @@ public class LuceneDynamicRefexIndexerConfiguration
 		{
 			if (r.getAssemblageNid() == RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid() && r.getReferencedComponentNid() == assemblageNid)
 			{
-				RefexDynamicVersionBI<?> rdv = r.getVersion(ViewCoordinates.getMetadataViewCoordinate());
+				Optional<? extends RefexDynamicVersionBI> rdv = r.getVersion(ViewCoordinates.getMetadataViewCoordinate());
 				
-				if (rdv != null && rdv.getAssemblageNid() == RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid() && rdv.getReferencedComponentNid() == assemblageNid)
+				if (rdv.isPresent() && rdv.get().getAssemblageNid() == RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid() && rdv.get().getReferencedComponentNid() == assemblageNid)
 				{
-					return rdv;
+					return rdv.get();
 				}
 			}
 		}
