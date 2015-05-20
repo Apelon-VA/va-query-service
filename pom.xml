@@ -9,7 +9,7 @@
     
     <groupId>gov.vha.isaac.newtons-cradle</groupId>
     <artifactId>newtons-cradle-parent</artifactId>
-    <version>1.17-SNAPSHOT</version>
+    <version>1.18-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>${project.artifactId}: (MMP)</name>
 
