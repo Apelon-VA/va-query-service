@@ -249,6 +249,20 @@ public class RefexProvider implements RefexService {
                 .filter((component) ->{return component instanceof RefexMember;})
                 .map((component) -> {return (RefexMember<?, ?>) component;});
     }
+    
+    @Override
+    public Stream<RefexDynamicChronicleBI<?>> getDynamicRefexStream() {
+        return refexMap.getStream()
+                .filter((component) ->{return component instanceof RefexDynamicChronicleBI;})
+                .map((component) -> {return (RefexDynamicChronicleBI<?>) component;});
+    }
+
+    @Override
+    public Stream<RefexDynamicChronicleBI<?>> getParallelDynamicRefexStream() {
+        return refexMap.getParallelStream()
+                .filter((component) ->{return component instanceof RefexDynamicChronicleBI;})
+                .map((component) -> {return (RefexDynamicChronicleBI<?>) component;});
+    }
 
     @Override
     public void forgetXrefPair(int referencedComponentNid, NidPairForRefex nidPairForRefex) {
