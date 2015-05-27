@@ -158,8 +158,23 @@ public class RefexProvider implements RefexService {
     @Override
     public RefexMember<?, ?> getRefex(int refexSequence) {
         refexSequence = sequenceProvider.getRefexSequence(refexSequence);
-        return (RefexMember<?, ?>) refexMap.getQuick(refexSequence);
+        ComponentChronicleBI<?> cc = refexMap.getQuick(refexSequence);
+        if (cc instanceof RefexMember<?, ?>) {
+            return (RefexMember<?, ?>) cc;
+        }
+        return null;
     }
+    
+
+    @Override
+    public RefexDynamicChronicleBI<?> getRefexDynamic(int refexSequence) {
+        refexSequence = sequenceProvider.getRefexSequence(refexSequence);
+        ComponentChronicleBI<?> cc = refexMap.getQuick(refexSequence);
+        if (cc instanceof RefexDynamicChronicleBI<?>) {
+            return (RefexDynamicChronicleBI<?>)cc;
+        }
+        return null;
+	}
 
     @Override
     public Stream<RefexMember<?, ?>> getRefexesFromAssemblage(int assemblageSequence) {
