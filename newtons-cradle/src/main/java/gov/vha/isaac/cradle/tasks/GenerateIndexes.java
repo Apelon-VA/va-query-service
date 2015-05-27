@@ -49,7 +49,7 @@ public class GenerateIndexes extends Task<Void> {
         this.termService = termService;
         if (indexersToReindex == null || indexersToReindex.length == 0)
         {
-        	indexers = LookupService.get().getAllServices(IndexerBI.class);
+            indexers = LookupService.get().getAllServices(IndexerBI.class);
         }
         else
         {
