@@ -20,6 +20,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
+import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicChronicleBI;
 import org.ihtsdo.otf.tcc.model.cc.component.ConceptComponent;
 import org.ihtsdo.otf.tcc.model.index.service.IndexStatusListenerBI;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
@@ -48,7 +49,7 @@ public class GenerateIndexes extends Task<Void> {
         this.termService = termService;
         if (indexersToReindex == null || indexersToReindex.length == 0)
         {
-        	indexers = LookupService.get().getAllServices(IndexerBI.class);
+            indexers = LookupService.get().getAllServices(IndexerBI.class);
         }
         else
         {
@@ -107,6 +108,13 @@ public class GenerateIndexes extends Task<Void> {
             });
             
             refexProvider.getParallelRefexStream().forEach((RefexMember<?, ?> refex) -> {
+                indexers.stream().forEach((i) -> {
+                    i.index(refex);
+                });
+                updateProcessedCount();
+            });
+            
+            refexProvider.getParallelDynamicRefexStream().forEach((RefexDynamicChronicleBI<?> refex) -> {
                 indexers.stream().forEach((i) -> {
                     i.index(refex);
                 });

@@ -726,7 +726,7 @@ public class Cradle
         }
 
         @Override
-        public ConceptVersionBI fetch(ViewCoordinate vc) {
+        public Optional<ConceptVersionBI> fetch(ViewCoordinate vc) {
             return eager.getConceptChronicle().getVersion(vc);
         }
 
@@ -849,8 +849,15 @@ public class Cradle
     public RefexMember<?, ?> getRefex(int refexId) {
         return refexProvider.getRefex(refexId);
     }
+    
 
     @Override
+    public RefexDynamicChronicleBI<?> getDynamicRefex(int refexId)
+    {
+        return refexProvider.getRefexDynamic(refexId);
+    }
+
+	@Override
     public Collection<RefexMember<?, ?>> getRefexesForAssemblage(int assemblageNid) {
         return refexProvider.getRefexesFromAssemblage(assemblageNid).collect(Collectors.toList());
     }
