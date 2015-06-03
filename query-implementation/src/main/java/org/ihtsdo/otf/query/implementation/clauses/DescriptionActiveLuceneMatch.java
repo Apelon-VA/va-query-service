@@ -17,18 +17,19 @@ package org.ihtsdo.otf.query.implementation.clauses;
 
 import java.io.IOException;
 import java.util.EnumSet;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.ihtsdo.otf.query.implementation.ClauseComputeType;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.WhereClause;
+import org.ihtsdo.otf.tcc.api.chronicle.ComponentVersionBI;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetItrBI;
 import org.ihtsdo.otf.tcc.api.store.Ts;
-
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -61,7 +62,8 @@ public class DescriptionActiveLuceneMatch extends DescriptionLuceneMatch {
 
         try {
             while (iter.next()) {
-                if (!Ts.get().getComponentVersion(viewCoordinate, iter.nid()).isActive()) {
+                Optional<? extends ComponentVersionBI> cv = Ts.get().getComponentVersion(viewCoordinate, iter.nid());
+                if (!cv.isPresent() || !cv.get().isActive()) {
                     getResultsCache().remove(iter.nid());
                 }
             }

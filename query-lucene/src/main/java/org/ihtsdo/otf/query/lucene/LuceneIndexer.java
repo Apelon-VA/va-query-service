@@ -5,37 +5,6 @@ import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.util.WorkExecutors;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LogByteSizeMergePolicy;
-import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.PrefixQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.SimpleFSDirectory;
-import org.apache.lucene.util.Version;
-import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
-import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
-import org.ihtsdo.otf.tcc.api.thread.NamedThreadFactory;
-import org.ihtsdo.otf.tcc.model.cc.termstore.TermstoreLogger;
-import org.ihtsdo.otf.tcc.model.index.service.IndexedGenerationCallable;
-import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
-import org.ihtsdo.otf.tcc.model.index.service.SearchResult;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
@@ -56,10 +25,41 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LogByteSizeMergePolicy;
+import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TrackingIndexWriter;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ControlledRealTimeReopenThread;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ReferenceManager;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.util.Version;
+import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
+import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
+import org.ihtsdo.otf.tcc.api.thread.NamedThreadFactory;
+import org.ihtsdo.otf.tcc.model.cc.termstore.TermstoreLogger;
+import org.ihtsdo.otf.tcc.model.index.service.IndexedGenerationCallable;
+import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
+import org.ihtsdo.otf.tcc.model.index.service.SearchResult;
 
 // See example for help with the Controlled Real-time indexing...
 // http://stackoverflow.com/questions/17993960/lucene-4-4-0-new-controlledrealtimereopenthread-sample-usage?answertab=votes#tab-top
@@ -119,7 +119,10 @@ public abstract class LuceneIndexer implements IndexerBI {
             indexFolder_.mkdirs();
 
             logger.info("Index: " + indexFolder_.getAbsolutePath());
-            Directory indexDirectory = new SimpleFSDirectory(indexFolder_); 
+            Directory indexDirectory = new MMapDirectory(indexFolder_); //switch over to MMapDirectory - in theory - this gives us back some 
+            //room on the JDK stack, letting the OS directly manage the caching of the index files - and more importantly, gives us a huge 
+            //performance boost during any operation that tries to do multi-threaded reads of the index (like the SOLOR rules processing) because
+            //the default value of SimpleFSDirectory is a huge bottleneck.
 
             indexDirectory.clearLock("write.lock");
 
@@ -279,6 +282,7 @@ public abstract class LuceneIndexer implements IndexerBI {
     public void forceMerge() {
         try {
             trackingIndexWriter.getIndexWriter().forceMerge(1);
+            searcherManager.maybeRefreshBlocking();
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -304,6 +308,7 @@ public abstract class LuceneIndexer implements IndexerBI {
     public final void commitWriter() {
         try {
             trackingIndexWriter.getIndexWriter().commit();
+            searcherManager.maybeRefreshBlocking();
         } catch (IOException ex) {
             Logger.getLogger(LuceneRefexIndexer.class.getName()).log(Level.SEVERE, null, ex);
         }
