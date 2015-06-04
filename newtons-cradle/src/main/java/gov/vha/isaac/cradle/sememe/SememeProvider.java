@@ -134,7 +134,8 @@ public class SememeProvider implements SememeService {
     private void stopMe() throws IOException {
         log.info("Stopping SememeProvider pre-destroy. ");
 
-        log.info("sememeMap size: {}", sememeMap.getSize());
+        //Dan commented out this log statement because it is really slow...
+        //log.info("sememeMap size: {}", sememeMap.getSize());
         log.info("writing sememe-map.");
         sememeMap.write();
 

@@ -187,7 +187,11 @@ public class CasSequenceObjectMap<T extends WaitFreeComparable> {
         return elementSerializer.deserialize(buff);
     }
 
+    /**
+     * This method is VERY SLOW!!!!
+     */
     public int getSize() {
+        //TODO determine if this is the best way / if this method is necessary.  Calculating this is taking on the order of seconds, on the SOLOR-ALL db. 
         return (int) getParallelStream().count();
     }
 
