@@ -903,12 +903,8 @@ public class Cradle
     }
 
     @Override
-    public void index(Class<?> ... indexersToReindex) {
-        try {
-            startIndexTask(indexersToReindex).get();
-        } catch (InterruptedException | ExecutionException ex) {
-            throw new RuntimeException(ex);
-        }
+    public Task<?> index(Class<?> ... indexersToReindex) {
+        return startIndexTask(indexersToReindex);
     }
 
     /**
