@@ -11,10 +11,9 @@ import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeService;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,9 +21,9 @@ import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicChronicleBI;
 import org.ihtsdo.otf.tcc.model.cc.component.ConceptComponent;
-import org.ihtsdo.otf.tcc.model.index.service.IndexStatusListenerBI;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexService;
+import org.ihtsdo.otf.tcc.model.index.service.IndexStatusListenerBI;
 import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
 
 /**
@@ -40,8 +39,8 @@ public class GenerateIndexes extends Task<Void> {
 
     CradleExtensions termService;
     List<IndexerBI> indexers;
-    int componentCount;
-    AtomicInteger processed = new AtomicInteger(0);
+    long componentCount;
+    AtomicLong processed = new AtomicLong(0);
 
     public GenerateIndexes(CradleExtensions termService, Class<?> ... indexersToReindex) {
         updateTitle("Index generation");
@@ -80,24 +79,22 @@ public class GenerateIndexes extends Task<Void> {
             log.info("Clearing index for: " + i.getIndexerName());
             i.clearIndex();
         });
-        try {
-            int conceptCount = termService.getConceptCount();
-            log.info("Concepts to index: " + conceptCount);
-            int refexCount = (int) idProvider.getRefexSequenceStream().count();
-            log.info("Refexes to index: " + refexCount);
-            int sememeCount = (int) idProvider.getSememeSequenceStream().count();
-            log.info("Sememes to index: " + sememeCount);
-            componentCount = conceptCount + refexCount + sememeCount;
-            log.info("Components to index: " + componentCount);
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
     }
 
     @Override
     protected Void call() throws Exception {
         LookupService.get().getService(ActiveTaskSet.class).get().add(this);
         try {
+            //TODO performance problem... all of these count methods are incredibly slow
+            int conceptCount = termService.getConceptCount();
+            log.info("Concepts to index: " + conceptCount);
+            long refexCount = (int) idProvider.getRefexSequenceStream().count();
+            log.info("Refexes to index: " + refexCount);
+            long sememeCount = (int) idProvider.getSememeSequenceStream().count();
+            log.info("Sememes to index: " + sememeCount);
+            componentCount = conceptCount + refexCount + sememeCount;
+            log.info("Components to index: " + componentCount);
+
             termService.getParallelConceptDataEagerStream().forEach((ConceptChronicleDataEager ccde) -> {
                 ccde.getConceptComponents().forEach((ConceptComponent<?, ?> cc) -> {
                     indexers.stream().forEach((i) -> {
@@ -148,7 +145,7 @@ public class GenerateIndexes extends Task<Void> {
     }
 
     protected void updateProcessedCount() {
-        int processedCount = processed.incrementAndGet();
+        long processedCount = processed.incrementAndGet();
         if (processedCount % 1000 == 0) {
             updateProgress(processedCount, componentCount);
             updateMessage(String.format("Indexed %,d components...", processedCount));
