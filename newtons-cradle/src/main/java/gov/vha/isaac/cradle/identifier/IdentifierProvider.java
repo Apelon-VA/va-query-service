@@ -137,6 +137,19 @@ public class IdentifierProvider implements IdentifierService {
         }
         return ObjectChronologyType.DESCRIPTION;
     }
+    
+    /**
+     * @see gov.vha.isaac.ochre.api.IdentifierService#isConceptNid(int)
+     */
+    @Override
+    public boolean isConceptNid(int nid) {
+        if (nid < 0) {
+            return  conceptSequenceMap.containsNid(nid);
+        }
+        else {
+            return conceptSequenceMap.getNid(nid).isPresent();
+        }
+    }
 
     @Override
     public int getConceptSequence(int nid) {
