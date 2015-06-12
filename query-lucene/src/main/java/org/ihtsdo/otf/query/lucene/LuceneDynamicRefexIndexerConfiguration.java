@@ -243,7 +243,7 @@ public class LuceneDynamicRefexIndexerConfiguration
 		
 		Ts.get().getTerminologyBuilder(new EditCoordinate(IsaacMetadataAuxiliaryBinding.USER.getLenient().getConceptNid(), 
 				IsaacMetadataAuxiliaryBinding.ISAAC_MODULE.getLenient().getNid(), 
-				IsaacMetadataAuxiliaryBinding.MASTER.getLenient().getConceptNid()),
+				IsaacMetadataAuxiliaryBinding.DEVELOPMENT.getLenient().getConceptNid()),
 				ViewCoordinates.getMetadataViewCoordinate()).construct(rdb);
 		
 		Ts.get().addUncommitted(assemblageConceptC);
@@ -320,7 +320,7 @@ public class LuceneDynamicRefexIndexerConfiguration
 			
 			Ts.get().getTerminologyBuilder(new EditCoordinate(IsaacMetadataAuxiliaryBinding.USER.getLenient().getConceptNid(), 
 					IsaacMetadataAuxiliaryBinding.ISAAC_MODULE.getLenient().getNid(), 
-					IsaacMetadataAuxiliaryBinding.MASTER.getLenient().getConceptNid()),
+					IsaacMetadataAuxiliaryBinding.DEVELOPMENT.getLenient().getConceptNid()),
 					ViewCoordinates.getMetadataViewCoordinate()).construct(rb);
 
 			Ts.get().addUncommitted(indexConfigConceptC);
