@@ -135,22 +135,12 @@ public class IdentifierProvider implements IdentifierService {
         if (conceptSequenceMap.containsNid(nid)) {
             return ObjectChronologyType.CONCEPT;
         }
-        return ObjectChronologyType.DESCRIPTION;
+        if (refexSequenceMap.containsNid(nid)) {
+            return ObjectChronologyType.REFEX;
+        }
+        return ObjectChronologyType.UNKNOWN_NID;
     }
     
-    /**
-     * @see gov.vha.isaac.ochre.api.IdentifierService#isConceptNid(int)
-     */
-    @Override
-    public boolean isConceptNid(int nid) {
-        if (nid < 0) {
-            return  conceptSequenceMap.containsNid(nid);
-        }
-        else {
-            return conceptSequenceMap.getNid(nid).isPresent();
-        }
-    }
-
     @Override
     public int getConceptSequence(int nid) {
         if (nid >= 0) {
@@ -392,12 +382,16 @@ public class IdentifierProvider implements IdentifierService {
         return returnValue.getAsInt();
     }
     @Override
-    public void setConceptSequenceForComponentNid(int conceptSequence, int nid) {
+    public void setConceptSequenceForComponentNid(int conceptSequenceOrNid, int nid) {
         if (nid < 0) {
             nid = nid - Integer.MIN_VALUE;
         }
+        int conceptSequence = conceptSequenceOrNid;
         if (conceptSequence < 0) {
-            conceptSequence = conceptSequenceMap.getSequenceFast(conceptSequence);
+            conceptSequence = conceptSequenceMap.getSequenceFast(conceptSequenceOrNid);
+            if (conceptSequence == 0) { //We don't  yet have one
+                conceptSequence = conceptSequenceMap.addNidIfMissing(conceptSequenceOrNid);
+            }
         }
         int conceptSequenceForNid = getConceptSequenceForComponentNid(nid);
         if (conceptSequenceForNid == Integer.MAX_VALUE) {
