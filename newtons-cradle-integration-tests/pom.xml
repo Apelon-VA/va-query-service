@@ -76,7 +76,7 @@
                     <useManifestOnlyJar>false</useManifestOnlyJar>
                     <argLine>-ea -d64 -Xmx4g</argLine>
                     <!-- <argLine>-Xmx6g -Xms6g -agentpath:/Applications/jprofiler8/bin/macos/libjprofilerti.jnilib=port=8849</argLine> -->
-                    <!-- <debugForkedProcess>false</debugForkedProcess> -->
+                    <!--<debugForkedProcess>true</debugForkedProcess>-->
                     <includes>
                         <!-- Let JUnit annotations decide -->
                         <include>**/*.class</include>
