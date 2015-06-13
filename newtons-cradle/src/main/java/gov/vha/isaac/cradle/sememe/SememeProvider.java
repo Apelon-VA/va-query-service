@@ -180,7 +180,7 @@ public class SememeProvider implements SememeService {
 
     @Override
     public SememeSequenceSet getSememeSequencesFromAssemblage(int assemblageSequence) {
-        assemblageSequence = identifierService.getSememeSequence(assemblageSequence);
+        assemblageSequence = identifierService.getConceptSequence(assemblageSequence);
         SememeKey rangeStart = new SememeKey(assemblageSequence, Integer.MIN_VALUE); // yes
         SememeKey rangeEnd = new SememeKey(assemblageSequence, Integer.MAX_VALUE); // no
         NavigableSet<SememeKey> assemblageSememeKeys
@@ -226,7 +226,7 @@ public class SememeProvider implements SememeService {
         if (componentNid >= 0) {
             throw new IndexOutOfBoundsException("Component identifiers must be negative. Found: " + componentNid);
         }
-        assemblageSequence = identifierService.getSememeSequence(assemblageSequence);
+        assemblageSequence = identifierService.getConceptSequence(assemblageSequence);
         SememeKey rangeStart = new SememeKey(assemblageSequence, Integer.MIN_VALUE); // yes
         SememeKey rangeEnd = new SememeKey(assemblageSequence, Integer.MAX_VALUE); // no
         NavigableSet<SememeKey> assemblageRefexKeys
@@ -247,7 +247,7 @@ public class SememeProvider implements SememeService {
 
     @Override
     public SememeSequenceSet getSememeSequencesForComponentsFromAssemblage(NidSet componentNidSet, int assemblageSequence) {
-        assemblageSequence = identifierService.getSememeSequence(assemblageSequence);
+        assemblageSequence = identifierService.getConceptSequence(assemblageSequence);
         SememeKey rangeStart = new SememeKey(assemblageSequence, Integer.MIN_VALUE); // yes
         SememeKey rangeEnd = new SememeKey(assemblageSequence, Integer.MAX_VALUE); // no
         NavigableSet<SememeKey> assemblageRefexKeys
