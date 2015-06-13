@@ -840,18 +840,7 @@ public class Cradle
      */
     @Override
     public int getConceptNidForNid(int nid) {
-        //Need to determine if the passed in nid is a concept nid, because the  
-        //IdentifierProvider#getConceptSequenceForComponentNid(int) does _not_ work correctly
-        //if you pass it an ID that represents a concept, rather than a component.
-        
-        if (identifierProvider.isConceptNid(nid)) {
-            //Note that one could probably just return nid -but this ensures that if a sequence was passed in,
-            //it will be properly converted to nid
-            return identifierProvider.getConceptNid(identifierProvider.getConceptSequence(nid));
-        }
-        else {
-            return identifierProvider.getConceptNid(identifierProvider.getConceptSequenceForComponentNid(nid));
-        }
+        return identifierProvider.getConceptNid(identifierProvider.getConceptSequenceForComponentNid(nid));
     }
 
     @Override
