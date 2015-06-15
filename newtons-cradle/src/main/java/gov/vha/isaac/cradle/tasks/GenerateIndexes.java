@@ -13,15 +13,14 @@ import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
-import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
-import org.ihtsdo.otf.tcc.model.index.service.IndexStatusListenerBI;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexService;
+import org.ihtsdo.otf.tcc.model.index.service.IndexStatusListenerBI;
 import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
 
 /**
@@ -37,15 +36,15 @@ public class GenerateIndexes extends Task<Void> {
     private static final Logger log = LogManager.getLogger();
 
     List<IndexerBI> indexers;
-    int componentCount;
-    AtomicInteger processed = new AtomicInteger(0);
+    long componentCount;
+    AtomicLong processed = new AtomicLong(0);
 
     public GenerateIndexes(Class<?> ... indexersToReindex) {
         updateTitle("Index generation");
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         if (indexersToReindex == null || indexersToReindex.length == 0)
         {
-        	indexers = LookupService.get().getAllServices(IndexerBI.class);
+            indexers = LookupService.get().getAllServices(IndexerBI.class);
         }
         else
         {
@@ -130,7 +129,7 @@ public class GenerateIndexes extends Task<Void> {
     }
 
     protected void updateProcessedCount() {
-        int processedCount = processed.incrementAndGet();
+        long processedCount = processed.incrementAndGet();
         if (processedCount % 1000 == 0) {
             updateProgress(processedCount, componentCount);
             updateMessage(String.format("Indexed %,d components...", processedCount));

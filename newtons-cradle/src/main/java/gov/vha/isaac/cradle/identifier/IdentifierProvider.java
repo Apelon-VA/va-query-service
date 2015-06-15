@@ -134,7 +134,7 @@ public class IdentifierProvider implements IdentifierService {
         }
         return ObjectChronologyType.OTHER;
     }
-
+    
     @Override
     public int getConceptSequence(int nid) {
         if (nid >= 0) {
@@ -415,18 +415,20 @@ public class IdentifierProvider implements IdentifierService {
     }
 
     @Override
-    public void setConceptSequenceForComponentNid(int conceptSequence, int nid) {
-
-        int sequence = nid;
-        if (sequence < 0) {
-            sequence = sequence - Integer.MIN_VALUE;
+    public void setConceptSequenceForComponentNid(int conceptSequenceOrNid, int nid) {
+        if (nid < 0) {
+            nid = nid - Integer.MIN_VALUE;
         }
+        int conceptSequence = conceptSequenceOrNid;
         if (conceptSequence < 0) {
-            conceptSequence = conceptSequenceMap.getSequenceFast(conceptSequence);
+            conceptSequence = conceptSequenceMap.getSequenceFast(conceptSequenceOrNid);
+            if (conceptSequence == 0) { //We don't  yet have one
+                conceptSequence = conceptSequenceMap.addNidIfMissing(conceptSequenceOrNid);
+            }
         }
-        int conceptSequenceForNid = getConceptSequenceForComponentNid(sequence);
+        int conceptSequenceForNid = getConceptSequenceForComponentNid(nid);
         if (conceptSequenceForNid == Integer.MAX_VALUE) {
-            nidCnidMap.put(sequence, conceptSequence);
+            nidCnidMap.put(nid, conceptSequence);
         } else if (conceptSequenceForNid != conceptSequence) {
             throw new IllegalStateException("Cannot change concept sequence for nid: " + nid
                     + " from: " + conceptSequence + " to: " + conceptSequenceForNid);

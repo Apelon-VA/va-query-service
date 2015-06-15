@@ -158,14 +158,30 @@ public class RefexProvider implements RefexService {
     @Override
     public RefexMember<?, ?> getRefex(int refexSequence) {
         refexSequence = sequenceProvider.getRefexSequence(refexSequence);
-        return (RefexMember<?, ?>) refexMap.getQuick(refexSequence);
+        ComponentChronicleBI<?> cc = refexMap.getQuick(refexSequence);
+        if (cc instanceof RefexMember<?, ?>) {
+            return (RefexMember<?, ?>) cc;
+        }
+        return null;
     }
+    
+
+    @Override
+    public RefexDynamicChronicleBI<?> getRefexDynamic(int refexSequence) {
+        refexSequence = sequenceProvider.getRefexSequence(refexSequence);
+        ComponentChronicleBI<?> cc = refexMap.getQuick(refexSequence);
+        if (cc instanceof RefexDynamicChronicleBI<?>) {
+            return (RefexDynamicChronicleBI<?>)cc;
+        }
+        return null;
+	}
 
     @Override
     public Stream<RefexMember<?, ?>> getRefexesFromAssemblage(int assemblageSequence) {
         RefexSequenceSet refexSequences = getRefexSequencesFromAssemblage(assemblageSequence);
-        return refexSequences.stream().mapToObj((int value) -> 
-                (RefexMember<?, ?>) refexMap.getQuick(value));
+        return refexSequences.stream()
+                .filter((sequence) -> !dynamicMembers.contains(sequence))
+                .mapToObj((int value) -> (RefexMember<?, ?>) refexMap.getQuick(value));
     }
 
     @Override
@@ -183,7 +199,9 @@ public class RefexProvider implements RefexService {
     @Override
     public Stream<RefexMember<?, ?>> getRefexesForComponent(int componentNid) {
         RefexSequenceSet refexSequences = getRefexSequencesForComponent(componentNid);
-        return refexSequences.stream().mapToObj((refexSequence)-> getRefex(refexSequence));
+        return refexSequences.stream()
+                .filter((sequence) -> !dynamicMembers.contains(sequence))
+                .mapToObj((refexSequence)-> getRefex(refexSequence));
         
     }
 
@@ -203,7 +221,9 @@ public class RefexProvider implements RefexService {
     @Override
     public Stream<RefexMember<?, ?>> getRefexesForComponentFromAssemblage(int componentNid, int assemblageSequence) {
         RefexSequenceSet refexSequences = getRefexSequencesForComponentFromAssemblage(componentNid, assemblageSequence);
-        return refexSequences.stream().mapToObj((refexSequence)-> getRefex(refexSequence));
+        return refexSequences.stream()
+                .filter((sequence) -> !dynamicMembers.contains(sequence))
+                .mapToObj((refexSequence)-> getRefex(refexSequence));
     }
 
     @Override
@@ -243,6 +263,20 @@ public class RefexProvider implements RefexService {
         return refexMap.getParallelStream()
                 .filter((component) ->{return component instanceof RefexMember;})
                 .map((component) -> {return (RefexMember<?, ?>) component;});
+    }
+    
+    @Override
+    public Stream<RefexDynamicChronicleBI<?>> getDynamicRefexStream() {
+        return refexMap.getStream()
+                .filter((component) ->{return component instanceof RefexDynamicChronicleBI;})
+                .map((component) -> {return (RefexDynamicChronicleBI<?>) component;});
+    }
+
+    @Override
+    public Stream<RefexDynamicChronicleBI<?>> getParallelDynamicRefexStream() {
+        return refexMap.getParallelStream()
+                .filter((component) ->{return component instanceof RefexDynamicChronicleBI;})
+                .map((component) -> {return (RefexDynamicChronicleBI<?>) component;});
     }
 
     @Override

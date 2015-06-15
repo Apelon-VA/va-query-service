@@ -81,7 +81,7 @@ public class WriteSememeCompletionService implements Runnable {
                 log.error(ex.getLocalizedMessage(), ex);
             }
         }
-        System.out.println("WriteConceptCompletionService closed");
+        log.info("WriteSememeCompletionService closed");
     }
     
     public void cancel() {

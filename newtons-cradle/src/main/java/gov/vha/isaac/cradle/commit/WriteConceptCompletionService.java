@@ -39,6 +39,7 @@ import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 public class WriteConceptCompletionService implements Runnable {
     private static final Logger log = LogManager.getLogger();
     private final ExecutorService writeConceptPool = Executors.newFixedThreadPool(2);
+    //TODO use the shared thread pool?  Not sure if the limit of 2 here was for a particular reason, or if it was just to prevent having a large pool wasting threads..
     private boolean run = true;
 
     ExecutorCompletionService<Void> conversionService = new ExecutorCompletionService(writeConceptPool);
@@ -80,7 +81,7 @@ public class WriteConceptCompletionService implements Runnable {
                 log.error(ex.getLocalizedMessage(), ex);
             }
         }
-        System.out.println("WriteConceptCompletionService closed");
+        log.info("WriteConceptCompletionService closed");
     }
     
     public void cancel() {

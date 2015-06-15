@@ -180,6 +180,7 @@ public class CommitProvider implements CommitService {
         log.info("Stopping CradleCommitManager pre-destroy. ");
         log.info("nextStamp: {}", nextStampSequence);
         writeConceptCompletionService.cancel();
+        writeSememeCompletionService.cancel();
         log.info("writing: " + STAMP_ALIAS_MAP_FILENAME);
         stampAliasMap.write(new File(commitManagerFolder.toFile(), STAMP_ALIAS_MAP_FILENAME));
         log.info("writing: " + STAMP_COMMENT_MAP_FILENAME);

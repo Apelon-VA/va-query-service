@@ -288,6 +288,11 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
     public Set<Integer> getMemberNids() {
         return getNidSet(getRefsetMembers());
     }
+    
+    @Override
+    public Set<Integer> getDynamicMemberNids() {
+        return getNidSet(getRefsetDynamicMembers());
+    }
 
     @Override
     public int getNid() {
@@ -295,10 +300,10 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
     }
 
     @Override
-    public RefexDynamicMember getRefsetDynamicMember(int memberNid) {
+    public Optional<RefexDynamicMember> getRefsetDynamicMember(int memberNid) {
         return getRefexService().getDynamicRefexesFromAssemblage(this.getNid())
                 .map((RefexDynamicChronicleBI<?> rdc) -> (RefexDynamicMember) rdc)
-                .filter((rdc)-> rdc.getNid() == memberNid).findFirst().get();
+                .filter((rdc)-> rdc.getNid() == memberNid).findFirst();
     }
 
     @Override

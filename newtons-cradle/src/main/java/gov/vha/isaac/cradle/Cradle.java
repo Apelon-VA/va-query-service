@@ -670,7 +670,7 @@ public class Cradle
         int nid = componentReference.getNid();
         ConceptChronicleBI chronicle = this.getConcept(nid);
         TerminologySnapshot termSnap = new TerminologySnapshot(this, this.getViewCoordinate(viewCoordinateUuid));
-        return new ConceptChronicleDdo(termSnap, chronicle, VersionPolicy.ACTIVE_VERSIONS, RefexPolicy.REFEX_MEMBERS, RelationshipPolicy.ORIGINATING_RELATIONSHIPS);
+        return new ConceptChronicleDdo(termSnap, chronicle, VersionPolicy.ACTIVE_VERSIONS, refexPolicy, RelationshipPolicy.ORIGINATING_RELATIONSHIPS);
     }
 
     @Override
@@ -774,7 +774,7 @@ public class Cradle
         }
 
         @Override
-        public ConceptVersionBI fetch(ViewCoordinate vc) {
+        public Optional<ConceptVersionBI> fetch(ViewCoordinate vc) {
             return eager.getConceptChronicle().getVersion(vc);
         }
 
@@ -883,6 +883,9 @@ public class Cradle
         return getNidForUuids(uuids.toArray(new UUID[uuids.size()]));
     }
 
+    /**
+     * @see org.ihtsdo.otf.tcc.api.store.TerminologyDI#getConceptNidForNid(int)
+     */
     @Override
     public int getConceptNidForNid(int nid) {
         return identifierProvider.getConceptNid(identifierProvider.getConceptSequenceForComponentNid(nid));
@@ -897,8 +900,15 @@ public class Cradle
     public RefexMember<?, ?> getRefex(int refexId) {
         return refexProvider.getRefex(refexId);
     }
+    
 
     @Override
+    public RefexDynamicChronicleBI<?> getDynamicRefex(int refexId)
+    {
+        return refexProvider.getRefexDynamic(refexId);
+    }
+
+	@Override
     public Collection<RefexMember<?, ?>> getRefexesForAssemblage(int assemblageNid) {
         return refexProvider.getRefexesFromAssemblage(assemblageNid).collect(Collectors.toList());
     }
@@ -944,12 +954,8 @@ public class Cradle
     }
 
     @Override
-    public void index(Class<?>... indexersToReindex) {
-        try {
-            startIndexTask(indexersToReindex).get();
-        } catch (InterruptedException | ExecutionException ex) {
-            throw new RuntimeException(ex);
-        }
+    public Task<?> index(Class<?> ... indexersToReindex) {
+        return startIndexTask(indexersToReindex);
     }
 
     /**
