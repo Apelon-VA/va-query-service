@@ -15,21 +15,21 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
-import java.io.IOException;
+import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
+import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Optional;
 import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
-import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
-import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.ClauseComputeType;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.ParentClause;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.WhereClause;
-import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -62,7 +62,7 @@ public class PreferredNameForConcept extends ParentClause {
     }
 
     @Override
-    public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleConcepts) throws IOException, ValidationException, ContradictionException {
+    public NidSet computePossibleComponents(NidSet incomingPossibleConcepts) {
         return incomingPossibleConcepts;
     }
     
@@ -72,15 +72,19 @@ public class PreferredNameForConcept extends ParentClause {
     }
 
     @Override
-    public NativeIdSetBI computeComponents(NativeIdSetBI incomingConcepts) throws IOException, ValidationException, ContradictionException {
+    public NidSet computeComponents(NidSet incomingConcepts) {
         ViewCoordinate viewCoordinate = getEnclosingQuery().getViewCoordinate();
-        NativeIdSetBI outgoingPreferredNids = new ConcurrentBitSet();
+        NidSet outgoingPreferredNids = new NidSet();
         for (Clause childClause : getChildren()) {
-            NativeIdSetBI childPossibleComponentNids = childClause.computePossibleComponents(incomingConcepts);
-            Map<Integer, ConceptVersionBI> conceptMap = Ts.get().getConceptVersions(viewCoordinate, childPossibleComponentNids);
-            for (Map.Entry<Integer, ConceptVersionBI> entry : conceptMap.entrySet()) {
-                outgoingPreferredNids.add(entry.getValue().getPreferredDescription().getNid());
-            }
+            NidSet childPossibleComponentNids = childClause.computePossibleComponents(incomingConcepts);
+            ConceptSequenceSet conceptSequenceSet = ConceptSequenceSet.of(childPossibleComponentNids);
+            conceptService.getConceptChronologyStream(conceptSequenceSet)
+                    .forEach((conceptChronology) -> {
+                        Optional<LatestVersion<DescriptionSememe>> desc = conceptChronology.getPreferredDescription(viewCoordinate, viewCoordinate);
+                        if (desc.isPresent()) {
+                            outgoingPreferredNids.add(desc.get().value().getNid());
+                        }
+                    });
         }
         return outgoingPreferredNids;
     }

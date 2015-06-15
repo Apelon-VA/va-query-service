@@ -22,6 +22,8 @@ import static gov.vha.isaac.ochre.api.constants.Constants.SEARCH_ROOT_LOCATION_P
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
 import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
 import java.nio.file.Path;
@@ -67,25 +69,23 @@ public class QueryServiceTestSuiteSetup {
         HeapUseTicker.start(10);
         
         ObjectChronicleTaskService tts = LookupService.getService(ObjectChronicleTaskService.class);
-        TerminologyStoreDI store = LookupService.getService(TerminologyStoreDI.class);
+        ConceptService store = LookupService.getService(ConceptService.class);
  
         if (!dbExists) {
             loadDatabase(tts);
             indexDatabase(tts);
          }
         
-        ConceptChronicleBI concept;
+        ConceptChronology concept;
         try {
             concept = store.getConcept(IsaacMetadataAuxiliaryBinding.ISAAC_ROOT.getUuids());
-            log.info("Isaac Root concept: {0}", concept.toLongString());
+            log.info("Isaac Root concept: {0}", concept.toString());
 
             concept = store.getConcept(IsaacMetadataAuxiliaryBinding.HEALTH_CONCEPT.getUuids());
 
-            log.info("Health concept: {0}", concept.toLongString());
+            log.info("Health concept: {0}", concept.toString());
 
 
-        } catch (IOException ex) {
-            log.error(ex.getLocalizedMessage(), ex);
         } catch (Exception ex) {
             log.error(ex.getLocalizedMessage(), ex);
         }

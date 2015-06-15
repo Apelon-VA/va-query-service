@@ -17,6 +17,8 @@ package org.ihtsdo.otf.query.integration.tests;
  */
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
 import org.ihtsdo.otf.query.implementation.ForSetSpecification;
@@ -41,25 +43,33 @@ public class NotTest extends QueryClauseTest {
 
         this.q = new Query(ViewCoordinates.getDevelopmentInferredLatestActiveOnly()) {
             @Override
-            protected ForSetSpecification ForSetSpecification() throws IOException {
-                ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.CUSTOM_SET);
-                NativeIdSetBI forSet = new ConcurrentBitSet();
-                forSet.or(PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), ViewCoordinates.getDevelopmentInferredLatestActiveOnly()));
-                forSetSpecification.getCustomCollection().addAll(forSet.toPrimordialUuidSet());
-                return forSetSpecification;
+            protected ForSetSpecification ForSetSpecification() {
+                try {
+                    ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.CUSTOM_SET);
+                    NativeIdSetBI forSet = new ConcurrentBitSet();
+                    forSet.or(PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), ViewCoordinates.getDevelopmentInferredLatestActiveOnly()));
+                    forSetSpecification.getCustomCollection().addAll(forSet.toPrimordialUuidSet());
+                    return forSetSpecification;
+                } catch (IOException ex) {
+                     throw new RuntimeException(ex);
+                }
             }
 
             @Override
-            public void Let() throws IOException {
-                let("motion", Snomed.MOTION);
-                let("regex", "[Vv]ibration.*");
-                NativeIdSetBI kindOfSet = PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), ViewCoordinates.getDevelopmentInferredLatestActiveOnly());
-                NativeIdSetItrBI iter = kindOfSet.getSetBitIterator();
-                StringBuilder forSet = new StringBuilder("");
-                while(iter.next()){
-                    forSet.append(PersistentStore.get().getComponent(iter.nid()).getPrimordialUuid().toString()).append(",");
+            public void Let() {
+                try {
+                    let("motion", Snomed.MOTION);
+                    let("regex", "[Vv]ibration.*");
+                    NativeIdSetBI kindOfSet = PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), ViewCoordinates.getDevelopmentInferredLatestActiveOnly());
+                    NativeIdSetItrBI iter = kindOfSet.getSetBitIterator();
+                    StringBuilder forSet = new StringBuilder("");
+                    while(iter.next()){
+                        forSet.append(PersistentStore.get().getComponent(iter.nid()).getPrimordialUuid().toString()).append(",");
+                    }
+                    let("Custom FOR set", forSet.toString());
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
                 }
-                let("Custom FOR set", forSet.toString());
             }
 
             @Override

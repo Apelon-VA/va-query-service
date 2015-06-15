@@ -39,9 +39,9 @@ import org.ihtsdo.otf.tcc.api.metadata.binding.SnomedMetadataRf2;
 import org.ihtsdo.otf.tcc.api.metadata.binding.TermAux;
 import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
-import org.ihtsdo.otf.tcc.model.index.service.IndexedGenerationCallable;
+import gov.vha.isaac.ochre.api.index.IndexedGenerationCallable;
 import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
-import org.ihtsdo.otf.tcc.model.index.service.SearchResult;
+import gov.vha.isaac.ochre.api.index.SearchResult;
 
 import static org.testng.Assert.*;
 import org.testng.annotations.*;

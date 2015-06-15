@@ -15,14 +15,12 @@
  */
 package org.ihtsdo.otf.query.implementation;
 
-import java.io.IOException;
+import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 
-import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
-import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
 
 import javax.xml.bind.annotation.*;
 
@@ -88,9 +86,9 @@ public abstract class ParentClause extends Clause {
     }
 
     @Override
-    public final void getQueryMatches(ConceptVersionBI conceptVersion) throws IOException, ContradictionException {
-        for (Clause c : children) {
+    public final void getQueryMatches(ConceptVersion conceptVersion) {
+        children.stream().forEach((c) -> {
             c.getQueryMatches(conceptVersion);
-        }
+        });
     }
 }

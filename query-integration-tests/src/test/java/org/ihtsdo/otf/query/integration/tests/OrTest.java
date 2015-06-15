@@ -38,7 +38,7 @@ public class OrTest extends QueryClauseTest {
             }
 
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("acceleration", Snomed.ACCELERATION);
                 let("vibration", Snomed.VIBRATION);
             }

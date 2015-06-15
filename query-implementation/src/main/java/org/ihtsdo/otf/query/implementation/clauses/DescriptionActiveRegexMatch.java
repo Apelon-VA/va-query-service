@@ -15,15 +15,12 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
-import java.io.IOException;
+import gov.vha.isaac.ochre.api.State;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import org.ihtsdo.otf.query.implementation.Query;
-import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
-import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.WhereClause;
-import org.ihtsdo.otf.tcc.api.coordinate.Status;
-import org.ihtsdo.otf.tcc.api.description.DescriptionChronicleBI;
-import org.ihtsdo.otf.tcc.api.description.DescriptionVersionBI;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -45,15 +42,18 @@ public class DescriptionActiveRegexMatch extends DescriptionRegexMatch {
     protected DescriptionActiveRegexMatch() {
     }
     @Override
-    public void getQueryMatches(ConceptVersionBI conceptVersion) throws IOException, ContradictionException {
+    public void getQueryMatches(ConceptVersion conceptVersion) {
         String regex = (String) enclosingQuery.getLetDeclarations().get(regexKey);
-        for (DescriptionChronicleBI dc : conceptVersion.getDescriptionsActive()) {
-            for (DescriptionVersionBI dv : dc.getVersions()) {
-                if (dv.getText().matches(regex) && dv.getStatus().compareTo(Status.ACTIVE) == 0) {
-                    addToResultsCache((dv.getNid()));
-                }
-            }
-        }
+        
+        ConceptChronology<? extends ConceptVersion> conceptChronology = conceptVersion.getChronology();
+        
+        conceptChronology.getConceptDescriptionList().stream().forEach((dc) -> {
+            dc.getVersionList().stream().filter((dv) -> (dv.getText()
+                    .matches(regex) && dv.getState() == State.ACTIVE))
+                    .forEach((dv) -> {
+                addToResultsCache((dv.getNid()));
+            });
+        });
     }
 
     @Override

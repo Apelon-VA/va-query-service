@@ -40,7 +40,7 @@ public class PreferredNameForConceptTest extends QueryClauseTest {
                 return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
             }
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("vibration", Snomed.VIBRATION);
             }
 

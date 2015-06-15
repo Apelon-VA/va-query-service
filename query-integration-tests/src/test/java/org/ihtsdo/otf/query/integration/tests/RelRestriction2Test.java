@@ -15,7 +15,6 @@
  */
 package org.ihtsdo.otf.query.integration.tests;
 
-import java.io.IOException;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
 import org.ihtsdo.otf.query.implementation.ForSetSpecification;
@@ -35,7 +34,7 @@ public class RelRestriction2Test extends QueryClauseTest {
                 return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
             }
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("Is a", Snomed.IS_A);
                 let("Motion", Snomed.MOTION);
                 let("Acceleration", Snomed.ACCELERATION);

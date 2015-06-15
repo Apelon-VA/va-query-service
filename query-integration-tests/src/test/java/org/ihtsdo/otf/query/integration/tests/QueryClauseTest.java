@@ -15,9 +15,9 @@
  */
 package org.ihtsdo.otf.query.integration.tests;
 
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.io.IOException;
 import org.ihtsdo.otf.query.implementation.Query;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 
 /**
  * Abstract class that allows for easy creation of integration tests for
@@ -33,7 +33,7 @@ public abstract class QueryClauseTest {
         return q;
     }
 
-    public NativeIdSetBI computeQuery() throws IOException, Exception {
+    public NidSet computeQuery() throws IOException, Exception {
         return q.compute();
     }
 }

@@ -21,8 +21,6 @@ import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
 import org.ihtsdo.otf.query.implementation.ForSetSpecification;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
 /**
  * Creates a test for the <code>ConceptIs</code> clause.
@@ -40,7 +38,7 @@ public class ConceptIsTest extends QueryClauseTest {
             }
 
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("motion", Snomed.MOTION);
                 let("v2", vc.getViewCoordinate());
             }

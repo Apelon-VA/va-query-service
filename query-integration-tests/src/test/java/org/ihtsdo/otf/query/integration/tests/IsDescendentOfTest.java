@@ -41,7 +41,7 @@ public class IsDescendentOfTest extends QueryClauseTest {
             }
 
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("motion", Snomed.MOTION);
             }
 

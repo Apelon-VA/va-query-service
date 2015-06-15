@@ -17,6 +17,7 @@ package org.ihtsdo.otf.query.integration.tests;
  */
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -34,9 +35,7 @@ import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.tcc.api.description.DescriptionChronicleBI;
 import org.ihtsdo.otf.tcc.api.description.DescriptionVersionBI;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
-import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetItrBI;
 import org.ihtsdo.otf.tcc.api.relationship.RelationshipVersionBI;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
@@ -84,12 +83,12 @@ public class QueryTest {
         Query q = new Query() {
 
             @Override
-            protected ForSetSpecification ForSetSpecification() throws IOException {
+            protected ForSetSpecification ForSetSpecification() {
                 ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
                 return forSetSpecification;
             }
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("motion", Snomed.MOTION);
             }
 
@@ -104,14 +103,14 @@ public class QueryTest {
     @Test(groups = "QueryServiceTests")
     public void testRegexQuery() throws IOException, Exception {
         DescriptionRegexMatchTest regexTest = new DescriptionRegexMatchTest();
-        NativeIdSetBI results = regexTest.getQuery().compute();
+        NidSet results = regexTest.getQuery().compute();
         assertEquals(REPORTS.getQueryCount("DescriptionRegexMatchTest"), results.size());
     }
 
     @Test(groups = "QueryServiceTests")
     public void testDifferenceQuery() throws IOException, Exception {
         XorVersionTest xorTest = new XorVersionTest();
-        NativeIdSetBI results = xorTest.computeQuery();
+        NidSet results = xorTest.computeQuery();
         LOGGER.log(Level.INFO, "Different query size: {0}", results.size());
         assertEquals(REPORTS.getQueryCount("Xor(ConceptIsKindOf('disease'), ConceptIsKindOf('disease', 'v2'))"), results.size());
     }
@@ -123,13 +122,13 @@ public class QueryTest {
         Query q = new Query(d.getViewCoordinate()) {
 
             @Override
-            protected ForSetSpecification ForSetSpecification() throws IOException {
+            protected ForSetSpecification ForSetSpecification() {
                 ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
                 return forSetSpecification;
             }
 
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("motion", Snomed.MOTION);
                 let("v2", d.getViewCoordinate());
             }
@@ -139,12 +138,14 @@ public class QueryTest {
                 return Or(ConceptIsKindOf("motion", "v2"));
             }
         };
-        NativeIdSetBI results = q.compute();
+        NidSet results = q.compute();
         LOGGER.log(Level.INFO, d.v1.toString());
-        NativeIdSetItrBI setBitIterator = results.getSetBitIterator();
-        while (setBitIterator.next()) {
-            LOGGER.log(Level.INFO, PersistentStore.get().getConcept(setBitIterator.nid()).toLongString());
-        }
+        results.stream().forEach((nid) -> {try {
+            LOGGER.log(Level.INFO, PersistentStore.get().getConcept(nid).toLongString());
+            } catch (IOException ex) {
+               throw new RuntimeException(ex);
+            }
+});
         assertEquals(7, results.size());
         //assertEquals(REPORTS.getQueryCount("ConceptIsKindOfVersionedTest"), results.size());
     }
@@ -152,14 +153,14 @@ public class QueryTest {
     @Test(groups = "QueryServiceTests")
     public void testConceptIs() throws IOException, Exception {
         ConceptIsTest test = new ConceptIsTest();
-        NativeIdSetBI results = test.computeQuery();
+        NidSet results = test.computeQuery();
         assertEquals(REPORTS.getQueryCount("ConceptIsVersionedTest"), results.size());
     }
 
     @Test(enabled = false)
     public void testDescriptionLuceneMatch() throws IOException, Exception {
         DescriptionLuceneMatchTest descLuceneMatch = new DescriptionLuceneMatchTest();
-        NativeIdSetBI results = descLuceneMatch.computeQuery();
+        NidSet results = descLuceneMatch.computeQuery();
 
         LOGGER.log(Level.INFO, "Description Lucene match test size: {0}", results.size());
         assertEquals(REPORTS.getQueryCount("DescriptionLuceneMatch('Oligophrenia')"), results.size());
@@ -169,13 +170,13 @@ public class QueryTest {
     public void testOr() throws IOException, Exception {
         Query q = new Query() {
             @Override
-            protected ForSetSpecification ForSetSpecification() throws IOException {
+            protected ForSetSpecification ForSetSpecification() {
                 ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
                 return forSetSpecification;
             }
 
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("motion", Snomed.MOTION);
                 let("acceleration", Snomed.ACCELERATION);
             }
@@ -187,7 +188,7 @@ public class QueryTest {
             }
         };
 
-        NativeIdSetBI results = q.compute();
+        NidSet results = q.compute();
         assertEquals(REPORTS.getQueryCount("OrTest"), results.size());
     }
 
@@ -196,12 +197,12 @@ public class QueryTest {
 
         Query q = new Query(VC_LATEST_ACTIVE_ONLY) {
             @Override
-            protected ForSetSpecification ForSetSpecification() throws IOException {
+            protected ForSetSpecification ForSetSpecification()  {
                 ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
                 return forSetSpecification;
             }
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("Acceleration", Snomed.ACCELERATION);
                 let("Motion", Snomed.MOTION);
             }
@@ -213,7 +214,7 @@ public class QueryTest {
             }
         };
 
-        NativeIdSetBI results = q.compute();
+        NidSet results = q.compute();
         LOGGER.log(Level.INFO, "Xor result size: {0}", results.size());
         assertEquals(REPORTS.getQueryCount("XorTest"), results.size());
     }
@@ -222,7 +223,7 @@ public class QueryTest {
     public void testPreferredTerm() throws IOException, Exception {
         LOGGER.log(Level.INFO, "Sequence: {0}", PersistentStore.get().getSequence());
         PreferredNameForConceptTest preferredNameTest = new PreferredNameForConceptTest();
-        NativeIdSetBI results = preferredNameTest.computeQuery();
+        NidSet results = preferredNameTest.computeQuery();
         LOGGER.log(Level.INFO, "Preferred query result count: {0}", results.size());
         for (Object o : preferredNameTest.getQuery().returnDisplayObjects(results, ReturnTypes.UUIDS)) {
             LOGGER.log(Level.INFO, "Preferred description: {0}", o.toString());
@@ -236,12 +237,12 @@ public class QueryTest {
         final SetViewCoordinate setViewCoordinate = new SetViewCoordinate(2002, 1, 31, 0, 0);
         Query q = new Query(VC_LATEST_ACTIVE_ONLY) {
             @Override
-            protected ForSetSpecification ForSetSpecification() throws IOException {
+            protected ForSetSpecification ForSetSpecification() {
                 ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
                 return forSetSpecification;
             }
             @Override
-            public void Let() throws IOException {
+            public void Let()  {
                 let("endocrine system", Snomed.STRUCTURE_OF_ENDOCRINE_SYSTEM);
                 let("finding site", Snomed.FINDING_SITE);
                 let("v2", setViewCoordinate.getViewCoordinate());
@@ -254,7 +255,7 @@ public class QueryTest {
             }
         };
 
-        NativeIdSetBI results = q.compute();
+        NidSet results = q.compute();
         assertEquals(REPORTS.getQueryCount("RelType versioning test"), results.size());
     }
 
@@ -262,7 +263,7 @@ public class QueryTest {
     public void testRelRestrictionSubsumptionTrue() throws IOException, Exception {
         LOGGER.log(Level.INFO, "Rel restriction subsumption true");
         RelRestrictionTest rrTest = new RelRestrictionTest();
-        NativeIdSetBI results = rrTest.computeQuery();
+        NidSet results = rrTest.computeQuery();
         for (Object o : rrTest.q.returnDisplayObjects(results, ReturnTypes.COMPONENT)) {
             LOGGER.log(Level.INFO, o.toString());
         }
@@ -271,14 +272,17 @@ public class QueryTest {
         NativeIdSetBI destinationSet = PersistentStore.get().isKindOfSet(Snomed.EYE_STRUCTURE.getNid(), VC_LATEST_ACTIVE_ONLY);
         NativeIdSetBI relTypeSet = PersistentStore.get().isKindOfSet(Snomed.PROCEDURE_SITE.getNid(), VC_LATEST_ACTIVE_ONLY);
 
-        NativeIdSetItrBI iter = results.getSetBitIterator();
         Set<ConceptVersionBI> relResults = new HashSet<>();
-        while (iter.next()) {
-            ConceptChronicleBI concept = PersistentStore.get().getConcept(iter.nid());
-            relResults.add(concept.getVersion(VC_LATEST_ACTIVE_ONLY));
-        }
+        results.stream().forEach((nid) -> {
+            try {
+                ConceptChronicleBI concept = PersistentStore.get().getConcept(nid);
+                relResults.add(concept.getVersion(VC_LATEST_ACTIVE_ONLY));
+            } catch (IOException | ContradictionException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
 
-        NativeIdSetBI conceptSet = new ConcurrentBitSet();
+        NidSet conceptSet = new NidSet();
         for (ConceptVersionBI concept : relResults) {
             for (RelationshipVersionBI version : concept.getRelationshipsOutgoingActive()) {
                 int sourceId = version.getConceptNid();
@@ -325,7 +329,7 @@ public class QueryTest {
     public void testRelRestrictionSubsumptionFalse() throws IOException, Exception {
         LOGGER.log(Level.INFO, "RelRestriction subsumption false test");
         RelRestriction2Test test = new RelRestriction2Test();
-        NativeIdSetBI results = test.computeQuery();
+        NidSet results = test.computeQuery();
         assertEquals(REPORTS.getQueryCount("RelRestrictionTest2"), results.size());
     }
 
@@ -333,12 +337,12 @@ public class QueryTest {
     public void testRelRestrictionSubsumptionNull() throws IOException, Exception {
         Query q = new Query(VC_LATEST_ACTIVE_ONLY) {
             @Override
-            protected ForSetSpecification ForSetSpecification() throws IOException {
+            protected ForSetSpecification ForSetSpecification() {
                 ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
                 return forSetSpecification;
             }
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("physical force", Snomed.PHYSICAL_FORCE);
                 let("is a", Snomed.IS_A);
                 let("motion", Snomed.MOTION);
@@ -351,8 +355,8 @@ public class QueryTest {
                 return Or(RelRestriction("is a", "motion",  "relTypeSubsumptionKey", "destinationSubsumptionKey"));
             }
         };
-        NativeIdSetBI results = q.compute();
-        int[] setValues = results.getSetValues();
+        NidSet results = q.compute();
+        int[] setValues = results.stream().toArray();
         int count = 0;
         for (Object o : q.returnDisplayObjects(results, ReturnTypes.NIDS)) {
             assertEquals(setValues[count], Integer.parseInt(o.toString()));
@@ -366,7 +370,7 @@ public class QueryTest {
     @Test(groups = "QueryServiceTests")
     public void testFullySpecifiedName() throws IOException, Exception {
         FullySpecifiedNameForConceptTest fsnTest = new FullySpecifiedNameForConceptTest();
-        NativeIdSetBI results = fsnTest.computeQuery();
+        NidSet results = fsnTest.computeQuery();
         LOGGER.log(Level.INFO, "Fully specified name test: {0}", results.size());
         for (Object o : fsnTest.getQuery().returnDisplayObjects(results, ReturnTypes.UUIDS)) {
             LOGGER.log(Level.INFO, o.toString());
@@ -379,7 +383,7 @@ public class QueryTest {
     @Test(groups = "QueryServiceTests")
     public void testAnd() throws IOException, Exception {
         AndTest andTest = new AndTest();
-        NativeIdSetBI results = andTest.computeQuery();
+        NidSet results = andTest.computeQuery();
         LOGGER.log(Level.INFO, "And query test results: {0}", results.size());
         assertEquals(REPORTS.getQueryCount("AndTest"), results.size());
     }
@@ -389,7 +393,7 @@ public class QueryTest {
         IsChildOfTest isChildOfTest = new IsChildOfTest();
         Query q3 = isChildOfTest.getQuery();
         q3.getViewCoordinate().setAllowedStatus(EnumSet.of(Status.ACTIVE));
-        NativeIdSetBI results3 = q3.compute();
+        NidSet results3 = q3.compute();
         LOGGER.log(Level.INFO, "Query result count {0}", results3.size());
         //assertEquals(REPORTS.getQueryCount("ConceptIsChildOfTest"), results3.size());
         assertEquals(REPORTS.getQueryCount("ConceptIsChildOfTest"), 21);
@@ -399,7 +403,7 @@ public class QueryTest {
     public void isDescendentOfTest() throws IOException, Exception {
         IsDescendentOfTest isDescendent = new IsDescendentOfTest();
         Query q4 = isDescendent.getQuery();
-        NativeIdSetBI results4 = q4.compute();
+        NidSet results4 = q4.compute();
         LOGGER.log(Level.INFO, "ConceptIsDescendentOf query result count {0}", results4.size());
         assertEquals(REPORTS.getQueryCount("ConceptIsDescendentOfTest"), results4.size());
     }
@@ -408,13 +412,16 @@ public class QueryTest {
     public void isKindOfTest() throws IOException, Exception {
         IsKindOfTest kindOf = new IsKindOfTest();
         Query kindOfQuery = kindOf.getQuery();
-        NativeIdSetBI kindOfResults = kindOfQuery.compute();
-        NativeIdSetItrBI iter = kindOfResults.getSetBitIterator();
-        while (iter.next()) {
-            assertTrue(PersistentStore.get().isKindOf(iter.nid(), 
-                    Snomed.PHYSICAL_FORCE.getNid(), VC_LATEST_ACTIVE_ONLY), "Testing: " +
-                            Ts.get().getConcept(iter.nid()));
-        }
+        NidSet kindOfResults = kindOfQuery.compute();
+        kindOfResults.stream().forEach((nid) ->  {
+            try {
+                assertTrue(PersistentStore.get().isKindOf(nid,
+                        Snomed.PHYSICAL_FORCE.getNid(), VC_LATEST_ACTIVE_ONLY), "Testing: " +
+                                Ts.get().getConcept(nid));
+            } catch (IOException | ContradictionException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
 
         assertEquals(REPORTS.getQueryCount("IsKindOfTest"), kindOfResults.size());
     }
@@ -423,13 +430,13 @@ public class QueryTest {
     public void queryTest() throws IOException, Exception {
         Query q = new Query(VC_LATEST_ACTIVE_AND_INACTIVE) {
             @Override
-            protected ForSetSpecification ForSetSpecification() throws IOException {
+            protected ForSetSpecification ForSetSpecification()  {
                 ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
                 return forSetSpecification;
             }
 
             @Override
-            public void Let() throws IOException {
+            public void Let()  {
                 let("acceleration", Snomed.ACCELERATION);
                 let("is a", Snomed.IS_A);
                 let("motion", Snomed.MOTION);
@@ -449,7 +456,7 @@ public class QueryTest {
             }
         };
 
-        NativeIdSetBI results = q.compute();
+        NidSet results = q.compute();
         LOGGER.log(Level.INFO, "Query test results: {0}", results.size());
         for (Object o : q.returnDisplayObjects(results, ReturnTypes.UUIDS)) {
             LOGGER.log(Level.INFO, o.toString());
@@ -462,12 +469,12 @@ public class QueryTest {
     public void notTest() throws IOException, Exception {
         Query q = new Query() {
             @Override
-            protected ForSetSpecification ForSetSpecification() throws IOException {
+            protected ForSetSpecification ForSetSpecification() {
                 ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
                 return forSetSpecification;
             }
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("acceleration", Snomed.ACCELERATION);
 
             }
@@ -493,7 +500,7 @@ public class QueryTest {
         });
 
 
-        NativeIdSetBI results = q.compute();
+        NidSet results = q.compute();
 
         LOGGER.log(Level.INFO, "Not test result size: {0}", results.size());
         assertEquals(activeSet.size() -1, results.size());
@@ -504,7 +511,7 @@ public class QueryTest {
     public void conceptForComponentTest() throws IOException, Exception {
         LOGGER.log(Level.INFO, "ConceptForComponentTest");
         ConceptForComponentTest cfcTest = new ConceptForComponentTest();
-        NativeIdSetBI results = cfcTest.computeQuery();
+        NidSet results = cfcTest.computeQuery();
         assertEquals(REPORTS.getQueryCount("ConceptForComponentTest"), results.size());
     }
 
@@ -512,50 +519,50 @@ public class QueryTest {
     public void refsetLuceneMatchTest() throws IOException, Exception {
         LOGGER.log(Level.INFO, "RefsetLuceneMatch test");
         RefsetLuceneMatchTest rlmTest = new RefsetLuceneMatchTest();
-        NativeIdSetBI ids = rlmTest.computeQuery();
+        NidSet ids = rlmTest.computeQuery();
         for (Object o : rlmTest.q.returnDisplayObjects(ids, ReturnTypes.COMPONENT)) {
             LOGGER.log(Level.INFO, o.toString());
             assertTrue(o.toString().contains("Virtual medicinal product simple reference set"));
         }
         assertEquals(1, ids.size());
     }
-
-    @Test(enabled = false)
-    public void refsetContainsConceptTest() throws IOException, Exception {
-        LOGGER.log(Level.INFO, "RefsetContainsConcept test");
-        TermstoreChanges tc = new TermstoreChanges(VC_LATEST_ACTIVE_ONLY);
-        tc.addRefsetMember();
-        RefsetContainsConceptTest rccTest = new RefsetContainsConceptTest();
-        NativeIdSetBI ids = rccTest.computeQuery();
-        assertEquals(1, ids.size());
-
-    }
-
-    @Test(enabled = false)
-    public void refsetContainsStringTest() throws Exception {
-        LOGGER.log(Level.INFO, "RefsetContainsString test");
-        TermstoreChanges tc = new TermstoreChanges(VC_LATEST_ACTIVE_ONLY);
-        tc.addRefsetMember();
-        RefsetContainsStringTest rcsTest = new RefsetContainsStringTest();
-        NativeIdSetBI ids = rcsTest.computeQuery();
-        assertEquals(1, ids.size());
-    }
-
-    @Test(enabled = false)
-    public void refsetContainsKindOfConceptTest() throws Exception {
-        LOGGER.log(Level.INFO, "RefsetContainsKindOfConcept test");
-        TermstoreChanges tc = new TermstoreChanges(VC_LATEST_ACTIVE_ONLY);
-        tc.addRefsetMember();
-        RefsetContainsKindOfConceptTest rckocTest = new RefsetContainsKindOfConceptTest();
-        NativeIdSetBI nids = rckocTest.computeQuery();
-        assertEquals(1, nids.size());
-    }
+// TODO replace with tests for sememes.     
+//    @Test(enabled = false)
+//    public void refsetContainsConceptTest() throws IOException, Exception {
+//        LOGGER.log(Level.INFO, "RefsetContainsConcept test");
+//        TermstoreChanges tc = new TermstoreChanges(VC_LATEST_ACTIVE_ONLY);
+//        tc.addRefsetMember();
+//        RefsetContainsConceptTest rccTest = new RefsetContainsConceptTest();
+//        NativeIdSetBI ids = rccTest.computeQuery();
+//        assertEquals(1, ids.size());
+//
+//    }
+//
+//    @Test(enabled = false)
+//    public void refsetContainsStringTest() throws Exception {
+//        LOGGER.log(Level.INFO, "RefsetContainsString test");
+//        TermstoreChanges tc = new TermstoreChanges(VC_LATEST_ACTIVE_ONLY);
+//        tc.addRefsetMember();
+//        RefsetContainsStringTest rcsTest = new RefsetContainsStringTest();
+//        NativeIdSetBI ids = rcsTest.computeQuery();
+//        assertEquals(1, ids.size());
+//    }
+//
+//    @Test(enabled = false)
+//    public void refsetContainsKindOfConceptTest() throws Exception {
+//        LOGGER.log(Level.INFO, "RefsetContainsKindOfConcept test");
+//        TermstoreChanges tc = new TermstoreChanges(VC_LATEST_ACTIVE_ONLY);
+//        tc.addRefsetMember();
+//        RefsetContainsKindOfConceptTest rckocTest = new RefsetContainsKindOfConceptTest();
+//        NativeIdSetBI nids = rckocTest.computeQuery();
+//        assertEquals(1, nids.size());
+//    }
 
     @Test(groups = "QueryServiceTests")
     public void testOr2() throws IOException, Exception {
         LOGGER.log(Level.INFO, "Or test");
         OrTest orTest = new OrTest();
-        NativeIdSetBI results = orTest.computeQuery();
+        NidSet results = orTest.computeQuery();
         assertEquals(REPORTS.getQueryCount("OrTest2"), results.size());
     }
 
@@ -563,7 +570,7 @@ public class QueryTest {
     public void notTest2() throws IOException, Exception {
         LOGGER.log(Level.INFO, "Not test2");
         NotTest notTest = new NotTest();
-        NativeIdSetBI results = notTest.computeQuery();
+        NidSet results = notTest.computeQuery();
         assertEquals(REPORTS.getQueryCount("NotTest2"), results.size());
     }
 
@@ -580,12 +587,12 @@ public class QueryTest {
         LOGGER.log(Level.INFO, "DescriptionActiveLuceneMatch test");
         Query q1 = new Query(VC_LATEST_ACTIVE_AND_INACTIVE) {
             @Override
-            protected ForSetSpecification ForSetSpecification() throws IOException {
+            protected ForSetSpecification ForSetSpecification() {
                 ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
                 return forSetSpecification;
             }
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("baranys", "barany's");
             }
 
@@ -594,7 +601,7 @@ public class QueryTest {
                 return ConceptForComponent(DescriptionLuceneMatch("baranys"));
             }
         };
-        NativeIdSetBI results1 = q1.compute();
+        NidSet results1 = q1.compute();
         assertEquals(1, results1.size());
 
         TermstoreChanges tc = new TermstoreChanges(VC_LATEST_ACTIVE_AND_INACTIVE);
@@ -603,7 +610,7 @@ public class QueryTest {
             tc.setActiveStatus(desc, Status.INACTIVE);
         }
         DescriptionActiveLuceneMatchTest test = new DescriptionActiveLuceneMatchTest();
-        NativeIdSetBI results2 = test.computeQuery();
+        NidSet results2 = test.computeQuery();
         assertEquals(results2.size(), results1.size() - 1);
         for (DescriptionChronicleBI desc : PersistentStore.get().getConceptVersion(VC_LATEST_ACTIVE_AND_INACTIVE, Snomed.BARANYS_SIGN.getNid()).getDescriptions()) {
             DescriptionVersionBI descVersion = desc.getVersion(VC_LATEST_ACTIVE_AND_INACTIVE);
@@ -619,7 +626,7 @@ public class QueryTest {
         ViewCoordinate previousVC = svc.getViewCoordinate();
         TermstoreChanges tc = new TermstoreChanges(previousVC);
         tc.modifyDesc("Admin statuses", Snomed.ADMINISTRATIVE_STATUSES.getNid());
-        NativeIdSetBI results2 = test.computeQuery();
+        NidSet results2 = test.computeQuery();
         for (Object o : test.q.returnDisplayObjects(results2, ReturnTypes.DESCRIPTION_VERSION_FSN)) {
             LOGGER.log(Level.INFO, o.toString());
         }
@@ -635,11 +642,15 @@ public class QueryTest {
         }
         DescriptionActiveRegexMatchTest test = new DescriptionActiveRegexMatchTest();
         try {
-            NativeIdSetBI computeQuery = test.computeQuery();
-            NativeIdSetItrBI iter = computeQuery.getSetBitIterator();
-            while (iter.next()) {
-                LOGGER.log(Level.INFO, "DescriptionActiveRegexMatch test: {0}", PersistentStore.get().getComponentVersion(VC_LATEST_ACTIVE_ONLY, iter.nid()));
-            }
+            NidSet computeQuery = test.computeQuery();
+            
+            computeQuery.stream().forEach(((nid) -> {
+                try {
+                    LOGGER.log(Level.INFO, "DescriptionActiveRegexMatch test: {0}", PersistentStore.get().getComponentVersion(VC_LATEST_ACTIVE_ONLY, nid));
+                } catch (IOException | ContradictionException ex) {
+                   throw new RuntimeException(ex);
+                }
+            })); 
             //Since the reports doesn't account for the fact that descriptions for "Accleration" have been made inactive within the tests,
             //the result set from the report will still include "Acceleration"
             int expectedCardinality = REPORTS.getQueryCount("DescriptionActiveRegexMatchTest") - 1;
@@ -661,12 +672,12 @@ public class QueryTest {
         final SetViewCoordinate setVC = new SetViewCoordinate(2002, 1, 31, 0, 0);
         Query q = new Query(setVC.getViewCoordinate()) {
             @Override
-            protected ForSetSpecification ForSetSpecification() throws IOException {
+            protected ForSetSpecification ForSetSpecification() {
                 ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
                 return forSetSpecification;
             }
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("Disease", Snomed.DISEASE);
                 let("v2", setVC.getViewCoordinate());
             }
@@ -677,7 +688,7 @@ public class QueryTest {
             }
         };
 
-        NativeIdSetBI results = q.compute();
+        NidSet results = q.compute();
         int exp = REPORTS.getQueryCount("ConceptIsKindOf('disease', 'v2')");
         assertEquals(exp, results.size());
     }

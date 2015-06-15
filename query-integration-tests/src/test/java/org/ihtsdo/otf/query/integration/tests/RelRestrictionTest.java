@@ -42,7 +42,7 @@ public class RelRestrictionTest extends QueryClauseTest {
                 return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
             }
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("Procedure site", Snomed.PROCEDURE_SITE);
                 let("Eye structure", Snomed.EYE_STRUCTURE);
                 let("Laser surgery", Snomed.LASER_SURGERY);

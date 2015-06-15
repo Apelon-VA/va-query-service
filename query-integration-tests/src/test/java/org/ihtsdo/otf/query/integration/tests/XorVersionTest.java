@@ -48,7 +48,7 @@ public class XorVersionTest extends QueryClauseTest {
             }
 
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("disease", Snomed.DISEASE);
                 let("v2", setViewCoordinate.getViewCoordinate());
             }

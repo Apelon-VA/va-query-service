@@ -15,6 +15,7 @@
  */
 package org.ihtsdo.otf.query.implementation;
 
+import gov.vha.isaac.ochre.collections.NidSet;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import java.io.IOException;
 import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
@@ -42,11 +43,11 @@ public class Or extends ParentClause {
     }
 
     @Override
-    public NativeIdSetBI computePossibleComponents(NativeIdSetBI searchSpace) throws IOException, ValidationException, ContradictionException {
-        NativeIdSetBI results = new ConcurrentBitSet();
-        for (Clause clause : getChildren()) {
-            results.union(clause.computePossibleComponents(searchSpace));
-        }
+    public NidSet computePossibleComponents(NidSet searchSpace) {
+        NidSet results = new NidSet();
+        getChildren().stream().forEach((clause) -> {
+            results.or(clause.computePossibleComponents(searchSpace));
+        });
         return results;
     }
 
@@ -54,18 +55,18 @@ public class Or extends ParentClause {
     public WhereClause getWhereClause() {
         WhereClause whereClause = new WhereClause();
         whereClause.setSemantic(ClauseSemantic.OR);
-        for (Clause clause : getChildren()) {
+        getChildren().stream().forEach((clause) -> {
             whereClause.getChildren().add(clause.getWhereClause());
-        }
+        });
         return whereClause;
     }
 
     @Override
-    public NativeIdSetBI computeComponents(NativeIdSetBI incomingComponents) throws IOException, ValidationException, ContradictionException {
-        NativeIdSetBI results = new ConcurrentBitSet();
-        for (Clause clause : getChildren()) {
+    public NidSet computeComponents(NidSet incomingComponents) {
+        NidSet results = new NidSet();
+        getChildren().stream().forEach((clause) -> {
             results.or(clause.computeComponents(incomingComponents));
-        }
+        });
         return results;
     }
 }

@@ -15,20 +15,15 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
-import java.io.IOException;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.EnumSet;
 import org.ihtsdo.otf.query.implementation.ClauseComputeType;
 import org.ihtsdo.otf.query.implementation.LeafClause;
 import org.ihtsdo.otf.query.implementation.Query;
-import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
-import org.ihtsdo.otf.tcc.api.description.DescriptionChronicleBI;
-import org.ihtsdo.otf.tcc.api.description.DescriptionVersionBI;
-import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.WhereClause;
-import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -46,7 +41,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlAccessorType(value = XmlAccessType.NONE)
 public class DescriptionRegexMatch extends LeafClause {
 
-    NativeIdSetBI cache = new ConcurrentBitSet();
+    NidSet cache = new NidSet();
     @XmlElement
     String regexKey;
     @XmlElement
@@ -65,23 +60,25 @@ public class DescriptionRegexMatch extends LeafClause {
     }
 
     @Override
-    public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleComponents) throws IOException {
+    public NidSet computePossibleComponents(NidSet incomingPossibleComponents) {
         this.cache = incomingPossibleComponents;
         return incomingPossibleComponents;
     }
 
     @Override
-    public void getQueryMatches(ConceptVersionBI conceptVersion) throws IOException, ContradictionException {
+    public void getQueryMatches(ConceptVersion conceptVersion) {
         String regex = (String) enclosingQuery.getLetDeclarations().get(regexKey);
-        for (DescriptionChronicleBI dc : conceptVersion.getDescriptions()) {
-            if (cache.contains(dc.getNid())) {
-                for (DescriptionVersionBI dv : dc.getVersions()) {
+        ConceptChronology<? extends ConceptVersion> conceptChronology = conceptVersion.getChronology();
+         
+        conceptChronology.getConceptDescriptionList().forEach((description)->{
+            if (cache.contains(description.getNid())) {
+                description.getVersionList().forEach((dv) -> {
                     if (dv.getText().matches(regex)) {
                         addToResultsCache((dv.getNid()));
                     }
-                }
+                });
             }
-        }
+        });
     }
 
     @Override

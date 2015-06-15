@@ -16,19 +16,20 @@
  */
 package org.ihtsdo.otf.query.implementation;
 
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import java.io.IOException;
+import gov.vha.isaac.ochre.api.IdentifiedObjectService;
+import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.TaxonomyService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.EnumSet;
 import java.util.List;
 
-import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
-import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
-import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlTransient;
 
 /**
  * Statements that are used to retrieve desired components in a
@@ -42,6 +43,13 @@ import javax.xml.bind.annotation.XmlTransient;
 @XmlRootElement(name = "CLAUSE")
 @XmlAccessorType(value = XmlAccessType.NONE)
 public abstract class Clause {
+    
+    protected static final  ConceptService conceptService = LookupService.getService(ConceptService.class);
+    protected static final  IdentifierService identifierService = LookupService.getService(IdentifierService.class);
+    protected static final TaxonomyService taxonomyService = LookupService.getService(TaxonomyService.class);
+    protected static final IdentifiedObjectService identifiedObjectService = LookupService.getService(IdentifiedObjectService.class);
+    
+    
 
     /**
      * The instance of
@@ -109,8 +117,8 @@ public abstract class Clause {
      * @param incomingPossibleComponents
      * @return
      */
-    public abstract NativeIdSetBI computePossibleComponents(
-            NativeIdSetBI incomingPossibleComponents) throws IOException, ValidationException, ContradictionException;
+    public abstract NidSet computePossibleComponents(
+            NidSet incomingPossibleComponents);
 
     /**
      * Collect intermediate results for clauses that require iteration over the
@@ -121,8 +129,7 @@ public abstract class Clause {
      *
      * @param conceptVersion
      */
-    public abstract void getQueryMatches(ConceptVersionBI conceptVersion)
-            throws IOException, ContradictionException;
+    public abstract void getQueryMatches(ConceptVersion conceptVersion);
 
     /**
      * Compute final results based on possible components, and any cached query
@@ -130,8 +137,7 @@ public abstract class Clause {
      *
      * @param incomingComponents
      * @return
-     * @throws IOException
      */
-    public abstract NativeIdSetBI computeComponents(
-            NativeIdSetBI incomingComponents) throws IOException, ValidationException, ContradictionException;
+    public abstract NidSet computeComponents(
+            NidSet incomingComponents);
 }

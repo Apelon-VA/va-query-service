@@ -67,23 +67,24 @@ public class TermstoreChanges {
         System.out.println(descChronicle.getVersion(vc));
     }
 
-    public void addRefsetMember() throws IOException {
-        try {
-            RefexCAB refex = new RefexCAB(RefexType.STR, Snomed.MILD.getLenient().getNid(), Snomed.SEVERITY_REFSET.getLenient().getNid(), IdDirective.GENERATE_HASH, RefexDirective.INCLUDE);
-            refex.put(ComponentProperty.STRING_EXTENSION_1, "Mild severity");
-            int authorNid = TermAux.USER.getLenient().getConceptNid();
-            int editPathNid = TermAux.WB_AUX_PATH.getLenient().getConceptNid();
-            EditCoordinate ec = new EditCoordinate(authorNid, Snomed.CORE_MODULE.getLenient().getNid(), editPathNid);
-            TerminologyBuilderBI tb = PersistentStore.get().getTerminologyBuilder(ec, ViewCoordinates.getDevelopmentInferredLatestActiveOnly());
-            RefexChronicleBI rc = tb.construct(refex);
-            PersistentStore.get().addUncommitted(Snomed.SEVERITY_REFSET.getLenient());
-            PersistentStore.get().commit();
-
-        } catch (InvalidCAB | ContradictionException ex) {
-            Logger.getLogger(QueryTest.class
-                    .getName()).log(Level.SEVERE, null, ex);
-        }
-    }
+    // TODO replace with test for sememes. 
+//    public void addRefsetMember() throws IOException {
+//        try {
+//            RefexCAB refex = new RefexCAB(RefexType.STR, Snomed.MILD.getLenient().getNid(), Snomed.SEVERITY_REFSET.getLenient().getNid(), IdDirective.GENERATE_HASH, RefexDirective.INCLUDE);
+//            refex.put(ComponentProperty.STRING_EXTENSION_1, "Mild severity");
+//            int authorNid = TermAux.USER.getLenient().getConceptNid();
+//            int editPathNid = TermAux.WB_AUX_PATH.getLenient().getConceptNid();
+//            EditCoordinate ec = new EditCoordinate(authorNid, Snomed.CORE_MODULE.getLenient().getNid(), editPathNid);
+//            TerminologyBuilderBI tb = PersistentStore.get().getTerminologyBuilder(ec, ViewCoordinates.getDevelopmentInferredLatestActiveOnly());
+//            RefexChronicleBI rc = tb.construct(refex);
+//            PersistentStore.get().addUncommitted(Snomed.SEVERITY_REFSET.getLenient());
+//            PersistentStore.get().commit();
+//
+//        } catch (InvalidCAB | ContradictionException ex) {
+//            Logger.getLogger(QueryTest.class
+//                    .getName()).log(Level.SEVERE, null, ex);
+//        }
+//    }
 
     public void modifyDesc(String text, int nid) {
         try {

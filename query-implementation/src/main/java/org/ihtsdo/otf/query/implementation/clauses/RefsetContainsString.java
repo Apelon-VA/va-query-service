@@ -19,7 +19,8 @@ package org.ihtsdo.otf.query.implementation.clauses;
  *
  * @author dylangrald
  */
-import java.io.IOException;
+import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.EnumSet;
 import org.ihtsdo.otf.query.implementation.ClauseComputeType;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
@@ -27,7 +28,6 @@ import org.ihtsdo.otf.query.implementation.LeafClause;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.WhereClause;
 import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
-import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import static org.ihtsdo.otf.tcc.api.refex.RefexType.CID_CID_CID_STRING;
@@ -37,7 +37,6 @@ import static org.ihtsdo.otf.tcc.api.refex.RefexType.STR;
 import org.ihtsdo.otf.tcc.api.refex.RefexVersionBI;
 import org.ihtsdo.otf.tcc.api.refex.type_string.RefexStringVersionBI;
 import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
-import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -80,35 +79,37 @@ public class RefsetContainsString extends LeafClause {
     }
 
     @Override
-    public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleComponents) throws IOException, ValidationException, ContradictionException {
+    public NidSet computePossibleComponents(NidSet incomingPossibleComponents) {
 
-        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
-        ConceptSpec refsetSpec = (ConceptSpec) this.enclosingQuery.getLetDeclarations().get(refsetSpecKey);
-
-        int refsetNid = refsetSpec.getNid();
-        ConceptVersionBI conceptVersion = Ts.get().getConceptVersion(viewCoordinate, refsetNid);
-
-        for (RefexVersionBI<?> rm : conceptVersion.getCurrentRefsetMembers(viewCoordinate)) {
-            switch (rm.getRefexType()) {
-                case CID_STR:
-                case CID_CID_CID_STRING:
-                case CID_CID_STR:
-                case STR:
-                    RefexStringVersionBI rsv = (RefexStringVersionBI) rm;
-                    if (rsv.getString1().toLowerCase().contains(queryText.toLowerCase())) {
-                        getResultsCache().add(refsetNid);
-                    }
-                default:
-                //do nothing
-
-            }
-        }
-
-        return getResultsCache();
+        throw new UnsupportedOperationException();
+        //TODO FIX BACK UP
+//        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+//        ConceptSpec refsetSpec = (ConceptSpec) this.enclosingQuery.getLetDeclarations().get(refsetSpecKey);
+//
+//        int refsetNid = refsetSpec.getNid();
+//        ConceptVersionBI conceptVersion = Ts.get().getConceptVersion(viewCoordinate, refsetNid);
+//
+//        for (RefexVersionBI<?> rm : conceptVersion.getCurrentRefsetMembers(viewCoordinate)) {
+//            switch (rm.getRefexType()) {
+//                case CID_STR:
+//                case CID_CID_CID_STRING:
+//                case CID_CID_STR:
+//                case STR:
+//                    RefexStringVersionBI rsv = (RefexStringVersionBI) rm;
+//                    if (rsv.getString1().toLowerCase().contains(queryText.toLowerCase())) {
+//                        getResultsCache().add(refsetNid);
+//                    }
+//                default:
+//                //do nothing
+//
+//            }
+//        }
+//
+//        return getResultsCache();
     }
 
     @Override
-    public void getQueryMatches(ConceptVersionBI conceptVersion) throws IOException, ContradictionException {
+    public void getQueryMatches(ConceptVersion conceptVersion) {
 
     }
 
