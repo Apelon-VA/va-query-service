@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -37,14 +38,16 @@ import org.ihtsdo.otf.tcc.api.lang.LanguageCode;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.metadata.binding.SnomedMetadataRf2;
 import org.ihtsdo.otf.tcc.api.metadata.binding.TermAux;
-import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import gov.vha.isaac.ochre.api.index.IndexedGenerationCallable;
-import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
 import gov.vha.isaac.ochre.api.index.SearchResult;
 
 import static org.testng.Assert.*;
-import org.testng.annotations.*;
+import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
+import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 /**
  * Class that handles integration tests for <code>Lucene</code> index
@@ -140,10 +143,10 @@ public class LuceneTest {
 
         for (SearchResult r : results) {
             if (r.nid == newDesc.getNid()) {
-                DescriptionVersionBI description
-                        = (DescriptionVersionBI) PersistentStore.get().getComponentVersion(PersistentStore.get().getMetadataVC(), r.nid);
+                Optional<DescriptionVersionBI> description
+                        = (Optional<DescriptionVersionBI>) PersistentStore.get().getComponentVersion(PersistentStore.get().getMetadataVC(), r.nid);
 
-                if (description.getText().equals(testDescription)) {
+                if (description.isPresent() && description.get().getText().equals(testDescription)) {
                     found = true;
 
                     break;

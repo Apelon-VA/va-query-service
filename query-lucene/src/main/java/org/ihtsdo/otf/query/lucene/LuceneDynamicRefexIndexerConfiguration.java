@@ -25,8 +25,12 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.inject.Singleton;
 import org.ihtsdo.otf.tcc.api.blueprint.IdDirective;
 import org.ihtsdo.otf.tcc.api.blueprint.InvalidCAB;
 import org.ihtsdo.otf.tcc.api.blueprint.RefexDirective;
@@ -59,6 +63,7 @@ import org.jvnet.hk2.annotations.Service;
  * @author <a href="mailto:daniel.armbrust.list@gmail.com">Dan Armbrust</a>
  */
 @Service
+@Singleton
 public class LuceneDynamicRefexIndexerConfiguration
 {
 	private static final Logger logger = Logger.getLogger(LuceneDynamicRefexIndexer.class.getName());
@@ -66,7 +71,7 @@ public class LuceneDynamicRefexIndexerConfiguration
 	//store assemblage nids that should be indexed - and then - for COLUMN_DATA keys, keep the 0 indexed column order numbers that need to be indexed.
 	private HashMap<Integer, Integer[]> whatToIndex_ = new HashMap<>();
 
-	private volatile boolean readNeeded_ = true;
+	private volatile AtomicInteger readNeeded_ = new AtomicInteger(1);  //0 means no readNeeded, anything greater than 0 means it does need a re-read
 
 	protected boolean needsIndexing(int assemblageNid)
 	{
@@ -82,53 +87,72 @@ public class LuceneDynamicRefexIndexerConfiguration
 
 	private void initCheck()
 	{
-		if (readNeeded_)
+		if (readNeeded_.get() > 0)
 		{
-			logger.fine("Reading Dynamic Refex Index Configuration");
-			try
+			//During bulk index, prevent all threads from doing this at the same time...
+			synchronized (readNeeded_)
 			{
-				HashMap<Integer, Integer[]> updatedWhatToIndex = new HashMap<>();
-
-				ConceptVersionBI c = Ts.get().getConceptVersion(ViewCoordinates.getMetadataViewCoordinate(), RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getUuids()[0]);
-
-				for (RefexDynamicChronicleBI<?> r : c.getRefsetDynamicMembers())
+				if (readNeeded_.get() > 0)
 				{
-					RefexDynamicVersionBI<?> rdv = r.getVersion(ViewCoordinates.getMetadataViewCoordinate());
-					if (rdv == null || !rdv.isActive() || rdv.getAssemblageNid() != RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid())
+					logger.fine("Reading Dynamic Refex Index Configuration");
+					try
 					{
-						continue;
-					}
-					int assemblageToIndex = rdv.getReferencedComponentNid();
-					Integer[] finalCols = new Integer[] {};
-					RefexDynamicDataBI[] data = rdv.getData();
-					if (data != null && data.length > 0)
-					{
-						String colsToIndex = ((RefexDynamicStringBI) data[0]).getDataString();
-						String[] split = colsToIndex.split(",");
-						finalCols = new Integer[split.length];
-						for (int i = 0; i < split.length; i++)
+						HashMap<Integer, Integer[]> updatedWhatToIndex = new HashMap<>();
+		
+						ConceptVersionBI c = Ts.get().getConceptVersion(ViewCoordinates.getMetadataViewCoordinate(), RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getUuids()[0]);
+		
+						for (RefexDynamicChronicleBI<?> r : c.getRefsetDynamicMembers())
 						{
-							finalCols[i] = Integer.parseInt(split[i]);
+							Optional<? extends RefexDynamicVersionBI<?>> rdv = r.getVersion(ViewCoordinates.getMetadataViewCoordinate());
+							if (!rdv.isPresent() || !rdv.get().isActive() || rdv.get().getAssemblageNid() != RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid())
+							{
+								continue;
+							}
+							int assemblageToIndex = rdv.get().getReferencedComponentNid();
+							Integer[] finalCols = new Integer[] {};
+							RefexDynamicDataBI[] data = rdv.get().getData();
+							if (data != null && data.length > 0)
+							{
+								String colsToIndex = ((RefexDynamicStringBI) data[0]).getDataString();
+								String[] split = colsToIndex.split(",");
+								finalCols = new Integer[split.length];
+								for (int i = 0; i < split.length; i++)
+								{
+									finalCols[i] = Integer.parseInt(split[i]);
+								}
+							}
+							else
+							{
+								//make sure it is an annotation style if the col list is empty
+								if (!RefexDynamicUsageDescription.read(assemblageToIndex).isAnnotationStyle())
+								{
+									
+									RefexDynamicUsageDescription rdud = RefexDynamicUsageDescription.read(assemblageToIndex);
+									finalCols = new Integer[rdud.getColumnInfo().length];
+									for (int i = 0; i < rdud.getColumnInfo().length; i++)
+									{
+										finalCols[i] = i;
+									}
+									
+									if (finalCols.length > 0)
+									{
+										logger.warning("Dynamic Refex Indexer was configured to index a member style refex  - " + 
+											rdud.getRefexName() + ", but no columns were specified.  Indexing ALL columns - " + rdud.getColumnInfo().length);
+									}
+									continue;
+								}
+							}
+							updatedWhatToIndex.put(assemblageToIndex, finalCols);
 						}
+		
+						whatToIndex_ = updatedWhatToIndex;
+						readNeeded_.decrementAndGet();
 					}
-					else
+					catch (Exception e)
 					{
-						//make sure it is an annotation style if the col list is empty
-						if (!RefexDynamicUsageDescription.read(assemblageToIndex).isAnnotationStyle())
-						{
-							logger.warning("Dynamic Refex Indexer was configured to index a member style refex, but no columns were specified.  Skipping.");
-							continue;
-						}
+						logger.log(Level.SEVERE, "Unexpected error reading Dynamic Refex Index Configuration - generated index will be incomplete!", e);
 					}
-					updatedWhatToIndex.put(assemblageToIndex, finalCols);
 				}
-
-				whatToIndex_ = updatedWhatToIndex;
-				readNeeded_ = false;
-			}
-			catch (Exception e)
-			{
-				logger.log(Level.SEVERE, "Unexpected error reading Dynamic Refex Index Configuration - generated index will be incomplete!", e);
 			}
 		}
 	}
@@ -150,10 +174,13 @@ public class LuceneDynamicRefexIndexerConfiguration
 	 * @throws IOException
 	 * @throws InvalidCAB
 	 * @throws ContradictionException
+	 * @throws ExecutionException 
+	 * @throws InterruptedException 
 	 */
-	public static void configureColumnsToIndex(int assemblageNid, Integer[] columnsToIndex, boolean skipReindex) throws ContradictionException, InvalidCAB, IOException
+	public static void configureColumnsToIndex(int assemblageNid, Integer[] columnsToIndex, boolean skipReindex) throws ContradictionException, InvalidCAB, 
+		IOException, InterruptedException, ExecutionException
 	{
-		Hk2Looker.get().getService(LuceneDynamicRefexIndexerConfiguration.class).readNeeded_ = true;
+		Hk2Looker.get().getService(LuceneDynamicRefexIndexerConfiguration.class).readNeeded_.incrementAndGet();
 		List<IndexStatusListenerBI> islList = Hk2Looker.get().getAllServices(IndexStatusListenerBI.class);
 		for (IndexStatusListenerBI isl : islList)
 		{
@@ -216,16 +243,16 @@ public class LuceneDynamicRefexIndexerConfiguration
 		
 		Ts.get().getTerminologyBuilder(new EditCoordinate(IsaacMetadataAuxiliaryBinding.USER.getLenient().getConceptNid(), 
 				IsaacMetadataAuxiliaryBinding.ISAAC_MODULE.getLenient().getNid(), 
-				IsaacMetadataAuxiliaryBinding.MASTER.getLenient().getConceptNid()),
+				IsaacMetadataAuxiliaryBinding.DEVELOPMENT.getLenient().getConceptNid()),
 				ViewCoordinates.getMetadataViewCoordinate()).construct(rdb);
 		
 		Ts.get().addUncommitted(assemblageConceptC);
 		Ts.get().addUncommitted(referencedAssemblageConceptC);
 		Ts.get().commit(/* assemblageConceptC */);
-		Ts.get().commit(/* referencedAssemblageConceptC */);
+		//Ts.get().commit(/* referencedAssemblageConceptC */);
 		if (!skipReindex)
 		{
-			Ts.get().index(new Class[] {LuceneDynamicRefexIndexer.class});
+			Ts.get().index(new Class[] {LuceneDynamicRefexIndexer.class}).get();
 		}
 	}
 	
@@ -250,11 +277,11 @@ public class LuceneDynamicRefexIndexerConfiguration
 		{
 			if (r.getAssemblageNid() == RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid() && r.getReferencedComponentNid() == assemblageNid)
 			{
-				RefexDynamicVersionBI<?> rdv = r.getVersion(ViewCoordinates.getMetadataViewCoordinate());
+				Optional<? extends RefexDynamicVersionBI<?>> rdv = r.getVersion(ViewCoordinates.getMetadataViewCoordinate());
 				
-				if (rdv != null && rdv.getAssemblageNid() == RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid() && rdv.getReferencedComponentNid() == assemblageNid)
+				if (rdv.isPresent() && rdv.get().getAssemblageNid() == RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid() && rdv.get().getReferencedComponentNid() == assemblageNid)
 				{
-					return rdv;
+					return rdv.get();
 				}
 			}
 		}
@@ -264,10 +291,14 @@ public class LuceneDynamicRefexIndexerConfiguration
 	/**
 	 * Disable all indexing of the specified refex.  To change the index config, use the {@link #configureColumnsToIndex(int, Integer[]) method.
 	 * 
+	 * Note that this causes a full DB reindex, on this thread.
+	 * 
 	 * @throws IOException 	 
 	 * @throws ContradictionException 
-	 * @throws InvalidCAB */
-	public static void disableIndex(int assemblageNid) throws IOException, InvalidCAB, ContradictionException
+	 * @throws InvalidCAB 
+	 * @throws ExecutionException 
+	 * @throws InterruptedException */
+	public static void disableIndex(int assemblageNid) throws IOException, InvalidCAB, ContradictionException, InterruptedException, ExecutionException
 	{
 		logger.info("Disabling index for dynamic refex assemblage concept '" + assemblageNid + "'");
 		
@@ -275,7 +306,7 @@ public class LuceneDynamicRefexIndexerConfiguration
 		
 		if (rdv != null && rdv.isActive())
 		{
-			Hk2Looker.get().getService(LuceneDynamicRefexIndexerConfiguration.class).readNeeded_ = true;
+			Hk2Looker.get().getService(LuceneDynamicRefexIndexerConfiguration.class).readNeeded_.incrementAndGet();
 			List<IndexStatusListenerBI> islList = Hk2Looker.get().getAllServices(IndexStatusListenerBI.class);
 			for (IndexStatusListenerBI isl : islList)
 			{
@@ -289,14 +320,14 @@ public class LuceneDynamicRefexIndexerConfiguration
 			
 			Ts.get().getTerminologyBuilder(new EditCoordinate(IsaacMetadataAuxiliaryBinding.USER.getLenient().getConceptNid(), 
 					IsaacMetadataAuxiliaryBinding.ISAAC_MODULE.getLenient().getNid(), 
-					IsaacMetadataAuxiliaryBinding.MASTER.getLenient().getConceptNid()),
+					IsaacMetadataAuxiliaryBinding.DEVELOPMENT.getLenient().getConceptNid()),
 					ViewCoordinates.getMetadataViewCoordinate()).construct(rb);
 
 			Ts.get().addUncommitted(indexConfigConceptC);
 			Ts.get().addUncommitted(referencedAssemblageConceptC);
 			Ts.get().commit(/* indexConfigConceptC */);
-			Ts.get().commit(/* referencedAssemblageConceptC */);
-			Ts.get().index(new Class[] {LuceneDynamicRefexIndexer.class});
+			//Ts.get().commit(/* referencedAssemblageConceptC */);
+			Ts.get().index(new Class[] {LuceneDynamicRefexIndexer.class}).get();
 			return;
 		}
 		logger.info("No index configuration was found to disable for dynamic refex assemblage concept '" + assemblageNid + "'");

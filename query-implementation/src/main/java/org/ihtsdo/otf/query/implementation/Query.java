@@ -40,13 +40,9 @@ import org.ihtsdo.otf.tcc.ddo.concept.component.description.DescriptionVersionDd
 import org.ihtsdo.otf.tcc.ddo.fetchpolicy.RefexPolicy;
 import org.ihtsdo.otf.tcc.ddo.fetchpolicy.RelationshipPolicy;
 import org.ihtsdo.otf.tcc.ddo.fetchpolicy.VersionPolicy;
-
 import javax.xml.bind.annotation.*;
 import java.io.IOException;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetItrBI;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 
 /**
@@ -306,14 +302,14 @@ public abstract class Query {
                 case DESCRIPTION_VERSION_FSN:
                     resultSet.stream().forEach((nid) -> {
           try {
-              ComponentVersionBI cv = Ts.get().getComponent(nid).getVersion(vc);
+              Optional<?> cv = Ts.get().getComponent(nid).getVersion(vc);
               if (cv != null) {
                   DescriptionChronicleBI desc = Ts.get().getConceptVersion(vc, nid).getFullySpecifiedDescription();
                   ConceptChronicleDdo cc = new ConceptChronicleDdo(Ts.get().getSnapshot(vc), Ts.get().getConcept(nid), VersionPolicy.ACTIVE_VERSIONS,
                           RefexPolicy.REFEX_MEMBERS_AND_REFSET_MEMBERS, RelationshipPolicy.DESTINATION_RELATIONSHIPS);
                   DescriptionChronicleDdo descChronicle = new DescriptionChronicleDdo(Ts.get().getSnapshot(vc), cc, desc);
-                  DescriptionVersionBI descVersionBI = desc.getVersion(vc);
-                  DescriptionVersionDdo descVersion = new DescriptionVersionDdo(descChronicle, Ts.get().getSnapshot(vc), descVersionBI);
+                  Optional<? extends DescriptionVersionBI> descVersionBI = desc.getVersion(vc);
+                  DescriptionVersionDdo descVersion = new DescriptionVersionDdo(descChronicle, Ts.get().getSnapshot(vc), descVersionBI.get());
                   results.add(descVersion);
               }
           } catch (IOException | ContradictionException ex) {
@@ -325,17 +321,17 @@ public abstract class Query {
                 case DESCRIPTION_VERSION_PREFERRED:
                     resultSet.stream().forEach((componentNid) -> {
           try {
-              ComponentVersionBI cv = Ts.get().getComponent(componentNid).getVersion(vc);
-              if (cv != null) {
-                  if (!(cv instanceof ConceptVersionBI)) {
+              Optional<?> cv = Ts.get().getComponent(componentNid).getVersion(vc);
+              if (cv.isPresent()) {
+                  if (!(cv.get() instanceof ConceptVersionBI)) {
                       componentNid = Ts.get().getComponent(componentNid).getEnclosingConceptNid();
                   }
                   DescriptionChronicleBI desc = Ts.get().getConceptVersion(vc, componentNid).getPreferredDescription();
                   ConceptChronicleDdo cc = new ConceptChronicleDdo(Ts.get().getSnapshot(vc), Ts.get().getConcept(componentNid), VersionPolicy.ACTIVE_VERSIONS,
                           RefexPolicy.REFEX_MEMBERS_AND_REFSET_MEMBERS, RelationshipPolicy.DESTINATION_RELATIONSHIPS);
                   DescriptionChronicleDdo descChronicle = new DescriptionChronicleDdo(Ts.get().getSnapshot(vc), cc, desc);
-                  DescriptionVersionBI descVersionBI = desc.getVersion(vc);
-                  DescriptionVersionDdo descVersion = new DescriptionVersionDdo(descChronicle, Ts.get().getSnapshot(vc), descVersionBI);
+                  Optional<? extends DescriptionVersionBI> descVersionBI = desc.getVersion(vc);
+                  DescriptionVersionDdo descVersion = new DescriptionVersionDdo(descChronicle, Ts.get().getSnapshot(vc), descVersionBI.get());
                   results.add(descVersion);
               }
           } catch (IOException | ContradictionException ex) {
@@ -344,26 +340,26 @@ public abstract class Query {
                     });
                     break;
                 case DESCRIPTION_FOR_COMPONENT:
-                    resultSet.stream().forEach((nid) -> {
+                    resultSet.stream().forEach((int nid) -> {
           try {
               ComponentChronicleBI component = Ts.get().getComponent(nid);
               if (component == null) {
                   System.out.println("No component for nid: " + nid);
               }
               if (component != null) {
-                  ComponentVersionBI cv = Ts.get().getComponent(nid).getVersion(vc);
-                  if (cv != null) {
+                  Optional<?> cv = Ts.get().getComponent(nid).getVersion(vc);
+                  if (cv.isPresent()) {
                       DescriptionChronicleBI desc = null;
                       ConceptChronicleDdo cc = null;
-                      DescriptionVersionBI descVersionBI = null;
-                      if (cv instanceof ConceptVersionBI) {
+                      DescriptionVersionBI  descVersionBI = null;
+                      if (cv.get() instanceof ConceptVersionBI) {
                           desc = Ts.get().getConceptVersion(vc, nid).getFullySpecifiedDescription();
-                          descVersionBI = desc.getVersion(vc);
+                          descVersionBI = desc.getVersion(vc).get();
                           cc = new ConceptChronicleDdo(Ts.get().getSnapshot(vc), Ts.get().getConcept(nid), VersionPolicy.ACTIVE_VERSIONS,
                                   RefexPolicy.REFEX_MEMBERS_AND_REFSET_MEMBERS, RelationshipPolicy.DESTINATION_RELATIONSHIPS);
-                      } else if (cv instanceof DescriptionVersionBI) {
+                      } else if (cv.get() instanceof DescriptionVersionBI) {
                           desc = (DescriptionChronicleBI) Ts.get().getComponent(nid);
-                          descVersionBI = (DescriptionVersionBI) cv;
+                          descVersionBI = (DescriptionVersionBI) cv.get();
                           cc = new ConceptChronicleDdo(Ts.get().getSnapshot(vc), Ts.get().getConcept(nid), VersionPolicy.ACTIVE_VERSIONS,
                                   RefexPolicy.REFEX_MEMBERS_AND_REFSET_MEMBERS, RelationshipPolicy.DESTINATION_RELATIONSHIPS);
                       } else {

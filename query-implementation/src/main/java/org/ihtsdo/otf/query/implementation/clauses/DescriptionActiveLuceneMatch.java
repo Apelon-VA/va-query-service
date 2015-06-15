@@ -15,7 +15,6 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
-import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
 import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.collections.NidSet;

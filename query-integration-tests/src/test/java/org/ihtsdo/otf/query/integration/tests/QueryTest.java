@@ -21,6 +21,7 @@ import gov.vha.isaac.ochre.collections.NidSet;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -39,7 +40,6 @@ import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.tcc.api.relationship.RelationshipVersionBI;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
-
 import static org.testng.Assert.*;
 import org.testng.annotations.*;
 
@@ -276,7 +276,7 @@ public class QueryTest {
         results.stream().forEach((nid) -> {
             try {
                 ConceptChronicleBI concept = PersistentStore.get().getConcept(nid);
-                relResults.add(concept.getVersion(VC_LATEST_ACTIVE_ONLY));
+                relResults.add(concept.getVersion(VC_LATEST_ACTIVE_ONLY).get());
             } catch (IOException | ContradictionException ex) {
                 throw new RuntimeException(ex);
             }
@@ -613,8 +613,8 @@ public class QueryTest {
         NidSet results2 = test.computeQuery();
         assertEquals(results2.size(), results1.size() - 1);
         for (DescriptionChronicleBI desc : PersistentStore.get().getConceptVersion(VC_LATEST_ACTIVE_AND_INACTIVE, Snomed.BARANYS_SIGN.getNid()).getDescriptions()) {
-            DescriptionVersionBI descVersion = desc.getVersion(VC_LATEST_ACTIVE_AND_INACTIVE);
-            tc.setActiveStatus(descVersion, Status.ACTIVE);
+            Optional<? extends DescriptionVersionBI> descVersion = desc.getVersion(VC_LATEST_ACTIVE_AND_INACTIVE);
+            tc.setActiveStatus(descVersion.get(), Status.ACTIVE);
         }
     }
 
@@ -661,8 +661,8 @@ public class QueryTest {
             fail("DescriptionActiveRegexMatchTest failed and threw: " + ex.toString());
         } finally {
             for (DescriptionChronicleBI desc : PersistentStore.get().getConceptVersion(VC_LATEST_ACTIVE_AND_INACTIVE, Snomed.ACCELERATION.getNid()).getDescriptions()) {
-                DescriptionVersionBI descVersion = desc.getVersion(VC_LATEST_ACTIVE_AND_INACTIVE);
-                tc.setActiveStatus(descVersion, Status.ACTIVE);
+                Optional<? extends DescriptionVersionBI> descVersion = desc.getVersion(VC_LATEST_ACTIVE_AND_INACTIVE);
+                tc.setActiveStatus(descVersion.get(), Status.ACTIVE);
             }
         }
     }

@@ -4,14 +4,12 @@ import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
-import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.util.WorkExecutors;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.IntField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
@@ -28,10 +26,9 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.SimpleFSDirectory;
+import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.Version;
 import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
-import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.ihtsdo.otf.tcc.api.thread.NamedThreadFactory;
 import org.ihtsdo.otf.tcc.model.cc.termstore.TermstoreLogger;
 import gov.vha.isaac.ochre.api.index.IndexedGenerationCallable;
@@ -119,8 +116,11 @@ public abstract class LuceneIndexer implements IndexerBI {
             indexFolder_ = new File(luceneRootFolder_.get(), indexName);
             indexFolder_.mkdirs();
 
-            logger.log(Level.INFO, "Index: {0}", indexFolder_.getAbsolutePath());
-            Directory indexDirectory = new SimpleFSDirectory(indexFolder_); 
+            logger.info("Index: " + indexFolder_.getAbsolutePath());
+            Directory indexDirectory = new MMapDirectory(indexFolder_); //switch over to MMapDirectory - in theory - this gives us back some 
+            //room on the JDK stack, letting the OS directly manage the caching of the index files - and more importantly, gives us a huge 
+            //performance boost during any operation that tries to do multi-threaded reads of the index (like the SOLOR rules processing) because
+            //the default value of SimpleFSDirectory is a huge bottleneck.
 
             indexDirectory.clearLock("write.lock");
 
@@ -279,6 +279,7 @@ public abstract class LuceneIndexer implements IndexerBI {
     public void forceMerge() {
         try {
             trackingIndexWriter.getIndexWriter().forceMerge(1);
+            searcherManager.maybeRefreshBlocking();
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -304,6 +305,7 @@ public abstract class LuceneIndexer implements IndexerBI {
     public final void commitWriter() {
         try {
             trackingIndexWriter.getIndexWriter().commit();
+            searcherManager.maybeRefreshBlocking();
         } catch (IOException ex) {
             Logger.getLogger(LuceneRefexIndexer.class.getName()).log(Level.SEVERE, null, ex);
         }
