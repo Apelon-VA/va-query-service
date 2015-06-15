@@ -5,7 +5,7 @@
  */
 package gov.vha.isaac.cradle.taxonomy.walk;
 
-import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 
 /**
  *
@@ -17,12 +17,7 @@ public class TaxonomyWalkAccumulator {
     public int maxConnections = 0;
     public int minConnections = 0;
     public int parentConnections = 0;
-    public int statedParentConnections = 0;
-    public int inferredParentConnections = 0;
-    public double maxDepthSum = 0;
-    public double maxDepth = 0;
-    public ConceptChronicle maxDepthConcept;
-    ConceptChronicle watchConcept = null;
+    ConceptChronology watchConcept = null;
 
     void combine(TaxonomyWalkAccumulator u) {
         this.conceptsProcessed += u.conceptsProcessed;
@@ -32,14 +27,6 @@ public class TaxonomyWalkAccumulator {
         this.minConnections = Math.max(this.minConnections, u.minConnections);
 
         this.parentConnections += u.parentConnections;
-        this.statedParentConnections += u.statedParentConnections;
-        this.inferredParentConnections += u.inferredParentConnections;
-        this.maxDepthSum += u.maxDepthSum;
-        if (u.maxDepth > this.maxDepth) {
-            maxDepthConcept = u.maxDepthConcept;
-        }
-        this.maxDepth = Math.max(this.maxDepth, u.maxDepth);
-
     }
 
     @Override
@@ -50,11 +37,6 @@ public class TaxonomyWalkAccumulator {
                 ", maxConnections=" + maxConnections + 
                 ", minConnections=" + minConnections + 
                 ", parentConnections=" + parentConnections + 
-                ", statedParentConnections=" + statedParentConnections + 
-                ", inferredParentConnections=" + inferredParentConnections + 
-                ", maxDepth=" + maxDepth + 
-                //" on concept:\n\n" +  maxDepthConcept.toLongString() +
-                ", average depth=" + (maxDepthSum/conceptsProcessed) +
                 '}';
     }
 }

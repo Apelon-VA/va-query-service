@@ -18,6 +18,7 @@
  */
 package gov.vha.isaac.cradle;
 
+import gov.vha.isaac.ochre.api.ConceptModel;
 import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.constants.Constants;
@@ -47,6 +48,7 @@ public class DefaultConfigurationService implements ConfigurationService
 {
 	private Path dataStoreFolderPath_ = null;
 	private volatile boolean initComplete_ = false;
+        private ConceptModel conceptModel = ConceptModel.OCHRE_CONCEPT_MODEL;
 
 	private DefaultConfigurationService()
 	{
@@ -122,4 +124,16 @@ public class DefaultConfigurationService implements ConfigurationService
 
 		dataStoreFolderPath_ = dataStoreFolderPath;
 	}
+
+    @Override
+    public ConceptModel getConceptModel() {
+        return conceptModel;
+    }
+
+    @Override
+    public void setConceptModel(ConceptModel conceptModel) {
+        this.conceptModel = conceptModel;
+    }
+        
+        
 }

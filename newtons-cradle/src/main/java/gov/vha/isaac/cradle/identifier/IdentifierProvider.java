@@ -25,22 +25,16 @@ import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.chronicle.IdentifiedObjectLocal;
+import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronologyType;
+import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeService;
-import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
-import gov.vha.isaac.ochre.collections.NidSet;
-import gov.vha.isaac.ochre.collections.RefexSequenceSet;
-import gov.vha.isaac.ochre.collections.SememeSequenceSet;
+import gov.vha.isaac.ochre.collections.*;
+
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.IntStream;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -48,6 +42,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.runlevel.RunLevel;
 import org.jvnet.hk2.annotations.Service;
+import java.util.Map.Entry;
 
 /**
  *
@@ -81,7 +76,7 @@ public class IdentifierProvider implements IdentifierService {
     final SequenceMap sememeSequenceMap = new SequenceMap(3000000);
     final SequenceMap refexSequenceMap = new SequenceMap(3000000);
     final ConcurrentSequenceIntMap nidCnidMap = new ConcurrentSequenceIntMap();
-    
+
     private IdentifierProvider() {
         //for HK2
         log.info("IdentifierProvider constructed");
@@ -104,8 +99,7 @@ public class IdentifierProvider implements IdentifierService {
                 log.info("Loading sequence-cnid-map.");
                 nidCnidMap.read(new File(Cradle.getCradlePath().toFile(), "sequence-cnid-map"));
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Identifier Provider", e);
             throw e;
         }
@@ -135,7 +129,10 @@ public class IdentifierProvider implements IdentifierService {
         if (conceptSequenceMap.containsNid(nid)) {
             return ObjectChronologyType.CONCEPT;
         }
-        return ObjectChronologyType.DESCRIPTION;
+        if (refexSequenceMap.containsNid(nid)) {
+            return ObjectChronologyType.REFEX;
+        }
+        return ObjectChronologyType.OTHER;
     }
 
     @Override
@@ -191,28 +188,35 @@ public class IdentifierProvider implements IdentifierService {
     }
 
     @Override
-    public ConceptSequenceSet getConceptSequencesForNids(int[] conceptNidArray) {
+    public ConceptSequenceSet getConceptSequencesForConceptNids(int[] conceptNidArray) {
         ConceptSequenceSet sequences = new ConceptSequenceSet();
         IntStream.of(conceptNidArray).forEach((nid) -> sequences.add(conceptSequenceMap.getSequenceFast(nid)));
         return sequences;
     }
 
     @Override
-    public SememeSequenceSet getSememeSequencesForNids(int[] sememeNidArray) {
+    public ConceptSequenceSet getConceptSequencesForConceptNids(NidSet conceptNidSet) {
+        ConceptSequenceSet sequences = new ConceptSequenceSet();
+        conceptNidSet.stream().forEach((nid) -> sequences.add(conceptSequenceMap.getSequenceFast(nid)));
+        return sequences;
+    }
+
+    @Override
+    public SememeSequenceSet getSememeSequencesForSememeNids(int[] sememeNidArray) {
         SememeSequenceSet sequences = new SememeSequenceSet();
         IntStream.of(sememeNidArray).forEach((nid) -> sequences.add(sememeSequenceMap.getSequenceFast(nid)));
         return sequences;
     }
 
     @Override
-    public IntStream getConceptNidsForSequences(IntStream conceptSequences) {
+    public IntStream getConceptNidsForConceptSequences(IntStream conceptSequences) {
         return conceptSequences.map((sequence) -> {
             return getConceptNid(sequence);
         });
     }
 
     @Override
-    public IntStream getSememeNidsForSequences(IntStream sememSequences) {
+    public IntStream getSememeNidsForSememeSequences(IntStream sememSequences) {
         return sememSequences.map((sequence) -> {
             return getSememeNid(sequence);
         });
@@ -272,19 +276,34 @@ public class IdentifierProvider implements IdentifierService {
 //        watchSet.add(UUID.fromString("4459d8cf-5a6f-3952-9458-6d64324b27b7"));
     }
 
+    private static ThreadLocal<LinkedHashMap<UUID, Integer>> threadLocalCache
+            = new ThreadLocal() {
+                @Override
+                protected LruCache<UUID, Integer> initialValue() {
+                    return new LruCache<>(50);
+                }
+            };
+
     @Override
     public int getNidForUuids(UUID... uuids) {
+        LinkedHashMap<UUID, Integer> cacheMap = threadLocalCache.get();
+        Integer cacheNid = cacheMap.get(uuids[0]);
+        if (cacheNid != null) {
+            return cacheNid;
+        }
         for (UUID uuid : uuids) {
-//            if (watchSet.contains(uuid)) {
-//                System.out.println("Found watch: " + Arrays.asList(uuids));
-//                watchSet.remove(uuid);
-//            }
+//          if (watchSet.contains(uuid)) {
+//             System.out.println("Found watch: " + Arrays.asList(uuids));
+//             watchSet.remove(uuid);
+//          }
             int nid = uuidIntMapMap.get(uuid);
             if (nid != Integer.MAX_VALUE) {
+                cacheMap.put(uuids[0], nid);
                 return nid;
             }
         }
         int nid = uuidIntMapMap.getWithGeneration(uuids[0]);
+        cacheMap.put(uuids[0], nid);
         for (int i = 1; i < uuids.length; i++) {
             uuidIntMapMap.put(uuids[i], nid);
         }
@@ -296,8 +315,8 @@ public class IdentifierProvider implements IdentifierService {
         if (nid > 0) {
             nid = getConceptNid(nid);
         }
-        Optional<IdentifiedObjectLocal> optionalObj
-                = getIdentifiedObjectService().getIdentifiedObject(nid);
+        Optional<? extends ObjectChronology<? extends StampedVersion>> optionalObj
+                = getIdentifiedObjectService().getIdentifiedObjectChronology(nid);
         if (optionalObj.isPresent()) {
             return Optional.of(optionalObj.get().getPrimordialUuid());
         }
@@ -324,10 +343,10 @@ public class IdentifierProvider implements IdentifierService {
         if (nid > 0) {
             nid = getConceptNid(nid);
         }
-        Optional<IdentifiedObjectLocal> optionalObj
-                = getIdentifiedObjectService().getIdentifiedObject(nid);
+        Optional<? extends ObjectChronology<? extends StampedVersion>> optionalObj
+                = getIdentifiedObjectService().getIdentifiedObjectChronology(nid);
         if (optionalObj.isPresent()) {
-            return optionalObj.get().getUUIDs();
+            return optionalObj.get().getUuidList();
         }
 
         UUID[] uuids = uuidIntMapMap.getKeysForValue(nid);
@@ -378,23 +397,43 @@ public class IdentifierProvider implements IdentifierService {
         }
         return returnValue.getAsInt();
     }
+
+    @Override
+    public ConceptSequenceSet getConceptSequenceSetForComponentNidSet(NidSet nids) {
+        ConceptSequenceSet result = new ConceptSequenceSet();
+        nids.stream().forEach((nid) -> {
+            if (nid < 0) {
+                nid = nid - Integer.MIN_VALUE;
+            }
+            OptionalInt returnValue = nidCnidMap.get(nid);
+            if (returnValue.isPresent()) {
+                result.add(returnValue.getAsInt());
+            }
+
+        });
+        return result;
+    }
+
     @Override
     public void setConceptSequenceForComponentNid(int conceptSequence, int nid) {
-        if (nid < 0) {
-            nid = nid - Integer.MIN_VALUE;
+
+        int sequence = nid;
+        if (sequence < 0) {
+            sequence = sequence - Integer.MIN_VALUE;
         }
         if (conceptSequence < 0) {
             conceptSequence = conceptSequenceMap.getSequenceFast(conceptSequence);
         }
-        int conceptSequenceForNid = getConceptSequenceForComponentNid(nid);
+        int conceptSequenceForNid = getConceptSequenceForComponentNid(sequence);
         if (conceptSequenceForNid == Integer.MAX_VALUE) {
-            nidCnidMap.put(nid, conceptSequence);
+            nidCnidMap.put(sequence, conceptSequence);
         } else if (conceptSequenceForNid != conceptSequence) {
             throw new IllegalStateException("Cannot change concept sequence for nid: " + nid
                     + " from: " + conceptSequence + " to: " + conceptSequenceForNid);
         }
-        
+
     }
+
     @Override
     public void resetConceptSequenceForComponentNid(int conceptSequence, int nid) {
         if (nid < 0) {
@@ -404,12 +443,12 @@ public class IdentifierProvider implements IdentifierService {
             conceptSequence = conceptSequenceMap.getSequenceFast(conceptSequence);
         }
         nidCnidMap.put(nid, conceptSequence);
-        
+
     }
 
     public ConcurrentSequenceIntMap getNidCnidMap() {
         return nidCnidMap;
-    }   
+    }
 
     @Override
     public int getConceptSequenceForUuids(Collection<UUID> uuids) {
@@ -420,16 +459,16 @@ public class IdentifierProvider implements IdentifierService {
     public int getConceptSequenceForUuids(UUID... uuids) {
         return getConceptSequence(getNidForUuids(uuids));
     }
-    
+
     @Override
     public IntStream getComponentNidStream() {
         return nidCnidMap.getComponentNidStream();
     }
-    
+
     @Override
     public NidSet getComponentNidsForConceptNids(ConceptSequenceSet conceptSequenceSet) {
         return nidCnidMap.getComponentNidsForConceptNids(conceptSequenceSet);
-     }
+    }
 
     @Override
     public int getNidForProxy(ConceptProxy conceptProxy) {
@@ -460,5 +499,5 @@ public class IdentifierProvider implements IdentifierService {
     public int getConceptSequenceForDescriptionNid(int nid) {
         return getConceptSequenceForComponentNid(nid);
     }
-    
+
 }

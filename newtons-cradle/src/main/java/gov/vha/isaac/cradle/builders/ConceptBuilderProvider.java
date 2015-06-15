@@ -17,7 +17,10 @@ package gov.vha.isaac.cradle.builders;
 
 import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
+import gov.vha.isaac.ochre.api.ConceptModel;
 import gov.vha.isaac.ochre.api.ConceptProxy;
+import gov.vha.isaac.ochre.api.ConfigurationService;
+import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilder;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilderService;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
@@ -34,11 +37,29 @@ public class ConceptBuilderProvider implements ConceptBuilderService {
     private ConceptProxy defaultLanguageForDescriptions = IsaacMetadataAuxiliaryBinding.ENGLISH;
     private ConceptProxy defaultDialectAssemblageForDescriptions = IsaacMetadataAuxiliaryBinding.US_ENGLISH_DIALECT;
     private LogicCoordinate defaultLogicCoordinate = LogicCoordinates.getStandardElProfile();
-
+    private static ConceptModel conceptModel;
+    private static ConceptModel getConceptModel() {
+        if (conceptModel == null) {
+            conceptModel = LookupService.getService(ConfigurationService.class).getConceptModel();
+        }
+        return conceptModel;
+    }
     @Override
     public ConceptBuilder getDefaultConceptBuilder(String conceptName, String semanticTag, LogicalExpression logicalExpression) {
-        return new ConceptBuilderImpl(conceptName, semanticTag, logicalExpression, 
-                defaultLanguageForDescriptions, defaultDialectAssemblageForDescriptions, defaultLogicCoordinate);
+        switch (getConceptModel()) {
+            case OCHRE_CONCEPT_MODEL:
+       return new ConceptBuilderOchreImpl(conceptName, semanticTag, logicalExpression, 
+               defaultLanguageForDescriptions, 
+               defaultDialectAssemblageForDescriptions, 
+               defaultLogicCoordinate);
+            case OTF_CONCEPT_MODEL:
+       return new ConceptBuilderOtfImpl(conceptName, semanticTag, logicalExpression, 
+               defaultLanguageForDescriptions, 
+               defaultDialectAssemblageForDescriptions, 
+               defaultLogicCoordinate);
+            default:
+                throw new UnsupportedOperationException("Can't handle: " + conceptModel);
+        }
     }
 
     @Override
@@ -79,12 +100,24 @@ public class ConceptBuilderProvider implements ConceptBuilderService {
             String semanticTag, 
             LogicalExpression logicalExpression, 
             ConceptProxy languageForDescriptions, 
-            ConceptProxy dialectForDescriptions, 
+            ConceptProxy dialectAssemblageForDescriptions, 
             LogicCoordinate logicCoordinate) {
-       return new ConceptBuilderImpl(conceptName, semanticTag, logicalExpression, 
-               defaultLanguageForDescriptions, 
-               defaultDialectAssemblageForDescriptions, 
-               defaultLogicCoordinate);
+        
+        switch (getConceptModel()) {
+            case OCHRE_CONCEPT_MODEL:
+       return new ConceptBuilderOchreImpl(conceptName, semanticTag, logicalExpression, 
+               languageForDescriptions, 
+               dialectAssemblageForDescriptions, 
+               logicCoordinate);
+            case OTF_CONCEPT_MODEL:
+       return new ConceptBuilderOtfImpl(conceptName, semanticTag, logicalExpression, 
+               languageForDescriptions, 
+               dialectAssemblageForDescriptions, 
+               logicCoordinate);
+            default:
+                throw new UnsupportedOperationException("Can't handle: " + conceptModel);
+        }
+        
     }
     
 }

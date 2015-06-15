@@ -6,7 +6,9 @@
 package gov.vha.isaac.cradle.tasks;
 
 import gov.vha.isaac.cradle.CradleExtensions;
+import gov.vha.isaac.ochre.api.ConceptModel;
 import gov.vha.isaac.ochre.api.ConceptProxy;
+import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.util.WorkExecutors;
 import javafx.application.Platform;
@@ -15,7 +17,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
-import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.EOFException;
@@ -61,19 +62,31 @@ public class VerifyLoadEConceptFile
     Path[] paths;
     CradleExtensions termService;
     ConceptProxy stampPath = null;
+    ConceptModel conceptModel;
 
-
-    public VerifyLoadEConceptFile(Path[] paths, CradleExtensions termService) {
+    private VerifyLoadEConceptFile(Path[] paths, CradleExtensions termService) {
         updateTitle("Verify load of concept files");
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         this.paths = paths;
         this.termService = termService;
-        Hk2Looker.get().getService(ActiveTaskSet.class).get().add(this);
+        this.conceptModel = LookupService.getService(ConfigurationService.class).getConceptModel();
     }
 
-    public VerifyLoadEConceptFile(Path[] paths, CradleExtensions termService, ConceptProxy stampPath) {
+    private VerifyLoadEConceptFile(Path[] paths, CradleExtensions termService, ConceptProxy stampPath) {
         this(paths, termService);
         this.stampPath = stampPath;
+    }
+
+    public static VerifyLoadEConceptFile create(Path[] paths, CradleExtensions termService) {
+        VerifyLoadEConceptFile verifyLoad = new VerifyLoadEConceptFile(paths, termService);
+        LookupService.getService(ActiveTaskSet.class).get().add(verifyLoad);
+        return verifyLoad;
+    }
+
+    public static VerifyLoadEConceptFile create(Path[] paths, CradleExtensions termService, ConceptProxy stampPath) {
+        VerifyLoadEConceptFile verifyLoad = new VerifyLoadEConceptFile(paths, termService, stampPath);
+        LookupService.getService(ActiveTaskSet.class).get().add(verifyLoad);
+        return verifyLoad;
     }
 
     @Override
@@ -108,17 +121,25 @@ public class VerifyLoadEConceptFile
 //                            System.out.println("Watch concept: " + eConcept);
 //                        }
                         if (!whiteList.contains(eConcept.getPrimordialUuid())) {
-                            conversionService.submit(new VerifyEConcept(termService, eConcept, stampPath));
+                            switch (conceptModel) {
+                                case OCHRE_CONCEPT_MODEL:
+                                    conversionService.submit(new VerifyEConceptOchreModel(termService, eConcept, stampPath));
+                                    break;
+                                case OTF_CONCEPT_MODEL:
+                                    conversionService.submit(new VerifyEConceptOtfModel(termService, eConcept, stampPath));
+                                    break;
+                                default:
+                                    throw new UnsupportedOperationException("Can't handle: " + conceptModel);
+                            }
                             conceptCount++;
                         }
 
-
                         for (Future<Boolean> future = conversionService.poll(); future != null; future = conversionService.poll()) {
-                                Boolean verified = future.get();
-                                if (!verified) {
-                                    filesVerified = false;
-                                }
-                                completionCount++;
+                            Boolean verified = future.get();
+                            if (!verified) {
+                                filesVerified = false;
+                            }
+                            completionCount++;
                         }
                     }
 
@@ -130,10 +151,10 @@ public class VerifyLoadEConceptFile
                 updateMessage("Verification of file: " + p.toFile().getName() + " complete, cleaning up converters.");
                 while (completionCount < conceptCount) {
                     Future<Boolean> future = conversionService.take();
-                        Boolean verified = future.get();
-                        if (!verified) {
-                            filesVerified = false;
-                        }
+                    Boolean verified = future.get();
+                    if (!verified) {
+                        filesVerified = false;
+                    }
                     completionCount++;
 
                 }
@@ -147,7 +168,7 @@ public class VerifyLoadEConceptFile
             updateProgress(bytesToProcessForLoad, bytesToProcessForLoad);
             return filesVerified;
         } finally {
-            Hk2Looker.get().getService(ActiveTaskSet.class).get().remove(this);
+            LookupService.getService(ActiveTaskSet.class).get().remove(this);
         }
     }
 

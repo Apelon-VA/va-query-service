@@ -17,30 +17,30 @@ package gov.vha.isaac.cradle.sememe;
 
 import gov.vha.isaac.cradle.waitfree.WaitFreeMergeSerializer;
 import gov.vha.isaac.ochre.model.DataBuffer;
-import gov.vha.isaac.ochre.model.sememe.SememeChronicleImpl;
+import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
 
 /**
  *
  * @author kec
  */
-public class SememeSerializer implements WaitFreeMergeSerializer<SememeChronicleImpl<?>>{
+public class SememeSerializer implements WaitFreeMergeSerializer<SememeChronologyImpl<?>>{
 
     @Override
-    public void serialize(DataBuffer d, SememeChronicleImpl<?> a) {
+    public void serialize(DataBuffer d, SememeChronologyImpl<?> a) {
         byte[] data = a.getDataToWrite();
         d.put(data, 0, data.length);
     }
 
     @Override
-    public SememeChronicleImpl<?> merge(SememeChronicleImpl<?> a, SememeChronicleImpl<?> b, int writeSequence) {
+    public SememeChronologyImpl<?> merge(SememeChronologyImpl<?> a, SememeChronologyImpl<?> b, int writeSequence) {
         byte[] dataBytes = a.mergeData(writeSequence, b.getDataToWrite(writeSequence));
         DataBuffer db = new DataBuffer(dataBytes);
-        return new SememeChronicleImpl<>(db);
+        return new SememeChronologyImpl<>(db);
     }
 
     @Override
-    public SememeChronicleImpl<?> deserialize(DataBuffer db) {
-       return new SememeChronicleImpl(db);
+    public SememeChronologyImpl<?> deserialize(DataBuffer db) {
+       return new SememeChronologyImpl(db);
     }
     
 }

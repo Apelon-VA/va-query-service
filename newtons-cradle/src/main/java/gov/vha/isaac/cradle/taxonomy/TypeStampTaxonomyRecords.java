@@ -5,11 +5,16 @@
  */
 package gov.vha.isaac.cradle.taxonomy;
 
-import gov.vha.isaac.cradle.CradleExtensions;
-import gov.vha.isaac.cradle.version.StampSequenceComputer;
 import gov.vha.isaac.cradle.version.StampedObject;
+import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.State;
+import gov.vha.isaac.ochre.api.commit.CommitService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
-import java.io.IOException;
+import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePositionCalculator;
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.collections.StampSequenceSet;
 import java.time.Instant;
 import java.util.EnumSet;
 import java.util.stream.IntStream;
@@ -17,9 +22,6 @@ import java.util.stream.IntStream.Builder;
 import java.util.stream.LongStream;
 import org.apache.mahout.math.function.LongProcedure;
 import org.apache.mahout.math.set.OpenLongHashSet;
-import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
-import org.ihtsdo.otf.tcc.api.coordinate.Status;
-import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 
 /**
  * This class maps stamps to the {@code TaxonomyFlags} associated with that
@@ -28,6 +30,22 @@ import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
  * @author kec
  */
 public class TypeStampTaxonomyRecords {
+    
+    private static CommitService commitService;
+    private static CommitService getCommitService() {
+        if (commitService == null) {
+            commitService = LookupService.getService(CommitService.class);
+        }
+        return commitService;
+    }
+    
+    private static ConceptService conceptService;
+    private static ConceptService getConceptService() {
+        if (conceptService == null) {
+            conceptService = LookupService.getService(ConceptService.class);
+        }
+        return conceptService;
+    }
 
     /**
      * int (the map key) is a stampSequence TaxonomyFlags (the map value) are
@@ -35,17 +53,6 @@ public class TypeStampTaxonomyRecords {
      */
     private final OpenLongHashSet typeStampFlagsSet = new OpenLongHashSet(7);
 
-    private static CradleExtensions isaacDb;
-
-    /**
-     * @return the isaacDb
-     */
-    public static CradleExtensions getIsaacDb() {
-        if (isaacDb == null) {
-            isaacDb = Hk2Looker.get().getService(CradleExtensions.class);
-        }
-        return isaacDb;
-    }
 
     public TypeStampTaxonomyRecords() {
     }
@@ -91,6 +98,46 @@ public class TypeStampTaxonomyRecords {
         return found;
     }
 
+     /**
+     * 
+     * @param typeSequenceSet An empty set is a wildcard and will match all types. 
+     * @param flags
+     * @return true if found. 
+     */
+    public boolean containsStampOfTypeWithFlags(ConceptSequenceSet typeSequenceSet, int flags) {
+        boolean found = !typeStampFlagsSet.forEachKey((long record) -> {
+            if (typeSequenceSet.isEmpty()) { // wildcard
+                if (((record >>> 32) & TaxonomyRecordPrimitive.FLAGS_BIT_MASK) == flags) {
+                    return false; // finish search. 
+                }
+            } else if (typeSequenceSet.contains(((int) record & TaxonomyRecordPrimitive.SEQUENCE_BIT_MASK))) {
+                if (((record >>> 32) & TaxonomyRecordPrimitive.FLAGS_BIT_MASK) == flags) {
+                    return false; // finish search. 
+                }
+            }
+            return true; // continue search...
+        });
+        return found;
+    }
+
+    public IntStream getStampsOfTypeWithFlags(ConceptSequenceSet typeSequenceSet, int flags) {
+        Builder intStreamBuilder = IntStream.builder();
+        typeStampFlagsSet.forEachKey((long record) -> {
+            int stampAndFlag = (int) (record >>> 32);
+            if (typeSequenceSet.isEmpty()) { // wildcard
+                 if ((stampAndFlag & TaxonomyRecordPrimitive.FLAGS_BIT_MASK) == flags) {
+                    intStreamBuilder.accept(stampAndFlag & TaxonomyRecordPrimitive.SEQUENCE_BIT_MASK); 
+                }
+            } else if (typeSequenceSet.contains((int) record & TaxonomyRecordPrimitive.SEQUENCE_BIT_MASK)) {
+                if ((stampAndFlag & TaxonomyRecordPrimitive.FLAGS_BIT_MASK) == flags) {
+                    intStreamBuilder.accept(stampAndFlag & TaxonomyRecordPrimitive.SEQUENCE_BIT_MASK); 
+                }
+            }
+            return true;
+        });
+        return intStreamBuilder.build();
+    }
+
     public IntStream getStampsOfTypeWithFlags(int typeSequence, int flags) {
         Builder intStreamBuilder = IntStream.builder();
         typeStampFlagsSet.forEachKey((long record) -> {
@@ -109,28 +156,48 @@ public class TypeStampTaxonomyRecords {
         return intStreamBuilder.build();
     }
 
-    boolean isActive(int typeSequence, TaxonomyCoordinate tc, StampSequenceComputer computer) {
+    public boolean isActive(int typeSequence, TaxonomyCoordinate tc, RelativePositionCalculator computer) {
         int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
         return isActive(typeSequence, flags, computer);
     }
 
-    public boolean isActive(int typeSequence, int flags, StampSequenceComputer computer) {
-        int[] latestStamps = computer.getLatestStamps(getStampsOfTypeWithFlags(typeSequence, flags));
-        for (int stamp : latestStamps) {
-            if (getIsaacDb().getStatusForStamp(stamp) == Status.ACTIVE) {
-                return true;
-            }
-        }
-        return false;
+    public boolean isActive(ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc, RelativePositionCalculator computer) {
+        int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
+        return isActive(typeSequenceSet, flags, computer);
     }
 
-    boolean isVisible(int typeSequence, TaxonomyCoordinate tc, StampSequenceComputer computer) {
+    public boolean isActive(int typeSequence, int flags, RelativePositionCalculator computer) {
+        StampSequenceSet latestStamps = computer.getLatestStampSequences(getStampsOfTypeWithFlags(typeSequence, flags));
+        return latestStamps.stream().anyMatch((stampSequence) -> 
+                getCommitService().getStatusForStamp(stampSequence) == State.ACTIVE);
+    }
+
+    public boolean isActive(ConceptSequenceSet typeSequenceSet, int flags, RelativePositionCalculator computer) {
+        StampSequenceSet latestStamps = computer.getLatestStampSequences(getStampsOfTypeWithFlags(typeSequenceSet, flags));
+        return latestStamps.stream().anyMatch((stampSequence) -> 
+                getCommitService().getStatusForStamp(stampSequence) == State.ACTIVE);
+    }
+
+    boolean isVisible(int typeSequence, TaxonomyCoordinate tc, RelativePositionCalculator computer) {
         int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
         return isVisible(typeSequence, flags, computer);
     }
 
-    public boolean isVisible(int typeSequence, int flags, StampSequenceComputer computer) {
-        return computer.getLatestStamps(getStampsOfTypeWithFlags(typeSequence, flags)).length > 0;
+    boolean isVisible(ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc, RelativePositionCalculator computer) {
+        int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
+        return isVisible(typeSequenceSet, flags, computer);
+    }
+
+    public boolean isVisible(int typeSequence, int flags, RelativePositionCalculator computer) {
+        return !computer.getLatestStampSequences(getStampsOfTypeWithFlags(typeSequence, flags)).isEmpty();
+    }
+
+    public boolean isVisible(ConceptSequenceSet typeSequenceSet, int flags, RelativePositionCalculator computer) {
+        return !computer.getLatestStampSequences(getStampsOfTypeWithFlags(typeSequenceSet, flags)).isEmpty();
+    }
+
+    public boolean isPresent(ConceptSequenceSet typeSequenceSet, int flags) {
+        return containsStampOfTypeWithFlags(typeSequenceSet, flags);
     }
 
     /**
@@ -242,7 +309,7 @@ public class TypeStampTaxonomyRecords {
         }
 
         @Override
-        public int getStamp() {
+        public int getStampSequence() {
             return stampSequence;
         }
 
@@ -281,35 +348,31 @@ public class TypeStampTaxonomyRecords {
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder();
-            try {
-                sb.append("«");
-                sb.append(getIsaacDb().getConcept(typeSequence).toUserString());
-                sb.append("|");
-                sb.append(typeSequence);
-                sb.append("|");
-                sb.append(" ss:");
-                sb.append(stampSequence);
-                sb.append(" (s:");
-                Status status = getIsaacDb().getStatusForStamp(stampSequence);
-                sb.append(status);
-                sb.append(" t:");
-                Instant time = Instant.ofEpochMilli(getIsaacDb().getTimeForStamp(stampSequence));
-                sb.append(time.toString());
-                sb.append(" a:");
-                ConceptChronicleBI author = getIsaacDb().getConcept(getIsaacDb().getAuthorNidForStamp(stampSequence));
-                sb.append(author.toUserString());
-                sb.append(" m:");
-                ConceptChronicleBI module = getIsaacDb().getConcept(getIsaacDb().getModuleNidForStamp(stampSequence));
-                sb.append(module.toUserString());
-                sb.append(" p:");
-                ConceptChronicleBI path = getIsaacDb().getConcept(getIsaacDb().getPathNidForStamp(stampSequence));
-                sb.append(path.toUserString());
-                sb.append(")->");
-                sb.append(getTaxonomyFlagsAsEnum());
-                sb.append("»");
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
+            sb.append("«");
+            sb.append(getConceptService().getConcept(typeSequence).toUserString());
+            sb.append("|");
+            sb.append(typeSequence);
+            sb.append("|");
+            sb.append(" ss:");
+            sb.append(stampSequence);
+            sb.append(" (s:");
+            State status = getCommitService().getStatusForStamp(stampSequence);
+            sb.append(status);
+            sb.append(" t:");
+            Instant time = getCommitService().getInstantForStamp(stampSequence);
+            sb.append(time.toString());
+            sb.append(" a:");
+            ConceptChronology author = getConceptService().getConcept(getCommitService().getAuthorSequenceForStamp(stampSequence));
+            sb.append(author.toUserString());
+            sb.append(" m:");
+            ConceptChronology module = getConceptService().getConcept(getCommitService().getModuleSequenceForStamp(stampSequence));
+            sb.append(module.toUserString());
+            sb.append(" p:");
+            ConceptChronology path = getConceptService().getConcept(getCommitService().getPathSequenceForStamp(stampSequence));
+            sb.append(path.toUserString());
+            sb.append(")->");
+            sb.append(getTaxonomyFlagsAsEnum());
+            sb.append("»");
 
             return sb.toString();
         }

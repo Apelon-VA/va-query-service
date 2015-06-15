@@ -9,7 +9,6 @@ import gov.vha.isaac.cradle.CradleExtensions;
 
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import gov.vha.isaac.ochre.api.ConceptProxy;
@@ -20,7 +19,7 @@ import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
  *
  * @author kec
  */
-public class VerifyEConcept implements Callable<Boolean> {
+public class VerifyEConceptOtfModel implements Callable<Boolean> {
 
     private static final AtomicInteger failureCount = new AtomicInteger();
 
@@ -30,7 +29,7 @@ public class VerifyEConcept implements Callable<Boolean> {
     ConceptProxy newPath = null;
     UUID newPathUuid = null;
 
-    public VerifyEConcept(CradleExtensions termService,
+    public VerifyEConceptOtfModel(CradleExtensions termService,
                           TtkConceptChronicle eConcept,
                           ConceptProxy newPath) {
         this(termService, eConcept);
@@ -40,7 +39,7 @@ public class VerifyEConcept implements Callable<Boolean> {
         }
     }
 
-    public VerifyEConcept(CradleExtensions termService, TtkConceptChronicle eConcept) {
+    public VerifyEConceptOtfModel(CradleExtensions termService, TtkConceptChronicle eConcept) {
         this.termService = termService;
         this.eConcept = eConcept;
     }

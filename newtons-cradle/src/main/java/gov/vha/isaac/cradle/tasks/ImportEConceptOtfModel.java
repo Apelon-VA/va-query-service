@@ -8,7 +8,6 @@ import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.IdentifierService;
-import java.io.IOException;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 import java.util.UUID;
@@ -16,7 +15,6 @@ import java.util.concurrent.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.tcc.api.coordinate.Status;
-import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.cc.attributes.ConceptAttributesVersion;
 import org.ihtsdo.otf.tcc.model.cc.relationship.Relationship;
@@ -24,7 +22,7 @@ import org.ihtsdo.otf.tcc.model.cc.relationship.Relationship;
 /**
  * Created by kec on 7/20/14.
  */
-public class ImportEConcept implements Callable<Void> {
+public class ImportEConceptOtfModel implements Callable<Void> {
     private static final Logger log = LogManager.getLogger();
 
     private static final IdentifierService sequenceProvider = Hk2Looker.getService(IdentifierService.class);
@@ -50,12 +48,12 @@ public class ImportEConcept implements Callable<Void> {
     int lastRelCharacteristic = Integer.MAX_VALUE;
     int recordFlags = Integer.MAX_VALUE;
 
-    public ImportEConcept(TtkConceptChronicle eConcept, UUID newPathUuid) {
+    public ImportEConceptOtfModel(TtkConceptChronicle eConcept, UUID newPathUuid) {
         this(eConcept);
         this.newPathUuid = newPathUuid;
     }
 
-    public ImportEConcept(TtkConceptChronicle eConcept) {
+    public ImportEConceptOtfModel(TtkConceptChronicle eConcept) {
         this.eConcept = eConcept;
     }
 
@@ -87,50 +85,7 @@ public class ImportEConcept implements Callable<Void> {
                             originSequence, cav.getStamp(), TaxonomyFlags.CONCEPT_STATUS.bits);
                 }
 
-                for (Relationship rel : conceptData.getSourceRels()) {
-                    int destinationSequence
-                            = sequenceProvider.getConceptSequence(rel.getDestinationNid());
-                    assert destinationSequence != originSequence;
-                    lastRelCharacteristic = Integer.MAX_VALUE;
-                    recordFlags = Integer.MAX_VALUE;
-                    rel.getVersions().stream().forEach((rv) -> {
-                        int typeSequence = sequenceProvider.getConceptSequence(rel.getTypeNid());
-                        if (lastRelCharacteristic == Integer.MAX_VALUE) {
-                            lastRelCharacteristic = rv.getCharacteristicNid();
-                        } else if (lastRelCharacteristic != rv.getCharacteristicNid()) {
-                            lastRelCharacteristic = rv.getCharacteristicNid();
-                            // Characteristic changed, so we need to add a retirement record. 
-                            int newStamp = cradle.getStamp(Status.INACTIVE, 
-                                    rv.getTime() - 1, 
-                                    rv.getAuthorNid(), 
-                                    rv.getModuleNid(), 
-                                    rv.getPathNid());
-                            parentTaxonomyRecord.getTaxonomyRecordUnpacked()
-                                    .addStampRecord(destinationSequence, typeSequence, newStamp, recordFlags);
-                        }
-                        if (rv.getTypeNid() == isaNid) {
-                            recordFlags = 0;
-                            if (rv.getCharacteristicNid() == statedNid) {
-                                recordFlags |= TaxonomyFlags.STATED.bits;
-                            } else if (rv.getCharacteristicNid() == inferredNid) {
-                                recordFlags |= TaxonomyFlags.INFERRED.bits;
-                            }
-                            parentTaxonomyRecord.getTaxonomyRecordUnpacked()
-                                    .addStampRecord(destinationSequence, typeSequence, rv.getStamp(), recordFlags);
-                        } else {
-                            recordFlags = 0;
-                            if (rv.getCharacteristicNid() == statedNid) {
-                                recordFlags |= TaxonomyFlags.STATED.bits;
-                            } else if (rv.getCharacteristicNid() == inferredNid) {
-                                recordFlags |= TaxonomyFlags.INFERRED.bits;
-                            } else {
-                                recordFlags |= TaxonomyFlags.NON_DL_REL.bits;
-                            }
-                            parentTaxonomyRecord.getTaxonomyRecordUnpacked().addStampRecord(destinationSequence, typeSequence, rv.getStamp(), recordFlags);
-                        }
-                    });
-                    destinationOriginRecordSet.add(new DestinationOriginRecord(destinationSequence, originSequence));
-                }
+                processTaxonomy(conceptData, originSequence, parentTaxonomyRecord);
                 originDestinationTaxonomyRecords.put(originSequence, parentTaxonomyRecord);
                 cradle.writeConceptData(conceptData);
             }
@@ -139,6 +94,65 @@ public class ImportEConcept implements Callable<Void> {
             System.err.println("Failure importing " + eConcept.toString());
             throw e;
         }
+    }
+
+    private void processTaxonomy(ConceptChronicleDataEager conceptData, 
+            int originSequence, 
+            TaxonomyRecordPrimitive parentTaxonomyRecord) {
+        conceptData.getSourceRels().stream().map((rel) -> {
+            int destinationSequence
+                    = sequenceProvider.getConceptSequence(
+                            rel.getDestinationNid());
+            assert destinationSequence != originSequence;
+            lastRelCharacteristic = Integer.MAX_VALUE;
+            recordFlags = Integer.MAX_VALUE;
+            rel.getVersions().stream().forEach((rv) -> {
+                int typeSequence = sequenceProvider
+                        .getConceptSequence(rel.getTypeNid());
+                if (lastRelCharacteristic == Integer.MAX_VALUE) {
+                    lastRelCharacteristic = rv.getCharacteristicNid();
+                } else if (lastRelCharacteristic != rv.getCharacteristicNid()) {
+                    lastRelCharacteristic = rv.getCharacteristicNid();
+                    // Characteristic changed, so we need to add a retirement record.
+                    int newStamp = cradle.getStamp(Status.INACTIVE,
+                            rv.getTime() - 1,
+                            rv.getAuthorNid(),
+                            rv.getModuleNid(),
+                            rv.getPathNid());
+                    parentTaxonomyRecord.getTaxonomyRecordUnpacked()
+                            .addStampRecord(destinationSequence, typeSequence, 
+                                    newStamp, recordFlags);
+                }
+                if (rv.getTypeNid() == isaNid) {
+                    recordFlags = 0;
+                    if (rv.getCharacteristicNid() == statedNid) {
+                        recordFlags |= TaxonomyFlags.STATED.bits;
+                    } else if (rv.getCharacteristicNid() == inferredNid) {
+                        recordFlags |= TaxonomyFlags.INFERRED.bits;
+                    }
+                    parentTaxonomyRecord.getTaxonomyRecordUnpacked()
+                            .addStampRecord(destinationSequence, typeSequence, 
+                                    rv.getStamp(), recordFlags);
+                } else {
+                    recordFlags = 0;
+                    if (rv.getCharacteristicNid() == statedNid) {
+                        recordFlags |= TaxonomyFlags.STATED.bits;
+                    } else if (rv.getCharacteristicNid() == inferredNid) {
+                        recordFlags |= TaxonomyFlags.INFERRED.bits;
+                    } else {
+                        recordFlags |= TaxonomyFlags.NON_DL_REL.bits;
+                    }
+                    parentTaxonomyRecord.getTaxonomyRecordUnpacked()
+                            .addStampRecord(destinationSequence, typeSequence, 
+                                    rv.getStamp(), recordFlags);
+                }
+            });
+            return destinationSequence;
+        }).forEach((destinationSequence) -> {
+            destinationOriginRecordSet.add(
+                    new DestinationOriginRecord(destinationSequence, 
+                            originSequence));
+        });
     }
 
 }

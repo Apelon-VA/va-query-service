@@ -22,6 +22,7 @@ import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.chronicle.IdentifiedObjectLocal;
 import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
 import gov.vha.isaac.ochre.api.commit.CommitService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,6 +46,14 @@ public abstract class ComponentBuilder<T extends IdentifiedObjectLocal> implemen
     
     public static CommitService getCommitService() {
         return commitService;
+    }
+    
+    private static ConceptService conceptService;
+    public static ConceptService getConceptService() {
+        if (conceptService == null) {
+            conceptService = LookupService.getService(ConceptService.class);
+        }
+        return conceptService;
     }
     
 

@@ -74,9 +74,9 @@
                     <parallel>false</parallel>
                     <useSystemClassLoader>true</useSystemClassLoader>
                     <useManifestOnlyJar>false</useManifestOnlyJar>
-                    <argLine>-ea -d64 -Xmx4g</argLine>
-                    <!-- <argLine>-Xmx6g -Xms6g -agentpath:/Applications/jprofiler8/bin/macos/libjprofilerti.jnilib=port=8849</argLine> -->
-                    <!-- <debugForkedProcess>false</debugForkedProcess> -->
+                    <argLine>-ea -d64 -Xmx12g</argLine>
+<!--                     <argLine>-Xmx8g -Xms8g -agentpath:/Applications/jprofiler8/bin/macos/libjprofilerti.jnilib=port=8849</argLine> -->
+<!--                     <debugForkedProcess>false</debugForkedProcess> -->
                     <includes>
                         <!-- Let JUnit annotations decide -->
                         <include>**/*.class</include>

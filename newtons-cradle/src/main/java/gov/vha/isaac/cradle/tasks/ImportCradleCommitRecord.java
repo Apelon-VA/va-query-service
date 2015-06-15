@@ -6,10 +6,9 @@
 package gov.vha.isaac.cradle.tasks;
 
 import gov.vha.isaac.cradle.log.CradleCommitRecord;
+import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.commit.CommitService;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Semaphore;
-import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 
 /**
  *
@@ -26,7 +25,7 @@ public class ImportCradleCommitRecord implements Callable<Void> {
 
     @Override
     public Void call() throws Exception {
-        CommitService commitManager = Hk2Looker.getService(CommitService.class);
+        CommitService commitManager = LookupService.getService(CommitService.class);
         String comment = ccr.getCommitComment();
         ccr.getStampsInCommit().forEachKey((int stamp) -> {
             commitManager.setComment(stamp, comment);

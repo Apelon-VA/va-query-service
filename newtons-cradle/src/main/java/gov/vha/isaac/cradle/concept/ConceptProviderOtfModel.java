@@ -13,42 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package gov.vha.isaac.cradle.builders;
+package gov.vha.isaac.cradle.concept;
 
 import gov.vha.isaac.cradle.Cradle;
+import gov.vha.isaac.cradle.builders.ConceptActiveService;
 import gov.vha.isaac.cradle.collections.ConcurrentSequenceSerializedObjectMap;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEagerSerializer;
+import gov.vha.isaac.ochre.api.DelegateService;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SystemStatusService;
+import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshot;
 import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshotService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.model.concept.ConceptChronologyImpl;
+import gov.vha.isaac.ochre.model.concept.ConceptSnapshotImpl;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.glassfish.hk2.runlevel.RunLevel;
 import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
-import org.jvnet.hk2.annotations.Service;
 
 /**
  *
  * @author kec
  */
-@Service
-@RunLevel(value = 1)
-
-public class ConceptProvider implements ConceptService {
+public class ConceptProviderOtfModel implements ConceptService, DelegateService {
 
     private static final Logger log = LogManager.getLogger();
 
@@ -58,38 +59,37 @@ public class ConceptProvider implements ConceptService {
     final ConcurrentSequenceSerializedObjectMap<ConceptChronicleDataEager> conceptMap;
     private AtomicBoolean loadRequired = new AtomicBoolean();
 
-    //For HK2
-    private ConceptProvider() throws IOException, NumberFormatException, ParseException {
+    public ConceptProviderOtfModel() throws IOException, NumberFormatException, ParseException {
         try {
-            log.info("Setting up ConceptProvider at " + Cradle.getCradlePath().toAbsolutePath().toString());
+            log.info("Setting up OTF ConceptProvider at " + Cradle.getCradlePath().toAbsolutePath().toString());
             conceptMap = new ConcurrentSequenceSerializedObjectMap(new ConceptChronicleDataEagerSerializer(),
-                    Cradle.getCradlePath(), "concept-map/", ".concepts.map");
+                    Cradle.getCradlePath(), "otf-concept-map/", ".otf-concepts.map");
         } catch (Exception e) {
-            LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("ChRonicled Assertion Database of Logical Expressions", e);
+            LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("ChRonicled Assertion Database of Logical Expressions (OTF)", e);
             throw e;
         }
     }
 
-    @PostConstruct
-    private void startMe() throws IOException {
-        log.info("Starting ConceptProvider post-construct");
+    @Override
+    public void startDelegateService() {
+        log.info("Starting OTF ConceptProvider post-construct");
         loadRequired.set(!Cradle.cradleStartedEmpty());
         conceptActiveService = LookupService.getService(ConceptActiveService.class);
         identifierProvider = LookupService.getService(IdentifierService.class);
         if (loadRequired.compareAndSet(true, false)) {
 
-            log.info("Loading concept-map.");
+            log.info("Loading otf-concept-map.");
             conceptMap.read();
 
-            log.info("Finished load.");
+            log.info("Finished otf load.");
         }
     }
 
-    @PreDestroy
-    private void stopMe() throws IOException {
-        log.info("Stopping ConceptProvider.");
+    @Override
+    public void stopDelegateService()  {
+        log.info("Stopping OTF ConceptProvider.");
 
-        log.info("writing concept-map.");
+        log.info("writing otf-concept-map.");
         conceptMap.write();
     }
 
@@ -103,11 +103,6 @@ public class ConceptProvider implements ConceptService {
         return new ConceptSnapshotProvider(stampCoordinate);
     }
 
-    @Override
-    public ConceptChronology getConcept(int conceptSequence) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
     public class ConceptSnapshotProvider implements ConceptSnapshotService {
 
         StampCoordinate stampCoordinate;
@@ -118,12 +113,17 @@ public class ConceptProvider implements ConceptService {
 
         @Override
         public boolean isConceptActive(int conceptSequence) {
-            return ConceptProvider.this.isConceptActive(conceptSequence, stampCoordinate);
+            return ConceptProviderOtfModel.this.isConceptActive(conceptSequence, stampCoordinate);
         }
 
         @Override
         public StampCoordinate getStampCoordinate() {
             return stampCoordinate;
+        }
+
+        @Override
+        public ConceptSnapshot getConceptSnapshot(int conceptSequence) {
+            return new ConceptSnapshotImpl((ConceptChronologyImpl) getConcept(conceptSequence), stampCoordinate);
         }
     }
 
@@ -172,10 +172,6 @@ public class ConceptProvider implements ConceptService {
         return conceptSequences.stream().mapToObj((int sequence) -> conceptMap.getQuick(sequence).getConceptChronicle());
     }
 
-    public Stream<? extends ConceptChronicleBI> getParallelConceptStream(ConceptSequenceSet conceptSequences) throws IOException {
-        return conceptSequences.stream().parallel().mapToObj((int sequence) -> conceptMap.getQuick(sequence).getConceptChronicle());
-    }
-
     public ConceptChronicleDataEager getConceptData(int i) throws IOException {
         if (i < 0) {
             i = identifierProvider.getConceptSequence(i);
@@ -187,7 +183,8 @@ public class ConceptProvider implements ConceptService {
         return new ConceptChronicleDataEager(true);
     }
 
-    public int getConceptCount() throws IOException {
+    @Override
+    public int getConceptCount() {
         return conceptMap.getSize();
     }
 
@@ -196,5 +193,48 @@ public class ConceptProvider implements ConceptService {
         conceptMap.put(sequence, conceptData);
         conceptData.setPrimordial(false);
     }
+
+    @Override
+    public void writeConcept(ConceptChronology<? extends ConceptVersion> concept) {
+        ConceptChronicleDataEager conceptData = (ConceptChronicleDataEager) ((ConceptChronicle) concept).getData();
+        writeConceptData(conceptData);
+    }
+
+    @Override
+    public ConceptChronology getConcept(int conceptId) {
+        try { 
+            if (conceptId >= 0) {
+                conceptId = identifierProvider.getConceptNid(conceptId);
+            }
+            return ConceptChronicle.get(conceptId);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    @Override
+    public ConceptChronology<? extends StampedVersion> getConcept(UUID... conceptUuids) {
+        return getConcept(identifierProvider.getNidForUuids(conceptUuids));
+    }
+
+    @Override
+    public Stream<ConceptChronology<? extends ConceptVersion>> getConceptChronologyStream() {
+        return getConceptStream().map((cc) -> {return (ConceptChronology<? extends ConceptVersion>) cc;});
+    }
+
+    @Override
+    public Stream<ConceptChronology<? extends ConceptVersion>> getParallelConceptChronologyStream() {
+        return getParallelConceptStream().map((cc) -> {return (ConceptChronology<? extends ConceptVersion>) cc;});
+    }
+    @Override
+    public Stream<ConceptChronology<? extends ConceptVersion>> getParallelConceptChronologyStream(ConceptSequenceSet conceptSequences) {
+        return conceptSequences.stream().parallel().mapToObj((int sequence) -> conceptMap.getQuick(sequence).getConceptChronicle());
+    }
+
+    @Override
+    public Stream<ConceptChronology<? extends ConceptVersion>> getConceptChronologyStream(ConceptSequenceSet conceptSequences) {
+        return conceptSequences.stream().mapToObj((int sequence) -> conceptMap.getQuick(sequence).getConceptChronicle());
+    }
+
 
 }

@@ -15,7 +15,10 @@
  */
 package gov.vha.isaac.cradle.builders;
 
+import gov.vha.isaac.ochre.api.ConceptModel;
 import gov.vha.isaac.ochre.api.ConceptProxy;
+import gov.vha.isaac.ochre.api.ConfigurationService;
+import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilder;
 import gov.vha.isaac.ochre.api.component.concept.description.DescriptionBuilder;
 import gov.vha.isaac.ochre.api.component.concept.description.DescriptionBuilderService;
@@ -28,14 +31,36 @@ import org.jvnet.hk2.annotations.Service;
 @Service
 public class DescriptionBuilderProvider implements DescriptionBuilderService {
 
+    private static ConceptModel conceptModel;
+    private static ConceptModel getConceptModel() {
+        if (conceptModel == null) {
+            conceptModel = LookupService.getService(ConfigurationService.class).getConceptModel();
+        }
+        return conceptModel;
+    }
+
     @Override
     public DescriptionBuilder getDescriptionBuilder(String descriptionText, int conceptSequence, ConceptProxy descriptionType, ConceptProxy languageForDescription) {
-        return new DescriptionBuilderImpl(descriptionText, conceptSequence, descriptionType, languageForDescription);
+        switch (getConceptModel()) {
+            case OCHRE_CONCEPT_MODEL:
+                return new DescriptionBuilderOchreImpl(descriptionText, conceptSequence, descriptionType, languageForDescription);
+            case OTF_CONCEPT_MODEL:
+                return new DescriptionBuilderOtfImpl(descriptionText, conceptSequence, descriptionType, languageForDescription);
+            default:
+                throw new UnsupportedOperationException("Can't handle: " + conceptModel);
+        }
     }
 
     @Override
     public DescriptionBuilder getDescriptionBuilder(String descriptionText, ConceptBuilder conceptBuilder, ConceptProxy descriptionType, ConceptProxy languageForDescription) {
-        return new DescriptionBuilderImpl(descriptionText, conceptBuilder, descriptionType, languageForDescription);
+        switch (getConceptModel()) {
+            case OCHRE_CONCEPT_MODEL:
+                return new DescriptionBuilderOchreImpl(descriptionText, conceptBuilder, descriptionType, languageForDescription);
+            case OTF_CONCEPT_MODEL:
+                return new DescriptionBuilderOtfImpl(descriptionText, conceptBuilder, descriptionType, languageForDescription);
+            default:
+                throw new UnsupportedOperationException("Can't handle: " + conceptModel);
+        }
     }
-    
+
 }

@@ -25,15 +25,14 @@ import gov.vha.isaac.ochre.api.component.sememe.SememeBuilder;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeType;
 import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
-import gov.vha.isaac.ochre.model.sememe.SememeChronicleImpl;
+import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
 import gov.vha.isaac.ochre.model.sememe.version.ComponentNidSememeImpl;
-import gov.vha.isaac.ochre.model.sememe.version.ConceptSequenceSememeImpl;
-import gov.vha.isaac.ochre.model.sememe.version.ConceptSequenceTimeSememeImpl;
+import gov.vha.isaac.ochre.model.sememe.version.LongSememeImpl;
+import gov.vha.isaac.ochre.model.sememe.version.DescriptionSememeImpl;
 import gov.vha.isaac.ochre.model.sememe.version.LogicGraphSememeImpl;
 import gov.vha.isaac.ochre.model.sememe.version.SememeVersionImpl;
 import gov.vha.isaac.ochre.model.sememe.version.StringSememeImpl;
 import java.util.List;
-import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
 
 /**
  *
@@ -66,8 +65,6 @@ public class SememeBuilderImpl<C extends SememeChronology<? extends SememeVersio
         this.parameters = paramaters;
     }
     
-    
-
     @Override
     public C build(EditCoordinate editCoordinate, 
             ChangeCheckerMode changeCheckerMode,
@@ -75,7 +72,7 @@ public class SememeBuilderImpl<C extends SememeChronology<? extends SememeVersio
         if (referencedComponentNid == Integer.MAX_VALUE) {
             referencedComponentNid = getIdentifierService().getNidForUuids(referencedComponentBuilder.getUuids());
         }
-        SememeChronicleImpl sememeChronicle = new SememeChronicleImpl(sememeType, 
+        SememeChronologyImpl sememeChronicle = new SememeChronologyImpl(sememeType, 
                 primordialUuid, 
                 getIdentifierService().getNidForUuids(this.getUuids()), 
             assemblageConceptSequence, 
@@ -86,33 +83,35 @@ public class SememeBuilderImpl<C extends SememeChronology<? extends SememeVersio
         switch (sememeType) {
             case COMPONENT_NID:
                 ComponentNidSememeImpl cnsi = (ComponentNidSememeImpl) 
-                        sememeChronicle.createMutableUncommittedVersion(ComponentNidSememeImpl.class, State.ACTIVE, editCoordinate);
+                        sememeChronicle.createMutableVersion(ComponentNidSememeImpl.class, State.ACTIVE, editCoordinate);
                 cnsi.setComponentNid((Integer) parameters[0]);
                 break;
-            case CONCEPT_SEQUENCE:
-                ConceptSequenceSememeImpl cssi = (ConceptSequenceSememeImpl) 
-                        sememeChronicle.createMutableUncommittedVersion(ConceptSequenceSememeImpl.class, State.ACTIVE, editCoordinate);
-                cssi.setConceptSequence(((ConceptSpec) parameters[0]).getSequence());
-                break;
-            case CONCEPT_SEQUENCE_TIME:
-                ConceptSequenceTimeSememeImpl cstsi = (ConceptSequenceTimeSememeImpl) 
-                        sememeChronicle.createMutableUncommittedVersion(ConceptSequenceTimeSememeImpl.class, State.ACTIVE, editCoordinate);
-                cstsi.setConceptSequence(((ConceptSpec) parameters[0]).getSequence());
-                cstsi.setSememeTime((Long) parameters[1]);
+            case LONG:
+                LongSememeImpl lsi = (LongSememeImpl) 
+                        sememeChronicle.createMutableVersion(LongSememeImpl.class, State.ACTIVE, editCoordinate);
+                lsi.setLongValue((Long) parameters[0]);
                 break;
             case LOGIC_GRAPH:
                 LogicGraphSememeImpl lgsi = (LogicGraphSememeImpl) 
-                        sememeChronicle.createMutableUncommittedVersion(LogicGraphSememeImpl.class, State.ACTIVE, editCoordinate);
+                        sememeChronicle.createMutableVersion(LogicGraphSememeImpl.class, State.ACTIVE, editCoordinate);
                 lgsi.setGraphData(((LogicalExpression) parameters[0]).getData(DataTarget.INTERNAL));
                 break;
             case MEMBER:
                 SememeVersionImpl svi = (SememeVersionImpl)
-                        sememeChronicle.createMutableUncommittedVersion(LogicGraphSememeImpl.class, State.ACTIVE, editCoordinate);
+                        sememeChronicle.createMutableVersion(SememeVersionImpl.class, State.ACTIVE, editCoordinate);
                 break;
             case STRING:
                 StringSememeImpl ssi = (StringSememeImpl)
-                    sememeChronicle.createMutableUncommittedVersion(LogicGraphSememeImpl.class, State.ACTIVE, editCoordinate);
+                    sememeChronicle.createMutableVersion(StringSememeImpl.class, State.ACTIVE, editCoordinate);
                 ssi.setString((String) parameters[0]);
+                break;
+            case DESCRIPTION:
+                DescriptionSememeImpl dsi = (DescriptionSememeImpl)
+                    sememeChronicle.createMutableVersion(DescriptionSememeImpl.class, State.ACTIVE, editCoordinate);
+                dsi.setCaseSignificanceConceptSequence((Integer) parameters[0]);
+                dsi.setDescriptionTypeConceptSequence((Integer) parameters[1]);
+                dsi.setLanguageConceptSequence((Integer) parameters[2]);
+                dsi.setText((String) parameters[3]);
                 break;
             case DYNAMIC:
                 default:
@@ -127,6 +126,62 @@ public class SememeBuilderImpl<C extends SememeChronology<? extends SememeVersio
         }
         builtObjects.add(sememeChronicle);
         return (C) sememeChronicle;
+    }
+
+    @Override
+    public C build(int stampSequence,
+            List builtObjects) throws IllegalStateException {
+        if (referencedComponentNid == Integer.MAX_VALUE) {
+            referencedComponentNid = getIdentifierService().getNidForUuids(referencedComponentBuilder.getUuids());
+        }
+        SememeChronologyImpl sememeChronicle = new SememeChronologyImpl(sememeType, 
+                primordialUuid, 
+                getIdentifierService().getNidForUuids(this.getUuids()), 
+            assemblageConceptSequence, 
+            referencedComponentNid, 
+            getIdentifierService().getSememeSequenceForUuids(this.getUuids()));
+        sememeChronicle.setAdditionalUuids(additionalUuids);
+        getIdentifierService().setConceptSequenceForComponentNid(assemblageConceptSequence, sememeChronicle.getNid());
+        switch (sememeType) {
+            case COMPONENT_NID:
+                ComponentNidSememeImpl cnsi = (ComponentNidSememeImpl) 
+                        sememeChronicle.createMutableVersion(ComponentNidSememeImpl.class, stampSequence);
+                cnsi.setComponentNid((Integer) parameters[0]);
+                break;
+            case LONG:
+                LongSememeImpl lsi = (LongSememeImpl) 
+                        sememeChronicle.createMutableVersion(LongSememeImpl.class, stampSequence);
+                lsi.setLongValue((Long) parameters[0]);
+                break;
+            case LOGIC_GRAPH:
+                LogicGraphSememeImpl lgsi = (LogicGraphSememeImpl) 
+                        sememeChronicle.createMutableVersion(LogicGraphSememeImpl.class, stampSequence);
+                lgsi.setGraphData(((LogicalExpression) parameters[0]).getData(DataTarget.INTERNAL));
+                break;
+            case MEMBER:
+                SememeVersionImpl svi = (SememeVersionImpl)
+                        sememeChronicle.createMutableVersion(SememeVersionImpl.class, stampSequence);
+                break;
+            case STRING:
+                StringSememeImpl ssi = (StringSememeImpl)
+                    sememeChronicle.createMutableVersion(StringSememeImpl.class, stampSequence);
+                ssi.setString((String) parameters[0]);
+                break;
+            case DESCRIPTION:
+                DescriptionSememeImpl dsi = (DescriptionSememeImpl)
+                    sememeChronicle.createMutableVersion(DescriptionSememeImpl.class, stampSequence);
+                dsi.setCaseSignificanceConceptSequence((Integer) parameters[0]);
+                dsi.setDescriptionTypeConceptSequence((Integer) parameters[1]);
+                dsi.setLanguageConceptSequence((Integer) parameters[2]);
+                dsi.setText((String) parameters[3]);
+                break;
+            case DYNAMIC:
+                default:
+                    throw new UnsupportedOperationException("Can't handle: " + 
+                            sememeType);
+        }
+        builtObjects.add(sememeChronicle);
+        return (C) sememeChronicle;    
     }
 
 

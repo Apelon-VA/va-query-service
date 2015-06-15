@@ -18,7 +18,6 @@ package gov.vha.isaac.cradle.builders;
 import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
 import gov.vha.isaac.ochre.api.ConceptProxy;
 import gov.vha.isaac.ochre.api.State;
-import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilder;
 import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
 import gov.vha.isaac.metadata.coordinates.LanguageCoordinates;
@@ -30,12 +29,16 @@ import java.beans.PropertyVetoException;
 import java.util.ArrayList;
 import java.util.List;
 import org.ihtsdo.otf.tcc.model.cc.description.Description;
+import org.ihtsdo.otf.tcc.model.cc.description.DescriptionVersion;
 
 /**
  *
  * @author kec
+ * @param <T>
+ * @param <V>
  */
-public class DescriptionBuilderImpl extends ComponentBuilder<ObjectChronology> implements DescriptionBuilder {
+public class DescriptionBuilderOtfImpl<T extends Description, V extends DescriptionVersion> 
+    extends ComponentBuilder<T> implements DescriptionBuilder<T, V> {
     
     
     private final ArrayList<ConceptProxy> preferredInDialectAssemblages = new ArrayList<>();
@@ -47,7 +50,7 @@ public class DescriptionBuilderImpl extends ComponentBuilder<ObjectChronology> i
     private final ConceptBuilder conceptBuilder;
     private int conceptSequence = Integer.MAX_VALUE;
 
-    public DescriptionBuilderImpl(String descriptionText, 
+    public DescriptionBuilderOtfImpl(String descriptionText, 
             int conceptSequence,
             ConceptProxy descriptionType, 
             ConceptProxy languageForDescription) {
@@ -57,7 +60,7 @@ public class DescriptionBuilderImpl extends ComponentBuilder<ObjectChronology> i
         this.languageForDescription = languageForDescription;
         this.conceptBuilder = null;
     }
-    public DescriptionBuilderImpl(String descriptionText, 
+    public DescriptionBuilderOtfImpl(String descriptionText, 
             ConceptBuilder conceptBuilder,
             ConceptProxy descriptionType, 
             ConceptProxy languageForDescription) {
@@ -80,7 +83,7 @@ public class DescriptionBuilderImpl extends ComponentBuilder<ObjectChronology> i
     }
 
     @Override
-    public Description build(EditCoordinate editCoordinate, ChangeCheckerMode changeCheckerMode,
+    public T build(EditCoordinate editCoordinate, ChangeCheckerMode changeCheckerMode,
             List builtObjects) throws IllegalStateException {
         try {
             if (conceptSequence == Integer.MAX_VALUE) {
@@ -88,7 +91,7 @@ public class DescriptionBuilderImpl extends ComponentBuilder<ObjectChronology> i
             }
             
             Description desc = new Description();
-            desc.setSTAMP(getCommitService().getStamp(State.ACTIVE, Long.MAX_VALUE,
+            desc.setSTAMP(getCommitService().getStampSequence(State.ACTIVE, Long.MAX_VALUE,
                     editCoordinate.getAuthorSequence(), editCoordinate.getModuleSequence(),
                     editCoordinate.getPathSequence()));
             desc.setPrimordialUuid(primordialUuid);
@@ -104,22 +107,63 @@ public class DescriptionBuilderImpl extends ComponentBuilder<ObjectChronology> i
             SememeBuilderService sememeBuilderService = LookupService.getService(SememeBuilderService.class);
             
             preferredInDialectAssemblages.forEach(( assemblageProxy) -> {
-                sememeBuilderService.getConceptSememeBuilder(
-                        IsaacMetadataAuxiliaryBinding.PREFERRED, this, 
+                sememeBuilderService.getComponentSememeBuilder(
+                        IsaacMetadataAuxiliaryBinding.PREFERRED.getNid(), this, 
                         getIdentifierService().getConceptSequenceForProxy(assemblageProxy)).
                         build(editCoordinate, changeCheckerMode, builtObjects);
             });
             acceptableInDialectAssemblages.forEach(( assemblageProxy) -> {
-                sememeBuilderService.getConceptSememeBuilder(
-                        IsaacMetadataAuxiliaryBinding.ACCEPTABLE, this, 
+                sememeBuilderService.getComponentSememeBuilder(
+                        IsaacMetadataAuxiliaryBinding.ACCEPTABLE.getNid(), this, 
                         getIdentifierService().getConceptSequenceForProxy(assemblageProxy)).
                         build(editCoordinate, changeCheckerMode, builtObjects);
             });
             builtObjects.add(desc);
-            return desc;
+            return (T) desc;
         } catch (PropertyVetoException ex) {
             throw new RuntimeException(ex);
         }
     }
+
+    @Override
+    public T build(int stampSequence, List builtObjects) throws IllegalStateException {
+        try {
+            if (conceptSequence == Integer.MAX_VALUE) {
+                conceptSequence = getIdentifierService().getConceptSequenceForUuids(conceptBuilder.getUuids());
+            }
+            
+            Description desc = new Description();
+            desc.setPrimordialUuid(primordialUuid);
+            desc.setNid(getIdentifierService().getNidForUuids(this.getUuids()));
+            getIdentifierService().setConceptSequenceForComponentNid(conceptSequence, desc.nid);
+            desc.enclosingConceptNid = getIdentifierService().getConceptNid(conceptSequence);
+            desc.setText(descriptionText);
+            desc.setTypeNid(getIdentifierService().getNidForProxy(descriptionType));
+            desc.setInitialCaseSignificant(false);
+            desc.setLang(LanguageCoordinates.conceptNidToIso639(getIdentifierService().getNidForProxy(languageForDescription)));
+            desc.setAdditionalUuids(additionalUuids);
+
+            SememeBuilderService sememeBuilderService = LookupService.getService(SememeBuilderService.class);
+            
+            preferredInDialectAssemblages.forEach(( assemblageProxy) -> {
+                sememeBuilderService.getComponentSememeBuilder(
+                        IsaacMetadataAuxiliaryBinding.PREFERRED.getNid(), this, 
+                        getIdentifierService().getConceptSequenceForProxy(assemblageProxy)).
+                        build(stampSequence, builtObjects);
+            });
+            acceptableInDialectAssemblages.forEach(( assemblageProxy) -> {
+                sememeBuilderService.getComponentSememeBuilder(
+                        IsaacMetadataAuxiliaryBinding.ACCEPTABLE.getNid(), this, 
+                        getIdentifierService().getConceptSequenceForProxy(assemblageProxy)).
+                        build(stampSequence, builtObjects);
+            });
+            builtObjects.add(desc);
+            return (T) desc;
+        } catch (PropertyVetoException ex) {
+            throw new RuntimeException(ex);
+        }   
+    }
+
+
     
 }

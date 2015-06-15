@@ -4,13 +4,14 @@ import gov.vha.isaac.metadata.coordinates.EditCoordinates;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.ConceptProxy;
+import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.PathService;
 import javafx.concurrent.Task;
 import org.ihtsdo.otf.tcc.api.blueprint.*;
 import org.ihtsdo.otf.tcc.api.coordinate.EditCoordinate;
 import org.ihtsdo.otf.tcc.api.refex.RefexType;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 import org.ihtsdo.otf.tcc.model.cc.termstore.Termstore;
-import org.ihtsdo.otf.tcc.model.path.PathManager;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -36,11 +37,11 @@ public class AddStampOrigin  extends Task<Void> {
             this.stampPathNid = termstore.getNidForUuids(stampPath.getUuids());
             this.originStampPathNid = termstore.getNidForUuids(originStampPath.getUuids());
             this.originTime = originTime;
-            PathManager pathManager = PathManager.get();
-            if (!pathManager.exists(stampPathNid)) {
+            PathService pathService = LookupService.getService(PathService.class);
+            if (!pathService.exists(stampPathNid)) {
                 throw new IOException("Unknown to path manager: " + stampPath);
             }
-            if (!pathManager.exists(originStampPathNid)) {
+            if (!pathService.exists(originStampPathNid)) {
                 throw new IOException("Unknown to path manager: " + originStampPath);
             }
             if (originTime.isAfter(Instant.now())) {
@@ -55,7 +56,7 @@ public class AddStampOrigin  extends Task<Void> {
     public Void call() throws Exception {
         RefexCAB originCAB = new RefexCAB(RefexType.CID_LONG,
                 stampPath.getUuids()[0], // referenced component
-                IsaacMetadataAuxiliaryBinding.PATH_ORIGINS.getUuids()[0], // origin assemblage
+                IsaacMetadataAuxiliaryBinding.PATH_ORIGINS_ASSEMBLAGE.getUuids()[0], // origin assemblage
                 IdDirective.GENERATE_REFEX_CONTENT_HASH, RefexDirective.INCLUDE);
 
         originCAB.getProperties().put(ComponentProperty.COMPONENT_EXTENSION_1_ID, originStampPath.getUuids()[0]);

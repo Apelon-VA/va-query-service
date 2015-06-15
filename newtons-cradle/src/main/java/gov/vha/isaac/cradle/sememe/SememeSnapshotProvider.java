@@ -15,6 +15,7 @@
  */
 package gov.vha.isaac.cradle.sememe;
 
+import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
@@ -26,7 +27,7 @@ import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePositionCalculator;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
 import gov.vha.isaac.ochre.collections.StampSequenceSet;
-import gov.vha.isaac.ochre.model.sememe.SememeChronicleImpl;
+import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.IntStream;
@@ -47,6 +48,16 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
         }
         return commitService;
     }
+    
+    private static int descriptionAssemblageSequence = -1;
+
+    private static int getDescriptionAssemblageSequence() {
+        if (descriptionAssemblageSequence == -1) {
+            descriptionAssemblageSequence = IsaacMetadataAuxiliaryBinding.DESCRIPTION_ASSEMBLAGE.getSequence();
+        }
+        return descriptionAssemblageSequence;
+    }
+    
     Class<V> versionType;
     StampCoordinate stampCoordinate;
     SememeService sememeProvider;
@@ -61,13 +72,13 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
 
     @Override
     public Optional<LatestVersion<V>> getLatestSememeVersion(int sememeSequence) {
-        SememeChronicleImpl sc = (SememeChronicleImpl) sememeProvider.getSememe(sememeSequence);
+        SememeChronologyImpl sc = (SememeChronologyImpl) sememeProvider.getSememe(sememeSequence);
         IntStream stampSequences = sc.getVersionStampSequences();
         StampSequenceSet latestSequences = calculator.getLatestStampSequences(stampSequences);
         if (latestSequences.isEmpty()) {
             return Optional.empty();
         }
-        LatestVersion<V> latest = new LatestVersion<>();
+        LatestVersion<V> latest = new LatestVersion<>(versionType);
         latestSequences.stream().forEach((stampSequence) -> {
             latest.addLatest((V) sc.getVersionForStamp(stampSequence).get());
         });
@@ -77,7 +88,7 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
 
     @Override
     public Optional<LatestVersion<V>> getLatestSememeVersionIfActive(int sememeSequence) {
-        SememeChronicleImpl sc = (SememeChronicleImpl) sememeProvider.getSememe(sememeSequence);
+        SememeChronologyImpl sc = (SememeChronologyImpl) sememeProvider.getSememe(sememeSequence);
         IntStream stampSequences = sc.getVersionStampSequences();
         StampSequenceSet latestSequences = calculator.getLatestStampSequences(stampSequences);
         if (latestSequences.isEmpty()) {
@@ -86,7 +97,7 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
         if (latestSequences.stream().noneMatch((int stampSequence) -> getCommitService().getStatusForStamp(stampSequence) == State.ACTIVE)) {
             return Optional.empty();
         }
-        LatestVersion<V> latest = new LatestVersion<>();
+        LatestVersion<V> latest = new LatestVersion<>(versionType);
         latestSequences.stream().forEach((stampSequence) -> {
             if (commitService.getStatusForStamp(stampSequence) == State.ACTIVE) {
                 latest.addLatest((V) sc.getVersionForStamp(stampSequence).get());
@@ -106,13 +117,13 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
     private Stream<LatestVersion<V>> getLatestSememeVersions(SememeSequenceSet sememeSequenceSet) {
         return sememeSequenceSet.stream()
                 .mapToObj((int sememeSequence) -> {
-                    SememeChronicleImpl sc = (SememeChronicleImpl) sememeProvider.getSememe(sememeSequence);
+                    SememeChronologyImpl sc = (SememeChronologyImpl) sememeProvider.getSememe(sememeSequence);
                     IntStream stampSequences = sc.getVersionStampSequences();
                     StampSequenceSet latestStampSequences = calculator.getLatestStampSequences(stampSequences);
                     if (latestStampSequences.isEmpty()) {
                         return Optional.empty();
                     }
-                    LatestVersion<V> latest = new LatestVersion<>();
+                    LatestVersion<V> latest = new LatestVersion<>(versionType);
                     latestStampSequences.stream().forEach((stampSequence) -> {
                         latest.addLatest((V) sc.getVersionForStamp(stampSequence).get());
                     });
@@ -132,17 +143,14 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
     private Stream<LatestVersion<V>> getLatestActiveSememeVersions(SememeSequenceSet sememeSequenceSet) {
         return sememeSequenceSet.stream()
                 .mapToObj((int sememeSequence) -> {
-                    SememeChronicleImpl sc = (SememeChronicleImpl) sememeProvider.getSememe(sememeSequence);
+                    SememeChronologyImpl sc = (SememeChronologyImpl) sememeProvider.getSememe(sememeSequence);
+                    if (versionType.isAssignableFrom(sc.getSememeType().getSememeVersionClass())) {
+                        
+                    }
                     IntStream stampSequences = sc.getVersionStampSequences();
                     StampSequenceSet latestStampSequences = calculator.getLatestStampSequences(stampSequences);
-                    if (latestStampSequences.isEmpty()) {
-                        return Optional.empty();
-                    }
-                    if (latestStampSequences.stream().noneMatch((int stampSequence) -> getCommitService().getStatusForStamp(stampSequence) == State.ACTIVE)) {
-                        return Optional.empty();
-                    }
 
-                    LatestVersion<V> latest = new LatestVersion<>();
+                    LatestVersion<V> latest = new LatestVersion<>(versionType);
                     
                     // add active first, incase any contradictions are inactive. 
                     latestStampSequences.stream().filter((int stampSequence) -> 
@@ -192,6 +200,19 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
     @Override
     public Stream<LatestVersion<V>> getLatestActiveSememeVersionsForComponentFromAssemblage(int componentNid, int assemblageSequence) {
         return getLatestActiveSememeVersions(sememeProvider.getSememeSequencesForComponentFromAssemblage(componentNid, assemblageSequence));
+    }
+
+    @Override
+    public Stream<LatestVersion<V>> getLatestDescriptionVersionsForComponent(int componentNid) {
+        return getLatestSememeVersions(sememeProvider.getSememeSequencesForComponentFromAssemblage(componentNid, getDescriptionAssemblageSequence()));
+    }
+
+    @Override
+    public Stream<LatestVersion<V>> getLatestActiveDescriptionVersionsForComponent(int componentNid) {
+        if (descriptionAssemblageSequence == -1) {
+            descriptionAssemblageSequence = IsaacMetadataAuxiliaryBinding.DESCRIPTION_ASSEMBLAGE.getSequence();
+        }
+        return getLatestActiveSememeVersions(sememeProvider.getSememeSequencesForComponentFromAssemblage(componentNid, getDescriptionAssemblageSequence()));
     }
 
 }
