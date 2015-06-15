@@ -213,7 +213,7 @@ public class ConceptProviderOtfModel implements ConceptService, DelegateService 
     }
 
     @Override
-    public ConceptChronology<? extends StampedVersion> getConcept(UUID... conceptUuids) {
+    public ConceptChronology<? extends ConceptVersion> getConcept(UUID... conceptUuids) {
         return getConcept(identifierProvider.getNidForUuids(conceptUuids));
     }
 

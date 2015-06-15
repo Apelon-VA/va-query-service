@@ -87,12 +87,12 @@ public class ConceptProvider implements ConceptService {
     }
 
     @Override
-    public ConceptChronology<? extends StampedVersion> getConcept(int conceptSequence) {
+    public ConceptChronology<? extends ConceptVersion> getConcept(int conceptSequence) {
         return delegate.getConcept(conceptSequence);
     }
 
     @Override
-    public ConceptChronology<? extends StampedVersion> getConcept(UUID... conceptUuids) {
+    public ConceptChronology<? extends ConceptVersion> getConcept(UUID... conceptUuids) {
         return delegate.getConcept(conceptUuids);
     }
 
