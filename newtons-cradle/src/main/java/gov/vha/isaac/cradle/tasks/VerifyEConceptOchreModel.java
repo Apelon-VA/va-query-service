@@ -35,12 +35,13 @@ public class VerifyEConceptOchreModel implements Callable<Boolean> {
     private static final AtomicInteger failureCount = new AtomicInteger();
 
     private static final ConceptService conceptService = LookupService.getService(ConceptService.class);
+    private static final ConceptModel conceptModel = LookupService.getService(ConfigurationService.class).getConceptModel();
+
     CradleExtensions termService;
     TtkConceptChronicle eConcept;
 
     ConceptProxy newPath = null;
     UUID newPathUuid = null;
-    ConceptModel conceptModel;
 
     public VerifyEConceptOchreModel(CradleExtensions termService,
                                     TtkConceptChronicle eConcept,
@@ -55,7 +56,6 @@ public class VerifyEConceptOchreModel implements Callable<Boolean> {
     public VerifyEConceptOchreModel(CradleExtensions termService, TtkConceptChronicle eConcept) {
         this.termService = termService;
         this.eConcept = eConcept;
-        this.conceptModel = LookupService.getService(ConfigurationService.class).getConceptModel();
     }
 
     @Override

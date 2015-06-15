@@ -16,7 +16,6 @@
 package gov.vha.isaac.cradle.tasks;
 
 import gov.vha.isaac.cradle.CradleExtensions;
-import gov.vha.isaac.cradle.builders.SememeBuilderProvider;
 import gov.vha.isaac.cradle.taxonomy.DestinationOriginRecord;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
@@ -139,13 +138,12 @@ public class ImportEConceptOchreModel implements Callable<Void> {
 
             conceptService.writeConcept(conceptChronology);
 
-            SememeBuilderProvider sememeBuilder = LookupService.getService(SememeBuilderProvider.class);
             for (TtkDescriptionChronicle desc : eConcept.getDescriptions()) {
                 int caseSignificanceConceptSequence = LanguageCoordinates.caseSignificanceToConceptSequence(desc.initialCaseSignificant);
                 int languageConceptSequence = LanguageCoordinates.iso639toConceptSequence(desc.getLang());
                 int descriptionTypeConceptSequence = identifierService.getConceptSequenceForUuids(desc.getTypeUuid());
                 SememeBuilder<? extends SememeChronology<? extends DescriptionSememe>> descBuilder
-                        = sememeBuilder.getDescriptionSememeBuilder(caseSignificanceConceptSequence,
+                        = sememeBuilderService.getDescriptionSememeBuilder(caseSignificanceConceptSequence,
                                 languageConceptSequence,
                                 descriptionTypeConceptSequence,
                                 desc.text,
