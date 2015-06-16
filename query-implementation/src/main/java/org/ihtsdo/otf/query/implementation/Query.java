@@ -21,6 +21,7 @@ import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
@@ -59,7 +60,7 @@ import org.ihtsdo.otf.tcc.api.store.Ts;
 public abstract class Query {
 
     private static IdentifierService identifierService = LookupService.getService(IdentifierService.class);
-    private static ConceptService conceptService = LookupService.getService(ConceptService.class);
+    private static ConceptService conceptService = LookupService.getService(ConceptServiceManagerI.class).get();
 
     @XmlElementWrapper(name = "for")
     @XmlElement(name = "component")

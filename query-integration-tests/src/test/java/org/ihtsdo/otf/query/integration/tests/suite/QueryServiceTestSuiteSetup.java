@@ -24,6 +24,7 @@ import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
 import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
 import java.nio.file.Path;
@@ -69,7 +70,7 @@ public class QueryServiceTestSuiteSetup {
         HeapUseTicker.start(10);
         
         ObjectChronicleTaskService tts = LookupService.getService(ObjectChronicleTaskService.class);
-        ConceptService store = LookupService.getService(ConceptService.class);
+        ConceptService store = LookupService.getService(ConceptServiceManagerI.class).get();
  
         if (!dbExists) {
             loadDatabase(tts);
