@@ -50,12 +50,7 @@ public class PathProvider implements PathService {
                 break;
 
             case OTF_CONCEPT_MODEL:
-                try {
-                    provider = new PathManager();
-                }
-                catch (IOException e) {
-                    throw new RuntimeException("Unexpected error configuring the OTF_CONCEPT_MODEL", e);
-                }
+                provider = new PathManager();
                 break;
 
             default:
