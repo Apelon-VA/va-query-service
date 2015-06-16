@@ -26,6 +26,7 @@ import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.component.sememe.SememeBuilder;
 import gov.vha.isaac.ochre.api.component.sememe.SememeBuilderService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
@@ -67,7 +68,7 @@ public class ImportEConceptOchreModel implements Callable<Void> {
     private static final CommitService commitService = LookupService.getService(CommitService.class);
     private static final SememeService sememeService = LookupService.getService(SememeService.class);
     private static final IdentifierService identifierService = LookupService.getService(IdentifierService.class);
-    private static final ConceptService conceptService = LookupService.getService(ConceptService.class);
+    private static final ConceptService conceptService = LookupService.getService(ConceptServiceManagerI.class).get();
     private static final CradleExtensions cradle = LookupService.getService(CradleExtensions.class);
     private static final SememeBuilderService sememeBuilderService = LookupService.getService(SememeBuilderService.class);
 

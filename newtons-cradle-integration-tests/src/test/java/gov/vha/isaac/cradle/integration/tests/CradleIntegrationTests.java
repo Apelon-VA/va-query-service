@@ -18,6 +18,7 @@ import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
 import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
@@ -84,10 +85,10 @@ public class CradleIntegrationTests {
         dbExists = dbFolderPath.toFile().exists();
         System.out.println("termstore folder path: " + dbFolderPath.toFile().exists());
 
-        LookupService.startupIsaac();
         LookupService.getService(ConfigurationService.class).setConceptModel(ConceptModel.OCHRE_CONCEPT_MODEL);
+        LookupService.startupIsaac();
         sequenceProvider = LookupService.getService(IdentifierService.class);
-        conceptService = LookupService.getService(ConceptService.class);
+        conceptService = LookupService.getService(ConceptServiceManagerI.class).get();
         ActiveTasksTicker.start(10);
         HeapUseTicker.start(10);
     }

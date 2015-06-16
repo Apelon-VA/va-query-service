@@ -20,6 +20,7 @@ import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.PathService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.api.component.sememe.version.LongSememe;
 import gov.vha.isaac.ochre.api.coordinate.StampPath;
@@ -68,7 +69,7 @@ public class OchrePathProvider implements PathService {
 
     private static ConceptService getConceptService() {
         if (conceptService == null) {
-            conceptService = LookupService.getService(ConceptService.class);
+            conceptService = LookupService.getService(ConceptServiceManagerI.class).get();
         }
         return conceptService;
     }

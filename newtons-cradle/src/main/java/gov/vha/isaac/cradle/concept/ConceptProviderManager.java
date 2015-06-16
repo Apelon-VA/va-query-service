@@ -13,49 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package gov.vha.isaac.cradle.path;
+package gov.vha.isaac.cradle.concept;
 
 import gov.vha.isaac.ochre.api.ConfigurationService;
+import gov.vha.isaac.ochre.api.DelegateService;
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.PathService;
-import gov.vha.isaac.ochre.api.coordinate.StampPath;
-import gov.vha.isaac.ochre.api.coordinate.StampPosition;
+import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import java.io.IOException;
-import java.util.Collection;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.runlevel.RunLevel;
-import org.ihtsdo.otf.tcc.model.path.PathManager;
 import org.jvnet.hk2.annotations.Service;
 
 /**
  *
  * @author kec
  */
-@Service(name = "Path Provider")
-@RunLevel(value = 2)
-
-
-public class PathProvider implements PathService {
+@Service
+@RunLevel(value = 1)
+public class ConceptProviderManager implements ConceptServiceManagerI {
     private static final Logger log = LogManager.getLogger();
+    ConceptService delegate;
 
-    PathService provider;
-
-    public PathProvider() {
+    private ConceptProviderManager() throws Exception {
+        //For HK2 only
         switch (LookupService.getService(ConfigurationService.class).getConceptModel()) {
             case OCHRE_CONCEPT_MODEL:
-                provider = new OchrePathProvider(); 
+                delegate = new ConceptProviderOchreModel();
                 break;
 
             case OTF_CONCEPT_MODEL:
-                try {
-                    provider = new PathManager();
-                }
-                catch (IOException e) {
-                    throw new RuntimeException("Unexpected error configuring the OTF_CONCEPT_MODEL", e);
-                }
+                delegate = new ConceptProviderOtfModel();
                 break;
 
             default:
@@ -63,28 +54,21 @@ public class PathProvider implements PathService {
                         + LookupService.getService(ConfigurationService.class).getConceptModel());
         }
     }
+
+    @Override
+    public ConceptService get()
+    {
+        return delegate;
+    }
+
     @PostConstruct
     private void startMe() throws IOException {
-        log.info("Starting PathProvider post-construct: " + LookupService.getService(ConfigurationService.class).getConceptModel());
+        log.info("Starting ConceptProvider.");
+        ((DelegateService)delegate).startDelegateService();
     }
     @PreDestroy
     private void stopMe() throws IOException {
-        log.info("Stopping PathProvider pre-destroy: " + LookupService.getService(ConfigurationService.class).getConceptModel());
+        log.info("Stopping ConceptProvider.");
+        ((DelegateService)delegate).stopDelegateService();
     }
-    
-    @Override
-    public StampPath getStampPath(int stampPathSequence) {
-        return provider.getStampPath(stampPathSequence);
-    }
-
-    @Override
-    public boolean exists(int pathConceptId) {
-        return provider.exists(pathConceptId);
-    }
-
-    @Override
-    public Collection<? extends StampPosition> getOrigins(int stampPathSequence) {
-        return provider.getOrigins(stampPathSequence);
-    }
-
 }

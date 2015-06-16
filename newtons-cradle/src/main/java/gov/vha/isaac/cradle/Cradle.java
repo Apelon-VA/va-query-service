@@ -73,6 +73,7 @@ import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
@@ -156,7 +157,7 @@ public class Cradle
     private void startMe() throws IOException {
         try {
             log.info("Starting Cradle post-construct");
-            conceptProvider = LookupService.getService(ConceptService.class);
+            conceptProvider = LookupService.getService(ConceptServiceManagerI.class).get();
             commitService = LookupService.getService(CommitService.class);
             identifierProvider = LookupService.getService(IdentifierService.class);
             sememeProvider = LookupService.getService(SememeService.class);

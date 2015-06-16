@@ -11,6 +11,7 @@ import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePositionCalculator;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
@@ -42,7 +43,7 @@ public class TypeStampTaxonomyRecords {
     private static ConceptService conceptService;
     private static ConceptService getConceptService() {
         if (conceptService == null) {
-            conceptService = LookupService.getService(ConceptService.class);
+            conceptService = LookupService.getService(ConceptServiceManagerI.class).get();
         }
         return conceptService;
     }
