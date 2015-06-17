@@ -20,6 +20,7 @@
 package org.ihtsdo.otf.query.lucene;
 
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
+import gov.vha.isaac.ochre.api.index.SearchResult;
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.util.Iterator;
@@ -60,8 +61,9 @@ import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicNidBI;
 import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicPolymorphicBI;
 import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicStringBI;
 import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicUUIDBI;
+import org.ihtsdo.otf.tcc.model.cc.refexDynamic.RefexDynamicMember;
+import org.ihtsdo.otf.tcc.model.cc.refexDynamic.RefexDynamicMemberVersion;
 import org.ihtsdo.otf.tcc.model.cc.refexDynamic.data.dataTypes.RefexDynamicString;
-import gov.vha.isaac.ochre.api.index.SearchResult;
 import org.jvnet.hk2.annotations.Service;
 
 /**
@@ -110,10 +112,10 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 	@Override
 	protected boolean indexChronicle(ObjectChronology<?> chronicle)
 	{
-		if (chronicle instanceof RefexDynamicChronicleBI)
+		if (chronicle instanceof RefexDynamicMember)
 		{
-			RefexDynamicChronicleBI<?> rdc = (RefexDynamicChronicleBI<?>) chronicle;
-			return lric.needsIndexing(rdc.getAssemblageNid());
+			RefexDynamicMember rdm = (RefexDynamicMember) chronicle;
+			return lric.needsIndexing(rdm.getAssemblageNid());
 		}
 
 		return false;
@@ -124,10 +126,10 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 	{
 		doc.add(new IntField(ComponentProperty.COMPONENT_ID.name(), chronicle.getNid(), LuceneIndexer.indexedComponentNidType));
 
-		RefexDynamicChronicleBI<?> rdc = (RefexDynamicChronicleBI<?>) chronicle;
-		for (@SuppressWarnings("unchecked") Iterator<RefexDynamicVersionBI<?>> it = (Iterator<RefexDynamicVersionBI<?>>) rdc.getVersions().iterator(); it.hasNext();)
+		RefexDynamicMember rdm = (RefexDynamicMember) chronicle;
+		for (Iterator<? extends RefexDynamicMemberVersion> it = rdm.getVersions().iterator(); it.hasNext();)
 		{
-			RefexDynamicVersionBI<?> rdv = it.next();
+			RefexDynamicMemberVersion rdv = it.next();
 			
 			//Yes, this is a long, but we never do anything other than exact matches, so it performs better to index it as a string
 			//rather that indexing it as a long... as we never need to match things like nid > X
