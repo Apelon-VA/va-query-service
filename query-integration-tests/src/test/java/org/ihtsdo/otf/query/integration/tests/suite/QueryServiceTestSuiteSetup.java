@@ -20,6 +20,8 @@ import java.util.UUID;
 import static gov.vha.isaac.ochre.api.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
 import static gov.vha.isaac.ochre.api.constants.Constants.SEARCH_ROOT_LOCATION_PROPERTY;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
+import gov.vha.isaac.ochre.api.ConceptModel;
+import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
@@ -59,7 +61,7 @@ public class QueryServiceTestSuiteSetup {
         
         System.setProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY, "target/object-chronicles");
         System.setProperty(SEARCH_ROOT_LOCATION_PROPERTY, "target/search");
-
+        LookupService.getService(ConfigurationService.class).setConceptModel(ConceptModel.OTF_CONCEPT_MODEL);
         
         java.nio.file.Path dbFolderPath = Paths.get(System.getProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY));
         dbExists = dbFolderPath.toFile().exists();
