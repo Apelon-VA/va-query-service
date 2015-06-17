@@ -749,15 +749,20 @@ public class Cradle
             case REFEX:
                 return Optional.ofNullable(refexProvider.getRefex(identifierProvider.getRefexSequence(nid)));
         }
-        if (conceptModel == ConceptModel.OCHRE_CONCEPT_MODEL) {
-            try {
-                ConceptChronicle concept = (ConceptChronicle) 
-                        conceptProvider.getConcept(identifierProvider.getConceptSequenceForComponentNid(nid));
+        //The above code doesn't identify descriptions - try to find them...
+        //if (conceptModel == ConceptModel.OCHRE_CONCEPT_MODEL) {  //TODO Keith - not sure if this was a mistake... (you intended OTF_CONCEPT_MODEL)
+        //or if it is just needed for both...
+        try {
+            int conNid = identifierProvider.getConceptSequenceForComponentNid(nid);
+            if (conNid != Integer.MAX_VALUE)
+            {
+                ConceptChronicle concept = (ConceptChronicle)conceptProvider.getConcept(conNid);
                 return Optional.ofNullable(concept.getComponent(nid));
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
             }
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
+        //}
         return Optional.empty();
     }
 
