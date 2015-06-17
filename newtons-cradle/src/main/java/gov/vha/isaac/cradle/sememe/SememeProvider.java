@@ -228,7 +228,7 @@ public class SememeProvider implements SememeService {
         if (componentNid >= 0) {
             throw new IndexOutOfBoundsException("Component identifiers must be negative. Found: " + componentNid);
         }
-        assemblageSequence = identifierService.getSememeSequence(assemblageSequence);
+        assemblageSequence = identifierService.getConceptSequence(assemblageSequence);
         SememeKey rcRangeStart = new SememeKey(componentNid, Integer.MIN_VALUE); // yes
         SememeKey rcRangeEnd = new SememeKey(componentNid, Integer.MAX_VALUE); // no
         NavigableSet<SememeKey> referencedComponentRefexKeys
