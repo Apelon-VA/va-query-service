@@ -334,7 +334,19 @@ public class SememeProvider implements SememeService {
 
     @Override
     public Stream<SememeChronology<? extends SememeVersion>> getParallelSememeStream() {
-        return identifierService.getSememeSequenceStream().parallel().mapToObj((int sememeSequence) -> getSememe(sememeSequence));
+        return identifierService.getSememeSequenceStream().parallel().mapToObj((int sememeSequence) -> { 
+            try
+            {
+                //TODO Keith - this is DEBUG code that should be removed - it isn't proper to inject a null into the return stream.  However, something _ELSE_
+                //is broken at the moment, and the sememeSequenceStream is returning invalid sememe identifiers... eek.
+                return getSememe(sememeSequence);
+            }
+            catch (Exception e)
+            {
+                log.error("sememe sequence " + sememeSequence + " could not be resolved!", e);
+                return null;
+            }
+        });
     }
 
     int descriptionAssemblageSequence = Integer.MIN_VALUE;
