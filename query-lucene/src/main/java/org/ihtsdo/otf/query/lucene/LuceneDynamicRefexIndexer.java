@@ -122,8 +122,8 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 	@Override
 	protected void addFields(ObjectChronology<?> chronicle, Document doc)
 	{
-                doc.add(new IntField(ComponentProperty.COMPONENT_ID.name(), chronicle.getNid(), LuceneIndexer.indexedComponentNidType));
-            
+		doc.add(new IntField(ComponentProperty.COMPONENT_ID.name(), chronicle.getNid(), LuceneIndexer.indexedComponentNidType));
+
 		RefexDynamicChronicleBI<?> rdc = (RefexDynamicChronicleBI<?>) chronicle;
 		for (@SuppressWarnings("unchecked") Iterator<RefexDynamicVersionBI<?>> it = (Iterator<RefexDynamicVersionBI<?>>) rdc.getVersions().iterator(); it.hasNext();)
 		{
