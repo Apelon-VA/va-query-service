@@ -20,7 +20,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicChronicleBI;
-import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexService;
 import org.ihtsdo.otf.tcc.model.index.service.IndexStatusListenerBI;
 import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
@@ -31,7 +30,7 @@ import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
  */
 public class GenerateIndexes extends Task<Void> {
     private final static IdentifierService idProvider = LookupService.getService(IdentifierService.class);
-//    private final static RefexService refexProvider = LookupService.getService(RefexService.class);
+    private final static RefexService refexProvider = LookupService.getService(RefexService.class);
     private final static SememeService sememeProvider = LookupService.getService(SememeService.class);
     private final static ConceptService conceptService = LookupService.getService(ConceptServiceManagerI.class).get();
 
@@ -87,12 +86,12 @@ public class GenerateIndexes extends Task<Void> {
             //TODO performance problem... all of these count methods are incredibly slow
             int conceptCount = conceptService.getConceptCount();
             log.info("Concepts to index: " + conceptCount);
-//            long refexCount = (int) idProvider.getRefexSequenceStream().count();
-//            log.info("Refexes to index: " + refexCount);
+            long refexCount = (int) idProvider.getRefexSequenceStream().count();
+            log.info("Refexes to index: " + refexCount);
             long sememeCount = (int) idProvider.getSememeSequenceStream().count();
             log.info("Sememes to index: " + sememeCount);
-            componentCount = conceptCount + sememeCount;
-            log.info("Components to index: " + componentCount);
+            componentCount = conceptCount + refexCount + sememeCount;
+            log.info("Total components to index: " + componentCount);
             conceptService.getParallelConceptChronologyStream().forEach((ConceptChronology<?> conceptChronology) -> {
                     indexers.stream().forEach((i) -> {
                         //Currently, our indexers expect descriptions, not concepts... though we might want to re-evaluate this...
@@ -104,21 +103,25 @@ public class GenerateIndexes extends Task<Void> {
                 updateProcessedCount();
             });
             
-            //TODO Dan - not sure if I actually need either of these, any longer... need to test with SOLOR-ALL 
+            //TODO Keith - I don't think we have any old-style refexes any longer, do we?  SCTIDs seem to be coming through the sememe
+            //provider below.
 //            refexProvider.getParallelRefexStream().forEach((RefexMember<?, ?> refex) -> {
 //                indexers.stream().forEach((i) -> {
 //                    i.index(refex);
 //                });
 //                updateProcessedCount();
 //            });
-//            
-//            refexProvider.getParallelDynamicRefexStream().forEach((RefexDynamicChronicleBI<?> refex) -> {
-//                indexers.stream().forEach((i) -> {
-//                    i.index(refex);
-//                });
-//                updateProcessedCount();
-//            });
             
+            //TODO Keith - but I don't understand this bit - this seems to be the only place I can find the dynamic sememes, they aren't coming
+            //through the sememe iteration below.
+            refexProvider.getParallelDynamicRefexStream().forEach((RefexDynamicChronicleBI<?> refex) -> {
+                indexers.stream().forEach((i) -> {
+                    i.index(refex);
+                });
+                updateProcessedCount();
+            });
+            
+            //TODO Keith - why isn't this returning dynamic sememes?
             sememeProvider.getParallelSememeStream().forEach((SememeChronology sememe) -> {
                 if (sememe != null)  //TODO Keith -  this IF should not be necessary, but is at the moment, to deal with another bug in sememe provider
                 {
