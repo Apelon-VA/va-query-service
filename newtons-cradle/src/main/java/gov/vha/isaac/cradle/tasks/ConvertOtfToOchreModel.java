@@ -51,8 +51,8 @@ import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.model.concept.ConceptChronologyImpl;
 import gov.vha.isaac.ochre.model.coordinate.StampCoordinateImpl;
 import gov.vha.isaac.ochre.model.coordinate.StampPositionImpl;
-import gov.vha.isaac.ochre.model.logic.LogicExpressionOchreImpl;
-import gov.vha.isaac.ochre.model.logic.Node;
+import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
+import gov.vha.isaac.ochre.api.logic.Node;
 import gov.vha.isaac.ochre.model.logic.node.AndNode;
 import gov.vha.isaac.ochre.model.logic.node.internal.ConceptNodeWithNids;
 import gov.vha.isaac.ochre.model.logic.node.internal.RoleNodeSomeWithNids;
@@ -300,8 +300,8 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
         }
 
         logicGraphChronology.getVersionList().forEach((logicVersion) -> {
-             LogicExpressionOchreImpl expression
-                    = new LogicExpressionOchreImpl(logicVersion.getGraphData(),
+             LogicalExpressionOchreImpl expression
+                    = new LogicalExpressionOchreImpl(logicVersion.getGraphData(),
                             DataSource.INTERNAL,
                             conceptChronology.getConceptSequence());
 
