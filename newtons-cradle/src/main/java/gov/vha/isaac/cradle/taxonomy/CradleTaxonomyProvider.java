@@ -41,6 +41,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -175,13 +176,16 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
         if (childId == parentId) {
             return true;
         }
-        return recursiveFindAncestor(childId, parentId);
+        return recursiveFindAncestor(childId, parentId, new HashSet<>());
     }
 
-    private boolean recursiveFindAncestor(int childSequence, int parentSequence) {
+    private boolean recursiveFindAncestor(int childSequence, int parentSequence, HashSet<Integer> examined) {
         // currently unpacking from array to object. 
         // TODO operate directly on array if unpacking is a performance bottleneck.
-
+        if (examined.contains(childSequence)) {
+            return false;
+        }
+        examined.add(childSequence);
         Optional<TaxonomyRecordPrimitive> record = originDestinationTaxonomyRecordMap.get(childSequence);
         if (record.isPresent()) {
             TaxonomyRecordUnpacked childTaxonomyRecords = new TaxonomyRecordUnpacked(record.get().getArray());
@@ -192,7 +196,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
                 return true;
             }
             return Arrays.stream(conceptSequencesForType).anyMatch(
-                    (int intermediateChild) -> recursiveFindAncestor(intermediateChild, parentSequence));
+                    (int intermediateChild) -> recursiveFindAncestor(intermediateChild, parentSequence, examined));
         }
         return false;
     }

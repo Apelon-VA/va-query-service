@@ -73,6 +73,7 @@ import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
@@ -156,7 +157,7 @@ public class Cradle
     private void startMe() throws IOException {
         try {
             log.info("Starting Cradle post-construct");
-            conceptProvider = LookupService.getService(ConceptService.class);
+            conceptProvider = LookupService.getService(ConceptServiceManagerI.class).get();
             commitService = LookupService.getService(CommitService.class);
             identifierProvider = LookupService.getService(IdentifierService.class);
             sememeProvider = LookupService.getService(SememeService.class);
@@ -748,15 +749,20 @@ public class Cradle
             case REFEX:
                 return Optional.ofNullable(refexProvider.getRefex(identifierProvider.getRefexSequence(nid)));
         }
-        if (conceptModel == ConceptModel.OCHRE_CONCEPT_MODEL) {
-            try {
-                ConceptChronicle concept = (ConceptChronicle) 
-                        conceptProvider.getConcept(identifierProvider.getConceptSequenceForComponentNid(nid));
+        //The above code doesn't identify descriptions - try to find them...
+        //if (conceptModel == ConceptModel.OCHRE_CONCEPT_MODEL) {  //TODO Keith - not sure if this was a mistake... (you intended OTF_CONCEPT_MODEL)
+        //or if it is just needed for both...
+        try {
+            int conNid = identifierProvider.getConceptSequenceForComponentNid(nid);
+            if (conNid != Integer.MAX_VALUE)
+            {
+                ConceptChronicle concept = (ConceptChronicle)conceptProvider.getConcept(conNid);
                 return Optional.ofNullable(concept.getComponent(nid));
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
             }
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
+        //}
         return Optional.empty();
     }
 

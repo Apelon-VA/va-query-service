@@ -11,6 +11,7 @@ import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import java.util.UUID;
 import java.util.function.BiConsumer;
@@ -27,7 +28,7 @@ public class TaxonomyWalkCollector implements
         ObjIntConsumer<TaxonomyWalkAccumulator>, BiConsumer<TaxonomyWalkAccumulator, TaxonomyWalkAccumulator> {
 
     private static final IdentifierService identifierService = LookupService.getService(IdentifierService.class);
-    private static final ConceptService conceptService = LookupService.getService(ConceptService.class);
+    private static final ConceptService conceptService = LookupService.getService(ConceptServiceManagerI.class).get();
     private static final int MAX_PRINT_COUNT = 10;
 
     final TaxonomyService taxonomyService = LookupService.getService(TaxonomyService.class);

@@ -296,7 +296,7 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
 
     @Override
     public int getNid() {
-        return this.attributes.getNid();
+        return attributes == null ? Integer.MAX_VALUE : this.attributes.getNid();
     }
 
     @Override
