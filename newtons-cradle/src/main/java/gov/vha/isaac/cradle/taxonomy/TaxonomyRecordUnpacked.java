@@ -5,7 +5,6 @@ import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePositionCalculator;
@@ -36,7 +35,7 @@ public class TaxonomyRecordUnpacked {
     private static ConceptService conceptService;
     protected static ConceptService getConceptService() {
         if (conceptService == null) {
-            conceptService = LookupService.getService(ConceptServiceManagerI.class).get();
+            conceptService = LookupService.getService(ConceptService.class);
         }
         return conceptService;
     }
@@ -78,18 +77,18 @@ public class TaxonomyRecordUnpacked {
         return false;
     }
 
-    public boolean containsActiveConceptSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc) {
+    public boolean containsConceptSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc) {
         RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
         if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
-            return conceptSequenceRecordMap.get(conceptSequence).isActive(typeSequence, tc, computer);
+            return conceptSequenceRecordMap.get(conceptSequence).containsConceptSequenceViaType(typeSequence, tc, computer);
         }
         return false;
     }
     
-    public boolean containsActiveConceptSequenceViaType(int conceptSequence, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc) {
+    public boolean containsConceptSequenceViaType(int conceptSequence, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc) {
         RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
         if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
-            return conceptSequenceRecordMap.get(conceptSequence).isActive(typeSequenceSet, tc, computer);
+            return conceptSequenceRecordMap.get(conceptSequence).containsConceptSequenceViaType(typeSequenceSet, tc, computer);
         }
         return false;
     }
@@ -98,47 +97,23 @@ public class TaxonomyRecordUnpacked {
         RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(stampCoordinate);
         if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
             return conceptSequenceRecordMap.get(conceptSequence).
-                    isActive(Integer.MAX_VALUE, TaxonomyFlags.CONCEPT_STATUS.bits, computer);
+                    containsConceptSequenceViaType(Integer.MAX_VALUE, TaxonomyFlags.CONCEPT_STATUS.bits, computer);
         }
         return false;
     }
 
-    public boolean containsActiveConceptSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc, int flags) {
+    public boolean containsConceptSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc, int flags) {
         RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
         if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
-            return conceptSequenceRecordMap.get(conceptSequence).isActive(typeSequence, flags, computer);
+            return conceptSequenceRecordMap.get(conceptSequence).containsConceptSequenceViaType(typeSequence, flags, computer);
         }
         return false;
     }
 
-    public boolean containsActiveConceptSequenceViaType(int conceptSequence, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc, int flags) {
+    public boolean containsConceptSequenceViaType(int conceptSequence, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc, int flags) {
         RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
         if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
-            return conceptSequenceRecordMap.get(conceptSequence).isActive(typeSequenceSet, flags, computer);
-        }
-        return false;
-    }
-
-    public boolean containsVisibleConceptSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc) {
-        RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
-        if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
-            return conceptSequenceRecordMap.get(conceptSequence).isVisible(typeSequence, tc, computer);
-        }
-        return false;
-    }
-
-    public boolean containsVisibleConceptSequenceViaType(int conceptSequence, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc) {
-        RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
-        if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
-            return conceptSequenceRecordMap.get(conceptSequence).isVisible(typeSequenceSet, tc, computer);
-        }
-        return false;
-    }
-
-    public boolean containsVisibleConceptSequenceViaType(int conceptSequence, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc, int flags) {
-        RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
-        if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
-            return conceptSequenceRecordMap.get(conceptSequence).isVisible(typeSequenceSet, flags, computer);
+            return conceptSequenceRecordMap.get(conceptSequence).containsConceptSequenceViaType(typeSequenceSet, flags, computer);
         }
         return false;
     }
@@ -146,14 +121,6 @@ public class TaxonomyRecordUnpacked {
     public boolean containsConceptSequenceViaType(int conceptSequence, ConceptSequenceSet typeSequenceSet, int flags) {
         if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
             return conceptSequenceRecordMap.get(conceptSequence).isPresent(typeSequenceSet, flags);
-        }
-        return false;
-    }
-
-    public boolean containsVisibleConceptSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc, int flags) {
-        RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
-        if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
-            return conceptSequenceRecordMap.get(conceptSequence).isVisible(typeSequence, flags, computer);
         }
         return false;
     }
@@ -191,7 +158,7 @@ public class TaxonomyRecordUnpacked {
      * @param tc used to determine if a concept is active.
      * @return active concepts identified by their sequence value.
      */
-    public IntStream getActiveConceptSequencesForType(int typeSequence, TaxonomyCoordinate tc) {
+    public IntStream getConceptSequencesForType(int typeSequence, TaxonomyCoordinate tc) {
         int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
         RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
         IntStream.Builder conceptSequenceIntStream = IntStream.builder();
@@ -210,28 +177,6 @@ public class TaxonomyRecordUnpacked {
             if (computer.isLatestActive(stampsForConceptIntStream.build())) {
                 conceptSequenceIntStream.accept(possibleParentSequence);
             }
-            return true;
-        });
-        return conceptSequenceIntStream.build();
-    }
-
-    public IntStream getVisibleConceptSequencesForType(int typeSequence, TaxonomyCoordinate tc) {
-        final int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
-        RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
-        IntStream.Builder conceptSequenceIntStream = IntStream.builder();
-        conceptSequenceRecordMap.forEachPair((int possibleParentSequence, TypeStampTaxonomyRecords stampRecords) -> {
-            stampRecords.getTypeStampFlagStream().forEach((typeStampFlag) -> {
-                TypeStampTaxonomyRecord record = new TypeStampTaxonomyRecord(typeStampFlag);
-                if ((record.getTaxonomyFlags() & flags) == flags) {
-                    if (computer.onRoute(record.getStampSequence())) {
-                        if (typeSequence == Integer.MAX_VALUE) {
-                            conceptSequenceIntStream.accept(possibleParentSequence);
-                        } else if (record.getTypeSequence() == typeSequence) {
-                            conceptSequenceIntStream.accept(possibleParentSequence);
-                        }
-                    }
-                }
-            });
             return true;
         });
         return conceptSequenceIntStream.build();
@@ -273,29 +218,7 @@ public class TaxonomyRecordUnpacked {
         return conceptSequenceIntStream.build();
     }
 
-  public IntStream getDestinationConceptSequencesOfTypeVisible(ConceptSequenceSet typeSet, TaxonomyCoordinate tc) {
-        final int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
-        RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
-        IntStream.Builder conceptSequenceIntStream = IntStream.builder();
-        conceptSequenceRecordMap.forEachPair((int destinationSequence, TypeStampTaxonomyRecords stampRecords) -> {
-            stampRecords.getTypeStampFlagStream().forEach((typeStampFlag) -> {
-                TypeStampTaxonomyRecord record = new TypeStampTaxonomyRecord(typeStampFlag);
-                if ((record.getTaxonomyFlags() & flags) == flags) {
-                    if (computer.onRoute(record.getStampSequence())) {
-                        if (typeSet.isEmpty()) {
-                            conceptSequenceIntStream.accept(destinationSequence);
-                        } else if (typeSet.contains(record.getTypeSequence())) {
-                            conceptSequenceIntStream.accept(destinationSequence);
-                        }
-                    }
-                }
-            });
-            return true;
-        });
-        return conceptSequenceIntStream.build();
-    }
-  
-    public IntStream getDestinationConceptSequencesOfTypeActive(ConceptSequenceSet typeSet, TaxonomyCoordinate tc) {
+    public IntStream getDestinationConceptSequencesOfType(ConceptSequenceSet typeSet, TaxonomyCoordinate tc) {
         final int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
         RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
         IntStream.Builder conceptSequenceIntStream = IntStream.builder();

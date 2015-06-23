@@ -11,7 +11,6 @@ import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePositionCalculator;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
@@ -43,7 +42,7 @@ public class TypeStampTaxonomyRecords {
     private static ConceptService conceptService;
     private static ConceptService getConceptService() {
         if (conceptService == null) {
-            conceptService = LookupService.getService(ConceptServiceManagerI.class).get();
+            conceptService = LookupService.getService(ConceptService.class);
         }
         return conceptService;
     }
@@ -157,44 +156,24 @@ public class TypeStampTaxonomyRecords {
         return intStreamBuilder.build();
     }
 
-    public boolean isActive(int typeSequence, TaxonomyCoordinate tc, RelativePositionCalculator computer) {
+    public boolean containsConceptSequenceViaType(int typeSequence, TaxonomyCoordinate tc, RelativePositionCalculator computer) {
         int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
-        return isActive(typeSequence, flags, computer);
+        return containsConceptSequenceViaType(typeSequence, flags, computer);
     }
 
-    public boolean isActive(ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc, RelativePositionCalculator computer) {
+    public boolean containsConceptSequenceViaType(ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc, RelativePositionCalculator computer) {
         int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
-        return isActive(typeSequenceSet, flags, computer);
+        return containsConceptSequenceViaType(typeSequenceSet, flags, computer);
     }
 
-    public boolean isActive(int typeSequence, int flags, RelativePositionCalculator computer) {
-        StampSequenceSet latestStamps = computer.getLatestStampSequences(getStampsOfTypeWithFlags(typeSequence, flags));
-        return latestStamps.stream().anyMatch((stampSequence) -> 
-                getCommitService().getStatusForStamp(stampSequence) == State.ACTIVE);
+    public boolean containsConceptSequenceViaType(int typeSequence, int flags, RelativePositionCalculator computer) {
+        StampSequenceSet latestStamps = computer.getLatestStampSequencesAsSet(getStampsOfTypeWithFlags(typeSequence, flags));
+        return !latestStamps.isEmpty();
     }
 
-    public boolean isActive(ConceptSequenceSet typeSequenceSet, int flags, RelativePositionCalculator computer) {
-        StampSequenceSet latestStamps = computer.getLatestStampSequences(getStampsOfTypeWithFlags(typeSequenceSet, flags));
-        return latestStamps.stream().anyMatch((stampSequence) -> 
-                getCommitService().getStatusForStamp(stampSequence) == State.ACTIVE);
-    }
-
-    boolean isVisible(int typeSequence, TaxonomyCoordinate tc, RelativePositionCalculator computer) {
-        int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
-        return isVisible(typeSequence, flags, computer);
-    }
-
-    boolean isVisible(ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc, RelativePositionCalculator computer) {
-        int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
-        return isVisible(typeSequenceSet, flags, computer);
-    }
-
-    public boolean isVisible(int typeSequence, int flags, RelativePositionCalculator computer) {
-        return !computer.getLatestStampSequences(getStampsOfTypeWithFlags(typeSequence, flags)).isEmpty();
-    }
-
-    public boolean isVisible(ConceptSequenceSet typeSequenceSet, int flags, RelativePositionCalculator computer) {
-        return !computer.getLatestStampSequences(getStampsOfTypeWithFlags(typeSequenceSet, flags)).isEmpty();
+    public boolean containsConceptSequenceViaType(ConceptSequenceSet typeSequenceSet, int flags, RelativePositionCalculator computer) {
+        StampSequenceSet latestStamps = computer.getLatestStampSequencesAsSet(getStampsOfTypeWithFlags(typeSequenceSet, flags));
+        return !latestStamps.isEmpty();
     }
 
     public boolean isPresent(ConceptSequenceSet typeSequenceSet, int flags) {

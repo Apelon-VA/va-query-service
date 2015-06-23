@@ -41,7 +41,6 @@ import org.ihtsdo.otf.tcc.ddo.ComponentReference;
 import org.ihtsdo.otf.tcc.ddo.concept.ConceptChronicleDdo;
 import org.ihtsdo.otf.tcc.ddo.fetchpolicy.RefexPolicy;
 import org.ihtsdo.otf.tcc.ddo.fetchpolicy.RelationshipPolicy;
-import org.ihtsdo.otf.tcc.ddo.fetchpolicy.VersionPolicy;
 import org.ihtsdo.otf.tcc.model.cc.NidPairForRefex;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
@@ -57,7 +56,6 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -67,13 +65,11 @@ import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.StandardPaths;
 import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
-import gov.vha.isaac.ochre.api.chronicle.IdentifiedObjectLocal;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
 import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
@@ -157,7 +153,7 @@ public class Cradle
     private void startMe() throws IOException {
         try {
             log.info("Starting Cradle post-construct");
-            conceptProvider = LookupService.getService(ConceptServiceManagerI.class).get();
+            conceptProvider = LookupService.getService(ConceptService.class);
             commitService = LookupService.getService(CommitService.class);
             identifierProvider = LookupService.getService(IdentifierService.class);
             sememeProvider = LookupService.getService(SememeService.class);
@@ -311,25 +307,20 @@ public class Cradle
     @Override
     public Task<Integer> startLoadTask(java.nio.file.Path... paths) {
         ImportEConceptFile loaderTask = ImportEConceptFile.create(paths, this);
-        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(loaderTask);
         return loaderTask;
     }
 
     @Override
     public Task<Integer> startExportTask(Path path) {
-        ExportEConceptFile exporterTask = new ExportEConceptFile(path, this);
-        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(exporterTask);
-        return exporterTask;
+        return ExportEConceptFile.create(path, this);
     }
 
     @Override
     public Task<Integer> startLogicGraphExportTask(Path path) {
-        ExportEConceptFile exporterTask = new ExportEConceptFile(path, this,
+        return ExportEConceptFile.create(path, this,
                 (Consumer<TtkConceptChronicle>) (TtkConceptChronicle t) -> {
                     t.setRelationships(null);
                 });
-        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(exporterTask);
-        return exporterTask;
     }
 
     @Override
@@ -393,7 +384,7 @@ public class Cradle
 
     @Override
     public NativeIdSetBI isChildOfSet(int parent, ViewCoordinate viewCoordinate) {
-        IntStream childrenSequences = taxonomyProvider.getTaxonomyChildSequencesActive(identifierProvider.getConceptSequence(parent), viewCoordinate);
+        IntStream childrenSequences = taxonomyProvider.getTaxonomyChildSequences(identifierProvider.getConceptSequence(parent), viewCoordinate);
         NativeIdSetBI childNidSet = new IntSet();
         childrenSequences.forEach((sequence) -> childNidSet.add(identifierProvider.getConceptNid(sequence)));
         return childNidSet;
@@ -659,44 +650,39 @@ public class Cradle
     @Override
     public ConceptChronicleDdo getFxConcept(UUID uuid, ViewCoordinate viewCoordinate) throws IOException, ContradictionException {
         ConceptChronicleBI chronicle = this.getConcept(uuid);
-        TerminologySnapshot termSnap = new TerminologySnapshot(this, viewCoordinate);
-        ConceptChronicleDdo c = new ConceptChronicleDdo(termSnap, chronicle, VersionPolicy.ACTIVE_VERSIONS, RefexPolicy.REFEX_MEMBERS,
+        ConceptChronicleDdo c = new ConceptChronicleDdo(viewCoordinate, chronicle, RefexPolicy.REFEX_MEMBERS,
                 RelationshipPolicy.ORIGINATING_RELATIONSHIPS);
         return c;
     }
 
     @Override
-    public ConceptChronicleDdo getFxConcept(ComponentReference componentReference, UUID viewCoordinateUuid, VersionPolicy versionPolicy,
+    public ConceptChronicleDdo getFxConcept(ComponentReference componentReference, UUID viewCoordinateUuid,
             RefexPolicy refexPolicy, RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
         int nid = componentReference.getNid();
         ConceptChronicleBI chronicle = this.getConcept(nid);
-        TerminologySnapshot termSnap = new TerminologySnapshot(this, this.getViewCoordinate(viewCoordinateUuid));
-        return new ConceptChronicleDdo(termSnap, chronicle, VersionPolicy.ACTIVE_VERSIONS, refexPolicy, RelationshipPolicy.ORIGINATING_RELATIONSHIPS);
+        return new ConceptChronicleDdo(this.getViewCoordinate(viewCoordinateUuid), chronicle, refexPolicy, RelationshipPolicy.ORIGINATING_RELATIONSHIPS);
     }
 
     @Override
-    public ConceptChronicleDdo getFxConcept(ComponentReference componentReference, ViewCoordinate viewCoordinate, VersionPolicy versionPolicy,
+    public ConceptChronicleDdo getFxConcept(ComponentReference componentReference, ViewCoordinate viewCoordinate,
             RefexPolicy refexPolicy, RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
         int nid = componentReference.getNid();
         ConceptChronicleBI chronicle = this.getConcept(nid);
-        TerminologySnapshot termSnap = new TerminologySnapshot(this, viewCoordinate);
-        return new ConceptChronicleDdo(termSnap, chronicle, versionPolicy, refexPolicy, relationshipPolicy);
+        return new ConceptChronicleDdo(viewCoordinate, chronicle, refexPolicy, relationshipPolicy);
     }
 
     @Override
-    public ConceptChronicleDdo getFxConcept(UUID uuid, UUID viewCoordinateUuid, VersionPolicy versionPolicy, RefexPolicy refexPolicy,
+    public ConceptChronicleDdo getFxConcept(UUID uuid, UUID viewCoordinateUuid, RefexPolicy refexPolicy,
             RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
         ConceptChronicleBI chronicle = this.getConcept(uuid);
-        TerminologySnapshot termSnap = new TerminologySnapshot(this, this.getViewCoordinate(viewCoordinateUuid));
-        return new ConceptChronicleDdo(termSnap, chronicle, versionPolicy, refexPolicy, relationshipPolicy);
+        return new ConceptChronicleDdo(this.getViewCoordinate(viewCoordinateUuid), chronicle, refexPolicy, relationshipPolicy);
     }
 
     @Override
-    public ConceptChronicleDdo getFxConcept(UUID uuid, ViewCoordinate viewCoordinate, VersionPolicy versionPolicy,
+    public ConceptChronicleDdo getFxConcept(UUID uuid, ViewCoordinate viewCoordinate,
             RefexPolicy refexPolicy, RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
         ConceptChronicleBI chronicle = this.getConcept(uuid);
-        TerminologySnapshot termSnap = new TerminologySnapshot(this, viewCoordinate);
-        return new ConceptChronicleDdo(termSnap, chronicle, versionPolicy, refexPolicy, relationshipPolicy);
+        return new ConceptChronicleDdo(viewCoordinate, chronicle, refexPolicy, relationshipPolicy);
     }
 
     @Override
@@ -991,19 +977,17 @@ public class Cradle
 
     @Override
     public Task<Integer> startExportTask(ConceptProxy stampPath, Path filePath) {
-        ExportEConceptFile exporterTask = new ExportEConceptFile(filePath, this, ttkConceptChronicle -> {
+        return ExportEConceptFile.create(filePath, this, ttkConceptChronicle -> {
             ttkConceptChronicle.processComponentRevisions(r -> {
                 r.setPathUuid(stampPath.getUuids()[0]);
             });
         });
-        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(exporterTask);
-        return exporterTask;
     }
 
     @Override
     public Task<Integer> startLogicGraphExportTask(ConceptProxy stampPath, Path filePath) {
         UUID pathUuid = stampPath.getUuids()[0];
-        ExportEConceptFile exporterTask = new ExportEConceptFile(filePath, this,
+        return ExportEConceptFile.create(filePath, this,
                 (Consumer<TtkConceptChronicle>) (TtkConceptChronicle t) -> {
                     t.setRelationships(null);
                 }, (Consumer<TtkConceptChronicle>) (TtkConceptChronicle t) -> {
@@ -1011,8 +995,6 @@ public class Cradle
                         r.setPathUuid(pathUuid);
                     });
                 });
-        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(exporterTask);
-        return exporterTask;
     }
 
     @Override

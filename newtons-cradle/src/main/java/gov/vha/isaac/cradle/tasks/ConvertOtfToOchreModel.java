@@ -9,7 +9,7 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY_STATE_SET KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -31,7 +31,6 @@ import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.component.sememe.SememeBuilder;
 import gov.vha.isaac.ochre.api.component.sememe.SememeBuilderService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
@@ -85,7 +84,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
     private static final CommitService commitService = LookupService.getService(CommitService.class);
     private static final SememeService sememeService = LookupService.getService(SememeService.class);
     private static final IdentifierService identifierService = LookupService.getService(IdentifierService.class);
-    private static final ConceptService conceptService = LookupService.getService(ConceptServiceManagerI.class).get();
+    private static final ConceptService conceptService = LookupService.getService(ConceptService.class);
     private static final CradleExtensions cradle = LookupService.getService(CradleExtensions.class);
     private static final SememeBuilderService sememeBuilderService = LookupService.getService(SememeBuilderService.class);
     private static final LogicalExpressionBuilderService expressionBuilderService
@@ -149,7 +148,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
             // stamp position in the concept
             stampPositionSet.forEach((stampPosition) -> {
                 StampCoordinateImpl stampCoordinate
-                        = new StampCoordinateImpl(StampPrecedence.PATH, stampPosition, null);
+                        = new StampCoordinateImpl(StampPrecedence.PATH, stampPosition, null, State.ANY_STATE_SET);
                 RelativePositionCalculator calc = RelativePositionCalculator.getCalculator(stampCoordinate);
                 Optional<LatestVersion<TtkConceptAttributesVersion>> latestAttributeVersion
                         = calc.getLatestVersion(eConcept.getConceptAttributes());

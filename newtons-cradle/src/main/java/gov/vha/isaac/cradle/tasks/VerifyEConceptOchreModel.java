@@ -21,7 +21,6 @@ import gov.vha.isaac.ochre.api.ConceptProxy;
 import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.model.concept.ConceptChronologyImpl;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
 import java.util.UUID;
@@ -35,7 +34,7 @@ public class VerifyEConceptOchreModel implements Callable<Boolean> {
 
     private static final AtomicInteger failureCount = new AtomicInteger();
 
-    private static final ConceptService conceptService = LookupService.getService(ConceptServiceManagerI.class).get();
+    private static final ConceptService conceptService = LookupService.getService(ConceptService.class);
     private static final ConceptModel conceptModel = LookupService.getService(ConfigurationService.class).getConceptModel();
 
     CradleExtensions termService;

@@ -18,9 +18,15 @@ package gov.vha.isaac.cradle.concept;
 import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.DelegateService;
 import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
+import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshotService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import java.io.IOException;
+import java.util.UUID;
+import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.apache.logging.log4j.LogManager;
@@ -34,9 +40,59 @@ import org.jvnet.hk2.annotations.Service;
  */
 @Service
 @RunLevel(value = 1)
-public class ConceptProviderManager implements ConceptServiceManagerI {
+public class ConceptProviderManager implements ConceptService {
     private static final Logger log = LogManager.getLogger();
     ConceptService delegate;
+
+    @Override
+    public ConceptChronology<? extends ConceptVersion> getConcept(int conceptSequence) {
+        return delegate.getConcept(conceptSequence);
+    }
+
+    @Override
+    public ConceptChronology<? extends ConceptVersion> getConcept(UUID... conceptUuids) {
+        return delegate.getConcept(conceptUuids);
+    }
+
+    @Override
+    public void writeConcept(ConceptChronology<? extends ConceptVersion> concept) {
+        delegate.writeConcept(concept);
+    }
+
+    @Override
+    public boolean isConceptActive(int conceptSequence, StampCoordinate stampCoordinate) {
+        return delegate.isConceptActive(conceptSequence, stampCoordinate);
+    }
+
+    @Override
+    public ConceptSnapshotService getSnapshot(StampCoordinate stampCoordinate) {
+        return delegate.getSnapshot(stampCoordinate);
+    }
+
+    @Override
+    public int getConceptCount() {
+        return delegate.getConceptCount();
+    }
+
+    @Override
+    public Stream<ConceptChronology<? extends ConceptVersion>> getConceptChronologyStream() {
+        return delegate.getConceptChronologyStream();
+    }
+
+    @Override
+    public Stream<ConceptChronology<? extends ConceptVersion>> getParallelConceptChronologyStream() {
+        return delegate.getParallelConceptChronologyStream();
+    }
+
+    @Override
+    public Stream<ConceptChronology<? extends ConceptVersion>> getConceptChronologyStream(ConceptSequenceSet conceptSequences) {
+        return delegate.getConceptChronologyStream(conceptSequences);
+    }
+
+    @Override
+    public Stream<ConceptChronology<? extends ConceptVersion>> getParallelConceptChronologyStream(ConceptSequenceSet conceptSequences) {
+        return delegate.getParallelConceptChronologyStream(conceptSequences);
+    }
 
     private ConceptProviderManager() throws Exception {
         //For HK2 only
@@ -55,11 +111,6 @@ public class ConceptProviderManager implements ConceptServiceManagerI {
         }
     }
 
-    @Override
-    public ConceptService get()
-    {
-        return delegate;
-    }
 
     @PostConstruct
     private void startMe() throws IOException {

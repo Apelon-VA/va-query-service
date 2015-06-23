@@ -9,7 +9,6 @@ import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import java.util.ArrayList;
@@ -32,7 +31,7 @@ public class GenerateIndexes extends Task<Void> {
     private final static IdentifierService idProvider = LookupService.getService(IdentifierService.class);
     private final static RefexService refexProvider = LookupService.getService(RefexService.class);
     private final static SememeService sememeProvider = LookupService.getService(SememeService.class);
-    private final static ConceptService conceptService = LookupService.getService(ConceptServiceManagerI.class).get();
+    private final static ConceptService conceptService = LookupService.getService(ConceptService.class);
 
     private static final Logger log = LogManager.getLogger();
 
