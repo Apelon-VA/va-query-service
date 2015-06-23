@@ -208,4 +208,9 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
         conceptMap.put(concept.getConceptSequence(), (ConceptChronologyImpl) concept);
     }
 
+    @Override
+    public ConceptService getDelegate() {
+        return this;
+    }
+
 }

@@ -199,22 +199,22 @@ public class Cradle
 
     @Override
     public Stream<ConceptChronicleDataEager> getConceptDataEagerStream() {
-        return ((ConceptProviderOtfModel) conceptProvider).getConceptDataEagerStream();
+        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getConceptDataEagerStream();
     }
 
     @Override
     public Stream<ConceptChronicleDataEager> getConceptDataEagerStream(ConceptSequenceSet conceptSequences) {
-        return ((ConceptProviderOtfModel) conceptProvider).getConceptDataEagerStream(conceptSequences);
+        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getConceptDataEagerStream(conceptSequences);
     }
 
     @Override
     public Stream<ConceptChronicleDataEager> getParallelConceptDataEagerStream(ConceptSequenceSet conceptSequences) {
-        return ((ConceptProviderOtfModel) conceptProvider).getParallelConceptDataEagerStream(conceptSequences);
+        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getParallelConceptDataEagerStream(conceptSequences);
     }
 
     @Override
     public Stream<ConceptChronicleDataEager> getParallelConceptDataEagerStream() {
-        return ((ConceptProviderOtfModel) conceptProvider).getParallelConceptDataEagerStream();
+        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getParallelConceptDataEagerStream();
     }
 
     @Override
@@ -264,22 +264,22 @@ public class Cradle
 
     @Override
     public Stream<ConceptChronicle> getConceptStream() {
-        return ((ConceptProviderOtfModel) conceptProvider).getConceptStream();
+        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getConceptStream();
     }
 
     @Override
     public Stream<ConceptChronicle> getParallelConceptStream() {
-        return ((ConceptProviderOtfModel) conceptProvider).getParallelConceptStream();
+        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getParallelConceptStream();
     }
 
     @Override
     public Stream<? extends ConceptChronicleBI> getConceptStream(ConceptSequenceSet conceptSequences) throws IOException {
-        return ((ConceptProviderOtfModel) conceptProvider).getConceptStream(conceptSequences);
+        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getConceptStream(conceptSequences);
     }
 
     @Override
     public Stream<? extends ConceptChronicleBI> getParallelConceptStream(ConceptSequenceSet conceptSequences) throws IOException {
-        return ((ConceptProviderOtfModel) conceptProvider).getConceptStream(conceptSequences).parallel();
+        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getConceptStream(conceptSequences).parallel();
     }
 
     @Override
@@ -330,7 +330,7 @@ public class Cradle
 
     @Override
     public ConceptChronicleDataEager getConceptData(int i) throws IOException {
-        return ((ConceptProviderOtfModel) conceptProvider).getConceptData(i);
+        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getConceptData(i);
     }
 
     @Override
@@ -885,7 +885,7 @@ public class Cradle
 
     @Override
     public void writeConceptData(ConceptChronicleDataEager conceptData) {
-        ((ConceptProviderOtfModel) conceptProvider).writeConceptData(conceptData);
+        ((ConceptProviderOtfModel) conceptProvider.getDelegate()).writeConceptData(conceptData);
     }
 
     @Override

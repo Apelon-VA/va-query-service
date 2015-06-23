@@ -24,7 +24,6 @@ import gov.vha.isaac.ochre.api.DelegateService;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SystemStatusService;
-import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshot;
@@ -236,5 +235,8 @@ public class ConceptProviderOtfModel implements ConceptService, DelegateService 
         return conceptSequences.stream().mapToObj((int sequence) -> conceptMap.getQuick(sequence).getConceptChronicle());
     }
 
-
+    @Override
+    public ConceptService getDelegate() {
+        return this;
+    }
 }

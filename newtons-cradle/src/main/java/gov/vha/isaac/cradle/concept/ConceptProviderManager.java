@@ -111,6 +111,11 @@ public class ConceptProviderManager implements ConceptService {
         }
     }
 
+    @Override
+    public ConceptService getDelegate() {
+        return delegate;
+    }
+
 
     @PostConstruct
     private void startMe() throws IOException {
