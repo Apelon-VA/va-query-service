@@ -87,12 +87,6 @@
                                     <version>1.5</version>
                                     <type>zip</type>
                                 </artifact>
-                                <artifact>
-                                    <groupId>com.informatics</groupId>
-                                    <artifactId>otf-integration-test-data</artifactId>
-                                    <version>1.4</version>
-                                    <type>zip</type>
-                                </artifact>
                            </artifactItems>
                            <outputDirectory>${project.build.directory}/test-resources/</outputDirectory>
                         </configuration>
