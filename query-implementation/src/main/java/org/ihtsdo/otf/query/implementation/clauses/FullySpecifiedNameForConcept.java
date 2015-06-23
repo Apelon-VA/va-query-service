@@ -17,18 +17,16 @@ package org.ihtsdo.otf.query.implementation.clauses;
 
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
+import gov.vha.isaac.ochre.api.coordinate.LanguageCoordinate;
+import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
-import java.util.Map;
 import java.util.Optional;
-import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
-import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.ParentClause;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.WhereClause;
-import org.ihtsdo.otf.tcc.api.store.Ts;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -65,14 +63,16 @@ public class FullySpecifiedNameForConcept extends ParentClause {
 
     @Override
     public NidSet computeComponents(NidSet incomingComponents) {
-        ViewCoordinate viewCoordinate = getEnclosingQuery().getViewCoordinate();
+        LanguageCoordinate languageCoordinate = getEnclosingQuery().getLanguageCoordinate();
+        StampCoordinate stampCoordinate = getEnclosingQuery().getStampCoordinate();
         NidSet outgoingFullySpecifiedNids = new NidSet();
         for (Clause childClause : getChildren()) {
             NidSet childPossibleComponentNids = childClause.computePossibleComponents(incomingComponents);
             ConceptSequenceSet conceptSequenceSet = ConceptSequenceSet.of(childPossibleComponentNids);
             conceptService.getConceptChronologyStream(conceptSequenceSet)
                     .forEach((conceptChronology) -> {
-                        Optional<LatestVersion<DescriptionSememe>> desc = conceptChronology.getFullySpecifiedDescription(viewCoordinate, viewCoordinate);
+                        Optional<LatestVersion<DescriptionSememe>> desc = 
+                                conceptChronology.getFullySpecifiedDescription(languageCoordinate, stampCoordinate);
                         if (desc.isPresent()) {
                             outgoingFullySpecifiedNids.add(desc.get().value().getNid());
                         }

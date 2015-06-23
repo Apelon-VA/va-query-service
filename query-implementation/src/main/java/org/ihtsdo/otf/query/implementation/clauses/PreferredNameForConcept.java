@@ -17,20 +17,18 @@ package org.ihtsdo.otf.query.implementation.clauses;
 
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
+import gov.vha.isaac.ochre.api.coordinate.LanguageCoordinate;
+import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.EnumSet;
-import java.util.Map;
 import java.util.Optional;
-import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
-import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.ClauseComputeType;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.ParentClause;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.WhereClause;
-import org.ihtsdo.otf.tcc.api.store.Ts;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -55,9 +53,9 @@ public class PreferredNameForConcept extends ParentClause {
     public WhereClause getWhereClause() {
         WhereClause whereClause = new WhereClause();
         whereClause.setSemantic(ClauseSemantic.PREFERRED_NAME_FOR_CONCEPT);
-        for (Clause clause : getChildren()) {
+        getChildren().stream().forEach((clause) -> {
             whereClause.getChildren().add(clause.getWhereClause());
-        }
+        });
         return whereClause;
     }
 
@@ -73,19 +71,19 @@ public class PreferredNameForConcept extends ParentClause {
 
     @Override
     public NidSet computeComponents(NidSet incomingConcepts) {
-        ViewCoordinate viewCoordinate = getEnclosingQuery().getViewCoordinate();
+        LanguageCoordinate languageCoordinate = getEnclosingQuery().getLanguageCoordinate();
+        StampCoordinate stampCoordinate = getEnclosingQuery().getStampCoordinate();
         NidSet outgoingPreferredNids = new NidSet();
-        for (Clause childClause : getChildren()) {
-            NidSet childPossibleComponentNids = childClause.computePossibleComponents(incomingConcepts);
-            ConceptSequenceSet conceptSequenceSet = ConceptSequenceSet.of(childPossibleComponentNids);
+        getChildren().stream().map((childClause) -> childClause.computePossibleComponents(incomingConcepts)).map((childPossibleComponentNids) -> ConceptSequenceSet.of(childPossibleComponentNids)).forEach((conceptSequenceSet) -> {
             conceptService.getConceptChronologyStream(conceptSequenceSet)
                     .forEach((conceptChronology) -> {
-                        Optional<LatestVersion<DescriptionSememe>> desc = conceptChronology.getPreferredDescription(viewCoordinate, viewCoordinate);
+                        Optional<LatestVersion<DescriptionSememe>> desc = 
+                                conceptChronology.getPreferredDescription(languageCoordinate, stampCoordinate);
                         if (desc.isPresent()) {
                             outgoingPreferredNids.add(desc.get().value().getNid());
                         }
                     });
-        }
+        });
         return outgoingPreferredNids;
     }
 }

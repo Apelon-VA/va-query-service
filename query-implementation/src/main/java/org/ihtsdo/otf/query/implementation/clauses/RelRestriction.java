@@ -125,7 +125,7 @@ public class RelRestriction extends LeafClause {
     @Override
     public void getQueryMatches(ConceptVersion conceptVersion) {
         ViewCoordinate viewCoordinate = (ViewCoordinate) enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
-        taxonomyService.getAllRelationshipDestinationSequencesOfTypeActive(
+        taxonomyService.getAllRelationshipDestinationSequencesOfType(
                 conceptVersion.getChronology().getConceptSequence(), relTypeSet, viewCoordinate)
                 .forEach((destinationSequence) -> {
                     if (destinationSet.contains(destinationSequence)) {

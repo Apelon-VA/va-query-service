@@ -15,8 +15,6 @@
  */
 package org.ihtsdo.otf.query.integration.tests.suite;
 
-import java.io.IOException;
-import java.util.UUID;
 import static gov.vha.isaac.ochre.api.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
 import static gov.vha.isaac.ochre.api.constants.Constants.SEARCH_ROOT_LOCATION_PROPERTY;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
@@ -26,7 +24,6 @@ import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
 import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
 import java.nio.file.Path;
@@ -36,8 +33,6 @@ import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
-import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
-import org.ihtsdo.otf.tcc.api.store.TerminologyStoreDI;
 import org.jvnet.testing.hk2testng.HK2;
 import org.reactfx.Subscription;
 import org.testng.annotations.*;
@@ -61,7 +56,7 @@ public class QueryServiceTestSuiteSetup {
         
         System.setProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY, "target/object-chronicles");
         System.setProperty(SEARCH_ROOT_LOCATION_PROPERTY, "target/search");
-        LookupService.getService(ConfigurationService.class).setConceptModel(ConceptModel.OTF_CONCEPT_MODEL);
+        LookupService.getService(ConfigurationService.class).setConceptModel(ConceptModel.OCHRE_CONCEPT_MODEL);
         
         java.nio.file.Path dbFolderPath = Paths.get(System.getProperty(CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY));
         dbExists = dbFolderPath.toFile().exists();
@@ -72,7 +67,7 @@ public class QueryServiceTestSuiteSetup {
         HeapUseTicker.start(10);
         
         ObjectChronicleTaskService tts = LookupService.getService(ObjectChronicleTaskService.class);
-        ConceptService store = LookupService.getService(ConceptServiceManagerI.class).get();
+        ConceptService store = LookupService.getService(ConceptService.class);
  
         if (!dbExists) {
             loadDatabase(tts);
@@ -82,11 +77,11 @@ public class QueryServiceTestSuiteSetup {
         ConceptChronology concept;
         try {
             concept = store.getConcept(IsaacMetadataAuxiliaryBinding.ISAAC_ROOT.getUuids());
-            log.info("Isaac Root concept: {0}", concept.toString());
+            log.info("Isaac Root concept: {}", concept.toString());
 
             concept = store.getConcept(IsaacMetadataAuxiliaryBinding.HEALTH_CONCEPT.getUuids());
 
-            log.info("Health concept: {0}", concept.toString());
+            log.info("Health concept: {}", concept.toString());
 
 
         } catch (Exception ex) {

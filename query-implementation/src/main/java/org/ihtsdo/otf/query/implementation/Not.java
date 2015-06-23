@@ -94,7 +94,7 @@ public class Not extends ParentClause {
         ConceptSequenceSet activeSet = new ConceptSequenceSet();
         
         conceptService.getConceptChronologyStream(ConceptSequenceSet.of(incomingComponents)).forEach((ConceptChronology cc) -> {
-            Optional<ConceptVersion> latestVersion = cc.getLatestVersion(ConceptVersion.class, getEnclosingQuery().getViewCoordinate());
+            Optional<ConceptVersion> latestVersion = cc.getLatestVersion(ConceptVersion.class, getEnclosingQuery().getStampCoordinate());
             if (latestVersion.isPresent()) {
                 activeSet.add(cc.getNid());
             }
