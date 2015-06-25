@@ -158,10 +158,6 @@ public class SememeProvider implements SememeService {
                 out.writeInt(key.sememeSequence);
             }
         }
-        SememeSequenceSet statedGraphSequences = getSememeSequencesFromAssemblage(IsaacMetadataAuxiliaryBinding.EL_PLUS_PLUS_STATED_FORM.getSequence());
-        log.info("Stated logic graphs: " + statedGraphSequences.size());
-        SememeSequenceSet inferedGraphSequences = getSememeSequencesFromAssemblage(IsaacMetadataAuxiliaryBinding.EL_PLUS_PLUS_INFERRED_FORM.getSequence());
-        log.info("Inferred logic graphs: " + inferedGraphSequences.size());
         log.info("Finished SememeProvider stop.");
     }
 
