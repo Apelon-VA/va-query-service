@@ -30,6 +30,7 @@ import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.commit.CommitService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeBuilder;
 import gov.vha.isaac.ochre.api.component.sememe.SememeBuilderService;
@@ -48,7 +49,6 @@ import gov.vha.isaac.ochre.api.logic.assertions.Assertion;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePosition;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePositionCalculator;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
-import gov.vha.isaac.ochre.model.concept.ConceptChronologyImpl;
 import gov.vha.isaac.ochre.model.coordinate.StampCoordinateImpl;
 import gov.vha.isaac.ochre.model.coordinate.StampPositionImpl;
 import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
@@ -135,8 +135,8 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                 eConcept.processComponentRevisions(r -> r.setPathUuid(newPathUuid));
             }
 
-            ConceptChronologyImpl conceptChronology
-                    = (ConceptChronologyImpl) conceptService.getConcept(eConcept.getUuidList().toArray(new UUID[0]));
+            ConceptChronology conceptChronology
+                    = conceptService.getConcept(eConcept.getUuidList().toArray(new UUID[0]));
 
             TreeSet<StampPositionImpl> stampPositionSet = new TreeSet<>();
             eConcept.getStampSequenceStream().distinct().forEach((stampSequence) -> {
@@ -287,7 +287,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
         return assertionList.toArray(new Assertion[assertionList.size()]);
     }
 
-    private void extractTaxonomy(ConceptChronologyImpl conceptChronology,
+    private void extractTaxonomy(ConceptChronology conceptChronology,
             SememeChronology<LogicGraphSememe> logicGraphChronology,
             TaxonomyFlags taxonomyFlags) {
         Optional<TaxonomyRecordPrimitive> record = originDestinationTaxonomyRecords.get(conceptChronology.getConceptSequence());

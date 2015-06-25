@@ -72,9 +72,9 @@ public class ReferencedNidAssemblageSequenceSememeSequenceKey implements Compara
 
     @Override
     public String toString() {
-        return "ReferencedNidAssemblageSequenceSememeSequenceKey{" +
+        return "Key{" +
                 "referencedNid=" + referencedNid +
-                "assemblageSequence=" + assemblageSequence +
+                ", assemblageSequence=" + assemblageSequence +
                 ", sememeSequence=" + sememeSequence +
                 '}';
     }
