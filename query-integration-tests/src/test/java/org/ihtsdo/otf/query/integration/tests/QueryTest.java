@@ -633,20 +633,20 @@ public class QueryTest {
 //        }
     }
 
-    @Test(groups = "QueryServiceTests")
-    public void ChangeFromPreviousVersionTest() throws IOException, Exception {
-        log.info("Changed from previous version test");
-        ChangedFromPreviousVersionTest test = new ChangedFromPreviousVersionTest();
-        SetViewCoordinate svc = new SetViewCoordinate(2010, 1, 31, 0, 0);
-        ViewCoordinate previousVC = svc.getViewCoordinate();
-        TermstoreChanges tc = new TermstoreChanges(previousVC);
-        tc.modifyDesc("Admin statuses", Snomed.ADMINISTRATIVE_STATUSES.getNid());
-        NidSet results2 = test.computeQuery();
-        for (Object o : test.q.returnDisplayObjects(results2, ReturnTypes.DESCRIPTION_VERSION_FSN)) {
-            log.info(o.toString());
-        }
-        assertEquals(1, results2.size());
-    }
+//    @Test(groups = "QueryServiceTests")
+//    public void ChangeFromPreviousVersionTest() throws IOException, Exception {
+//        log.info("Changed from previous version test");
+//        ChangedFromPreviousVersionTest test = new ChangedFromPreviousVersionTest();
+//        SetViewCoordinate svc = new SetViewCoordinate(2010, 1, 31, 0, 0);
+//        ViewCoordinate previousVC = svc.getViewCoordinate();
+//        TermstoreChanges tc = new TermstoreChanges(previousVC);
+//        tc.modifyDesc("Admin statuses", Snomed.ADMINISTRATIVE_STATUSES.getNid());
+//        NidSet results2 = test.computeQuery();
+//        for (Object o : test.q.returnDisplayObjects(results2, ReturnTypes.DESCRIPTION_VERSION_FSN)) {
+//            log.info(o.toString());
+//        }
+//        assertEquals(1, results2.size());
+//    }
 
     @Test(enabled = false)
     public void DescriptionActiveRegexMatchTest() throws IOException, ContradictionException, InvalidCAB, Exception {
