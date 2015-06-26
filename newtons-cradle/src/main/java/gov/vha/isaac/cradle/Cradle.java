@@ -41,7 +41,6 @@ import org.ihtsdo.otf.tcc.ddo.ComponentReference;
 import org.ihtsdo.otf.tcc.ddo.concept.ConceptChronicleDdo;
 import org.ihtsdo.otf.tcc.ddo.fetchpolicy.RefexPolicy;
 import org.ihtsdo.otf.tcc.ddo.fetchpolicy.RelationshipPolicy;
-import org.ihtsdo.otf.tcc.ddo.fetchpolicy.VersionPolicy;
 import org.ihtsdo.otf.tcc.model.cc.NidPairForRefex;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
@@ -57,7 +56,6 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -67,13 +65,11 @@ import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.StandardPaths;
 import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
-import gov.vha.isaac.ochre.api.chronicle.IdentifiedObjectLocal;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
 import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
@@ -157,7 +153,7 @@ public class Cradle
     private void startMe() throws IOException {
         try {
             log.info("Starting Cradle post-construct");
-            conceptProvider = LookupService.getService(ConceptServiceManagerI.class).get();
+            conceptProvider = LookupService.getService(ConceptService.class);
             commitService = LookupService.getService(CommitService.class);
             identifierProvider = LookupService.getService(IdentifierService.class);
             sememeProvider = LookupService.getService(SememeService.class);
@@ -203,22 +199,22 @@ public class Cradle
 
     @Override
     public Stream<ConceptChronicleDataEager> getConceptDataEagerStream() {
-        return ((ConceptProviderOtfModel) conceptProvider).getConceptDataEagerStream();
+        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getConceptDataEagerStream();
     }
 
     @Override
     public Stream<ConceptChronicleDataEager> getConceptDataEagerStream(ConceptSequenceSet conceptSequences) {
-        return ((ConceptProviderOtfModel) conceptProvider).getConceptDataEagerStream(conceptSequences);
+        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getConceptDataEagerStream(conceptSequences);
     }
 
     @Override
     public Stream<ConceptChronicleDataEager> getParallelConceptDataEagerStream(ConceptSequenceSet conceptSequences) {
-        return ((ConceptProviderOtfModel) conceptProvider).getParallelConceptDataEagerStream(conceptSequences);
+        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getParallelConceptDataEagerStream(conceptSequences);
     }
 
     @Override
     public Stream<ConceptChronicleDataEager> getParallelConceptDataEagerStream() {
-        return ((ConceptProviderOtfModel) conceptProvider).getParallelConceptDataEagerStream();
+        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getParallelConceptDataEagerStream();
     }
 
     @Override
@@ -268,22 +264,22 @@ public class Cradle
 
     @Override
     public Stream<ConceptChronicle> getConceptStream() {
-        return ((ConceptProviderOtfModel) conceptProvider).getConceptStream();
+        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getConceptStream();
     }
 
     @Override
     public Stream<ConceptChronicle> getParallelConceptStream() {
-        return ((ConceptProviderOtfModel) conceptProvider).getParallelConceptStream();
+        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getParallelConceptStream();
     }
 
     @Override
     public Stream<? extends ConceptChronicleBI> getConceptStream(ConceptSequenceSet conceptSequences) throws IOException {
-        return ((ConceptProviderOtfModel) conceptProvider).getConceptStream(conceptSequences);
+        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getConceptStream(conceptSequences);
     }
 
     @Override
     public Stream<? extends ConceptChronicleBI> getParallelConceptStream(ConceptSequenceSet conceptSequences) throws IOException {
-        return ((ConceptProviderOtfModel) conceptProvider).getConceptStream(conceptSequences).parallel();
+        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getConceptStream(conceptSequences).parallel();
     }
 
     @Override
@@ -311,25 +307,20 @@ public class Cradle
     @Override
     public Task<Integer> startLoadTask(java.nio.file.Path... paths) {
         ImportEConceptFile loaderTask = ImportEConceptFile.create(paths, this);
-        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(loaderTask);
         return loaderTask;
     }
 
     @Override
     public Task<Integer> startExportTask(Path path) {
-        ExportEConceptFile exporterTask = new ExportEConceptFile(path, this);
-        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(exporterTask);
-        return exporterTask;
+        return ExportEConceptFile.create(path, this);
     }
 
     @Override
     public Task<Integer> startLogicGraphExportTask(Path path) {
-        ExportEConceptFile exporterTask = new ExportEConceptFile(path, this,
+        return ExportEConceptFile.create(path, this,
                 (Consumer<TtkConceptChronicle>) (TtkConceptChronicle t) -> {
                     t.setRelationships(null);
                 });
-        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(exporterTask);
-        return exporterTask;
     }
 
     @Override
@@ -339,7 +330,7 @@ public class Cradle
 
     @Override
     public ConceptChronicleDataEager getConceptData(int i) throws IOException {
-        return ((ConceptProviderOtfModel) conceptProvider).getConceptData(i);
+        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getConceptData(i);
     }
 
     @Override
@@ -393,7 +384,7 @@ public class Cradle
 
     @Override
     public NativeIdSetBI isChildOfSet(int parent, ViewCoordinate viewCoordinate) {
-        IntStream childrenSequences = taxonomyProvider.getTaxonomyChildSequencesActive(identifierProvider.getConceptSequence(parent), viewCoordinate);
+        IntStream childrenSequences = taxonomyProvider.getTaxonomyChildSequences(identifierProvider.getConceptSequence(parent), viewCoordinate);
         NativeIdSetBI childNidSet = new IntSet();
         childrenSequences.forEach((sequence) -> childNidSet.add(identifierProvider.getConceptNid(sequence)));
         return childNidSet;
@@ -659,44 +650,39 @@ public class Cradle
     @Override
     public ConceptChronicleDdo getFxConcept(UUID uuid, ViewCoordinate viewCoordinate) throws IOException, ContradictionException {
         ConceptChronicleBI chronicle = this.getConcept(uuid);
-        TerminologySnapshot termSnap = new TerminologySnapshot(this, viewCoordinate);
-        ConceptChronicleDdo c = new ConceptChronicleDdo(termSnap, chronicle, VersionPolicy.ACTIVE_VERSIONS, RefexPolicy.REFEX_MEMBERS,
+        ConceptChronicleDdo c = new ConceptChronicleDdo(viewCoordinate, chronicle, RefexPolicy.REFEX_MEMBERS,
                 RelationshipPolicy.ORIGINATING_RELATIONSHIPS);
         return c;
     }
 
     @Override
-    public ConceptChronicleDdo getFxConcept(ComponentReference componentReference, UUID viewCoordinateUuid, VersionPolicy versionPolicy,
+    public ConceptChronicleDdo getFxConcept(ComponentReference componentReference, UUID viewCoordinateUuid,
             RefexPolicy refexPolicy, RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
         int nid = componentReference.getNid();
         ConceptChronicleBI chronicle = this.getConcept(nid);
-        TerminologySnapshot termSnap = new TerminologySnapshot(this, this.getViewCoordinate(viewCoordinateUuid));
-        return new ConceptChronicleDdo(termSnap, chronicle, VersionPolicy.ACTIVE_VERSIONS, refexPolicy, RelationshipPolicy.ORIGINATING_RELATIONSHIPS);
+        return new ConceptChronicleDdo(this.getViewCoordinate(viewCoordinateUuid), chronicle, refexPolicy, RelationshipPolicy.ORIGINATING_RELATIONSHIPS);
     }
 
     @Override
-    public ConceptChronicleDdo getFxConcept(ComponentReference componentReference, ViewCoordinate viewCoordinate, VersionPolicy versionPolicy,
+    public ConceptChronicleDdo getFxConcept(ComponentReference componentReference, ViewCoordinate viewCoordinate,
             RefexPolicy refexPolicy, RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
         int nid = componentReference.getNid();
         ConceptChronicleBI chronicle = this.getConcept(nid);
-        TerminologySnapshot termSnap = new TerminologySnapshot(this, viewCoordinate);
-        return new ConceptChronicleDdo(termSnap, chronicle, versionPolicy, refexPolicy, relationshipPolicy);
+        return new ConceptChronicleDdo(viewCoordinate, chronicle, refexPolicy, relationshipPolicy);
     }
 
     @Override
-    public ConceptChronicleDdo getFxConcept(UUID uuid, UUID viewCoordinateUuid, VersionPolicy versionPolicy, RefexPolicy refexPolicy,
+    public ConceptChronicleDdo getFxConcept(UUID uuid, UUID viewCoordinateUuid, RefexPolicy refexPolicy,
             RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
         ConceptChronicleBI chronicle = this.getConcept(uuid);
-        TerminologySnapshot termSnap = new TerminologySnapshot(this, this.getViewCoordinate(viewCoordinateUuid));
-        return new ConceptChronicleDdo(termSnap, chronicle, versionPolicy, refexPolicy, relationshipPolicy);
+        return new ConceptChronicleDdo(this.getViewCoordinate(viewCoordinateUuid), chronicle, refexPolicy, relationshipPolicy);
     }
 
     @Override
-    public ConceptChronicleDdo getFxConcept(UUID uuid, ViewCoordinate viewCoordinate, VersionPolicy versionPolicy,
+    public ConceptChronicleDdo getFxConcept(UUID uuid, ViewCoordinate viewCoordinate,
             RefexPolicy refexPolicy, RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
         ConceptChronicleBI chronicle = this.getConcept(uuid);
-        TerminologySnapshot termSnap = new TerminologySnapshot(this, viewCoordinate);
-        return new ConceptChronicleDdo(termSnap, chronicle, versionPolicy, refexPolicy, relationshipPolicy);
+        return new ConceptChronicleDdo(viewCoordinate, chronicle, refexPolicy, relationshipPolicy);
     }
 
     @Override
@@ -749,15 +735,20 @@ public class Cradle
             case REFEX:
                 return Optional.ofNullable(refexProvider.getRefex(identifierProvider.getRefexSequence(nid)));
         }
-        if (conceptModel == ConceptModel.OCHRE_CONCEPT_MODEL) {
-            try {
-                ConceptChronicle concept = (ConceptChronicle) 
-                        conceptProvider.getConcept(identifierProvider.getConceptSequenceForComponentNid(nid));
+        //The above code doesn't identify descriptions - try to find them...
+        //if (conceptModel == ConceptModel.OCHRE_CONCEPT_MODEL) {  //TODO Keith - not sure if this was a mistake... (you intended OTF_CONCEPT_MODEL)
+        //or if it is just needed for both...
+        try {
+            int conNid = identifierProvider.getConceptSequenceForComponentNid(nid);
+            if (conNid != Integer.MAX_VALUE)
+            {
+                ConceptChronicle concept = (ConceptChronicle)conceptProvider.getConcept(conNid);
                 return Optional.ofNullable(concept.getComponent(nid));
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
             }
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
+        //}
         return Optional.empty();
     }
 
@@ -894,7 +885,7 @@ public class Cradle
 
     @Override
     public void writeConceptData(ConceptChronicleDataEager conceptData) {
-        ((ConceptProviderOtfModel) conceptProvider).writeConceptData(conceptData);
+        ((ConceptProviderOtfModel) conceptProvider.getDelegate()).writeConceptData(conceptData);
     }
 
     @Override
@@ -986,19 +977,17 @@ public class Cradle
 
     @Override
     public Task<Integer> startExportTask(ConceptProxy stampPath, Path filePath) {
-        ExportEConceptFile exporterTask = new ExportEConceptFile(filePath, this, ttkConceptChronicle -> {
+        return ExportEConceptFile.create(filePath, this, ttkConceptChronicle -> {
             ttkConceptChronicle.processComponentRevisions(r -> {
                 r.setPathUuid(stampPath.getUuids()[0]);
             });
         });
-        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(exporterTask);
-        return exporterTask;
     }
 
     @Override
     public Task<Integer> startLogicGraphExportTask(ConceptProxy stampPath, Path filePath) {
         UUID pathUuid = stampPath.getUuids()[0];
-        ExportEConceptFile exporterTask = new ExportEConceptFile(filePath, this,
+        return ExportEConceptFile.create(filePath, this,
                 (Consumer<TtkConceptChronicle>) (TtkConceptChronicle t) -> {
                     t.setRelationships(null);
                 }, (Consumer<TtkConceptChronicle>) (TtkConceptChronicle t) -> {
@@ -1006,8 +995,6 @@ public class Cradle
                         r.setPathUuid(pathUuid);
                     });
                 });
-        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(exporterTask);
-        return exporterTask;
     }
 
     @Override

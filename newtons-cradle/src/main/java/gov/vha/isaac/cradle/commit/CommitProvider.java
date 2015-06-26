@@ -17,7 +17,6 @@ import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
-import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.commit.Alert;
 import gov.vha.isaac.ochre.api.commit.ChangeChecker;
 import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
@@ -486,7 +485,7 @@ public class CommitProvider implements CommitService {
     }
     
     private String nameForConcept(int conceptSequence) {
-        ConceptService conceptService = LookupService.getService(ConceptServiceManagerI.class).get();
+        ConceptService conceptService = LookupService.getService(ConceptService.class);
         ConceptChronology<?> concept = conceptService.getConcept(conceptSequence);
         if (concept != null) {
             return concept.toUserString();

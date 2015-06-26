@@ -129,10 +129,8 @@ public class ImportEConceptFile extends Task<Integer> {
             AtomicLong bytesProcessedForLoad = new AtomicLong();
             for (java.nio.file.Path p : paths) {
                 bytesToProcessForLoad.addAndGet(p.toFile().length());
-                if (conceptModel == ConceptModel.OCHRE_CONCEPT_MODEL) {
-                    // Ochre requires a second pass for conversion. 
-                    bytesToProcessForLoad.addAndGet(p.toFile().length());
-                }
+                // a second pass for conversion. 
+                bytesToProcessForLoad.addAndGet(p.toFile().length());
             }
 
             AtomicInteger conceptCount = new AtomicInteger();
@@ -151,6 +149,9 @@ public class ImportEConceptFile extends Task<Integer> {
                     doImport(conceptCount, bytesProcessedForLoad, bytesToProcessForLoad, completionCount, conversionService,
                             "loaded",
                         (TtkConceptChronicle eConcept) -> new ImportEConceptOtfModel(eConcept, stampPathUuid));
+                    doImport(conceptCount, bytesProcessedForLoad, bytesToProcessForLoad, completionCount, conversionService,
+                            "converted",
+                        (TtkConceptChronicle eConcept) -> new ConvertOtfToOchreModel(eConcept, stampPathUuid));
                     break;
                     default:
                         throw new UnsupportedOperationException("Can't handle: " + conceptModel);

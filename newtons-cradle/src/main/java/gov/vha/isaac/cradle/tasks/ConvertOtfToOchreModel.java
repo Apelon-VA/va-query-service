@@ -9,7 +9,7 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY_STATE_SET KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -30,8 +30,8 @@ import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.commit.CommitService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptServiceManagerI;
 import gov.vha.isaac.ochre.api.component.sememe.SememeBuilder;
 import gov.vha.isaac.ochre.api.component.sememe.SememeBuilderService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
@@ -49,11 +49,10 @@ import gov.vha.isaac.ochre.api.logic.assertions.Assertion;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePosition;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePositionCalculator;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
-import gov.vha.isaac.ochre.model.concept.ConceptChronologyImpl;
 import gov.vha.isaac.ochre.model.coordinate.StampCoordinateImpl;
 import gov.vha.isaac.ochre.model.coordinate.StampPositionImpl;
-import gov.vha.isaac.ochre.model.logic.LogicExpressionOchreImpl;
-import gov.vha.isaac.ochre.model.logic.Node;
+import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
+import gov.vha.isaac.ochre.api.logic.Node;
 import gov.vha.isaac.ochre.model.logic.node.AndNode;
 import gov.vha.isaac.ochre.model.logic.node.internal.ConceptNodeWithNids;
 import gov.vha.isaac.ochre.model.logic.node.internal.RoleNodeSomeWithNids;
@@ -85,7 +84,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
     private static final CommitService commitService = LookupService.getService(CommitService.class);
     private static final SememeService sememeService = LookupService.getService(SememeService.class);
     private static final IdentifierService identifierService = LookupService.getService(IdentifierService.class);
-    private static final ConceptService conceptService = LookupService.getService(ConceptServiceManagerI.class).get();
+    private static final ConceptService conceptService = LookupService.getService(ConceptService.class);
     private static final CradleExtensions cradle = LookupService.getService(CradleExtensions.class);
     private static final SememeBuilderService sememeBuilderService = LookupService.getService(SememeBuilderService.class);
     private static final LogicalExpressionBuilderService expressionBuilderService
@@ -136,8 +135,8 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                 eConcept.processComponentRevisions(r -> r.setPathUuid(newPathUuid));
             }
 
-            ConceptChronologyImpl conceptChronology
-                    = (ConceptChronologyImpl) conceptService.getConcept(eConcept.getUuidList().toArray(new UUID[0]));
+            ConceptChronology conceptChronology
+                    = conceptService.getConcept(eConcept.getUuidList().toArray(new UUID[0]));
 
             TreeSet<StampPositionImpl> stampPositionSet = new TreeSet<>();
             eConcept.getStampSequenceStream().distinct().forEach((stampSequence) -> {
@@ -149,7 +148,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
             // stamp position in the concept
             stampPositionSet.forEach((stampPosition) -> {
                 StampCoordinateImpl stampCoordinate
-                        = new StampCoordinateImpl(StampPrecedence.PATH, stampPosition, null);
+                        = new StampCoordinateImpl(StampPrecedence.PATH, stampPosition, null, State.ANY_STATE_SET);
                 RelativePositionCalculator calc = RelativePositionCalculator.getCalculator(stampCoordinate);
                 Optional<LatestVersion<TtkConceptAttributesVersion>> latestAttributeVersion
                         = calc.getLatestVersion(eConcept.getConceptAttributes());
@@ -288,7 +287,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
         return assertionList.toArray(new Assertion[assertionList.size()]);
     }
 
-    private void extractTaxonomy(ConceptChronologyImpl conceptChronology,
+    private void extractTaxonomy(ConceptChronology conceptChronology,
             SememeChronology<LogicGraphSememe> logicGraphChronology,
             TaxonomyFlags taxonomyFlags) {
         Optional<TaxonomyRecordPrimitive> record = originDestinationTaxonomyRecords.get(conceptChronology.getConceptSequence());
@@ -301,8 +300,8 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
         }
 
         logicGraphChronology.getVersionList().forEach((logicVersion) -> {
-             LogicExpressionOchreImpl expression
-                    = new LogicExpressionOchreImpl(logicVersion.getGraphData(),
+             LogicalExpressionOchreImpl expression
+                    = new LogicalExpressionOchreImpl(logicVersion.getGraphData(),
                             DataSource.INTERNAL,
                             conceptChronology.getConceptSequence());
 
