@@ -26,11 +26,13 @@ import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampPosition;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeService;
+import gov.vha.isaac.ochre.api.component.sememe.SememeServiceTyped;
 import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
+import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
 import gov.vha.isaac.ochre.collections.NidSet;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
-import gov.vha.isaac.ochre.model.sememe.SememeChronicleImpl;
+import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -69,9 +71,9 @@ public class SememeProvider implements SememeService {
         return commitService;
     }
 
-    final CasSequenceObjectMap<SememeChronicleImpl<?>> sememeMap;
-    final ConcurrentSkipListSet<SememeKey> assemblageSequenceSememeSequenceMap = new ConcurrentSkipListSet<>();
-    final ConcurrentSkipListSet<SememeKey> referencedNidSememeSequenceMap = new ConcurrentSkipListSet<>();
+    final CasSequenceObjectMap<SememeChronologyImpl<?>> sememeMap;
+    final ConcurrentSkipListSet<AssemblageSememeKey> assemblageSequenceSememeSequenceMap = new ConcurrentSkipListSet<>();
+    final ConcurrentSkipListSet<ReferencedNidAssemblageSequenceSememeSequenceKey> referencedNidAssemblageSequenceSememeSequenceMap = new ConcurrentSkipListSet<>();
     final IdentifierService identifierService;
 
     //For HK2
@@ -102,17 +104,18 @@ public class SememeProvider implements SememeService {
                 try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(Cradle.getCradlePath().toFile(), "assemblage-sememe.keys"))))) {
                     int size = in.readInt();
                     for (int i = 0; i < size; i++) {
-                        int key1 = in.readInt();
+                        int assemblageSequence = in.readInt();
                         int sequence = in.readInt();
-                        assemblageSequenceSememeSequenceMap.add(new SememeKey(key1, sequence));
+                        assemblageSequenceSememeSequenceMap.add(new AssemblageSememeKey(assemblageSequence, sequence));
                     }
                 }
                 try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(Cradle.getCradlePath().toFile(), "component-sememe.keys"))))) {
                     int size = in.readInt();
                     for (int i = 0; i < size; i++) {
-                        int key1 = in.readInt();
+                        int referencedNid = in.readInt();
+                        int assemblageSequence = in.readInt();
                         int sequence = in.readInt();
-                        referencedNidSememeSequenceMap.add(new SememeKey(key1, sequence));
+                        referencedNidAssemblageSequenceSememeSequenceMap.add(new ReferencedNidAssemblageSequenceSememeSequenceKey(referencedNid, assemblageSequence, sequence));
                     }
                 }
             }
@@ -134,29 +137,27 @@ public class SememeProvider implements SememeService {
     private void stopMe() throws IOException {
         log.info("Stopping SememeProvider pre-destroy. ");
 
-        log.info("sememeMap size: {}", sememeMap.getSize());
+        //Dan commented out this log statement because it is really slow...
+        //log.info("sememeMap size: {}", sememeMap.getSize());
         log.info("writing sememe-map.");
         sememeMap.write();
 
         log.info("writing SememeKeys.");
         try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(Cradle.getCradlePath().toFile(), "assemblage-sememe.keys"))))) {
             out.writeInt(assemblageSequenceSememeSequenceMap.size());
-            for (SememeKey key : assemblageSequenceSememeSequenceMap) {
-                out.writeInt(key.key1);
+            for (AssemblageSememeKey key : assemblageSequenceSememeSequenceMap) {
+                out.writeInt(key.assemblageSequence);
                 out.writeInt(key.sememeSequence);
             }
         }
         try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(Cradle.getCradlePath().toFile(), "component-sememe.keys"))))) {
-            out.writeInt(referencedNidSememeSequenceMap.size());
-            for (SememeKey key : referencedNidSememeSequenceMap) {
-                out.writeInt(key.key1);
+            out.writeInt(referencedNidAssemblageSequenceSememeSequenceMap.size());
+            for (ReferencedNidAssemblageSequenceSememeSequenceKey key : referencedNidAssemblageSequenceSememeSequenceMap) {
+                out.writeInt(key.referencedNid);
+                out.writeInt(key.assemblageSequence);
                 out.writeInt(key.sememeSequence);
             }
         }
-        SememeSequenceSet statedGraphSequences = getSememeSequencesFromAssemblage(IsaacMetadataAuxiliaryBinding.EL_PLUS_PLUS_STATED_FORM.getSequence());
-        log.info("Stated logic graphs: " + statedGraphSequences.size());
-        SememeSequenceSet inferedGraphSequences = getSememeSequencesFromAssemblage(IsaacMetadataAuxiliaryBinding.EL_PLUS_PLUS_INFERRED_FORM.getSequence());
-        log.info("Inferred logic graphs: " + inferedGraphSequences.size());
         log.info("Finished SememeProvider stop.");
     }
 
@@ -179,14 +180,14 @@ public class SememeProvider implements SememeService {
 
     @Override
     public SememeSequenceSet getSememeSequencesFromAssemblage(int assemblageSequence) {
-        assemblageSequence = identifierService.getSememeSequence(assemblageSequence);
-        SememeKey rangeStart = new SememeKey(assemblageSequence, Integer.MIN_VALUE); // yes
-        SememeKey rangeEnd = new SememeKey(assemblageSequence, Integer.MAX_VALUE); // no
-        NavigableSet<SememeKey> assemblageSememeKeys
+        assemblageSequence = identifierService.getConceptSequence(assemblageSequence);
+        AssemblageSememeKey rangeStart = new AssemblageSememeKey(assemblageSequence, Integer.MIN_VALUE); // yes
+        AssemblageSememeKey rangeEnd = new AssemblageSememeKey(assemblageSequence, Integer.MAX_VALUE); // no
+        NavigableSet<AssemblageSememeKey> assemblageSememeKeys
                 = assemblageSequenceSememeSequenceMap.subSet(rangeStart, true,
                         rangeEnd, true
                 );
-        return SememeSequenceSet.of(assemblageSememeKeys.stream().mapToInt((SememeKey key) -> key.sememeSequence));
+        return SememeSequenceSet.of(assemblageSememeKeys.stream().mapToInt((AssemblageSememeKey key) -> key.sememeSequence));
     }
 
     @Override
@@ -200,12 +201,12 @@ public class SememeProvider implements SememeService {
         if (componentNid >= 0) {
             throw new IndexOutOfBoundsException("Component identifiers must be negative. Found: " + componentNid);
         }
-        NavigableSet<SememeKey> assemblageSememeKeys
-                = referencedNidSememeSequenceMap.subSet(
-                        new SememeKey(componentNid, Integer.MIN_VALUE), true,
-                        new SememeKey(componentNid, Integer.MAX_VALUE), true
+        NavigableSet<ReferencedNidAssemblageSequenceSememeSequenceKey> assemblageSememeKeys
+                = referencedNidAssemblageSequenceSememeSequenceMap.subSet(
+                        new ReferencedNidAssemblageSequenceSememeSequenceKey(componentNid, Integer.MIN_VALUE, Integer.MIN_VALUE), true,
+                        new ReferencedNidAssemblageSequenceSememeSequenceKey(componentNid, Integer.MAX_VALUE, Integer.MAX_VALUE), true
                 );
-        return SememeSequenceSet.of(assemblageSememeKeys.stream().mapToInt((SememeKey key) -> key.sememeSequence));
+        return SememeSequenceSet.of(assemblageSememeKeys.stream().mapToInt((ReferencedNidAssemblageSequenceSememeSequenceKey key) -> key.sememeSequence));
     }
 
     @Override
@@ -225,98 +226,66 @@ public class SememeProvider implements SememeService {
         if (componentNid >= 0) {
             throw new IndexOutOfBoundsException("Component identifiers must be negative. Found: " + componentNid);
         }
-        assemblageSequence = identifierService.getSememeSequence(assemblageSequence);
-        SememeKey rangeStart = new SememeKey(assemblageSequence, Integer.MIN_VALUE); // yes
-        SememeKey rangeEnd = new SememeKey(assemblageSequence, Integer.MAX_VALUE); // no
-        NavigableSet<SememeKey> assemblageRefexKeys
-                = assemblageSequenceSememeSequenceMap.subSet(rangeStart, true,
-                        rangeEnd, true
-                );
-        SememeKey rcRangeStart = new SememeKey(componentNid, Integer.MIN_VALUE); // yes
-        SememeKey rcRangeEnd = new SememeKey(componentNid, Integer.MAX_VALUE); // no
-        NavigableSet<SememeKey> referencedComponentRefexKeys
-                = referencedNidSememeSequenceMap.subSet(rcRangeStart, true,
+        assemblageSequence = identifierService.getConceptSequence(assemblageSequence);
+        ReferencedNidAssemblageSequenceSememeSequenceKey rcRangeStart = new ReferencedNidAssemblageSequenceSememeSequenceKey(componentNid, assemblageSequence, Integer.MIN_VALUE); // yes
+        ReferencedNidAssemblageSequenceSememeSequenceKey rcRangeEnd = new ReferencedNidAssemblageSequenceSememeSequenceKey(componentNid, assemblageSequence, Integer.MAX_VALUE); // no
+        NavigableSet<ReferencedNidAssemblageSequenceSememeSequenceKey> referencedComponentRefexKeys
+                = referencedNidAssemblageSequenceSememeSequenceMap.subSet(rcRangeStart, true,
                         rcRangeEnd, true
                 );
-        SememeSequenceSet assemblageSet = SememeSequenceSet.of(assemblageRefexKeys.stream().mapToInt((SememeKey key) -> key.sememeSequence));
-        SememeSequenceSet referencedComponentSet = SememeSequenceSet.of(referencedComponentRefexKeys.stream().mapToInt((SememeKey key) -> key.sememeSequence));
-        assemblageSet.and(referencedComponentSet);
-        return assemblageSet;
+
+        SememeSequenceSet referencedComponentSet
+                = SememeSequenceSet.of(referencedComponentRefexKeys.stream()
+                        .mapToInt((ReferencedNidAssemblageSequenceSememeSequenceKey key) -> key.sememeSequence));
+
+        return referencedComponentSet;
     }
 
     @Override
-    public SememeSequenceSet getSememeSequencesForComponentsFromAssemblage(NidSet componentNidSet, int assemblageSequence) {
-        assemblageSequence = identifierService.getSememeSequence(assemblageSequence);
-        SememeKey rangeStart = new SememeKey(assemblageSequence, Integer.MIN_VALUE); // yes
-        SememeKey rangeEnd = new SememeKey(assemblageSequence, Integer.MAX_VALUE); // no
-        NavigableSet<SememeKey> assemblageRefexKeys
-                = assemblageSequenceSememeSequenceMap.subSet(rangeStart, true,
-                        rangeEnd, true
-                );
-
-        SememeSequenceSet referencedComponentSet = new SememeSequenceSet();
+    public SememeSequenceSet getSememeSequencesForComponentsFromAssemblage(NidSet componentNidSet, final int assemblageSequence) {
+        if (assemblageSequence < 0) {
+            throw new IndexOutOfBoundsException("assemblageSequence must be >= 0. Found: " + assemblageSequence);
+        }
+        SememeSequenceSet resultSet = new SememeSequenceSet();
         componentNidSet.stream().forEach((componentNid) -> {
-            SememeKey rcRangeStart = new SememeKey(componentNid, Integer.MIN_VALUE); // yes
-            SememeKey rcRangeEnd = new SememeKey(componentNid, Integer.MAX_VALUE); // no
-            NavigableSet<SememeKey> referencedComponentRefexKeys
-                    = referencedNidSememeSequenceMap.subSet(rcRangeStart, true,
+            ReferencedNidAssemblageSequenceSememeSequenceKey rcRangeStart = new ReferencedNidAssemblageSequenceSememeSequenceKey(componentNid, assemblageSequence, Integer.MIN_VALUE); // yes
+            ReferencedNidAssemblageSequenceSememeSequenceKey rcRangeEnd = new ReferencedNidAssemblageSequenceSememeSequenceKey(componentNid, assemblageSequence, Integer.MAX_VALUE); // no
+            NavigableSet<ReferencedNidAssemblageSequenceSememeSequenceKey> referencedComponentRefexKeys
+                    = referencedNidAssemblageSequenceSememeSequenceMap.subSet(rcRangeStart, true,
                             rcRangeEnd, true
                     );
-            referencedComponentSet.or(SememeSequenceSet.of(referencedComponentRefexKeys.stream().mapToInt((SememeKey key) -> key.sememeSequence)));
+            referencedComponentRefexKeys.stream().forEach((key) -> {resultSet.add(key.sememeSequence);});
+            
         });
 
-        SememeSequenceSet assemblageSet = SememeSequenceSet.of(assemblageRefexKeys.stream().mapToInt((SememeKey key) -> key.sememeSequence));
-        assemblageSet.and(referencedComponentSet);
-        return assemblageSet;
+        return resultSet;
     }
 
     @Override
     public void writeSememe(SememeChronology sememeChronicle) {
         assemblageSequenceSememeSequenceMap.add(
-                new SememeKey(sememeChronicle.getAssemblageSequence(),
+                new AssemblageSememeKey(sememeChronicle.getAssemblageSequence(),
                         sememeChronicle.getSememeSequence()));
-        referencedNidSememeSequenceMap.add(
-                new SememeKey(sememeChronicle.getReferencedComponentNid(),
+        referencedNidAssemblageSequenceSememeSequenceMap.add(
+                new ReferencedNidAssemblageSequenceSememeSequenceKey(sememeChronicle.getReferencedComponentNid(),
+                        sememeChronicle.getAssemblageSequence(),
                         sememeChronicle.getSememeSequence()));
         sememeMap.put(sememeChronicle.getSememeSequence(),
-                (SememeChronicleImpl<?>) sememeChronicle);
+                (SememeChronologyImpl<?>) sememeChronicle);
     }
 
     @Override
     public SememeSequenceSet getSememeSequencesForComponentsFromAssemblageModifiedAfterPosition(
             NidSet componentNidSet, int assemblageSequence, StampPosition position) {
-        SememeSequenceSet sequencesToTest = 
-                getSememeSequencesForComponentsFromAssemblage(componentNidSet, assemblageSequence);
+        SememeSequenceSet sequencesToTest
+                = getSememeSequencesForComponentsFromAssemblage(componentNidSet, assemblageSequence);
         SememeSequenceSet sequencesThatPassedTest = new SememeSequenceSet();
         getCommitService();
         sequencesToTest.stream().forEach((sememeSequence) -> {
-            SememeChronicleImpl<?> chronicle = (SememeChronicleImpl<?>) getSememe(sememeSequence);
+            SememeChronologyImpl<?> chronicle = (SememeChronologyImpl<?>) getSememe(sememeSequence);
             if (chronicle.getVersionStampSequences().anyMatch((stampSequence) -> {
-                if ((commitService.getTimeForStamp(stampSequence) > position.getTime()
-                        && (position.getStampPathSequence() == commitService.getPathSequenceForStamp(stampSequence)))) {
-                    return true;
-                }
-                return false;
-            })) {
-                sequencesThatPassedTest.add(sememeSequence);
-            }
-        });
-        return sequencesThatPassedTest;
-    }
-
-    @Override
-    public SememeSequenceSet getSememeSequencesFromAssemblageModifiedAfterPosition(int assemblageSequence, StampPosition position) {
-        SememeSequenceSet sequencesToTest = getSememeSequencesFromAssemblage(assemblageSequence);
-        SememeSequenceSet sequencesThatPassedTest = new SememeSequenceSet();
-        getCommitService();
-        sequencesToTest.stream().forEach((sememeSequence) -> {
-            SememeChronicleImpl<?> chronicle = (SememeChronicleImpl<?>) getSememe(sememeSequence);
-            if (chronicle.getVersionStampSequences().anyMatch((stampSequence) -> {
-                if ((commitService.getTimeForStamp(stampSequence) > position.getTime()
-                        && (position.getStampPathSequence() == commitService.getPathSequenceForStamp(stampSequence)))) {
-                    return true;
-                }
-                return false;
+                return (commitService.getTimeForStamp(stampSequence) > position.getTime()
+                        && (position.getStampPathSequence() == commitService.getPathSequenceForStamp(stampSequence)));
             })) {
                 sequencesThatPassedTest.add(sememeSequence);
             }
@@ -331,7 +300,31 @@ public class SememeProvider implements SememeService {
 
     @Override
     public Stream<SememeChronology<? extends SememeVersion>> getParallelSememeStream() {
-        return identifierService.getSememeSequenceStream().parallel().mapToObj((int sememeSequence) -> getSememe(sememeSequence));
+        return identifierService.getSememeSequenceStream().parallel().mapToObj((int sememeSequence) -> {
+            try {
+                //TODO Keith - this is DEBUG code that should be removed - it isn't proper to inject a null into the return stream.  However, something _ELSE_
+                //is broken at the moment, and the sememeSequenceStream is returning invalid sememe identifiers... eek.
+                return getSememe(sememeSequence);
+            } catch (Exception e) {
+                log.error("sememe sequence " + sememeSequence + " could not be resolved!", e);
+                return null;
+            }
+        });
+    }
+    int descriptionAssemblageSequence = Integer.MIN_VALUE;
+
+    @Override
+    public Stream<SememeChronology<DescriptionSememe>> getDescriptionsForComponent(int componentNid) {
+        if (descriptionAssemblageSequence == Integer.MIN_VALUE) {
+            descriptionAssemblageSequence = identifierService.getConceptSequenceForUuids(IsaacMetadataAuxiliaryBinding.DESCRIPTION_ASSEMBLAGE.getUuids());
+        }
+        SememeSequenceSet sequences = getSememeSequencesForComponentFromAssemblage(componentNid, descriptionAssemblageSequence);
+        return sequences.stream().mapToObj((int sememeSequence) -> getSememe(sememeSequence));
+    }
+
+    @Override
+    public <V extends SememeVersion> SememeServiceTyped<V> ofType(Class<V> versionType) {
+        return new SememeTypeProvider<>(versionType, this);
     }
 
 }

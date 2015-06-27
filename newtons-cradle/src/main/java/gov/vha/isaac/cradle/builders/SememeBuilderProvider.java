@@ -15,12 +15,13 @@
  */
 package gov.vha.isaac.cradle.builders;
 
-import gov.vha.isaac.ochre.api.ConceptProxy;
 import gov.vha.isaac.ochre.api.IdentifiedComponentBuilder;
 import gov.vha.isaac.ochre.api.logic.LogicalExpression;
 import gov.vha.isaac.ochre.api.component.sememe.SememeBuilder;
 import gov.vha.isaac.ochre.api.component.sememe.SememeBuilderService;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeType;
+import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
 import org.jvnet.hk2.annotations.Service;
 
 /**
@@ -41,25 +42,13 @@ public class SememeBuilderProvider implements SememeBuilderService {
     }
 
     @Override
-    public SememeBuilder getConceptSememeBuilder(ConceptProxy memeConceptProxy, IdentifiedComponentBuilder referencedComponent, int assemblageConceptSequence) {
-        return new SememeBuilderImpl(referencedComponent, assemblageConceptSequence, SememeType.CONCEPT_SEQUENCE, new Object[] {memeConceptProxy});
+    public SememeBuilder getLongSememeBuilder(long longValue, IdentifiedComponentBuilder referencedComponent, int assemblageConceptSequence) {
+        return new SememeBuilderImpl(referencedComponent, assemblageConceptSequence, SememeType.LONG, new Object[] {longValue});
     }
 
     @Override
-    public SememeBuilder getConceptSememeBuilder(ConceptProxy memeConceptProxy, int referencedComponentNid, int assemblageConceptSequence) {
-        return new SememeBuilderImpl(referencedComponentNid, assemblageConceptSequence, SememeType.CONCEPT_SEQUENCE, new Object[] {memeConceptProxy});
-    }
-
-    @Override
-    public SememeBuilder getConceptTimeSememeBuilder(ConceptProxy memeConceptProxy,
-            long memeTime, IdentifiedComponentBuilder referencedComponent, int assemblageConceptSequence) {
-        return new SememeBuilderImpl(referencedComponent, assemblageConceptSequence, SememeType.CONCEPT_SEQUENCE_TIME, new Object[] {memeConceptProxy, memeTime});
-    }
-
-    @Override
-    public SememeBuilder getConceptTimeSememeBuilder(ConceptProxy memeConceptProxy,
-            long memeTime, int referencedComponentNid, int assemblageConceptSequence) {
-        return new SememeBuilderImpl(referencedComponentNid, assemblageConceptSequence, SememeType.CONCEPT_SEQUENCE_TIME, new Object[] {memeConceptProxy, memeTime});
+    public SememeBuilder getLongSememeBuilder(long longValue, int referencedComponentNid, int assemblageConceptSequence) {
+        return new SememeBuilderImpl(referencedComponentNid, assemblageConceptSequence, SememeType.LONG, new Object[] {longValue});
     }
 
     @Override
@@ -79,7 +68,7 @@ public class SememeBuilderProvider implements SememeBuilderService {
 
     @Override
     public SememeBuilder getMembershipSememeBuilder(int referencedComponentNid, int assemblageConceptSequence) {
-        return new SememeBuilderImpl(referencedComponentNid, assemblageConceptSequence, SememeType.STRING, new Object[] {});
+        return new SememeBuilderImpl(referencedComponentNid, assemblageConceptSequence, SememeType.MEMBER, new Object[] {});
     }
 
     @Override
@@ -91,5 +80,31 @@ public class SememeBuilderProvider implements SememeBuilderService {
     public SememeBuilder getStringSememeBuilder(String memeString, int referencedComponentNid, int assemblageConceptSequence) {
         return new SememeBuilderImpl(referencedComponentNid, assemblageConceptSequence, SememeType.STRING, new Object[] {memeString});
     }
+
+    @Override
+    public SememeBuilder<? extends SememeChronology<? extends DescriptionSememe>> getDescriptionSememeBuilder(int caseSignificanceConceptSequence, 
+            int descriptionTypeConceptSequence, 
+            int languageConceptSequence, 
+            String text, 
+            IdentifiedComponentBuilder referencedComponent, 
+            int assemblageConceptSequence) {
+        return new SememeBuilderImpl(referencedComponent, assemblageConceptSequence, 
+                SememeType.DESCRIPTION, new Object[] {caseSignificanceConceptSequence, 
+                    languageConceptSequence, descriptionTypeConceptSequence, text});
+    }
+
+    @Override
+    public SememeBuilder<? extends SememeChronology<? extends DescriptionSememe>> getDescriptionSememeBuilder(
+            int caseSignificanceConceptSequence, 
+            int languageConceptSequence, 
+            int descriptionTypeConceptSequence, 
+            String text, 
+            int referencedComponentNid, int assemblageConceptSequence) {
+        return new SememeBuilderImpl(referencedComponentNid, assemblageConceptSequence, 
+                SememeType.DESCRIPTION, new Object[] {caseSignificanceConceptSequence, 
+                    languageConceptSequence, descriptionTypeConceptSequence, text});
+    }
+    
+    
     
 }

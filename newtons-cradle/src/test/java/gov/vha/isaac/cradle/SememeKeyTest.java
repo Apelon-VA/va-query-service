@@ -15,7 +15,7 @@
  */
 package gov.vha.isaac.cradle;
 
-import gov.vha.isaac.cradle.sememe.SememeKey;
+import gov.vha.isaac.cradle.sememe.ReferencedNidAssemblageSequenceSememeSequenceKey;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -49,64 +49,64 @@ public class SememeKeyTest {
     }
 
     /**
-     * Test of compareTo method, of class SememeKey.
+     * Test of compareTo method, of class ReferencedNidAssemblageSequenceSememeSequenceKey.
      */
     @Test
     public void testCompareTo() {
         System.out.println("compareTo");
-        SememeKey o = new SememeKey(1, 3);
-        SememeKey instance = new SememeKey(1, 3);
+        ReferencedNidAssemblageSequenceSememeSequenceKey o = new ReferencedNidAssemblageSequenceSememeSequenceKey(1, 2,  3);
+        ReferencedNidAssemblageSequenceSememeSequenceKey instance = new ReferencedNidAssemblageSequenceSememeSequenceKey(1, 2, 3);
         int expResult = 0;
         int result = instance.compareTo(o);
         assertEquals(expResult, result);
-        instance = new SememeKey(4, 3);
+        instance = new ReferencedNidAssemblageSequenceSememeSequenceKey(4, 2, 3);
         expResult = 1;
         result = instance.compareTo(o);
         assertEquals(expResult, result);
-        instance = new SememeKey(-1, 3);
+        instance = new ReferencedNidAssemblageSequenceSememeSequenceKey(-1, 2, 3);
         expResult = -1;
         result = instance.compareTo(o);
         assertEquals(expResult, result);
 
-        instance = new SememeKey(1, -3);
+        instance = new ReferencedNidAssemblageSequenceSememeSequenceKey(1, 2, -3);
         expResult = -1;
         result = instance.compareTo(o);
         assertEquals(expResult, result);
     }
 
     /**
-     * Test of equals method, of class SememeKey.
+     * Test of equals method, of class ReferencedNidAssemblageSequenceSememeSequenceKey.
      */
     @Test
     public void testEquals() {
         System.out.println("equals");
-        SememeKey o = new SememeKey(1, 3);
-        SememeKey instance = new SememeKey(1, 3);
+        ReferencedNidAssemblageSequenceSememeSequenceKey o = new ReferencedNidAssemblageSequenceSememeSequenceKey(1, 2, 3);
+        ReferencedNidAssemblageSequenceSememeSequenceKey instance = new ReferencedNidAssemblageSequenceSememeSequenceKey(1, 2, 3);
         boolean expResult = true;
         boolean result = instance.equals(o);
         assertEquals(expResult, result);
     }
 
     /**
-     * Test of getKey1 method, of class SememeKey.
+     * Test of getKey1 method, of class ReferencedNidAssemblageSequenceSememeSequenceKey.
      */
     @Test
     public void testGetKey1() {
         System.out.println("getKey1");
-        SememeKey instance = new SememeKey(1, 3);
+        ReferencedNidAssemblageSequenceSememeSequenceKey instance = new ReferencedNidAssemblageSequenceSememeSequenceKey(1, 2, 3);
         int expResult = 1;
-        int result = instance.getKey1();
+        int result = instance.getReferencedNid();
         assertEquals(expResult, result);
     }
 
 
     /**
-     * Test of getSememeSequence method, of class SememeKey.
+     * Test of getSememeSequence method, of class ReferencedNidAssemblageSequenceSememeSequenceKey.
      */
     @Test
     public void testGetSememeSequence() {
         System.out.println("getSememeSequence");
-        SememeKey instance = new SememeKey(1, 3);
+        ReferencedNidAssemblageSequenceSememeSequenceKey instance = new ReferencedNidAssemblageSequenceSememeSequenceKey(1, 2, 3);
         int expResult = 3;
         int result = instance.getSememeSequence();
         assertEquals(expResult, result);

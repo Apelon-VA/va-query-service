@@ -78,7 +78,7 @@ public class GraphCollector implements
         
         if (isaacPrimitiveTaxonomyRecord.isPresent()) {
             TaxonomyRecordUnpacked taxonomyRecordUnpacked = isaacPrimitiveTaxonomyRecord.get().getTaxonomyRecordUnpacked();
-            IntStream destinationStream = taxonomyRecordUnpacked.getActiveConceptSequencesForType(ISA_CONCEPT_SEQUENCE, taxonomyCoordinate);
+            IntStream destinationStream = taxonomyRecordUnpacked.getConceptSequencesForType(ISA_CONCEPT_SEQUENCE, taxonomyCoordinate);
             destinationStream.forEach((int destinationSequence) -> graphBuilder.add(destinationSequence, originSequence));
         }
         originSequenceBeingProcessed = -1;

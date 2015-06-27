@@ -18,6 +18,7 @@
  */
 package gov.vha.isaac.cradle;
 
+import gov.vha.isaac.ochre.api.ConceptModel;
 import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.constants.Constants;
@@ -28,6 +29,8 @@ import java.nio.file.Paths;
 import java.util.Optional;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.api.Rank;
 import org.jvnet.hk2.annotations.Service;
 
@@ -46,6 +49,10 @@ import org.jvnet.hk2.annotations.Service;
 public class DefaultConfigurationService implements ConfigurationService
 {
 	private Path dataStoreFolderPath_ = null;
+	private ConceptModel conceptModel_ = null;
+	
+	private static final Logger log = LogManager.getLogger();
+	
 	private volatile boolean initComplete_ = false;
 
 	private DefaultConfigurationService()
@@ -101,6 +108,7 @@ public class DefaultConfigurationService implements ConfigurationService
 	@Override
 	public void setDataStoreFolderPath(Path dataStoreFolderPath) throws IllegalStateException, IllegalArgumentException
 	{
+		log.info("setDataStoreFolderPath called with " + dataStoreFolderPath);
 		if (LookupService.hasIsaacBeenStartedAtLeastOnce())
 		{
 			throw new IllegalStateException("Can only set the dbFolderPath prior to starting Isaac");
@@ -121,5 +129,40 @@ public class DefaultConfigurationService implements ConfigurationService
 		}
 
 		dataStoreFolderPath_ = dataStoreFolderPath;
+	}
+
+	/**
+	 * Returns the value specified by {@link #setConceptModel(ConceptModel)} - or - if that method hasn't been called, defaults 
+	 * to the behavior provided by: 
+	 * @see gov.vha.isaac.ochre.api.ConfigurationService#getConceptModel()
+	 */
+	@Override
+	public ConceptModel getConceptModel()
+	{
+		if (conceptModel_ == null)
+		{
+			conceptModel_ = ConfigurationService.super.getConceptModel();
+		}
+		return conceptModel_;
+	}
+
+	/**
+	 * Note that this implementation prioritizes the value provided by a call to this method, over the value set as a system 
+	 * property.  if {@link #setConceptModel(ConceptModel)} is called, any value set as a system property will be ignored.
+	 * @see gov.vha.isaac.ochre.api.ConfigurationService#setConceptModel(gov.vha.isaac.ochre.api.ConceptModel)
+	 */
+	@Override
+	public void setConceptModel(ConceptModel conceptModel)
+	{
+		log.info("setConceptModel called with " + conceptModel);
+		if (LookupService.isIsaacStarted())
+		{
+			throw new IllegalStateException("Can only set the concept model prior to starting Isaac");
+		}
+		if (conceptModel == null)
+		{
+			throw new IllegalStateException("Concept model must be specified");
+		}
+		this.conceptModel_ = conceptModel;
 	}
 }

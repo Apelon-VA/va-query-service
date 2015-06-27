@@ -56,12 +56,12 @@ public class TypeStampTaxonomyRecordsTest {
         System.out.println("testTypeStampTaxonomyRecord");
         TypeStampTaxonomyRecord record = new TypeStampTaxonomyRecord(1, 2, TaxonomyFlags.INFERRED.bits);
         assertEquals(1, record.getTypeSequence());
-        assertEquals(2, record.getStamp());
+        assertEquals(2, record.getStampSequence());
         assertEquals(TaxonomyFlags.INFERRED.bits, record.getTaxonomyFlags());
         long recordAsLong = record.getAsLong();
         TypeStampTaxonomyRecord record2 = new TypeStampTaxonomyRecord(recordAsLong);
         assertEquals(1, record2.getTypeSequence());
-        assertEquals(2, record2.getStamp());
+        assertEquals(2, record2.getStampSequence());
         assertEquals(TaxonomyFlags.INFERRED.bits, record2.getTaxonomyFlags());
     }
 

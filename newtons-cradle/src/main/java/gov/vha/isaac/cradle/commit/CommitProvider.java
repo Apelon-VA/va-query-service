@@ -23,6 +23,7 @@ import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
 import gov.vha.isaac.ochre.api.commit.CommitRecord;
 import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.commit.CommitStates;
+import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
@@ -63,8 +64,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.runlevel.RunLevel;
 import org.ihtsdo.otf.tcc.api.coordinate.Status;
-import org.ihtsdo.otf.tcc.api.store.Ts;
-import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 import org.ihtsdo.otf.tcc.model.version.Stamp;
 import org.jvnet.hk2.annotations.Service;
@@ -131,7 +130,7 @@ public class CommitProvider implements CommitService {
             dbFolderPath = Cradle.getCradlePath();
             inverseStampMap = new ConcurrentSequenceSerializedObjectMap<>(new StampSerializer(),
                     dbFolderPath, null, null);
-            sequenceProvider = Hk2Looker.getService(IdentifierService.class);
+            sequenceProvider = LookupService.getService(IdentifierService.class);
             commitManagerFolder = Paths.get(dbFolderPath.toString(), DEFAULT_CRADLE_COMMIT_MANAGER_FOLDER);
         } catch (Exception e) {
             LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Cradle Commit Provider", e);
@@ -181,6 +180,7 @@ public class CommitProvider implements CommitService {
         log.info("Stopping CradleCommitManager pre-destroy. ");
         log.info("nextStamp: {}", nextStampSequence);
         writeConceptCompletionService.cancel();
+        writeSememeCompletionService.cancel();
         log.info("writing: " + STAMP_ALIAS_MAP_FILENAME);
         stampAliasMap.write(new File(commitManagerFolder.toFile(), STAMP_ALIAS_MAP_FILENAME));
         log.info("writing: " + STAMP_COMMENT_MAP_FILENAME);
@@ -246,12 +246,28 @@ public class CommitProvider implements CommitService {
         throw new NoSuchElementException("No stampSequence found: " + stamp);
     }
 
+    public int getAuthorNidForStamp(int stamp) {
+        Optional<Stamp> s = inverseStampMap.get(stamp);
+        if (s.isPresent()) {
+            return s.get().getAuthorNid();
+        }
+        throw new NoSuchElementException("No stampSequence found: " + stamp);
+    }
+
     @Override
     public int getModuleSequenceForStamp(int stamp) {
         Optional<Stamp> s = inverseStampMap.get(stamp);
         if (s.isPresent()) {
             return sequenceProvider.getConceptSequence(
                     s.get().getModuleNid());
+        }
+        throw new NoSuchElementException("No stampSequence found: " + stamp);
+    }
+    
+    private int getModuleNidForStamp(int stamp) {
+        Optional<Stamp> s = inverseStampMap.get(stamp);
+        if (s.isPresent()) {
+            return s.get().getModuleNid();
         }
         throw new NoSuchElementException("No stampSequence found: " + stamp);
     }
@@ -262,6 +278,13 @@ public class CommitProvider implements CommitService {
         if (s.isPresent()) {
             return sequenceProvider.getConceptSequence(
                     s.get().getPathNid());
+        }
+        throw new NoSuchElementException("No stampSequence found: " + stampSequence);
+    }
+    private int getPathNidForStamp(int stampSequence) {
+        Optional<Stamp> s = inverseStampMap.get(stampSequence);
+        if (s.isPresent()) {
+            return s.get().getPathNid();
         }
         throw new NoSuchElementException("No stampSequence found: " + stampSequence);
     }
@@ -285,7 +308,7 @@ public class CommitProvider implements CommitService {
     }
 
     @Override
-    public int getStamp(State status, long time, int authorSequence, int moduleSequence, int pathSequence) {
+    public int getStampSequence(State status, long time, int authorSequence, int moduleSequence, int pathSequence) {
         Stamp stampKey = new Stamp(Status.getStatusFromState(status), time,
                 sequenceProvider.getConceptNid(authorSequence),
                 sequenceProvider.getConceptNid(moduleSequence),
@@ -443,13 +466,31 @@ public class CommitProvider implements CommitService {
         sb.append(", t:");
         sb.append(Instant.ofEpochMilli(getTimeForStamp(stampSequence)));
         sb.append(", a:");
-        sb.append(Ts.get().informAboutNid(getAuthorSequenceForStamp(stampSequence)));
+        sb.append(nameForConcept(getAuthorSequenceForStamp(stampSequence)));
+        sb.append(" <");
+        sb.append(getAuthorSequenceForStamp(stampSequence));
+        sb.append(">");
         sb.append(", m:");
-        sb.append(Ts.get().informAboutNid(getModuleSequenceForStamp(stampSequence)));
+        sb.append(nameForConcept(getModuleSequenceForStamp(stampSequence)));
+        sb.append(" <");
+        sb.append(getModuleSequenceForStamp(stampSequence));
+        sb.append(">");
         sb.append(", p: ");
-        sb.append(Ts.get().informAboutNid(getPathSequenceForStamp(stampSequence)));
+        sb.append(nameForConcept(getPathSequenceForStamp(stampSequence)));
+        sb.append(" <");
+        sb.append(getPathSequenceForStamp(stampSequence));
+        sb.append(">");
         sb.append('}');
         return sb.toString();
+    }
+    
+    private String nameForConcept(int conceptSequence) {
+        ConceptService conceptService = LookupService.getService(ConceptService.class);
+        ConceptChronology<?> concept = conceptService.getConcept(conceptSequence);
+        if (concept != null) {
+            return concept.toUserString();
+        }
+        return "no concept with sequence: " + conceptSequence;
     }
 
     @Override
@@ -585,6 +626,17 @@ public class CommitProvider implements CommitService {
             return Objects.equals(this.listenerUuid, other.listenerUuid);
         }
     
+    }
+
+    @Override
+    public boolean stampSequencesEqualExceptAuthorAndTime(int stampSequence1, int stampSequence2) {
+        if (getModuleNidForStamp(stampSequence1) != getModuleNidForStamp(stampSequence2)) {
+            return false;
+        }
+        if (getPathNidForStamp(stampSequence1) != getPathNidForStamp(stampSequence2)) {
+            return false;
+        }
+        return getStatusForStamp(stampSequence1) == getStatusForStamp(stampSequence2);
     }
     
 }

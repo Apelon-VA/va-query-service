@@ -10,5 +10,5 @@ package gov.vha.isaac.cradle.version;
  * @author kec
  */
 public interface StampedObject {
-    int getStamp();
+    int getStampSequence();
 }

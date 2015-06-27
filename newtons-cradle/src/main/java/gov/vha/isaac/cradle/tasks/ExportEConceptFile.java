@@ -7,6 +7,7 @@ package gov.vha.isaac.cradle.tasks;
 
 import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.util.WorkExecutors;
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
@@ -36,7 +37,7 @@ public class ExportEConceptFile extends Task<Integer>{
     AtomicInteger processed = new AtomicInteger(0);
     
     Consumer<TtkConceptChronicle>[] transformers;
-    public ExportEConceptFile(Path paths, CradleExtensions termService, Consumer<TtkConceptChronicle>... transformers) {
+    private ExportEConceptFile(Path paths, CradleExtensions termService, Consumer<TtkConceptChronicle>... transformers) {
         this.paths = paths;
         this.termService = termService;
         this.transformers = transformers;
@@ -48,7 +49,13 @@ public class ExportEConceptFile extends Task<Integer>{
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
-        LookupService.getService(ActiveTaskSet.class).get().add(this);
+    }
+    
+    public static ExportEConceptFile create(Path paths, CradleExtensions termService, Consumer<TtkConceptChronicle>... transformers) {
+        ExportEConceptFile task = new ExportEConceptFile(paths, termService, transformers);
+        LookupService.getService(ActiveTaskSet.class).get().add(task);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(task);
+        return task;
     }
 
 

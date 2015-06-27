@@ -5,26 +5,22 @@
  */
 package gov.vha.isaac.cradle.tasks;
 
-import gov.vha.isaac.cradle.CradleExtensions;
-import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeService;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
-import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicChronicleBI;
-import org.ihtsdo.otf.tcc.model.cc.component.ConceptComponent;
-import org.ihtsdo.otf.tcc.model.index.service.IndexStatusListenerBI;
-import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexService;
+import org.ihtsdo.otf.tcc.model.index.service.IndexStatusListenerBI;
 import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
 
 /**
@@ -35,18 +31,17 @@ public class GenerateIndexes extends Task<Void> {
     private final static IdentifierService idProvider = LookupService.getService(IdentifierService.class);
     private final static RefexService refexProvider = LookupService.getService(RefexService.class);
     private final static SememeService sememeProvider = LookupService.getService(SememeService.class);
+    private final static ConceptService conceptService = LookupService.getService(ConceptService.class);
 
     private static final Logger log = LogManager.getLogger();
 
-    CradleExtensions termService;
     List<IndexerBI> indexers;
-    int componentCount;
-    AtomicInteger processed = new AtomicInteger(0);
+    long componentCount;
+    AtomicLong processed = new AtomicLong(0);
 
-    public GenerateIndexes(CradleExtensions termService, Class<?> ... indexersToReindex) {
+    public GenerateIndexes(Class<?> ... indexersToReindex) {
         updateTitle("Index generation");
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
-        this.termService = termService;
         if (indexersToReindex == null || indexersToReindex.length == 0)
         {
             indexers = LookupService.get().getAllServices(IndexerBI.class);
@@ -80,40 +75,44 @@ public class GenerateIndexes extends Task<Void> {
             log.info("Clearing index for: " + i.getIndexerName());
             i.clearIndex();
         });
-        try {
-            int conceptCount = termService.getConceptCount();
-            log.info("Concepts to index: " + conceptCount);
-            int refexCount = (int) idProvider.getRefexSequenceStream().count();
-            log.info("Refexes to index: " + refexCount);
-            int sememeCount = (int) idProvider.getSememeSequenceStream().count();
-            log.info("Sememes to index: " + sememeCount);
-            componentCount = conceptCount + refexCount + sememeCount;
-            log.info("Components to index: " + componentCount);
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+
     }
 
     @Override
     protected Void call() throws Exception {
         LookupService.get().getService(ActiveTaskSet.class).get().add(this);
         try {
-            termService.getParallelConceptDataEagerStream().forEach((ConceptChronicleDataEager ccde) -> {
-                ccde.getConceptComponents().forEach((ConceptComponent<?, ?> cc) -> {
+            //TODO performance problem... all of these count methods are incredibly slow
+            int conceptCount = conceptService.getConceptCount();
+            log.info("Concepts to index: " + conceptCount);
+            long refexCount = (int) idProvider.getRefexSequenceStream().count();
+            log.info("Refexes to index: " + refexCount);
+            long sememeCount = (int) idProvider.getSememeSequenceStream().count();
+            log.info("Sememes to index: " + sememeCount);
+            componentCount = conceptCount + refexCount + sememeCount;
+            log.info("Total components to index: " + componentCount);
+            conceptService.getParallelConceptChronologyStream().forEach((ConceptChronology<?> conceptChronology) -> {
                     indexers.stream().forEach((i) -> {
-                        i.index((ComponentChronicleBI<?>) cc);
+                        //Currently, our indexers expect descriptions, not concepts... though we might want to re-evaluate this...
+                        //I assume that in the future - we will have a description service, rather than embedded descriptions, so leaving as is, for now.
+                        conceptChronology.getConceptDescriptionList().forEach((description) -> {
+                            i.index(description);
+                        });
                     });
-                });
                 updateProcessedCount();
             });
             
-            refexProvider.getParallelRefexStream().forEach((RefexMember<?, ?> refex) -> {
-                indexers.stream().forEach((i) -> {
-                    i.index(refex);
-                });
-                updateProcessedCount();
-            });
+            //TODO Keith - I don't think we have any old-style refexes any longer, do we?  SCTIDs seem to be coming through the sememe
+            //provider below.
+//            refexProvider.getParallelRefexStream().forEach((RefexMember<?, ?> refex) -> {
+//                indexers.stream().forEach((i) -> {
+//                    i.index(refex);
+//                });
+//                updateProcessedCount();
+//            });
             
+            //TODO Keith - but I don't understand this bit - this seems to be the only place I can find the dynamic sememes, they aren't coming
+            //through the sememe iteration below.
             refexProvider.getParallelDynamicRefexStream().forEach((RefexDynamicChronicleBI<?> refex) -> {
                 indexers.stream().forEach((i) -> {
                     i.index(refex);
@@ -121,11 +120,15 @@ public class GenerateIndexes extends Task<Void> {
                 updateProcessedCount();
             });
             
+            //TODO Keith - why isn't this returning dynamic sememes?
             sememeProvider.getParallelSememeStream().forEach((SememeChronology sememe) -> {
-                indexers.stream().forEach((i) -> {
-                    i.index(sememe);
-                });
-                updateProcessedCount();
+                if (sememe != null)  //TODO Keith -  this IF should not be necessary, but is at the moment, to deal with another bug in sememe provider
+                {
+                    indexers.stream().forEach((i) -> {
+                        i.index(sememe);
+                    });
+                    updateProcessedCount();
+                }
             });
             
             List<IndexStatusListenerBI> islList = LookupService.get().getAllServices(IndexStatusListenerBI.class);
@@ -133,10 +136,9 @@ public class GenerateIndexes extends Task<Void> {
             indexers.stream().forEach((i) -> {
                 if (islList != null)
                 {
-                    for (IndexStatusListenerBI isl : islList)
-                    {
+                    islList.stream().forEach((isl) -> {
                         isl.reindexCompleted(i);
-                    }
+                    });
                 }
                 i.commitWriter();
                 i.forceMerge();
@@ -148,7 +150,7 @@ public class GenerateIndexes extends Task<Void> {
     }
 
     protected void updateProcessedCount() {
-        int processedCount = processed.incrementAndGet();
+        long processedCount = processed.incrementAndGet();
         if (processedCount % 1000 == 0) {
             updateProgress(processedCount, componentCount);
             updateMessage(String.format("Indexed %,d components...", processedCount));

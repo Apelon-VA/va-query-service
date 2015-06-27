@@ -10,6 +10,7 @@ import gov.vha.isaac.ochre.model.WaitFreeComparable;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
@@ -31,7 +32,7 @@ public class TaxonomyRecordPrimitive implements WaitFreeComparable {
         Optional<TaxonomyRecordPrimitive> optionalRecord = taxonomyMap.get(conceptSequence);
         if (optionalRecord.isPresent()) {
             TaxonomyRecordPrimitive record = optionalRecord.get();
-            if (record.containsActiveSequenceViaType(conceptSequence, typeSequence,
+            if (record.containsSequenceViaType(conceptSequence, typeSequence,
                     vp, flags)) {
                 return optionalRecord;
             }
@@ -45,7 +46,7 @@ public class TaxonomyRecordPrimitive implements WaitFreeComparable {
         Optional<TaxonomyRecordPrimitive> optionalRecord = taxonomyMap.get(conceptSequence);
         if (optionalRecord.isPresent()) {
             TaxonomyRecordPrimitive record = optionalRecord.get();
-            if (record.containsActiveSequenceViaType(conceptSequence, conceptSequence,
+            if (record.containsSequenceViaType(conceptSequence, conceptSequence,
                     vp, TaxonomyFlags.CONCEPT_STATUS.bits)) {
                 return optionalRecord;
             }
@@ -147,15 +148,24 @@ public class TaxonomyRecordPrimitive implements WaitFreeComparable {
         taxonomyData[index] = taxonomyData[index] + length;
     }
     
-    public IntStream getActiveParents(TaxonomyCoordinate tc) {
-        return getTaxonomyRecordUnpacked().getActiveConceptSequencesForType(IsaacMetadataAuxiliaryBinding.IS_A.getSequence(), tc);
-    }
-    public IntStream getVisibleParents(TaxonomyCoordinate tc) {
-       return getTaxonomyRecordUnpacked().getVisibleConceptSequencesForType(IsaacMetadataAuxiliaryBinding.IS_A.getSequence(), tc);
+    public IntStream getParentSequences(TaxonomyCoordinate tc) {
+        return getTaxonomyRecordUnpacked().getConceptSequencesForType(IsaacMetadataAuxiliaryBinding.IS_A.getSequence(), tc);
     }
 
-    public IntStream getParents() {
+    public IntStream getParentSequences() {
        return getTaxonomyRecordUnpacked().getParentConceptSequences();
+    }
+
+    public IntStream getDestinationSequences() {
+       return getTaxonomyRecordUnpacked().getDestinationConceptSequences();
+    }
+
+    public IntStream getDestinationSequencesOfType(ConceptSequenceSet typeSequenceSet) {
+       return getTaxonomyRecordUnpacked().getDestinationConceptSequencesOfType(typeSequenceSet);
+    }
+
+    public IntStream getDestinationSequencesOfType(ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc) {
+       return getTaxonomyRecordUnpacked().getDestinationConceptSequencesOfType(typeSequenceSet, tc);
     }
 
     public TaxonomyRecordUnpacked unpack() {
@@ -170,24 +180,28 @@ public class TaxonomyRecordPrimitive implements WaitFreeComparable {
         return getTaxonomyRecordUnpacked().containsSequenceViaTypeWithFlags(conceptSequence, typeSequence, flags);
     }
     
-    public boolean containsActiveSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc) {
-        return getTaxonomyRecordUnpacked().containsActiveConceptSequenceViaType(conceptSequence, typeSequence, tc);
+    public boolean containsSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc) {
+        return getTaxonomyRecordUnpacked().containsConceptSequenceViaType(conceptSequence, typeSequence, tc);
     }
     
-    public boolean containsVisibleSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc) {
-        return getTaxonomyRecordUnpacked().containsVisibleConceptSequenceViaType(conceptSequence, typeSequence, tc);
+    public boolean containsSequenceViaType(int conceptSequence, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc) {
+        return getTaxonomyRecordUnpacked().containsConceptSequenceViaType(conceptSequence, typeSequenceSet, tc);
     }
-    public boolean containsActiveSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc, int flags) {
-        return getTaxonomyRecordUnpacked().containsActiveConceptSequenceViaType(conceptSequence, typeSequence, tc, flags);
+
+    public boolean containsSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc, int flags) {
+        return getTaxonomyRecordUnpacked().containsConceptSequenceViaType(conceptSequence, typeSequence, tc, flags);
+    }
+    
+    public boolean containsSequenceViaType(int conceptSequence, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc, int flags) {
+        return getTaxonomyRecordUnpacked().containsConceptSequenceViaType(conceptSequence, typeSequenceSet, tc, flags);
     }
     
     public boolean isConceptActive(int conceptSequence, StampCoordinate stampCoordinate) {
         return getTaxonomyRecordUnpacked().isConceptActive(conceptSequence, stampCoordinate);
     }
-    
 
-    public boolean containsVisibleSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc, int flags) {
-        return getTaxonomyRecordUnpacked().containsVisibleConceptSequenceViaType(conceptSequence, typeSequence, tc, flags);
+    public boolean containsSequenceViaType(int conceptSequence, ConceptSequenceSet typeSequenceSet, int flags) {
+        return getTaxonomyRecordUnpacked().containsConceptSequenceViaType(conceptSequence, typeSequenceSet, flags);
     }
 
     @Override

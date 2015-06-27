@@ -9,7 +9,7 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY_STATE_SET KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -42,7 +42,7 @@ import org.ihtsdo.otf.tcc.model.cc.description.Description;
  *
  * @author kec
  */
-public class ConceptBuilderImpl extends ComponentBuilder<ConceptChronology> implements ConceptBuilder {
+public class ConceptBuilderOtfImpl extends ComponentBuilder<ConceptChronology> implements ConceptBuilder {
     private final String conceptName;
     private final String semanticTag;
     private final ConceptProxy defaultLanguageForDescriptions;
@@ -52,7 +52,7 @@ public class ConceptBuilderImpl extends ComponentBuilder<ConceptChronology> impl
     private final List<DescriptionBuilder> descriptionBuilders = new ArrayList<>();
     private final List<SememeBuilder> logicalConceptDefinitionBuilders = new ArrayList<>();
 
-    public ConceptBuilderImpl(String conceptName, 
+    public ConceptBuilderOtfImpl(String conceptName, 
             String semanticTag, 
             LogicalExpression logicalExpression,
             ConceptProxy defaultLanguageForDescriptions, 
@@ -113,7 +113,7 @@ public class ConceptBuilderImpl extends ComponentBuilder<ConceptChronology> impl
             int conceptSequence = getIdentifierService().getConceptSequence(cc.getNid());
             getIdentifierService().setConceptSequenceForComponentNid(conceptSequence, cc.getNid());
             ConceptAttributes ca = new ConceptAttributes();
-            ca.setSTAMP(getCommitService().getStamp(State.ACTIVE, Long.MAX_VALUE,
+            ca.setSTAMP(getCommitService().getStampSequence(State.ACTIVE, Long.MAX_VALUE,
                     editCoordinate.getAuthorSequence(), editCoordinate.getModuleSequence(),
                     editCoordinate.getPathSequence()));
             ca.setPrimordialUuid(primordialUuid);
@@ -141,6 +141,48 @@ public class ConceptBuilderImpl extends ComponentBuilder<ConceptChronology> impl
                     getLogicalExpressionSememeBuilder(logicalExpression, this, defaultLogicCoordinate.getStatedAssemblageSequence()));
             
             logicalConceptDefinitionBuilders.forEach((builder) -> builder.build(editCoordinate, changeCheckerMode, builtObjects));
+            builtObjects.add(cc);
+            return cc;
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    @Override
+    public ConceptChronology build(int stampCoordinate,
+            List builtObjects) throws IllegalStateException {
+        
+        try {
+            ConceptChronicle cc = new ConceptChronicle(this.getNid());
+            int conceptSequence = getIdentifierService().getConceptSequence(cc.getNid());
+            getIdentifierService().setConceptSequenceForComponentNid(conceptSequence, cc.getNid());
+            ConceptAttributes ca = new ConceptAttributes();
+            ca.setSTAMP(stampCoordinate);
+            ca.setPrimordialUuid(primordialUuid);
+            ca.setAdditionalUuids(additionalUuids);
+            ca.setEnclosingConceptNid(this.getNid());
+            try {
+                ca.setNid(this.getNid());
+            } catch (PropertyVetoException ex) {
+                throw new IllegalStateException(ex);
+            }
+            ca.setDefined(false);
+            cc.setConceptAttributes(ca);
+            builtObjects.add(ca);
+           
+            descriptionBuilders.add(getFullySpecifiedDescriptionBuilder());
+            descriptionBuilders.add(getPreferredDescriptionBuilder());
+             
+            descriptionBuilders.forEach((builder) -> {
+                cc.getDescriptions().add((Description) builder.build(stampCoordinate, builtObjects));
+            });
+            getCommitService().addUncommitted(cc);
+            
+            SememeBuilderService builderService = LookupService.getService(SememeBuilderService.class);        
+            logicalConceptDefinitionBuilders.add(builderService.
+                    getLogicalExpressionSememeBuilder(logicalExpression, this, defaultLogicCoordinate.getStatedAssemblageSequence()));
+            
+            logicalConceptDefinitionBuilders.forEach((builder) -> builder.build(stampCoordinate, builtObjects));
             builtObjects.add(cc);
             return cc;
         } catch (IOException ex) {

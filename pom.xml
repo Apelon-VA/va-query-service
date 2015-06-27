@@ -4,12 +4,12 @@
     <parent>
         <groupId>gov.vha.isaac</groupId>
         <artifactId>isaac-parent</artifactId>
-        <version>1.6</version>
+        <version>1.7</version>
     </parent>
     
     <groupId>gov.vha.isaac.newtons-cradle</groupId>
     <artifactId>newtons-cradle-parent</artifactId>
-    <version>1.18</version>
+    <version>1.19</version>
     <packaging>pom</packaging>
     <name>${project.artifactId}: (MMP)</name>
 
@@ -20,8 +20,8 @@
     </scm>
 
     <properties>
-        <ochre.version>2.28</ochre.version>
-        <isaac-metadata.version>1.30</isaac-metadata.version>
+        <ochre.version>2.29</ochre.version>
+        <isaac-metadata.version>1.31</isaac-metadata.version>
     </properties>
 
     <dependencyManagement>
