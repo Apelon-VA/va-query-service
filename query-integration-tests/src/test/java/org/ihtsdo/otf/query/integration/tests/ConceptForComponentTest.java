@@ -17,6 +17,8 @@ package org.ihtsdo.otf.query.integration.tests;
  */
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
 import org.ihtsdo.otf.query.implementation.ForSetSpecification;
@@ -39,16 +41,20 @@ public class ConceptForComponentTest extends QueryClauseTest {
     public ConceptForComponentTest() throws IOException {
         this.q = new Query(ViewCoordinates.getDevelopmentInferredLatestActiveOnly()) {
             @Override
-            protected ForSetSpecification ForSetSpecification() throws IOException {
-                ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.CUSTOM_SET);
-                NativeIdSetBI forSet = new ConcurrentBitSet();
-                forSet.or(PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), ViewCoordinates.getDevelopmentInferredLatestActiveOnly()));
-                forSetSpecification.getCustomCollection().addAll(forSet.toPrimordialUuidSet());
-                return forSetSpecification;
+            protected ForSetSpecification ForSetSpecification() {
+                try {
+                    ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.CUSTOM_SET);
+                    NativeIdSetBI forSet = new ConcurrentBitSet();
+                    forSet.or(PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), ViewCoordinates.getDevelopmentInferredLatestActiveOnly()));
+                    forSetSpecification.getCustomCollection().addAll(forSet.toPrimordialUuidSet());
+                    return forSetSpecification;
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
             }
 
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("motion", Snomed.MOTION);
                 let("regex", ".*tion.*");
             }

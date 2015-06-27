@@ -15,20 +15,19 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
+import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.io.IOException;
 import java.util.EnumSet;
 import org.ihtsdo.otf.query.implementation.ClauseComputeType;
 import org.ihtsdo.otf.query.implementation.LeafClause;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.query.implementation.Query;
-import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.store.Ts;
-import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.WhereClause;
 import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
-import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -60,16 +59,17 @@ public class ConceptIsKindOf extends LeafClause {
     }
 
     @Override
-    public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleComponents)
-            throws ValidationException, IOException, ContradictionException {
-        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
-
-        ConceptSpec kindOfSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(kindOfSpecKey);
-
-        int parentNid = kindOfSpec.getNid(viewCoordinate);
-        getResultsCache().or(Ts.get().isKindOfSet(parentNid, viewCoordinate));
-
-        return getResultsCache();
+    public NidSet computePossibleComponents(NidSet incomingPossibleComponents) {
+        try {
+            ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+            ConceptSpec kindOfSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(kindOfSpecKey);
+            int parentNid = kindOfSpec.getNid(viewCoordinate);
+            ConceptSequenceSet kindOfSequenceSet = taxonomyService.getKindOfSequenceSet(parentNid, viewCoordinate);
+            getResultsCache().or(NidSet.of(kindOfSequenceSet));
+            return getResultsCache();
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     @Override
@@ -78,7 +78,7 @@ public class ConceptIsKindOf extends LeafClause {
     }
 
     @Override
-    public void getQueryMatches(ConceptVersionBI conceptVersion) {
+    public void getQueryMatches(ConceptVersion conceptVersion) {
         // Nothing to do...
     }
 

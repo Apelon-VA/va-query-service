@@ -15,22 +15,17 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
-import java.io.IOException;
+import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.EnumSet;
 import org.ihtsdo.otf.query.implementation.ClauseComputeType;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.LeafClause;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.WhereClause;
-import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
-import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
-import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.api.relationship.RelationshipVersionBI;
 import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
-import org.ihtsdo.otf.tcc.api.spec.ValidationException;
-import org.ihtsdo.otf.tcc.api.store.Ts;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -48,7 +43,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlAccessorType(value = XmlAccessType.NONE)
 public class RelRestriction extends LeafClause {
 
-
     @XmlElement
     String relTypeKey;
     @XmlElement
@@ -60,9 +54,8 @@ public class RelRestriction extends LeafClause {
     @XmlElement
     String relTypeSubsumptionKey;
 
-    NativeIdSetBI destinationSet;
-    NativeIdSetBI relTypeSet;
-    
+    ConceptSequenceSet destinationSet;
+    ConceptSequenceSet relTypeSet;
 
     public RelRestriction(Query enclosingQuery, String relTypeKey, String destinationSpecKey,
             String viewCoordinateKey, String destinationSubsumptionKey, String relTypeSubsumptionKey) {
@@ -74,8 +67,10 @@ public class RelRestriction extends LeafClause {
         this.destinationSubsumptionKey = destinationSubsumptionKey;
 
     }
+
     protected RelRestriction() {
     }
+
     @Override
     public WhereClause getWhereClause() {
         WhereClause whereClause = new WhereClause();
@@ -96,8 +91,8 @@ public class RelRestriction extends LeafClause {
     }
 
     @Override
-    public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleComponents) throws IOException, ValidationException, ContradictionException {
-System.out.println("Let declerations: " + enclosingQuery.getLetDeclarations());
+    public NidSet computePossibleComponents(NidSet incomingPossibleComponents) {
+        System.out.println("Let declerations: " + enclosingQuery.getLetDeclarations());
         ViewCoordinate viewCoordinate = (ViewCoordinate) enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
         ConceptSpec destinationSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(destinationSpecKey);
         ConceptSpec relType = (ConceptSpec) enclosingQuery.getLetDeclarations().get(relTypeKey);
@@ -112,31 +107,30 @@ System.out.println("Let declerations: " + enclosingQuery.getLetDeclarations());
             destinationSubsumption = true;
         }
 
-        relTypeSet = new ConcurrentBitSet();
-        relTypeSet.add(relType.getNid());
+        relTypeSet = new ConceptSequenceSet();
+        relTypeSet.add(relType.getSequence());
         if (relTypeSubsumption) {
-            relTypeSet.or(Ts.get().isKindOfSet(relType.getNid(), viewCoordinate));
+            relTypeSet.or(taxonomyService.getKindOfSequenceSet(relType.getSequence(), viewCoordinate));
         }
 
-        destinationSet = new ConcurrentBitSet();
-        destinationSet.add(destinationSpec.getNid());
+        destinationSet = new ConceptSequenceSet();
+        destinationSet.add(destinationSpec.getSequence());
         if (destinationSubsumption) {
-            destinationSet.or(Ts.get().isKindOfSet(destinationSpec.getNid(), viewCoordinate));
+            destinationSet.or(taxonomyService.getKindOfSequenceSet(destinationSpec.getSequence(), viewCoordinate));
         }
 
         return incomingPossibleComponents;
     }
 
     @Override
-    public void getQueryMatches(ConceptVersionBI conceptVersion) throws IOException, ContradictionException {
-        //Nothing to do here...
-        for (RelationshipVersionBI rel: conceptVersion.getRelationshipsOutgoingActive()) {
-            if (relTypeSet.contains(rel.getTypeNid())) {
-                if (destinationSet.contains(rel.getDestinationNid())) {
-                    getResultsCache().add(conceptVersion.getNid());
-                    return;
-                }
-            }
-        }
+    public void getQueryMatches(ConceptVersion conceptVersion) {
+        ViewCoordinate viewCoordinate = (ViewCoordinate) enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+        taxonomyService.getAllRelationshipDestinationSequencesOfType(
+                conceptVersion.getChronology().getConceptSequence(), relTypeSet, viewCoordinate)
+                .forEach((destinationSequence) -> {
+                    if (destinationSet.contains(destinationSequence)) {
+                        getResultsCache().add(conceptVersion.getChronology().getNid());
+                    }
+                });
     }
 }

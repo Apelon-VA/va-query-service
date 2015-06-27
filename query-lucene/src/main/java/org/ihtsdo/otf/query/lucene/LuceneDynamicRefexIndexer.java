@@ -19,7 +19,8 @@
 
 package org.ihtsdo.otf.query.lucene;
 
-import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
+import gov.vha.isaac.ochre.api.index.SearchResult;
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.util.Iterator;
@@ -46,7 +47,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.glassfish.hk2.runlevel.RunLevel;
 import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
-import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicChronicleBI;
 import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicVersionBI;
 import org.ihtsdo.otf.tcc.api.refexDynamic.data.RefexDynamicDataBI;
@@ -61,8 +61,9 @@ import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicNidBI;
 import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicPolymorphicBI;
 import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicStringBI;
 import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicUUIDBI;
+import org.ihtsdo.otf.tcc.model.cc.refexDynamic.RefexDynamicMember;
+import org.ihtsdo.otf.tcc.model.cc.refexDynamic.RefexDynamicMemberVersion;
 import org.ihtsdo.otf.tcc.model.cc.refexDynamic.data.dataTypes.RefexDynamicString;
-import org.ihtsdo.otf.tcc.model.index.service.SearchResult;
 import org.jvnet.hk2.annotations.Service;
 
 /**
@@ -78,7 +79,7 @@ import org.jvnet.hk2.annotations.Service;
 @RunLevel(value = 2)
 public class LuceneDynamicRefexIndexer extends LuceneIndexer
 {
-	private final Logger logger = Logger.getLogger(LuceneDynamicRefexIndexer.class.getName());
+	private static final Logger logger = Logger.getLogger(LuceneDynamicRefexIndexer.class.getName());
 	
 	public static final String INDEX_NAME = "dynamicRefex";
 	private static final String COLUMN_FIELD_DATA = "colData";
@@ -107,36 +108,28 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 		commitWriter();
 		closeWriter();
 	}
-	
-	@Override
-	protected boolean indexSememeChronicle(SememeChronology<?> chronicle) {
-		return false;
-	}
 
 	@Override
-	protected void addFields(SememeChronology<?> chronicle, Document doc) {
-		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-	}
-
-	@Override
-	protected boolean indexChronicle(ComponentChronicleBI<?> chronicle)
+	protected boolean indexChronicle(ObjectChronology<?> chronicle)
 	{
-		if (chronicle instanceof RefexDynamicChronicleBI)
+		if (chronicle instanceof RefexDynamicMember)
 		{
-			RefexDynamicChronicleBI<?> rdc = (RefexDynamicChronicleBI<?>) chronicle;
-			return lric.needsIndexing(rdc.getAssemblageNid());
+			RefexDynamicMember rdm = (RefexDynamicMember) chronicle;
+			return lric.needsIndexing(rdm.getAssemblageNid());
 		}
 
 		return false;
 	}
 
 	@Override
-	protected void addFields(ComponentChronicleBI<?> chronicle, Document doc)
+	protected void addFields(ObjectChronology<?> chronicle, Document doc)
 	{
-		RefexDynamicChronicleBI<?> rdc = (RefexDynamicChronicleBI<?>) chronicle;
-		for (@SuppressWarnings("unchecked") Iterator<RefexDynamicVersionBI<?>> it = (Iterator<RefexDynamicVersionBI<?>>) rdc.getVersions().iterator(); it.hasNext();)
+		doc.add(new IntField(ComponentProperty.COMPONENT_ID.name(), chronicle.getNid(), LuceneIndexer.indexedComponentNidType));
+
+		RefexDynamicMember rdm = (RefexDynamicMember) chronicle;
+		for (Iterator<? extends RefexDynamicMemberVersion> it = rdm.getVersions().iterator(); it.hasNext();)
 		{
-			RefexDynamicVersionBI<?> rdv = it.next();
+			RefexDynamicMemberVersion rdv = it.next();
 			
 			//Yes, this is a long, but we never do anything other than exact matches, so it performs better to index it as a string
 			//rather that indexing it as a long... as we never need to match things like nid > X
@@ -181,7 +174,7 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 		}
 		else if (dataCol instanceof RefexDynamicByteArrayBI)
 		{
-			logger.warning("Dynamic Refex Indexer configured to index a field that isn't indexable (byte array) in " + rdv.toUserString());
+			logger.log(Level.WARNING, "Dynamic Refex Indexer configured to index a field that isn''t indexable (byte array) in {0}", rdv.toUserString());
 		}
 		else if (dataCol instanceof RefexDynamicDoubleBI)
 		{
@@ -238,7 +231,7 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 		}
 		else
 		{
-			logger.log(Level.SEVERE, "This should have been impossible (no match on col type) " + dataCol);
+			logger.log(Level.SEVERE, "This should have been impossible (no match on col type) {0}", dataCol);
 		}
 	}
 
@@ -251,6 +244,9 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 	 * @param searchColumns (optional) limit the search to the specified columns of attached data
 	 * @param sizeLimit
 	 * @param targetGeneration (optional) wait for an index to build, or null to not wait
+     * @return 
+     * @throws java.io.IOException 
+     * @throws org.apache.lucene.queryparser.classic.ParseException 
 	 */
 	public final List<SearchResult> queryNumericRange(final RefexDynamicDataBI queryDataLower, final boolean queryDataLowerInclusive, 
 			final RefexDynamicDataBI queryDataUpper, final boolean queryDataUpperInclusive, Integer assemblageNid, Integer[] searchColumns, 
@@ -284,6 +280,14 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 	 * 
 	 * Calls the method {@link #query(RefexDynamicDataBI, Integer, boolean, Integer[], int, long) with a null parameter for
 	 * the searchColumns, and wraps the queryString into a RefexDynamicString.
+     * @param queryString
+     * @param assemblageNid
+     * @param prefixSearch
+     * @param sizeLimit
+     * @param targetGeneration
+     * @return 
+     * @throws java.io.IOException
+     * @throws org.apache.lucene.queryparser.classic.ParseException
 	 */
 	public final List<SearchResult> query(String queryString, Integer assemblageNid, boolean prefixSearch, int sizeLimit, Long targetGeneration) throws IOException,
 			ParseException
@@ -306,6 +310,9 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 	 * @param searchColumns (optional) limit the search to the specified columns of attached data
 	 * @param sizeLimit
 	 * @param targetGeneration (optional) wait for an index to build, or null to not wait
+     * @return 
+     * @throws java.io.IOException 
+     * @throws org.apache.lucene.queryparser.classic.ParseException 
 	 */
 	public final List<SearchResult> query(final RefexDynamicDataBI queryData, Integer assemblageNid, final boolean prefixSearch, Integer[] searchColumns, int sizeLimit,
 			Long targetGeneration) throws IOException, ParseException
@@ -334,7 +341,7 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 						queryString = "\\" + queryString;
 					}
 					queryString = queryString.replaceAll("\\s-", " \\\\-");
-					logger.fine("Modified search string is: '" + queryString + "'");
+					logger.log(Level.FINE, "Modified search string is: ''{0}''", queryString);
 					return buildTokenizedStringQuery(queryString, columnName, prefixSearch);
 				}
 			}.buildColumnHandlingQuery(searchColumns), Occur.MUST);
@@ -397,6 +404,12 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 	 * 
 	 * {@link LuceneIndexer#query(String, boolean, ComponentProperty, int, Long) with:
 	 * "boolean prefexSearch" set to false "ComponentProperty field" set to {@link ComponentProperty#ASSEMBLAGE_ID}
+     * @param assemblageNid
+     * @param sizeLimit
+     * @param targetGeneration
+     * @return 
+     * @throws java.io.IOException
+     * @throws org.apache.lucene.queryparser.classic.ParseException
 	 */
 	public final List<SearchResult> queryAssemblageUsage(int assemblageNid, int sizeLimit, Long targetGeneration) throws IOException, ParseException, NumberFormatException
 	{

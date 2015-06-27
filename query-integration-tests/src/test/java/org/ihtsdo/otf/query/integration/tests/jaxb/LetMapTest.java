@@ -74,7 +74,7 @@ public class LetMapTest {
                     .unmarshal(new StringReader(forMapXml));
             assertEquals(map, unmarshalledWrappedMap.getMap());
 
-        } catch (IOException | JAXBException ex) {
+        } catch (JAXBException ex) {
             Logger.getLogger(LetMapTest.class.getName()).log(Level.SEVERE, null, ex);
             fail(ex.toString());
         }

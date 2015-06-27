@@ -36,24 +36,32 @@ public class DescriptionActiveRegexMatchTest extends QueryClauseTest {
     public DescriptionActiveRegexMatchTest() throws IOException {
         this.q = new Query(ViewCoordinates.getDevelopmentInferredLatestActiveOnly()) {
             @Override
-            protected ForSetSpecification ForSetSpecification() throws IOException {
-                ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.CUSTOM_SET);
-                NativeIdSetBI forSet = new ConcurrentBitSet();
-                forSet.or(PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), ViewCoordinates.getDevelopmentInferredLatestActiveOnly()));
-                forSetSpecification.getCustomCollection().addAll(forSet.toPrimordialUuidSet());
-                return forSetSpecification;
+            protected ForSetSpecification ForSetSpecification() {
+                try {
+                    ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.CUSTOM_SET);
+                    NativeIdSetBI forSet = new ConcurrentBitSet();
+                    forSet.or(PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), ViewCoordinates.getDevelopmentInferredLatestActiveOnly()));
+                    forSetSpecification.getCustomCollection().addAll(forSet.toPrimordialUuidSet());
+                    return forSetSpecification;
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
             }
 
             @Override
-            public void Let() throws IOException {
-                let("regex", ".*tion.*");
-                NativeIdSetBI kindOfSet = PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), ViewCoordinates.getDevelopmentInferredLatestActiveOnly());
-                NativeIdSetItrBI iter = kindOfSet.getSetBitIterator();
-                StringBuilder forSet = new StringBuilder("");
-                while (iter.next()) {
-                    forSet.append(PersistentStore.get().getComponent(iter.nid()).getPrimordialUuid().toString()).append(",");
+            public void Let() {
+                try {
+                    let("regex", ".*tion.*");
+                    NativeIdSetBI kindOfSet = PersistentStore.get().isKindOfSet(Snomed.MOTION.getNid(), ViewCoordinates.getDevelopmentInferredLatestActiveOnly());
+                    NativeIdSetItrBI iter = kindOfSet.getSetBitIterator();
+                    StringBuilder forSet = new StringBuilder("");
+                    while (iter.next()) {
+                        forSet.append(PersistentStore.get().getComponent(iter.nid()).getPrimordialUuid().toString()).append(",");
+                    }
+                    let("Custom FOR set", forSet.toString());
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
                 }
-                let("Custom FOR set", forSet.toString());
             }
 
             @Override

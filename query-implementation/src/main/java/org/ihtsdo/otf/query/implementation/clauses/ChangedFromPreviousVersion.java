@@ -16,6 +16,8 @@
 package org.ihtsdo.otf.query.implementation.clauses;
 
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
+import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.io.IOException;
 import java.util.EnumSet;
 import org.ihtsdo.otf.query.implementation.ClauseComputeType;
@@ -57,7 +59,7 @@ public class ChangedFromPreviousVersion extends LeafClause {
      * Cached set of incoming components. Used to optimize speed in
      * getQueryMatches method.
      */
-    NativeIdSetBI cache = new ConcurrentBitSet();
+    NidSet cache = new NidSet();
 
     /**
      * Creates an instance of a ChangedFromPreviousVersion <code>Clause</code>
@@ -81,22 +83,24 @@ public class ChangedFromPreviousVersion extends LeafClause {
     }
 
     @Override
-    public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleComponents) throws IOException {
+    public NidSet computePossibleComponents(NidSet incomingPossibleComponents) {
         System.out.println(incomingPossibleComponents.size());
         this.cache = incomingPossibleComponents;
         return incomingPossibleComponents;
     }
 
     @Override
-    public void getQueryMatches(ConceptVersionBI conceptVersion) throws IOException, ContradictionException {
+    public void getQueryMatches(ConceptVersion conceptVersion) {
         ViewCoordinate previousViewCoordinate = (ViewCoordinate) enclosingQuery.getLetDeclarations().get(previousViewCoordinateKey);
-        for (DescriptionVersionBI desc : conceptVersion.getDescriptionsActive()) {
-            if (desc.getVersion(previousViewCoordinate) != null) {
-                if (!desc.getVersion(previousViewCoordinate).equals(desc.getVersion(ViewCoordinates.getDevelopmentInferredLatestActiveOnly()))) {
-                    getResultsCache().add(desc.getConceptNid());
-                }
-            }
-        }
+        throw new UnsupportedOperationException();
+        //TODO FIX BACK UP
+//        for (DescriptionVersionBI desc : conceptVersion.getDescriptionsActive()) {
+//            if (desc.getVersion(previousViewCoordinate) != null) {
+//                if (!desc.getVersion(previousViewCoordinate).equals(desc.getVersion(ViewCoordinates.getDevelopmentInferredLatestActiveOnly()))) {
+//                    getResultsCache().add(desc.getConceptNid());
+//                }
+//            }
+//        }
     }
 
     @Override

@@ -3,8 +3,37 @@ package org.ihtsdo.otf.query.lucene;
 import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SystemStatusService;
-import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
 import gov.vha.isaac.ochre.util.WorkExecutors;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LogByteSizeMergePolicy;
+import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.util.Version;
+import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
+import org.ihtsdo.otf.tcc.api.thread.NamedThreadFactory;
+import org.ihtsdo.otf.tcc.model.cc.termstore.TermstoreLogger;
+import gov.vha.isaac.ochre.api.index.IndexedGenerationCallable;
+import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
+import gov.vha.isaac.ochre.api.index.SearchResult;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
@@ -25,41 +54,10 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LogByteSizeMergePolicy;
-import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TrackingIndexWriter;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ControlledRealTimeReopenThread;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.PrefixQuery;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ReferenceManager;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.SearcherManager;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MMapDirectory;
-import org.apache.lucene.util.Version;
-import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
-import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
-import org.ihtsdo.otf.tcc.api.thread.NamedThreadFactory;
-import org.ihtsdo.otf.tcc.model.cc.termstore.TermstoreLogger;
-import org.ihtsdo.otf.tcc.model.index.service.IndexedGenerationCallable;
-import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
-import org.ihtsdo.otf.tcc.model.index.service.SearchResult;
 
 // See example for help with the Controlled Real-time indexing...
 // http://stackoverflow.com/questions/17993960/lucene-4-4-0-new-controlledrealtimereopenthread-sample-usage?answertab=votes#tab-top
@@ -176,13 +174,13 @@ public abstract class LuceneIndexer implements IndexerBI {
      * @param query The query to apply.
      * @param field The component field to be queried.
      * @param sizeLimit The maximum size of the result list.
-     * @return a List of <code>SearchResult</codes> that contins the nid of the
+     * @return a List of {@code SearchResult} that contains the nid of the
      * component that matched, and the score of that match relative to other
      * matches.
      * @throws IOException
      */
     @Override
-    public final List<SearchResult> query(String query, ComponentProperty field, int sizeLimit) throws IOException {
+    public final List<SearchResult> query(String query, ComponentProperty field, int sizeLimit) {
         return query(query, field, sizeLimit, Long.MIN_VALUE);
     }
     
@@ -196,12 +194,12 @@ public abstract class LuceneIndexer implements IndexerBI {
     * @param targetGeneration target generation that must be included in the search or Long.MIN_VALUE if there is no 
     * need to wait for a target generation.  Long.MAX_VALUE can be passed in to force this query to wait until any 
     * in-progress indexing operations are completed - and then use the latest index.
-    * @return a List of <code>SearchResult</codes> that contins the nid of the component that matched, and the score of 
+    * @return a List of {@code SearchResult} that contains the nid of the component that matched, and the score of 
     * that match relative to other matches.
     * @throws IOException
     */
    @Override
-    public final List<SearchResult> query(String query, ComponentProperty field, int sizeLimit, long targetGeneration) throws IOException {
+    public final List<SearchResult> query(String query, ComponentProperty field, int sizeLimit, long targetGeneration) {
        return query(query, false, field, sizeLimit, targetGeneration);
    }
 
@@ -245,8 +243,7 @@ public abstract class LuceneIndexer implements IndexerBI {
      * to other matches.
      * @throws IOException if anything goes wrong during query processing
      */
-    public final List<SearchResult> query(String query, boolean prefixSearch, ComponentProperty field, int sizeLimit, Long targetGeneration)
-            throws IOException {
+    public final List<SearchResult> query(String query, boolean prefixSearch, ComponentProperty field, int sizeLimit, Long targetGeneration) {
 
         switch (field) {
             case STRING_EXTENSION_1:
@@ -255,9 +252,9 @@ public abstract class LuceneIndexer implements IndexerBI {
                 {
                     return search(buildTokenizedStringQuery(query, field.name(), prefixSearch), sizeLimit, targetGeneration);
                 }
-                catch (ParseException e)
+                catch (ParseException | IOException e)
                 {
-                    throw new IOException(e);
+                    throw new RuntimeException(e);
                 }
 
             case ASSEMBLAGE_ID:
@@ -265,7 +262,7 @@ public abstract class LuceneIndexer implements IndexerBI {
                 return search(termQuery, sizeLimit, targetGeneration);
 
             default:
-                throw new IOException("Can't handle: " + field.name());
+                throw new RuntimeException("Can't handle: " + field.name());
         }
     }
 
@@ -317,74 +314,79 @@ public abstract class LuceneIndexer implements IndexerBI {
     /**
      * Subclasses may call this method with much more specific queries than this generic class is capable of constructing.
      */
-    protected final List<SearchResult> search(Query q, int sizeLimit, Long targetGeneration) throws IOException {
-        if (targetGeneration != null && targetGeneration != Long.MIN_VALUE) {
-            if (targetGeneration == Long.MAX_VALUE)
-            {
-                searcherManager.maybeRefreshBlocking();
-            }
-            else
-            {
-                try
-                {
-                    reopenThread.waitForGeneration(targetGeneration);
-                }
-                catch (InterruptedException e)
-                {
-                    throw new IOException(e);
-                }
-            }
-        }
-        
-        IndexSearcher searcher = searcherManager.acquire();
-
+    protected final List<SearchResult> search(Query q, int sizeLimit, Long targetGeneration) {
         try 
         {
-            if (TermstoreLogger.logger.isLoggable(Level.FINE)) 
-            {
-                TermstoreLogger.logger.log(Level.FINE, "Running query: " + q.toString());
-            }
-            
-            //Since the index carries some duplicates by design, which we will remove - get a few extra results up front.
-            //so we are more likely to come up with the requested number of results
-            long limitWithExtras = sizeLimit + (long)((double)sizeLimit * 0.25d);
-            
-            int adjustedLimit = (limitWithExtras > Integer.MAX_VALUE ? sizeLimit : (int)limitWithExtras);
-            
-            TopDocs topDocs = searcher.search(q, adjustedLimit);
-            List<SearchResult> results = new ArrayList<>(topDocs.totalHits);
-            HashSet<Integer> includedComponentIDs = new HashSet<>();
-
-            for (ScoreDoc hit : topDocs.scoreDocs) 
-            {
-                if (TermstoreLogger.logger.isLoggable(Level.FINEST)) 
+            if (targetGeneration != null && targetGeneration != Long.MIN_VALUE) {
+                if (targetGeneration == Long.MAX_VALUE)
                 {
-                    TermstoreLogger.logger.log(Level.FINEST, "Hit: {0} Score: {1}", new Object[]{hit.doc, hit.score});
-                }
-
-                Document doc = searcher.doc(hit.doc);
-                int componentId = doc.getField(ComponentProperty.COMPONENT_ID.name()).numericValue().intValue();
-                if (includedComponentIDs.contains(componentId))
-                {
-                    continue;
+                    searcherManager.maybeRefreshBlocking();
                 }
                 else
                 {
-                    includedComponentIDs.add(componentId);
-                    results.add(new SearchResult(componentId, hit.score));
-                    if (results.size() == sizeLimit)
+                    try
                     {
-                        break;
+                        reopenThread.waitForGeneration(targetGeneration);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        throw new RuntimeException(e);
                     }
                 }
             }
-            if (TermstoreLogger.logger.isLoggable(Level.FINE)) 
+            
+            IndexSearcher searcher = searcherManager.acquire();
+            
+            try 
             {
-                TermstoreLogger.logger.log(Level.FINE, "Returning " + results.size() + " results from query");
+                if (TermstoreLogger.logger.isLoggable(Level.FINE)) 
+                {
+                    TermstoreLogger.logger.log(Level.FINE, "Running query: {0}", q.toString());
+                }
+                
+                //Since the index carries some duplicates by design, which we will remove - get a few extra results up front.
+                //so we are more likely to come up with the requested number of results
+                long limitWithExtras = sizeLimit + (long)((double)sizeLimit * 0.25d);
+                
+                int adjustedLimit = (limitWithExtras > Integer.MAX_VALUE ? sizeLimit : (int)limitWithExtras);
+                
+                TopDocs topDocs = searcher.search(q, adjustedLimit);
+                List<SearchResult> results = new ArrayList<>(topDocs.totalHits);
+                HashSet<Integer> includedComponentIDs = new HashSet<>();
+                
+                for (ScoreDoc hit : topDocs.scoreDocs)
+                {
+                    if (TermstoreLogger.logger.isLoggable(Level.FINEST))
+                    {
+                        TermstoreLogger.logger.log(Level.FINEST, "Hit: {0} Score: {1}", new Object[]{hit.doc, hit.score});
+                    }
+                    
+                    Document doc = searcher.doc(hit.doc);
+                    int componentId = doc.getField(ComponentProperty.COMPONENT_ID.name()).numericValue().intValue();
+                    if (includedComponentIDs.contains(componentId))
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        includedComponentIDs.add(componentId);
+                        results.add(new SearchResult(componentId, hit.score));
+                        if (results.size() == sizeLimit)
+                        {
+                            break;
+                        }
+                    }
+                }
+                if (TermstoreLogger.logger.isLoggable(Level.FINE))
+                {
+                    TermstoreLogger.logger.log(Level.FINE, "Returning {0} results from query", results.size());
+                }
+                return results;
+            } finally {
+                searcherManager.release(searcher);
             }
-            return results;
-        } finally {
-            searcherManager.release(searcher);
+        }   catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
     }
 
@@ -481,25 +483,19 @@ public abstract class LuceneIndexer implements IndexerBI {
             String last = terms.remove(terms.size() - 1);
             bq.add(new PrefixQuery((new Term(field, last))), Occur.MUST);
         }
-        for (String s : terms)
-        {
+        terms.stream().forEach((s) -> {
             bq.add(new TermQuery(new Term(field, s)), Occur.MUST);
-        }
+        });
         
         return bq;
     }
     
     @Override
-    public final Future<Long> index(ComponentChronicleBI<?> chronicle) {
+    public final Future<Long> index(ObjectChronology<?> chronicle) {
         return index((() -> new AddDocument(chronicle)), (() -> indexChronicle(chronicle)), chronicle.getNid());
     }
     
-    @Override
-    public Future<Long> index(SememeChronology<?> chronicle) {
-        return index((() -> new AddDocument(chronicle)), (() -> indexSememeChronicle(chronicle)), chronicle.getNid());
-    }
-
-    private final Future<Long> index(Supplier<AddDocument> documentSupplier, BooleanSupplier indexChronicle, int chronicleNid) {
+    private Future<Long> index(Supplier<AddDocument> documentSupplier, BooleanSupplier indexChronicle, int chronicleNid) {
         if (!enabled_) {
             releaseLatch(chronicleNid, Long.MIN_VALUE);
             return null;
@@ -571,36 +567,20 @@ public abstract class LuceneIndexer implements IndexerBI {
     
     private class AddDocument implements Callable<Long> {
 
-        ComponentChronicleBI<?> chronicle_ = null;
-        SememeChronology<?> sememeChronicle_ = null;
+        ObjectChronology<?> chronicle = null;
 
-        public AddDocument(ComponentChronicleBI<?> chronicle) {
-            chronicle_ = chronicle;
-        }
-        
-        public AddDocument(SememeChronology<?> chronicle) {
-            sememeChronicle_ = chronicle;
+        public AddDocument(ObjectChronology<?> chronicle) {
+            this.chronicle = chronicle;
         }
         
         public int getNid() {
-            return chronicle_ == null ? sememeChronicle_.getNid() : chronicle_.getNid();
+            return chronicle.getNid();
         }
 
         @Override
         public Long call() throws Exception {
             Document doc = new Document();
-            
-            if (chronicle_ == null)
-            {
-                //TODO dan hacking - Keith question - for some reason, Keith isn't putting a field in sememe chronicles with the id???
-                //See other notes on issue in LuceneRefexIndexer
-                addFields(sememeChronicle_, doc);
-            }
-            else
-            {
-                doc.add(new IntField(ComponentProperty.COMPONENT_ID.name(), getNid(), LuceneIndexer.indexedComponentNidType));
-                addFields(chronicle_, doc);
-            }
+            addFields(chronicle, doc);
 
             // Note that the addDocument operation could cause duplicate documents to be
             // added to the index if a new luceneVersion is added after initial index
@@ -620,8 +600,6 @@ public abstract class LuceneIndexer implements IndexerBI {
         }
     }
 
-    protected abstract boolean indexChronicle(ComponentChronicleBI<?> chronicle);
-    protected abstract boolean indexSememeChronicle(SememeChronology<?> chronicle);
-    protected abstract void addFields(SememeChronology<?> chronicle, Document doc);
-    protected abstract void addFields(ComponentChronicleBI<?> chronicle, Document doc);
+    protected abstract boolean indexChronicle(ObjectChronology<?> chronicle);
+    protected abstract void addFields(ObjectChronology<?> chronicle, Document doc);
 }

@@ -16,12 +16,10 @@
  */
 package org.ihtsdo.otf.query.implementation;
 
-import java.io.IOException;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.Collections;
 import java.util.List;
 
-import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -41,10 +39,10 @@ public abstract class LeafClause extends Clause {
 
     /**
      * The
-     * <code>NativeIdSetBI</code> of components that match the criterion
+     * <code>NidSet</code> of components that match the criterion
      * specified in the LeafClause.
      */
-    ConcurrentBitSet resultsCache = new ConcurrentBitSet();
+    NidSet resultsCache = new NidSet();
 
     public LeafClause(Query enclosingQuery) {
         super(enclosingQuery);
@@ -60,7 +58,7 @@ public abstract class LeafClause extends Clause {
      * which is the components that match the criterion
      * specified in the LeafClause.
      */
-    public NativeIdSetBI getResultsCache() {
+    public NidSet getResultsCache() {
         return resultsCache;
     }
 
@@ -78,7 +76,7 @@ public abstract class LeafClause extends Clause {
     }
 
     @Override
-    public NativeIdSetBI computeComponents(NativeIdSetBI incomingComponents) throws IOException {
+    public NidSet computeComponents(NidSet incomingComponents) {
         resultsCache.and(incomingComponents);
         return resultsCache;
     }

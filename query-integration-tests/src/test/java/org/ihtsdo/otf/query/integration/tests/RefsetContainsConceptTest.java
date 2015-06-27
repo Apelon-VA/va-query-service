@@ -21,8 +21,6 @@ import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
 import org.ihtsdo.otf.query.implementation.ForSetSpecification;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
 /**
  *
@@ -38,7 +36,7 @@ public class RefsetContainsConceptTest extends QueryClauseTest {
                 return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
             }
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("mild", Snomed.MILD);
                 let("severities", Snomed.SEVERITY_REFSET);
             }

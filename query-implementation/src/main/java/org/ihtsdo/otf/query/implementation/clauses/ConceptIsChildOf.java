@@ -15,22 +15,18 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
+import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.io.IOException;
 import java.util.EnumSet;
-import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.ClauseComputeType;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.LeafClause;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.query.implementation.Query;
-import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
-import org.ihtsdo.otf.tcc.api.store.Ts;
-import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
-import org.ihtsdo.otf.query.implementation.Where;
 import org.ihtsdo.otf.query.implementation.WhereClause;
 import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
-import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -50,29 +46,32 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlAccessorType(value = XmlAccessType.NONE)
 public class ConceptIsChildOf extends LeafClause {
 
-
     @XmlElement
-    String kindOfSpecKey;
+    String childOfSpecKey;
     @XmlElement
     String viewCoordinateKey;
 
     public ConceptIsChildOf(Query enclosingQuery, String kindOfSpecKey, String viewCoordinateKey) {
         super(enclosingQuery);
-        this.kindOfSpecKey = kindOfSpecKey;
+        this.childOfSpecKey = kindOfSpecKey;
         this.viewCoordinateKey = viewCoordinateKey;
     }
+
     protected ConceptIsChildOf() {
     }
 
     @Override
-    public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleComponents)
-            throws ValidationException, IOException, ContradictionException {
-        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
-
-        ConceptSpec childOfSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(kindOfSpecKey);
-        int parentNid = childOfSpec.getNid(viewCoordinate);
-        getResultsCache().or(Ts.get().isChildOfSet(parentNid, viewCoordinate));
-        return getResultsCache();
+    public NidSet computePossibleComponents(NidSet incomingPossibleComponents) {
+        try {
+            ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+            ConceptSpec childOfSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(childOfSpecKey);
+            int parentNid = childOfSpec.getNid(viewCoordinate);
+            ConceptSequenceSet childrenOfSequenceSet = taxonomyService.getChildOfSequenceSet(parentNid, viewCoordinate);
+            getResultsCache().or(NidSet.of(childrenOfSequenceSet));
+            return getResultsCache();
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     @Override
@@ -81,7 +80,7 @@ public class ConceptIsChildOf extends LeafClause {
     }
 
     @Override
-    public void getQueryMatches(ConceptVersionBI conceptVersion) {
+    public void getQueryMatches(ConceptVersion conceptVersion) {
         // Nothing to do...
     }
 
@@ -89,7 +88,7 @@ public class ConceptIsChildOf extends LeafClause {
     public WhereClause getWhereClause() {
         WhereClause whereClause = new WhereClause();
         whereClause.setSemantic(ClauseSemantic.CONCEPT_IS_CHILD_OF);
-        whereClause.getLetKeys().add(kindOfSpecKey);
+        whereClause.getLetKeys().add(childOfSpecKey);
         whereClause.getLetKeys().add(viewCoordinateKey);
         return whereClause;
     }

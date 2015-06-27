@@ -15,22 +15,20 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
-import java.io.IOException;
+import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
+import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
+import gov.vha.isaac.ochre.api.coordinate.LanguageCoordinate;
+import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.EnumSet;
-import java.util.Map;
-import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
-import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
-import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
-import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
+import java.util.Optional;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.ClauseComputeType;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.ParentClause;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.WhereClause;
-import org.ihtsdo.otf.tcc.api.spec.ValidationException;
-import org.ihtsdo.otf.tcc.api.store.Ts;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -55,14 +53,14 @@ public class PreferredNameForConcept extends ParentClause {
     public WhereClause getWhereClause() {
         WhereClause whereClause = new WhereClause();
         whereClause.setSemantic(ClauseSemantic.PREFERRED_NAME_FOR_CONCEPT);
-        for (Clause clause : getChildren()) {
+        getChildren().stream().forEach((clause) -> {
             whereClause.getChildren().add(clause.getWhereClause());
-        }
+        });
         return whereClause;
     }
 
     @Override
-    public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleConcepts) throws IOException, ValidationException, ContradictionException {
+    public NidSet computePossibleComponents(NidSet incomingPossibleConcepts) {
         return incomingPossibleConcepts;
     }
     
@@ -72,16 +70,20 @@ public class PreferredNameForConcept extends ParentClause {
     }
 
     @Override
-    public NativeIdSetBI computeComponents(NativeIdSetBI incomingConcepts) throws IOException, ValidationException, ContradictionException {
-        ViewCoordinate viewCoordinate = getEnclosingQuery().getViewCoordinate();
-        NativeIdSetBI outgoingPreferredNids = new ConcurrentBitSet();
-        for (Clause childClause : getChildren()) {
-            NativeIdSetBI childPossibleComponentNids = childClause.computePossibleComponents(incomingConcepts);
-            Map<Integer, ConceptVersionBI> conceptMap = Ts.get().getConceptVersions(viewCoordinate, childPossibleComponentNids);
-            for (Map.Entry<Integer, ConceptVersionBI> entry : conceptMap.entrySet()) {
-                outgoingPreferredNids.add(entry.getValue().getPreferredDescription().getNid());
-            }
-        }
+    public NidSet computeComponents(NidSet incomingConcepts) {
+        LanguageCoordinate languageCoordinate = getEnclosingQuery().getLanguageCoordinate();
+        StampCoordinate stampCoordinate = getEnclosingQuery().getStampCoordinate();
+        NidSet outgoingPreferredNids = new NidSet();
+        getChildren().stream().map((childClause) -> childClause.computePossibleComponents(incomingConcepts)).map((childPossibleComponentNids) -> ConceptSequenceSet.of(childPossibleComponentNids)).forEach((conceptSequenceSet) -> {
+            conceptService.getConceptChronologyStream(conceptSequenceSet)
+                    .forEach((conceptChronology) -> {
+                        Optional<LatestVersion<DescriptionSememe>> desc = 
+                                conceptChronology.getPreferredDescription(languageCoordinate, stampCoordinate);
+                        if (desc.isPresent()) {
+                            outgoingPreferredNids.add(desc.get().value().getNid());
+                        }
+                    });
+        });
         return outgoingPreferredNids;
     }
 }

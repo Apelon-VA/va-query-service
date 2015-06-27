@@ -15,35 +15,39 @@
  */
 package org.ihtsdo.otf.query.implementation;
 
+import gov.vha.isaac.metadata.coordinates.LanguageCoordinates;
+import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
+import gov.vha.isaac.metadata.coordinates.StampCoordinates;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
+import gov.vha.isaac.ochre.api.IdentifiedObjectService;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.api.component.sememe.SememeService;
+import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
+import gov.vha.isaac.ochre.api.coordinate.LanguageCoordinate;
+import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
+import gov.vha.isaac.ochre.api.coordinate.PremiseType;
+import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.collections.NidSet;
+import gov.vha.isaac.ochre.collections.SememeSequenceSet;
+import gov.vha.isaac.ochre.model.coordinate.TaxonomyCoordinateImpl;
 import org.ihtsdo.otf.query.implementation.clauses.*;
-import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
-import org.ihtsdo.otf.tcc.api.chronicle.ComponentVersionBI;
-import org.ihtsdo.otf.tcc.api.concept.ConceptFetcherBI;
-import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
-import org.ihtsdo.otf.tcc.api.concept.ProcessUnfetchedConceptDataBI;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
-import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
-import org.ihtsdo.otf.tcc.api.description.DescriptionChronicleBI;
-import org.ihtsdo.otf.tcc.api.description.DescriptionVersionBI;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetItrBI;
-import org.ihtsdo.otf.tcc.api.store.Ts;
 import org.ihtsdo.otf.tcc.ddo.ComponentReference;
 import org.ihtsdo.otf.tcc.ddo.concept.ConceptChronicleDdo;
 import org.ihtsdo.otf.tcc.ddo.concept.component.description.DescriptionChronicleDdo;
 import org.ihtsdo.otf.tcc.ddo.concept.component.description.DescriptionVersionDdo;
 import org.ihtsdo.otf.tcc.ddo.fetchpolicy.RefexPolicy;
 import org.ihtsdo.otf.tcc.ddo.fetchpolicy.RelationshipPolicy;
-import org.ihtsdo.otf.tcc.ddo.fetchpolicy.VersionPolicy;
 import javax.xml.bind.annotation.*;
 import java.io.IOException;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.ihtsdo.otf.tcc.api.store.Ts;
 
 /**
  * Executes queries within the terminology hierarchy and returns the nids of the
@@ -59,6 +63,9 @@ import java.util.logging.Logger;
 public abstract class Query {
 
     private static IdentifierService identifierService = LookupService.getService(IdentifierService.class);
+    private static ConceptService conceptService = LookupService.getService(ConceptService.class);
+    private static IdentifiedObjectService identifiedObjectService = LookupService.getService(IdentifiedObjectService.class);
+    private static SememeService sememeService = LookupService.getService(SememeService.class);
 
     @XmlElementWrapper(name = "for")
     @XmlElement(name = "component")
@@ -78,9 +85,9 @@ public abstract class Query {
 
     @XmlElementWrapper(name = "return")
     @XmlElement(name = "type")
-    private EnumSet<ReturnTypes> returnTypes = EnumSet.of(ReturnTypes.NIDS);
+    private final EnumSet<ReturnTypes> returnTypes = EnumSet.of(ReturnTypes.NIDS);
 
-    public void setup() throws IOException {
+    public void setup() {
         getLetDeclarations();
         rootClause[0] = Where();
         ForSetSpecification forSetSpec = ForSetSpecification();
@@ -88,14 +95,14 @@ public abstract class Query {
         customCollection = forSetSpec.getCustomCollection();
     }
 
-    protected abstract ForSetSpecification ForSetSpecification() throws IOException;
+    protected abstract ForSetSpecification ForSetSpecification();
 
-    public HashMap<String, Object> getLetDeclarations() throws IOException {
+    public HashMap<String, Object> getLetDeclarations() {
         if (letDeclarations == null) {
             letDeclarations = new HashMap<>();
             if (!letDeclarations.containsKey(currentViewCoordinateKey)) {
-                if (viewCoordinate != null) {
-                    letDeclarations.put(currentViewCoordinateKey, viewCoordinate);
+                if (stampCoordinate != null) {
+                    letDeclarations.put(currentViewCoordinateKey, stampCoordinate);
                 } else {
                     letDeclarations.put(currentViewCoordinateKey, ViewCoordinates.getDevelopmentInferredLatestActiveOnly());
                 }
@@ -111,19 +118,28 @@ public abstract class Query {
     int resultSetLimit = 50;
 
     /**
-     * The concepts, stored as nids in a <code>NativeIdSetBI</code>, that are
+     * The concepts, stored as nids in a <code>NidSet</code>, that are
      * considered in the query.
      */
-    private NativeIdSetBI forSet;
+    private NidSet forSet;
     /**
      * The steps required to compute the query clause.
      */
-    private EnumSet<ClauseComputeType> computeTypes
+    private final EnumSet<ClauseComputeType> computeTypes
             = EnumSet.noneOf(ClauseComputeType.class);
     /**
-     * The <code>ViewCoordinate</code> used in the query.
+     * The <code>StampCoordinate</code> used in the query.
      */
-    private ViewCoordinate viewCoordinate;
+    private StampCoordinate stampCoordinate;
+
+    /**
+     * The <code>LanguageCoordinate</code> used in the query.
+     */
+    private LanguageCoordinate languageCoordinate;
+
+    private PremiseType premiseType = PremiseType.INFERRED;
+
+    private LogicCoordinate logicCoordinate = LogicCoordinates.getStandardElProfile();
 
     /**
      * Retrieves what type of iterations are required to compute the clause.
@@ -139,24 +155,29 @@ public abstract class Query {
      * Snomed inferred latest as the input <code>ViewCoordinate</code>.
      */
     public Query() {
-        this(null);
+        this(null, null);
     }
 
     /**
      * Constructor for <code>Query</code>. If a <code>ViewCoordinate</code> is
      * not specified, the default is the Snomed inferred latest.
      *
-     * @param viewCoordinate
+     * @param stampCoordinate
      */
-    public Query(ViewCoordinate viewCoordinate) {
-        if (viewCoordinate == null) {
-            try {
-                this.viewCoordinate = ViewCoordinates.getDevelopmentInferredLatestActiveOnly();
-            } catch (IOException ex) {
-                Logger.getLogger(Query.class.getName()).log(Level.SEVERE, null, ex);
-            }
+    public Query(StampCoordinate stampCoordinate) {
+        this(stampCoordinate, null);
+    }
+
+    public Query(StampCoordinate stampCoordinate, LanguageCoordinate languageCoordinate) {
+        if (stampCoordinate == null) {
+            this.stampCoordinate = StampCoordinates.getDevelopmentLatestActiveOnly();
         } else {
-            this.viewCoordinate = viewCoordinate;
+            this.stampCoordinate = stampCoordinate;
+        }
+        if (languageCoordinate == null) {
+            this.languageCoordinate = LanguageCoordinates.getUsEnglishLanguagePreferredTermCoordinate();
+        } else {
+            this.languageCoordinate = languageCoordinate;
         }
     }
 
@@ -164,32 +185,30 @@ public abstract class Query {
      * Determines the set that will be searched in the query.
      *
      * @return the <code>NativeIdSetBI</code> of the set that will be queried
-     * @throws IOException
      */
-    protected final NativeIdSetBI For() throws IOException {
-        forSet = Ts.get().getEmptyNidSet();
+    protected final NidSet For() {
+        forSet = new NidSet();
         for (ComponentCollectionTypes collection : forCollectionTypes) {
             switch (collection) {
                 case ALL_COMPONENTS:
-                    forSet.or(Ts.get().getAllComponentNids());
+                    forSet.or(NidSet.ofAllComponentNids());
                     break;
                 case ALL_CONCEPTS:
-                    forSet.or(Ts.get().getAllConceptNids());
+                    forSet.or(NidSet.of(ConceptSequenceSet.ofAllConceptSequences()));
                     break;
-
                 case ALL_DESCRIPTION:
-                    forSet.or(Ts.get().getAllComponentNids());
+                    forSet.or(NidSet.ofAllComponentNids()); //TODO change to description assemblage after OTF removed
                     break;
                 case ALL_RELATIONSHIPS:
-                    forSet.or(Ts.get().getAllComponentNids());
+                    forSet.or(NidSet.ofAllComponentNids());//TODO change to logic graph sememes after OTF removed
                     break;
                 case ALL_SEMEMES:
-                    forSet.or(Ts.get().getAllComponentNids());
+                    forSet.or(NidSet.of(SememeSequenceSet.ofAllSememeSequences()));
                     break;
                 case CUSTOM_SET:
-                    for (UUID uuid : customCollection) {
+                    customCollection.stream().forEach((uuid) -> {
                         forSet.add(Ts.get().getNidForUuids(uuid));
-                    }
+                    });
                     break;
                 default:
                     throw new UnsupportedOperationException();
@@ -198,7 +217,7 @@ public abstract class Query {
         return forSet;
     }
 
-    public abstract void Let() throws IOException;
+    public abstract void Let();
 
     /**
      * Retrieves the root clause of the query.
@@ -207,7 +226,7 @@ public abstract class Query {
      */
     public abstract Clause Where();
 
-    public void let(String key, Object object) throws IOException {
+    public void let(String key, Object object) {
         letDeclarations.put(key, object);
     }
 
@@ -217,153 +236,156 @@ public abstract class Query {
      *
      * @return the <code>NativeIdSetBI</code> of nids that meet the criterion of
      * the query
-     * @throws IOException
-     * @throws Exception
      */
-    public NativeIdSetBI compute() throws IOException, Exception {
+    public NidSet compute() {
         setup();
         forSet = For();
         getLetDeclarations();
         rootClause[0] = Where();
-        NativeIdSetBI possibleComponents
+        NidSet possibleComponents
                 = rootClause[0].computePossibleComponents(forSet);
         if (computeTypes.contains(ClauseComputeType.ITERATION)) {
-            NativeIdSetBI conceptsToIterateOver
-                    = Ts.get().getConceptNidsForComponentNids(possibleComponents);
+            NidSet conceptsToIterateOver = NidSet.of(identifierService.getConceptSequencesForConceptNids(possibleComponents));
 
-            ConceptSequenceSet conceptSequences = identifierService.getConceptSequencesForNids(conceptsToIterateOver.getSetValues());
-            Ts.get().getParallelConceptStream(conceptSequences).forEach((concept) -> {
-                try {
-                    for (Clause c : rootClause[0].getChildren()) {
-                        concept.getVersion(viewCoordinate).ifPresent((cv) -> 
-                        {
-                            try {
-                                c.getQueryMatches(cv);
-                            } catch (ContradictionException | IOException ex) {
-                                throw new RuntimeException(ex);
-                            }
-                        });
-                    }
-                } catch (ContradictionException ex) {
-                    throw new RuntimeException(ex);
+            ConceptSequenceSet conceptSequences = identifierService.getConceptSequencesForConceptNids(conceptsToIterateOver);
+            conceptService.getParallelConceptChronologyStream(conceptSequences).forEach((ConceptChronology<? extends ConceptVersion> concept) -> {
+
+                ConceptVersion mutable = concept.createMutableVersion(concept.getNid()); //TODO needs to return a mutable version, not a ConceptVersion
+
+                Optional<LatestVersion<ConceptVersion>> latest
+                        = ((ConceptChronology<ConceptVersion>) concept).getLatestVersion(ConceptVersion.class, stampCoordinate);
+
+                if (latest.isPresent()) {
+                    rootClause[0].getChildren().stream().forEach((c) -> {
+                        c.getQueryMatches(latest.get().value());
+                    });
                 }
+
             });
         }
         return rootClause[0].computeComponents(possibleComponents);
     }
 
+    public PremiseType getPremiseType() {
+        return premiseType;
+    }
+
+    public void setPremiseType(PremiseType premiseType) {
+        this.premiseType = premiseType;
+    }
+
+    public LogicCoordinate getLogicCoordinate() {
+        return logicCoordinate;
+    }
+
+    public void setLogicCoordinate(LogicCoordinate logicCoordinate) {
+        this.logicCoordinate = logicCoordinate;
+    }
+
     /**
      *
-     * @return the <code>ViewCoordinate</code> in the query
+     * @return the <code>StampCoordinate</code> in the query
      */
-    public ViewCoordinate getViewCoordinate() {
-        return viewCoordinate;
+    public StampCoordinate getStampCoordinate() {
+        return stampCoordinate;
     }
 
-    public void setViewCoordinate(ViewCoordinate vc) {
-        this.viewCoordinate = vc;
+    public void setStampCoordinate(StampCoordinate vc) {
+        this.stampCoordinate = vc;
     }
 
-    public static ArrayList<Object> returnDisplayObjects(NativeIdSetBI resultSet, ReturnTypes returnType, ViewCoordinate vc) throws ContradictionException, UnsupportedOperationException, IOException {
+    public LanguageCoordinate getLanguageCoordinate() {
+        return languageCoordinate;
+    }
+
+    public void setLanguageCoordinate(LanguageCoordinate languageCoordinate) {
+        this.languageCoordinate = languageCoordinate;
+    }
+
+    public static ArrayList<Object> returnDisplayObjects(NidSet resultSet, ReturnTypes returnType, StampCoordinate stampCoordinate,
+            LanguageCoordinate languageCoordinate) throws ContradictionException, UnsupportedOperationException, IOException {
+        TaxonomyCoordinateImpl taxonomyCoordinate = new TaxonomyCoordinateImpl(PremiseType.STATED, stampCoordinate, languageCoordinate);
+
         ArrayList<Object> results = new ArrayList<>();
-
-        NativeIdSetItrBI iter = resultSet.getSetBitIterator();
         switch (returnType) {
             case UUIDS:
-                while (iter.next()) {
-                    ComponentReference cf = new ComponentReference(Ts.get().getSnapshot(vc), iter.nid());
-                    if (!cf.componentVersionIsNull()) {
-                        results.add(cf.getUuid());
+                resultSet.stream().forEach((nid) -> {
+                    try {
+                        ComponentReference cf = new ComponentReference(nid, stampCoordinate, languageCoordinate);
+                        if (!cf.componentVersionIsNull()) {
+                            results.add(cf.getUuid());
+                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
                     }
-                }
+                });
                 break;
             case NIDS:
-                while (iter.next()) {
-                    results.add(iter.nid());
-                }
+                resultSet.stream().forEach((nid) -> {
+                    results.add(nid);
+                });
                 break;
             case CONCEPT_VERSION:
-                while (iter.next()) {
-                    ConceptChronicleDdo cc = new ConceptChronicleDdo(Ts.get().getSnapshot(vc), Ts.get().getConcept(iter.nid()), VersionPolicy.ACTIVE_VERSIONS,
-                            RefexPolicy.REFEX_MEMBERS_AND_REFSET_MEMBERS, RelationshipPolicy.DESTINATION_RELATIONSHIPS);
-                    results.add(cc);
-                }
+                resultSet.stream().forEach((nid) -> {
+                    try {
+                        ConceptChronicleDdo cc = new ConceptChronicleDdo(taxonomyCoordinate, Ts.get().getConcept(nid),
+                                RefexPolicy.REFEX_MEMBERS_AND_REFSET_MEMBERS, RelationshipPolicy.DESTINATION_RELATIONSHIPS);
+                        results.add(cc);
+                    } catch (Exception ex) {
+                        throw new RuntimeException(ex);
+                    }
+                });
+
                 break;
             case COMPONENT:
-                while (iter.next()) {
-                    ComponentReference cf = new ComponentReference(Ts.get().getSnapshot(vc), iter.nid());
-                    if (!cf.componentVersionIsNull()) {
-                        results.add(cf);
-                    }
-                }
-                break;
-            case DESCRIPTION_VERSION_FSN:
-                while (iter.next()) {
-                    Optional<?> cv = Ts.get().getComponent(iter.nid()).getVersion(vc);
-                    if (cv.isPresent()) {
-                        DescriptionChronicleBI desc = Ts.get().getConceptVersion(vc, iter.nid()).getFullySpecifiedDescription();
-                        ConceptChronicleDdo cc = new ConceptChronicleDdo(Ts.get().getSnapshot(vc), Ts.get().getConcept(iter.nid()), VersionPolicy.ACTIVE_VERSIONS,
-                                RefexPolicy.REFEX_MEMBERS_AND_REFSET_MEMBERS, RelationshipPolicy.DESTINATION_RELATIONSHIPS);
-                        DescriptionChronicleDdo descChronicle = new DescriptionChronicleDdo(Ts.get().getSnapshot(vc), cc, desc);
-                        Optional<? extends DescriptionVersionBI> descVersionBI = desc.getVersion(vc);
-                        if (descVersionBI.isPresent()) {
-							results.add(new DescriptionVersionDdo(descChronicle, Ts.get().getSnapshot(vc), descVersionBI.get()));
+                resultSet.stream().forEach((nid) -> {
+                    try {
+                        ComponentReference cf = new ComponentReference(nid, stampCoordinate, languageCoordinate);
+                        if (!cf.componentVersionIsNull()) {
+                            results.add(cf);
                         }
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
                     }
-                }
+                });
+                break;
+            case DESCRIPTION_FOR_COMPONENT:
+            case DESCRIPTION_VERSION_FSN:
+                resultSet.stream().forEach((nid) -> {
+                    try {
+                        ConceptChronology<? extends ConceptVersion> concept = conceptService.getConcept(nid);
+                        Optional<LatestVersion<DescriptionSememe>> desc = concept.getFullySpecifiedDescription(languageCoordinate, stampCoordinate);
+                        if (desc.isPresent()) {
+                            LatestVersion<DescriptionSememe> descVersion = desc.get();
+                            ConceptChronicleDdo cc = new ConceptChronicleDdo(taxonomyCoordinate, concept,
+                                    RefexPolicy.REFEX_MEMBERS_AND_REFSET_MEMBERS, RelationshipPolicy.DESTINATION_RELATIONSHIPS);
+                            DescriptionChronicleDdo descChronicle = new DescriptionChronicleDdo(taxonomyCoordinate, cc, descVersion.value().getChronology());
+                            DescriptionVersionDdo descVersionDdo = new DescriptionVersionDdo(descChronicle, taxonomyCoordinate, descVersion.value());
+                            results.add(descVersionDdo);
+                        }
+                    } catch (IOException | ContradictionException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                });
                 break;
 
             case DESCRIPTION_VERSION_PREFERRED:
-                while (iter.next()) {
-                    int componentNid = iter.nid();
-                    Optional<?> cv = Ts.get().getComponent(componentNid).getVersion(vc);
-                    if (cv.isPresent()) {
-                        if (!(cv.get() instanceof ConceptVersionBI)) {
-                            componentNid = Ts.get().getComponent(componentNid).getConceptNid();
+                resultSet.stream().forEach((nid) -> {
+                    try {
+                        ConceptChronology<? extends ConceptVersion> concept = conceptService.getConcept(nid);
+                        Optional<LatestVersion<DescriptionSememe>> desc = concept.getPreferredDescription(languageCoordinate, stampCoordinate);
+                        if (desc.isPresent()) {
+                            LatestVersion<DescriptionSememe> descVersion = desc.get();
+                            ConceptChronicleDdo cc = new ConceptChronicleDdo(taxonomyCoordinate, concept,
+                                    RefexPolicy.REFEX_MEMBERS_AND_REFSET_MEMBERS, RelationshipPolicy.DESTINATION_RELATIONSHIPS);
+                            DescriptionChronicleDdo descChronicle = new DescriptionChronicleDdo(taxonomyCoordinate, cc, descVersion.value().getChronology());
+                            DescriptionVersionDdo descVersionDdo = new DescriptionVersionDdo(descChronicle, taxonomyCoordinate, descVersion.value());
+                            results.add(descVersionDdo);
                         }
-                        DescriptionChronicleBI desc = Ts.get().getConceptVersion(vc, componentNid).getPreferredDescription();
-                        ConceptChronicleDdo cc = new ConceptChronicleDdo(Ts.get().getSnapshot(vc), Ts.get().getConcept(componentNid), VersionPolicy.ACTIVE_VERSIONS,
-                                RefexPolicy.REFEX_MEMBERS_AND_REFSET_MEMBERS, RelationshipPolicy.DESTINATION_RELATIONSHIPS);
-                        DescriptionChronicleDdo descChronicle = new DescriptionChronicleDdo(Ts.get().getSnapshot(vc), cc, desc);
-                        Optional<? extends DescriptionVersionBI> descVersionBI = desc.getVersion(vc);
-                        if (descVersionBI.isPresent()) {
-                            results.add(new DescriptionVersionDdo(descChronicle, Ts.get().getSnapshot(vc), descVersionBI.get()));
-                        }
+                    } catch (IOException | ContradictionException ex) {
+                        throw new RuntimeException(ex);
                     }
-                }
-                break;
-            case DESCRIPTION_FOR_COMPONENT:
-                while (iter.next()) {
-                    ComponentChronicleBI component = Ts.get().getComponent(iter.nid());
-                    if (component == null) {
-                        System.out.println("No component for nid: " + iter.nid());
-                    }
-                    if (component != null) {
-                        Optional<?> cv = Ts.get().getComponent(iter.nid()).getVersion(vc);
-                        if (cv.isPresent()) {
-                            DescriptionChronicleBI desc = null;
-                            ConceptChronicleDdo cc = null;
-                            Optional<? extends DescriptionVersionBI> descVersionBI = null;
-                            if (cv.get() instanceof ConceptVersionBI) {
-                                desc = Ts.get().getConceptVersion(vc, iter.nid()).getFullySpecifiedDescription();
-                                descVersionBI = desc.getVersion(vc);
-                                cc = new ConceptChronicleDdo(Ts.get().getSnapshot(vc), Ts.get().getConcept(iter.nid()), VersionPolicy.ACTIVE_VERSIONS,
-                                        RefexPolicy.REFEX_MEMBERS_AND_REFSET_MEMBERS, RelationshipPolicy.DESTINATION_RELATIONSHIPS);
-                            } else if (cv.get() instanceof DescriptionVersionBI) {
-                                desc = (DescriptionChronicleBI) Ts.get().getComponent(iter.nid());
-                                descVersionBI = (Optional<? extends DescriptionVersionBI>) cv.get();
-                                cc = new ConceptChronicleDdo(Ts.get().getSnapshot(vc), Ts.get().getConcept(iter.nid()), VersionPolicy.ACTIVE_VERSIONS,
-                                        RefexPolicy.REFEX_MEMBERS_AND_REFSET_MEMBERS, RelationshipPolicy.DESTINATION_RELATIONSHIPS);
-                            } else {
-                                throw new UnsupportedOperationException("This component type is not yet supported");
-                            }
-                            DescriptionChronicleDdo descChronicle = new DescriptionChronicleDdo(Ts.get().getSnapshot(vc), cc, desc);
-                            if (descVersionBI.isPresent()) {
-                                results.add(new DescriptionVersionDdo(descChronicle, Ts.get().getSnapshot(vc), descVersionBI.get()));
-                            }
-                        }
-                    }
-                }
+                });
                 break;
             default:
                 throw new UnsupportedOperationException("Return type not supported.");
@@ -372,53 +394,11 @@ public abstract class Query {
         return results;
     }
 
-    private class Iterator implements ProcessUnfetchedConceptDataBI {
-
-        NativeIdSetBI conceptsToIterate;
-        Clause rootClause;
-
-        public Iterator(Clause rootClause, NativeIdSetBI conceptsToIterate) {
-            this.rootClause = rootClause;
-            this.conceptsToIterate = conceptsToIterate;
-        }
-
-        @Override
-        public boolean allowCancel() {
-            return true;
-        }
-
-        @Override
-        public void processUnfetchedConceptData(int cNid, ConceptFetcherBI fetcher) throws Exception {
-            if (conceptsToIterate.contains(cNid)) {
-                Optional<ConceptVersionBI> concept = fetcher.fetch(viewCoordinate);
-                for (Clause c : rootClause.getChildren()) {
-                    c.getQueryMatches(concept.get());
-                }
-            }
-        }
-
-        @Override
-        public NativeIdSetBI getNidSet() throws IOException {
-            return conceptsToIterate;
-        }
-
-        @Override
-        public String getTitle() {
-            return "Query Iterator";
-        }
-
-        @Override
-        public boolean continueWork() {
-            return true;
-        }
-    }
-
     /**
      * The default method for computing query results, which returns the fully
      * specified description version of the components from the
      * <code>Query</code>.
      *
-     * @param q input <code>Query</code>
      * @return The result set of the <code>Query</code> in * * * * * * * * * *
      * an <code>ArrayList</code> of <code>DescriptionVersionDdo</code> objects
      * @throws IOException
@@ -426,7 +406,7 @@ public abstract class Query {
      * @throws Exception
      */
     public ArrayList<Object> returnResults() throws IOException, ContradictionException, Exception {
-        NativeIdSetBI resultSet = compute();
+        NidSet resultSet = compute();
         return returnDisplayObjects(resultSet, ReturnTypes.DESCRIPTION_VERSION_FSN);
     }
 
@@ -441,8 +421,8 @@ public abstract class Query {
      * @throws IOException
      * @throws ContradictionException
      */
-    public ArrayList<Object> returnDisplayObjects(NativeIdSetBI resultSet, ReturnTypes returnType) throws IOException, ContradictionException {
-        return returnDisplayObjects(resultSet, returnType, viewCoordinate);
+    public ArrayList<Object> returnDisplayObjects(NidSet resultSet, ReturnTypes returnType) throws IOException, ContradictionException {
+        return returnDisplayObjects(resultSet, returnType, stampCoordinate, languageCoordinate);
 
     }
 
@@ -577,7 +557,7 @@ public abstract class Query {
 
     protected RelRestriction RelRestriction(String relTypeKey, String destinatonSpecKey, String relTypeSubsumptionKey, String targetSubsumptionKey) {
         return new RelRestriction(this, relTypeKey, destinatonSpecKey, currentViewCoordinateKey, relTypeSubsumptionKey, targetSubsumptionKey);
-        
+
     }
 
     protected RelRestriction RelRestriction(String relTypeKey, String destinationSpecKey, String viewCoordinateKey, String relTypeSubsumptionKey, String targetSubsumptionKey) {
@@ -634,7 +614,7 @@ public abstract class Query {
      * @return the <code>NativeIdSetBI</code> of the concepts that will be
      * searched in the query
      */
-    public NativeIdSetBI getForSet() {
+    public NidSet getForSet() {
         return forSet;
     }
 

@@ -16,7 +16,6 @@ package org.ihtsdo.otf.query.integration.tests;
  * limitations under the License.
  */
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
-import java.io.IOException;
 import java.util.EnumSet;
 import java.util.GregorianCalendar;
 import org.ihtsdo.otf.tcc.api.coordinate.Position;
@@ -34,7 +33,7 @@ public final class SetViewCoordinate {
     ViewCoordinate v1;
     Position position;
 
-    public SetViewCoordinate(int year, int month, int day, int hour, int minute) throws IOException {
+    public SetViewCoordinate(int year, int month, int day, int hour, int minute) {
         this.position = new Position();
         this.v1 = ViewCoordinates.getDevelopmentInferredLatestActiveOnly();
         position = v1.getViewPosition();

@@ -8,6 +8,7 @@
     <Loggers>
         <Logger name="org.ihtsdo.otf.query.integration.tests.suite.QueryServiceTestSuiteSetup" level="info"/>
         <Logger name="gov.va.oia.HK2Utilities" level="info"/>
+        <Logger name="gov.vha.isaac.ochre.api.LookupService" level="info"/> 
         <Logger name="org.jvnet.hk2.logger" level="OFF"/>  <!-- HK2 is logging a debug message that is being mis-translated into an error by LOG4J2 https://issues.apache.org/jira/browse/LOG4J2-1003 -->
         <Root level="debug">
             <AppenderRef ref="STDOUT"/>

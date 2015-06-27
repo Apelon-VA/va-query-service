@@ -17,6 +17,8 @@ package org.ihtsdo.otf.query.integration.tests;
  */
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
 import org.ihtsdo.otf.query.implementation.ForSetSpecification;
@@ -37,17 +39,21 @@ public class ChangedFromPreviousVersionTest extends QueryClauseTest {
     public ChangedFromPreviousVersionTest() throws IOException {
         this.q = new Query() {
             @Override
-            protected ForSetSpecification ForSetSpecification() throws IOException {
-                ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.CUSTOM_SET);
-                NativeIdSetBI forSet = new ConcurrentBitSet();
-                forSet.or(PersistentStore.get().isChildOfSet(Snomed.CLINICAL_FINDING.getNid(), ViewCoordinates.getDevelopmentInferredLatestActiveOnly()));
-                forSet.add(Snomed.ADMINISTRATIVE_STATUSES.getNid());
-                forSetSpecification.getCustomCollection().addAll(forSet.toPrimordialUuidSet());
-                return forSetSpecification;
+            protected ForSetSpecification ForSetSpecification() {
+                try {
+                    ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.CUSTOM_SET);
+                    NativeIdSetBI forSet = new ConcurrentBitSet();
+                    forSet.or(PersistentStore.get().isChildOfSet(Snomed.CLINICAL_FINDING.getNid(), ViewCoordinates.getDevelopmentInferredLatestActiveOnly()));
+                    forSet.add(Snomed.ADMINISTRATIVE_STATUSES.getNid());
+                    forSetSpecification.getCustomCollection().addAll(forSet.toPrimordialUuidSet());
+                    return forSetSpecification;
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
             }
 
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 SetViewCoordinate setViewCoordinate = new SetViewCoordinate(2010, 1, 31, 0, 0);
                 let("v2", setViewCoordinate.getViewCoordinate());
             }

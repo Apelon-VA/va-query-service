@@ -1,7 +1,6 @@
 package org.ihtsdo.otf.query.implementation;
 
 import javax.xml.bind.annotation.XmlRootElement;
-import java.io.IOException;
 
 /**
  * Created by kec on 11/4/14.
@@ -16,7 +15,7 @@ public class QueryFactory {
     @XmlRootElement(name = "query")
     public static class QueryFromFactory extends Query {
         @Override
-        protected ForSetSpecification ForSetSpecification() throws IOException {
+        protected ForSetSpecification ForSetSpecification() {
             ForSetSpecification forSetSpec = new ForSetSpecification();
             forSetSpec.setForCollectionTypes(forCollectionTypes);
             forSetSpec.setCustomCollection(customCollection);
@@ -24,7 +23,7 @@ public class QueryFactory {
         }
 
         @Override
-        public void Let() throws IOException {
+        public void Let() {
             // Set directly by Jaxb
         }
 

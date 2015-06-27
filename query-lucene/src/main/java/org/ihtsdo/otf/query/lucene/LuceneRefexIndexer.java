@@ -13,14 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
-
 package org.ihtsdo.otf.query.lucene;
 
 //~--- non-JDK imports --------------------------------------------------------
-
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
+import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeType;
 import gov.vha.isaac.ochre.api.component.sememe.version.StringSememe;
@@ -30,9 +27,7 @@ import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.jvnet.hk2.annotations.Service;
 
-
 //~--- JDK imports ------------------------------------------------------------
-
 import java.io.IOException;
 import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
@@ -56,13 +51,13 @@ public class LuceneRefexIndexer extends LuceneIndexer {
         //For HK2
         super("refex");
     }
-    
+
     @PostConstruct
     private void startMe() throws IOException {
         logger.info("Starting LuceneRefexIndexer post-construct");
-        
+
     }
-    
+
     @PreDestroy
     private void stopMe() throws IOException {
         logger.info("Stopping LuceneRefexIndexer pre-destroy. ");
@@ -71,38 +66,33 @@ public class LuceneRefexIndexer extends LuceneIndexer {
     }
 
     @Override
-    protected boolean indexChronicle(ComponentChronicleBI<?> chronicle) {
-        return false;
-    }
+    protected boolean indexChronicle(ObjectChronology<?> chronicle) {
+        if (chronicle instanceof SememeChronology<?>) {
+            SememeChronology<?> sememeChronology = (SememeChronology) chronicle;
+            if (sememeChronology.getSememeType() == SememeType.STRING) {
+                if (snomedAssemblageSequence == Integer.MIN_VALUE) {
+                    snomedAssemblageSequence = IsaacMetadataAuxiliaryBinding.SNOMED_INTEGER_ID.getSequence();
+                }
 
-    @Override
-    protected void addFields(ComponentChronicleBI<?> chronicle, Document doc) {
-        throw new UnsupportedOperationException("Not supported yet."); 
-    }
-
-    @Override
-    protected boolean indexSememeChronicle(SememeChronology<?> chronicle) {
-        if (chronicle.getSememeType() == SememeType.STRING) {
-            if (snomedAssemblageSequence == Integer.MIN_VALUE) {
-                snomedAssemblageSequence = IsaacMetadataAuxiliaryBinding.SNOMED_INTEGER_ID.getSequence();
-            }
-
-            if (chronicle.getAssemblageSequence() == snomedAssemblageSequence) {
-                return true;
+                if (sememeChronology.getAssemblageSequence() == snomedAssemblageSequence) {
+                    return true;
+                }
             }
         }
         return false;
     }
 
+
     @Override
-    protected void addFields(SememeChronology<?> chronicle, Document doc) {
+    protected void addFields(ObjectChronology<?> chronicle, Document doc) {
+        SememeChronology<?> sememeChronology = (SememeChronology) chronicle;
         //TODO dan notes - this doesn't make sense - this field should be named REFERENCED_COMPONENT_ID, not COMPONENT_ID
         //The query code makes assumptions about what sort of thing is in the component_id field - we can't have it be component id in one case, 
         //and refereced componentid in another.
-        doc.add(new IntField(ComponentProperty.COMPONENT_ID.name(), chronicle.getReferencedComponentNid(),
-                    LuceneIndexer.indexedComponentNidType));
-        
-        for (Object sv: chronicle.getVersions()) {
+        doc.add(new IntField(ComponentProperty.COMPONENT_ID.name(), sememeChronology.getReferencedComponentNid(),
+                LuceneIndexer.indexedComponentNidType));
+
+        for (Object sv : chronicle.getVersionList()) {
             if (sv instanceof StringSememe) {
                 StringSememe ssv = (StringSememe) sv;
                 //TODO this will cause it to only be indexed with the standard analyzer - if we also want to use the whitespace analyzer, 

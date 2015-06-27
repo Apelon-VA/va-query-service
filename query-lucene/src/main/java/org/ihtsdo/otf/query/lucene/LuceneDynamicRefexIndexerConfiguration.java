@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -173,8 +174,11 @@ public class LuceneDynamicRefexIndexerConfiguration
 	 * @throws IOException
 	 * @throws InvalidCAB
 	 * @throws ContradictionException
+	 * @throws ExecutionException 
+	 * @throws InterruptedException 
 	 */
-	public static void configureColumnsToIndex(int assemblageNid, Integer[] columnsToIndex, boolean skipReindex) throws ContradictionException, InvalidCAB, IOException
+	public static void configureColumnsToIndex(int assemblageNid, Integer[] columnsToIndex, boolean skipReindex) throws ContradictionException, InvalidCAB, 
+		IOException, InterruptedException, ExecutionException
 	{
 		Hk2Looker.get().getService(LuceneDynamicRefexIndexerConfiguration.class).readNeeded_.incrementAndGet();
 		List<IndexStatusListenerBI> islList = Hk2Looker.get().getAllServices(IndexStatusListenerBI.class);
@@ -239,7 +243,7 @@ public class LuceneDynamicRefexIndexerConfiguration
 		
 		Ts.get().getTerminologyBuilder(new EditCoordinate(IsaacMetadataAuxiliaryBinding.USER.getLenient().getConceptNid(), 
 				IsaacMetadataAuxiliaryBinding.ISAAC_MODULE.getLenient().getNid(), 
-				IsaacMetadataAuxiliaryBinding.MASTER.getLenient().getConceptNid()),
+				IsaacMetadataAuxiliaryBinding.DEVELOPMENT.getLenient().getConceptNid()),
 				ViewCoordinates.getMetadataViewCoordinate()).construct(rdb);
 		
 		Ts.get().addUncommitted(assemblageConceptC);
@@ -248,7 +252,7 @@ public class LuceneDynamicRefexIndexerConfiguration
 		//Ts.get().commit(/* referencedAssemblageConceptC */);
 		if (!skipReindex)
 		{
-			Ts.get().index(new Class[] {LuceneDynamicRefexIndexer.class});
+			Ts.get().index(new Class[] {LuceneDynamicRefexIndexer.class}).get();
 		}
 	}
 	
@@ -287,10 +291,14 @@ public class LuceneDynamicRefexIndexerConfiguration
 	/**
 	 * Disable all indexing of the specified refex.  To change the index config, use the {@link #configureColumnsToIndex(int, Integer[]) method.
 	 * 
+	 * Note that this causes a full DB reindex, on this thread.
+	 * 
 	 * @throws IOException 	 
 	 * @throws ContradictionException 
-	 * @throws InvalidCAB */
-	public static void disableIndex(int assemblageNid) throws IOException, InvalidCAB, ContradictionException
+	 * @throws InvalidCAB 
+	 * @throws ExecutionException 
+	 * @throws InterruptedException */
+	public static void disableIndex(int assemblageNid) throws IOException, InvalidCAB, ContradictionException, InterruptedException, ExecutionException
 	{
 		logger.info("Disabling index for dynamic refex assemblage concept '" + assemblageNid + "'");
 		
@@ -312,14 +320,14 @@ public class LuceneDynamicRefexIndexerConfiguration
 			
 			Ts.get().getTerminologyBuilder(new EditCoordinate(IsaacMetadataAuxiliaryBinding.USER.getLenient().getConceptNid(), 
 					IsaacMetadataAuxiliaryBinding.ISAAC_MODULE.getLenient().getNid(), 
-					IsaacMetadataAuxiliaryBinding.MASTER.getLenient().getConceptNid()),
+					IsaacMetadataAuxiliaryBinding.DEVELOPMENT.getLenient().getConceptNid()),
 					ViewCoordinates.getMetadataViewCoordinate()).construct(rb);
 
 			Ts.get().addUncommitted(indexConfigConceptC);
 			Ts.get().addUncommitted(referencedAssemblageConceptC);
 			Ts.get().commit(/* indexConfigConceptC */);
 			//Ts.get().commit(/* referencedAssemblageConceptC */);
-			Ts.get().index(new Class[] {LuceneDynamicRefexIndexer.class});
+			Ts.get().index(new Class[] {LuceneDynamicRefexIndexer.class}).get();
 			return;
 		}
 		logger.info("No index configuration was found to disable for dynamic refex assemblage concept '" + assemblageNid + "'");

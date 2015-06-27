@@ -15,21 +15,17 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
-import java.io.IOException;
+import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
+import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.EnumSet;
 import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.ihtsdo.otf.query.implementation.ClauseComputeType;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.WhereClause;
-import org.ihtsdo.otf.tcc.api.chronicle.ComponentVersionBI;
-import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetItrBI;
-import org.ihtsdo.otf.tcc.api.store.Ts;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -54,24 +50,21 @@ public class DescriptionActiveLuceneMatch extends DescriptionLuceneMatch {
     }
 
     @Override
-    public final NativeIdSetBI computeComponents(NativeIdSetBI incomingComponents) throws IOException {
-
+    public final NidSet computeComponents(NidSet incomingComponents) {
         ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
         getResultsCache().and(incomingComponents);
-        NativeIdSetItrBI iter = getResultsCache().getSetBitIterator();
-
-        try {
-            while (iter.next()) {
-                Optional<? extends ComponentVersionBI> cv = Ts.get().getComponentVersion(viewCoordinate, iter.nid());
-                if (!cv.isPresent() || !cv.get().isActive()) {
-                    getResultsCache().remove(iter.nid());
+        
+        incomingComponents.stream().forEach((nid) -> {
+            Optional<? extends ObjectChronology<? extends StampedVersion>> chronology = 
+                    identifiedObjectService.getIdentifiedObjectChronology(nid);
+            if (chronology.isPresent()) {
+                if (!chronology.get().isLatestVersionActive(viewCoordinate)) {
+                    getResultsCache().remove(nid);
                 }
+            } else {
+                getResultsCache().remove(nid);
             }
-        } catch (IOException ex) {
-            Logger.getLogger(DescriptionActiveLuceneMatch.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (ContradictionException ex) {
-            Logger.getLogger(DescriptionActiveLuceneMatch.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        });
         return getResultsCache();
     }
 

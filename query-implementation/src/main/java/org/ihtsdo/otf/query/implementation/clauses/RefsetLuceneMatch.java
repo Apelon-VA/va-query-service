@@ -15,28 +15,24 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
-import java.io.IOException;
+import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
+import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
+import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
+import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
-import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.query.implementation.ClauseComputeType;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.LeafClause;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.WhereClause;
 import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
-import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetItrBI;
-import org.ihtsdo.otf.tcc.api.spec.ValidationException;
-import org.ihtsdo.otf.tcc.api.store.Ts;
-import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
-import org.ihtsdo.otf.tcc.model.index.service.SearchResult;
+import gov.vha.isaac.ochre.api.index.SearchResult;
+import gov.vha.isaac.ochre.collections.NidSet;
+import java.util.Optional;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -52,8 +48,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlAccessorType(value = XmlAccessType.NONE)
 public class RefsetLuceneMatch extends LeafClause {
 
-
-     @XmlElement
+    @XmlElement
     String luceneMatchKey;
     @XmlElement
     String viewCoordinateKey;
@@ -63,8 +58,10 @@ public class RefsetLuceneMatch extends LeafClause {
         this.luceneMatchKey = luceneMatchKey;
         this.viewCoordinateKey = viewCoordinateKey;
     }
+
     protected RefsetLuceneMatch() {
     }
+
     @Override
     public WhereClause getWhereClause() {
         WhereClause whereClause = new WhereClause();
@@ -79,38 +76,46 @@ public class RefsetLuceneMatch extends LeafClause {
     }
 
     @Override
-    public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleComponents) throws IOException, ValidationException, ContradictionException {
-        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
-        String luceneMatch = (String) enclosingQuery.getLetDeclarations().get(luceneMatchKey);
-
-        NativeIdSetBI nids = new ConcurrentBitSet();
-        List<IndexerBI> lookers = Hk2Looker.get().getAllServices(IndexerBI.class);
-        IndexerBI refexIndexer = null;
-        for (IndexerBI li : lookers) {
-            if (li.getIndexerName().equals("refex")) {
-                refexIndexer = li;
-            }
-        }
-        List<SearchResult> queryResults = refexIndexer.query(luceneMatch, ComponentProperty.LONG_EXTENSION_1, 1000);
-        for (SearchResult s : queryResults) {
-            nids.add(s.nid);
-        }
-        //Filter the results, based upon the input ViewCoordinate
-        NativeIdSetItrBI iter = nids.getSetBitIterator();
-        while (iter.next()) {
-            try {
-                if (Ts.get().getComponentVersion(viewCoordinate, iter.nid()) == null) {
-                    nids.remove(iter.nid());
-                }
-            } catch (ContradictionException ex) {
-                Logger.getLogger(RefsetLuceneMatch.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-        getResultsCache().or(nids);
-        return nids;
+    public NidSet computePossibleComponents(NidSet incomingPossibleComponents) {
+        throw new UnsupportedOperationException();
+        //TODO FIX BACK UP
+//        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+//        String luceneMatch = (String) enclosingQuery.getLetDeclarations().get(luceneMatchKey);
+//
+//        NidSet nids = new NidSet();
+//        List<IndexerBI> lookers = LookupService.get().getAllServices(IndexerBI.class);
+//        IndexerBI refexIndexer = null;
+//        for (IndexerBI li : lookers) {
+//            if (li.getIndexerName().equals("refex")) {
+//                refexIndexer = li;
+//            }
+//        }
+//        if (refexIndexer == null) {
+//            throw new IllegalStateException("RefexIndexer is null");
+//        }
+//        List<SearchResult> queryResults = refexIndexer.query(luceneMatch, ComponentProperty.LONG_EXTENSION_1, 1000);
+//        queryResults.stream().forEach((s) -> {
+//            nids.add(s.nid);
+//        });
+//        nids.stream().forEach((nid) -> {
+//            Optional<? extends ObjectChronology<? extends StampedVersion>> optionalObject
+//                    = identifiedObjectService.getIdentifiedObjectChronology(nid);
+//            if (optionalObject.isPresent()) {
+//                Optional<? extends LatestVersion<? extends StampedVersion>> optionalVersion = 
+//                        optionalObject.get().getLatestActiveVersion(viewCoordinate);
+//                if (!optionalVersion.isPresent()) {
+//                    nids.remove(nid);
+//                }
+//            } else {
+//                nids.remove(nid);
+//            }
+//        });
+//        //Filter the results, based upon the input ViewCoordinate
+//        getResultsCache().or(nids);
+//        return nids;
     }
 
     @Override
-    public void getQueryMatches(ConceptVersionBI conceptVersion) throws IOException, ContradictionException {
+    public void getQueryMatches(ConceptVersion conceptVersion) {
     }
 }

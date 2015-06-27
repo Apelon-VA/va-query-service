@@ -15,28 +15,13 @@
  */
 package org.ihtsdo.otf.query.integration.tests.jaxb;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
-import javafx.embed.swing.JFXPanel;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
-import org.glassfish.hk2.runlevel.RunLevelController;
 import org.ihtsdo.otf.query.implementation.JaxbForQuery;
-import static gov.vha.isaac.ochre.api.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
-import java.util.Set;
-import javafx.concurrent.Task;
-import java.time.Duration;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
-import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
-import org.jvnet.testing.hk2testng.HK2;
-import org.reactfx.EventStreams;
-import org.reactfx.Subscription;
 import static org.testng.Assert.*;
 import org.testng.annotations.*;
 
@@ -79,7 +64,7 @@ public class ViewCoordinateTest {
                     .unmarshal(new StringReader(viewCoordinateXml));
 
             assertEquals(originalViewCoordinate, unmarshalledViewCoordinate);
-        } catch (JAXBException | IOException ex) {
+        } catch (JAXBException ex) {
             fail(ex.toString());
         }
 

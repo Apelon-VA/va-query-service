@@ -15,14 +15,15 @@
  */
 package org.ihtsdo.otf.query.implementation;
 
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import org.ihtsdo.otf.tcc.api.nid.IntSet;
 import gov.vha.isaac.ochre.collections.NidSet;
 import java.io.IOException;
-import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
+import java.util.Optional;
 import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
@@ -41,9 +42,9 @@ import org.ihtsdo.otf.tcc.api.store.Ts;
 public class Not extends ParentClause {
 
     @XmlTransient
-    NativeIdSetBI forSet;
+    NidSet forSet;
     @XmlTransient
-    NativeIdSetBI notSet;
+    NidSet notSet;
 
     public Not(Query enclosingQuery, Clause child) {
         super(enclosingQuery, child);
@@ -56,8 +57,8 @@ public class Not extends ParentClause {
     }
 
     @Override
-    public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleComponents) throws IOException, ValidationException, ContradictionException {
-        this.notSet = new ConcurrentBitSet();
+    public NidSet computePossibleComponents(NidSet incomingPossibleComponents) {
+        this.notSet = new NidSet();
         for (Clause c : getChildren()) {
             for (ClauseComputeType cp : c.getComputePhases()) {
                 switch (cp) {
@@ -87,26 +88,21 @@ public class Not extends ParentClause {
     }
 
     @Override
-    public NativeIdSetBI computeComponents(NativeIdSetBI incomingComponents) throws IOException, ValidationException, ContradictionException {
+    public NidSet computeComponents(NidSet incomingComponents) {
         this.forSet = enclosingQuery.getForSet();
         assert forSet != null;
         ConceptSequenceSet activeSet = new ConceptSequenceSet();
         
-        Ts.get().getConceptStream(incomingComponents.toConceptSequenceSet()).forEach((ConceptChronicleBI cc) -> {
-            for (ConceptVersionBI cv: cc.getVersions(getEnclosingQuery().getViewCoordinate())) {
-                try {
-                    if (cv.isActive()) {
-                        activeSet.add(cc.getNid());
-                    }
-                } catch (IOException ex) {
-                   throw new RuntimeException(ex);
-                }
+        conceptService.getConceptChronologyStream(ConceptSequenceSet.of(incomingComponents)).forEach((ConceptChronology cc) -> {
+            Optional<ConceptVersion> latestVersion = cc.getLatestVersion(ConceptVersion.class, getEnclosingQuery().getStampCoordinate());
+            if (latestVersion.isPresent()) {
+                activeSet.add(cc.getNid());
             }
         });
-        for (Clause c : getChildren()) {
+        getChildren().stream().forEach((c) -> {
             notSet.or(c.computeComponents(incomingComponents));
-        }
-        forSet = new IntSet(NidSet.of(activeSet).stream().toArray());
+        });
+        forSet = NidSet.of(activeSet);
         
         forSet.andNot(notSet);
         return forSet;

@@ -15,6 +15,7 @@
  */
 package org.ihtsdo.otf.query.implementation;
 
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.io.IOException;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
@@ -57,20 +58,20 @@ public class Xor extends ParentClause {
     }
 
     @Override
-    public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleComponents) throws IOException, ValidationException, ContradictionException {
-        NativeIdSetBI unionSet = new ConcurrentBitSet();
-        for (Clause c : getChildren()) {
+    public NidSet computePossibleComponents(NidSet incomingPossibleComponents) {
+        NidSet unionSet = new NidSet();
+        getChildren().stream().forEach((c) -> {
             unionSet.or(c.computePossibleComponents(incomingPossibleComponents));
-        }
+        });
         return unionSet;
     }
 
     @Override
-    public NativeIdSetBI computeComponents(NativeIdSetBI incomingComponents) throws IOException, ValidationException, ContradictionException {
-        NativeIdSetBI xorSet = new ConcurrentBitSet();
-        for (Clause c : getChildren()) {
+    public NidSet computeComponents(NidSet incomingComponents) {
+        NidSet xorSet = new NidSet();
+        getChildren().stream().forEach((c) -> {
             xorSet.xor(c.computeComponents(incomingComponents));
-        }
+        });
         return xorSet;
     }
 }

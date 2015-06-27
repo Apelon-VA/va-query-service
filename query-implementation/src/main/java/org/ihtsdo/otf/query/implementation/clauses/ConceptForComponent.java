@@ -15,19 +15,15 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
-import java.io.IOException;
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.EnumSet;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.ClauseComputeType;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.query.implementation.ParentClause;
 import org.ihtsdo.otf.query.implementation.Query;
-import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
-import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.query.implementation.WhereClause;
-import org.ihtsdo.otf.tcc.api.store.Ts;
-import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -49,13 +45,14 @@ public class ConceptForComponent extends ParentClause {
     protected ConceptForComponent() {
     }
     @Override
-    public NativeIdSetBI computePossibleComponents(NativeIdSetBI incomingPossibleConceptNids) throws IOException, ValidationException, ContradictionException {
-        NativeIdSetBI incomingPossibleComponentNids = Ts.get().getComponentNidsForConceptNids(incomingPossibleConceptNids);
+    public NidSet computePossibleComponents(NidSet incomingPossibleConceptNids) {
+        NidSet incomingPossibleComponentNids = identifierService.getComponentNidsForConceptNids(ConceptSequenceSet.of(incomingPossibleConceptNids));
 
-        NativeIdSetBI outgoingPossibleConceptNids = new ConcurrentBitSet();
+        NidSet outgoingPossibleConceptNids = new NidSet();
         for (Clause childClause : getChildren()) {
-            NativeIdSetBI childPossibleComponentNids = childClause.computePossibleComponents(incomingPossibleComponentNids);
-            outgoingPossibleConceptNids.or(Ts.get().getConceptNidsForComponentNids(childPossibleComponentNids));
+            NidSet childPossibleComponentNids = childClause.computePossibleComponents(incomingPossibleComponentNids);
+            ConceptSequenceSet conceptSet = identifierService.getConceptSequenceSetForComponentNidSet(childPossibleComponentNids);
+            outgoingPossibleConceptNids.or(NidSet.of(conceptSet));
         }
         return outgoingPossibleConceptNids;
     }
@@ -76,12 +73,12 @@ public class ConceptForComponent extends ParentClause {
     }
 
     @Override
-    public NativeIdSetBI computeComponents(NativeIdSetBI incomingComponents) throws IOException, ValidationException, ContradictionException {
-        NativeIdSetBI incomingPossibleComponentNids = Ts.get().getComponentNidsForConceptNids(incomingComponents);
-        NativeIdSetBI outgoingPossibleConceptNids = new ConcurrentBitSet();
+    public NidSet computeComponents(NidSet incomingComponents) {
+        NidSet incomingPossibleComponentNids = identifierService.getComponentNidsForConceptNids(ConceptSequenceSet.of(incomingComponents));
+        NidSet outgoingPossibleConceptNids = new NidSet();
         for (Clause childClause : getChildren()) {
-            NativeIdSetBI childPossibleComponentNids = childClause.computeComponents(incomingPossibleComponentNids);
-            outgoingPossibleConceptNids.or(Ts.get().getConceptNidsForComponentNids(childPossibleComponentNids));
+            NidSet childPossibleComponentNids = childClause.computeComponents(incomingPossibleComponentNids);
+            outgoingPossibleConceptNids.or(NidSet.of(identifierService.getConceptSequenceSetForComponentNidSet(childPossibleComponentNids)));
         }
         return outgoingPossibleConceptNids;
     }

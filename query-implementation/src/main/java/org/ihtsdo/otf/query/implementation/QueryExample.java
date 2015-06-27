@@ -16,6 +16,7 @@
 package org.ihtsdo.otf.query.implementation;
 
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -33,36 +34,31 @@ public class QueryExample {
     Query q;
     
     public QueryExample(){
-        try {
-            this.q = new Query(ViewCoordinates.getDevelopmentInferredLatestActiveOnly()) {
-                @Override
-                protected ForSetSpecification ForSetSpecification() {
-                    return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
-                }
-
-                @Override
-                public void Let() throws IOException {
-                    let("allergic-asthma", Snomed.ALLERGIC_ASTHMA);
-                    let("asthma", Snomed.ASTHMA);
-                    let("mild asthma", Snomed.MILD_ASTHMA);
-                }
-
-                @Override
-                public Clause Where() {
-                        return And(ConceptIsKindOf("asthma"),
-                                Not(ConceptIsChildOf("allergic-asthma")),
-                                ConceptIs("allergic-asthma"));
+        this.q = new Query(ViewCoordinates.getDevelopmentInferredLatestActiveOnly()) {
+            @Override
+            protected ForSetSpecification ForSetSpecification() {
+                return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
+            }
+            
+            @Override
+            public void Let()  {
+                let("allergic-asthma", Snomed.ALLERGIC_ASTHMA);
+                let("asthma", Snomed.ASTHMA);
+                let("mild asthma", Snomed.MILD_ASTHMA);
+            }
+            
+            @Override
+            public Clause Where() {
+                return And(ConceptIsKindOf("asthma"),
+                        Not(ConceptIsChildOf("allergic-asthma")),
+                        ConceptIs("allergic-asthma"));
 //                                Union(ConceptIsKindOf("allergic-asthma"),
 //                                ConceptIsKindOf("mild asthma")));
-                }
-            };
-        } catch (IOException ex) {
-            Logger.getLogger(QueryExample.class.getName()).log(
-                    Level.SEVERE, null, ex);
-        }
+            }
+        };
     }
     
-    public NativeIdSetBI getResults() throws IOException, Exception{
+    public NidSet getResults() throws IOException, Exception{
         return this.q.compute();
     }
 }

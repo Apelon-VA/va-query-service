@@ -44,7 +44,7 @@ public class IsKindOfTest extends QueryClauseTest {
             }
 
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("Physical force", Snomed.PHYSICAL_FORCE);
             }
 

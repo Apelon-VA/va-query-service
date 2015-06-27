@@ -36,7 +36,7 @@ public class DescriptionActiveLuceneMatchTest extends QueryClauseTest {
             }
 
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("baranys", "barany's");
             }
 

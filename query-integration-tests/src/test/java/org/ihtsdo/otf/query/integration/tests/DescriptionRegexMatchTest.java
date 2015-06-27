@@ -19,6 +19,8 @@ package org.ihtsdo.otf.query.integration.tests;
 
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
 import org.ihtsdo.otf.query.implementation.ForSetSpecification;
@@ -41,22 +43,26 @@ public class DescriptionRegexMatchTest extends QueryClauseTest {
         this.q = new Query(ViewCoordinates.getDevelopmentInferredLatestActiveOnly()) {
 
             @Override
-            protected ForSetSpecification ForSetSpecification() throws IOException {
-                ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.CUSTOM_SET);
-                NativeIdSetBI forSet = new ConcurrentBitSet();
-                forSet.add(Snomed.MOTION.getNid());
-                forSet.add(Snomed.ACCELERATION.getNid());
-                forSet.add(Snomed.CENTRIFUGAL_FORCE.getNid());
-                forSet.add(Snomed.CONTINUED_MOVEMENT.getNid());
-                forSet.add(Snomed.DECELERATION.getNid());
-                forSet.add((Snomed.MOMENTUM.getNid()));
-                forSet.add(Snomed.VIBRATION.getNid());
-                forSetSpecification.getCustomCollection().addAll(forSet.toPrimordialUuidSet());
-                return forSetSpecification;
+            protected ForSetSpecification ForSetSpecification() {
+                try {
+                    ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.CUSTOM_SET);
+                    NativeIdSetBI forSet = new ConcurrentBitSet();
+                    forSet.add(Snomed.MOTION.getNid());
+                    forSet.add(Snomed.ACCELERATION.getNid());
+                    forSet.add(Snomed.CENTRIFUGAL_FORCE.getNid());
+                    forSet.add(Snomed.CONTINUED_MOVEMENT.getNid());
+                    forSet.add(Snomed.DECELERATION.getNid());
+                    forSet.add((Snomed.MOMENTUM.getNid()));
+                    forSet.add(Snomed.VIBRATION.getNid());
+                    forSetSpecification.getCustomCollection().addAll(forSet.toPrimordialUuidSet());
+                    return forSetSpecification;
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
             }
 
             @Override
-            public void Let() throws IOException {
+            public void Let() {
                 let("motion", Snomed.MOTION);
                 let("deceleration", "[Dd]eceleration.*");
                 let("vibration", "[Vv]ibration.*");
