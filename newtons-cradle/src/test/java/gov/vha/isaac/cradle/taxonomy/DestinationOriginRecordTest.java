@@ -124,13 +124,13 @@ public class DestinationOriginRecordTest {
     public void testCompareInNavigableSet() {
         ConcurrentSkipListSet<DestinationOriginRecord> destinationOriginRecordSet = new ConcurrentSkipListSet<>();       
         destinationOriginRecordSet.add(new DestinationOriginRecord(8,81));
-        destinationOriginRecordSet.add(new DestinationOriginRecord(8,-81));
+        destinationOriginRecordSet.add(new DestinationOriginRecord(8,0));
         destinationOriginRecordSet.add(new DestinationOriginRecord(7,8));
         destinationOriginRecordSet.add(new DestinationOriginRecord(7,8));
-        destinationOriginRecordSet.add(new DestinationOriginRecord(7,-8));
         destinationOriginRecordSet.add(new DestinationOriginRecord(7,0));
+        destinationOriginRecordSet.add(new DestinationOriginRecord(7,1));
         destinationOriginRecordSet.add(new DestinationOriginRecord(6,61));
-        destinationOriginRecordSet.add(new DestinationOriginRecord(6,-61));
+        destinationOriginRecordSet.add(new DestinationOriginRecord(6,0));
         assertEquals(destinationOriginRecordSet.size(), 7);
         NavigableSet<DestinationOriginRecord> subset = destinationOriginRecordSet.subSet(new DestinationOriginRecord(7, Integer.MIN_VALUE), 
                                           new DestinationOriginRecord(7, Integer.MAX_VALUE));

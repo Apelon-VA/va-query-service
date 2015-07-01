@@ -15,6 +15,8 @@
  */
 package gov.vha.isaac.cradle.taxonomy;
 
+import gov.vha.isaac.ochre.api.Get;
+
 /**
  *
  * @author kec
@@ -24,6 +26,12 @@ public class DestinationOriginRecord implements Comparable<DestinationOriginReco
     private final int destinationSequence;
 
     public DestinationOriginRecord(int destinationSequence, int originSequence) {
+        if (originSequence < 0 && originSequence != Integer.MIN_VALUE) {
+            originSequence = Get.identifierService().getConceptSequence(originSequence);
+        }
+        if (destinationSequence < 0 && destinationSequence != Integer.MIN_VALUE) {
+            destinationSequence = Get.identifierService().getConceptSequence(destinationSequence);
+        }
         this.originSequence = originSequence;
         this.destinationSequence = destinationSequence;
     }

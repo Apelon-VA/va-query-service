@@ -15,6 +15,7 @@
  */
 package gov.vha.isaac.cradle.tasks;
 
+import gov.vha.isaac.cradle.taxonomy.DestinationOriginRecord;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
@@ -77,6 +78,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
     private final StampCoordinate latestOnDevCoordinate = StampCoordinates.getDevelopmentLatest();
     private final LogicCoordinate logicCoordinate = LogicCoordinates.getStandardElProfile();
     private final ImportEConceptFile parentTask;
+    
     public ConvertOtfToOchreModel(TtkConceptChronicle eConcept, UUID newPathUuid, ImportEConceptFile parentTask) {
         this(eConcept, parentTask);
         this.newPathUuid = newPathUuid;
@@ -276,11 +278,13 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                             switch (aNode.getNodeSemantic()) {
                                 case CONCEPT:
                                     createIsaRel((ConceptNodeWithNids) aNode, parentTaxonomyRecord, 
-                                            taxonomyFlags, logicVersion.getStampSequence());
+                                            taxonomyFlags, logicVersion.getStampSequence(),
+                                            conceptChronology.getConceptSequence());
                                     break;
                                 case ROLE_SOME:
                                     createSomeRole((RoleNodeSomeWithNids) aNode, parentTaxonomyRecord, 
-                                            taxonomyFlags, logicVersion.getStampSequence());
+                                            taxonomyFlags, logicVersion.getStampSequence(),
+                                            conceptChronology.getConceptSequence());
                                     break;
                                 default:
                                     throw new UnsupportedOperationException("Can't handle: " + aNode.getNodeSemantic());
@@ -293,28 +297,31 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
 
     private void createIsaRel(ConceptNodeWithNids conceptNode, 
             TaxonomyRecordPrimitive parentTaxonomyRecord, 
-            TaxonomyFlags taxonomyFlags, int stampSequence) {
+            TaxonomyFlags taxonomyFlags, int stampSequence, int originSequence) {
         parentTaxonomyRecord.getTaxonomyRecordUnpacked()
                 .addStampRecord(conceptNode.getConceptNid(), parentTask.isaSequence,
                         stampSequence, taxonomyFlags.bits);
+        parentTask.destinationOriginRecordSet.add(new DestinationOriginRecord(conceptNode.getConceptNid(), originSequence));
+        
     }
 
     private void createSomeRole(RoleNodeSomeWithNids someNode, 
             TaxonomyRecordPrimitive parentTaxonomyRecord, 
-            TaxonomyFlags taxonomyFlags, int stampSequence) {
+            TaxonomyFlags taxonomyFlags, int stampSequence, int originSequence) {
         
             if (someNode.getTypeConceptNid() == IsaacMetadataAuxiliaryBinding.ROLE_GROUP.getNid()) {
                 AndNode andNode = (AndNode) someNode.getOnlyChild();
                 andNode.getChildStream().forEach((roleGroupSomeNode) -> {
                     createSomeRole((RoleNodeSomeWithNids) roleGroupSomeNode, 
-                            parentTaxonomyRecord, taxonomyFlags, stampSequence);
+                            parentTaxonomyRecord, taxonomyFlags, stampSequence, originSequence);
                 });
                 
             } else {
                 ConceptNodeWithNids restrictionNode = (ConceptNodeWithNids) someNode.getOnlyChild();
                 parentTaxonomyRecord.getTaxonomyRecordUnpacked()
-                            .addStampRecord(restrictionNode.getConceptNid(), restrictionNode.getConceptNid(), 
+                            .addStampRecord(restrictionNode.getConceptNid(), someNode.getTypeConceptNid(), 
                                     stampSequence, taxonomyFlags.bits);
+                parentTask.destinationOriginRecordSet.add(new DestinationOriginRecord(restrictionNode.getConceptNid(), originSequence));
             }
     }
 
