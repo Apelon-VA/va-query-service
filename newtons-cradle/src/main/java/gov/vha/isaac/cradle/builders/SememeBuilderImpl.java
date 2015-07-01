@@ -16,6 +16,7 @@
 package gov.vha.isaac.cradle.builders;
 
 import gov.vha.isaac.ochre.api.DataTarget;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.IdentifiedComponentBuilder;
 import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
@@ -70,16 +71,16 @@ public class SememeBuilderImpl<C extends SememeChronology<? extends SememeVersio
             ChangeCheckerMode changeCheckerMode,
             List builtObjects) throws IllegalStateException {
         if (referencedComponentNid == Integer.MAX_VALUE) {
-            referencedComponentNid = getIdentifierService().getNidForUuids(referencedComponentBuilder.getUuids());
+            referencedComponentNid = Get.identifierService().getNidForUuids(referencedComponentBuilder.getUuids());
         }
         SememeChronologyImpl sememeChronicle = new SememeChronologyImpl(sememeType, 
                 primordialUuid, 
-                getIdentifierService().getNidForUuids(this.getUuids()), 
+                Get.identifierService().getNidForUuids(this.getUuids()), 
             assemblageConceptSequence, 
             referencedComponentNid, 
-            getIdentifierService().getSememeSequenceForUuids(this.getUuids()));
+            Get.identifierService().getSememeSequenceForUuids(this.getUuids()));
         sememeChronicle.setAdditionalUuids(additionalUuids);
-        getIdentifierService().setConceptSequenceForComponentNid(assemblageConceptSequence, sememeChronicle.getNid());
+        Get.identifierService().setConceptSequenceForComponentNid(assemblageConceptSequence, sememeChronicle.getNid());
         switch (sememeType) {
             case COMPONENT_NID:
                 ComponentNidSememeImpl cnsi = (ComponentNidSememeImpl) 
@@ -120,9 +121,9 @@ public class SememeBuilderImpl<C extends SememeChronology<? extends SememeVersio
         }
         
         if (changeCheckerMode == ChangeCheckerMode.ACTIVE) {
-            getCommitService().addUncommitted(sememeChronicle);
+            Get.commitService().addUncommitted(sememeChronicle);
         } else {
-            getCommitService().addUncommittedNoChecks(sememeChronicle);
+            Get.commitService().addUncommittedNoChecks(sememeChronicle);
         }
         builtObjects.add(sememeChronicle);
         return (C) sememeChronicle;
@@ -132,16 +133,16 @@ public class SememeBuilderImpl<C extends SememeChronology<? extends SememeVersio
     public C build(int stampSequence,
             List builtObjects) throws IllegalStateException {
         if (referencedComponentNid == Integer.MAX_VALUE) {
-            referencedComponentNid = getIdentifierService().getNidForUuids(referencedComponentBuilder.getUuids());
+            referencedComponentNid = Get.identifierService().getNidForUuids(referencedComponentBuilder.getUuids());
         }
         SememeChronologyImpl sememeChronicle = new SememeChronologyImpl(sememeType, 
                 primordialUuid, 
-                getIdentifierService().getNidForUuids(this.getUuids()), 
+                Get.identifierService().getNidForUuids(this.getUuids()), 
             assemblageConceptSequence, 
             referencedComponentNid, 
-            getIdentifierService().getSememeSequenceForUuids(this.getUuids()));
+            Get.identifierService().getSememeSequenceForUuids(this.getUuids()));
         sememeChronicle.setAdditionalUuids(additionalUuids);
-        getIdentifierService().setConceptSequenceForComponentNid(assemblageConceptSequence, sememeChronicle.getNid());
+        Get.identifierService().setConceptSequenceForComponentNid(assemblageConceptSequence, sememeChronicle.getNid());
         switch (sememeType) {
             case COMPONENT_NID:
                 ComponentNidSememeImpl cnsi = (ComponentNidSememeImpl) 

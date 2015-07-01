@@ -16,25 +16,26 @@
 package gov.vha.isaac.cradle.identifier;
 
 import gov.vha.isaac.cradle.ConcurrentSequenceIntMap;
-import gov.vha.isaac.cradle.Cradle;
 import gov.vha.isaac.cradle.collections.SequenceMap;
 import gov.vha.isaac.cradle.collections.UuidIntMapMap;
 import gov.vha.isaac.ochre.api.ConceptProxy;
-import gov.vha.isaac.ochre.api.IdentifiedObjectService;
+import gov.vha.isaac.ochre.api.ConfigurationService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SystemStatusService;
-import gov.vha.isaac.ochre.api.chronicle.IdentifiedObjectLocal;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronologyType;
 import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
-import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.collections.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -42,7 +43,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.runlevel.RunLevel;
 import org.jvnet.hk2.annotations.Service;
-import java.util.Map.Entry;
 
 /**
  *
@@ -54,50 +54,45 @@ public class IdentifierProvider implements IdentifierService {
 
     private static final Logger log = LogManager.getLogger();
 
-    private static SememeService sememeProvider = null;
 
-    private SememeService getSememeService() {
-        if (sememeProvider == null) {
-            sememeProvider = LookupService.getService(SememeService.class);
-        }
-        return sememeProvider;
-    }
-    private static IdentifiedObjectService ios = null;
+    private final Path folderPath;
+    private final UuidIntMapMap uuidIntMapMap;
+    private final SequenceMap conceptSequenceMap;
+    private final SequenceMap sememeSequenceMap;
+    private final SequenceMap refexSequenceMap;
+    private final ConcurrentSequenceIntMap nidCnidMap;
+    private final AtomicBoolean loadRequired = new AtomicBoolean();
 
-    private static IdentifiedObjectService getIdentifiedObjectService() {
-        if (ios == null) {
-            ios = LookupService.getService(IdentifiedObjectService.class);
-        }
-        return ios;
-    }
-
-    final UuidIntMapMap uuidIntMapMap = UuidIntMapMap.create(new File(Cradle.getCradlePath().toFile(), "uuid-nid-map"));
-    final SequenceMap conceptSequenceMap = new SequenceMap(450000);
-    final SequenceMap sememeSequenceMap = new SequenceMap(3000000);
-    final SequenceMap refexSequenceMap = new SequenceMap(3000000);
-    final ConcurrentSequenceIntMap nidCnidMap = new ConcurrentSequenceIntMap();
-
-    private IdentifierProvider() {
+    private IdentifierProvider() throws IOException {
         //for HK2
         log.info("IdentifierProvider constructed");
+        folderPath = LookupService.getService(ConfigurationService.class).getChronicleFolderPath().resolve("identifier-provider");
+        loadRequired.set(!Files.exists(folderPath));
+        Files.createDirectories(folderPath);
+        uuidIntMapMap = UuidIntMapMap.create(new File(folderPath.toAbsolutePath().toFile(), "uuid-nid-map"));
+        conceptSequenceMap = new SequenceMap(450000);
+        sememeSequenceMap = new SequenceMap(3000000);
+        refexSequenceMap = new SequenceMap(3000000);
+        nidCnidMap = new ConcurrentSequenceIntMap();
     }
 
     @PostConstruct
     private void startMe() throws IOException {
         try {
-            log.info("Starting SequenceService post-construct - reading from " + Cradle.getCradlePath().toAbsolutePath().toString());
-            if (!Cradle.cradleStartedEmpty()) {
+            log.info("Starting IdentifierProvider post-construct - reading from " + folderPath);
+            if (!loadRequired.get()) {
                 log.info("Loading concept-sequence.map.");
-                conceptSequenceMap.read(new File(Cradle.getCradlePath().toFile(), "concept-sequence.map"));
+
+                conceptSequenceMap.read(new File(folderPath.toFile(), "concept-sequence.map"));
                 log.info("Loading sememe-sequence.map.");
-                sememeSequenceMap.read(new File(Cradle.getCradlePath().toFile(), "sememe-sequence.map"));
+                sememeSequenceMap.read(new File(folderPath.toFile(), "sememe-sequence.map"));
                 log.info("Loading refex-sequence.map.");
-                refexSequenceMap.read(new File(Cradle.getCradlePath().toFile(), "refex-sequence.map"));
+                refexSequenceMap.read(new File(folderPath.toFile(), "refex-sequence.map"));
                 // uuid-nid-map can do dynamic load, no need to read all at the beginning.
                 // log.info("Loading uuid-nid-map.");
                 // uuidIntMapMap.read();
                 log.info("Loading sequence-cnid-map.");
-                nidCnidMap.read(new File(Cradle.getCradlePath().toFile(), "sequence-cnid-map"));
+                nidCnidMap.read(new File(folderPath.toFile(), "sequence-cnid-map"));
             }
         } catch (Exception e) {
             LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Identifier Provider", e);
@@ -110,15 +105,15 @@ public class IdentifierProvider implements IdentifierService {
         uuidIntMapMap.setShutdown(true);
         log.info("conceptSequence: {}", conceptSequenceMap.getNextSequence());
         log.info("writing concept-sequence.map.");
-        conceptSequenceMap.write(new File(Cradle.getCradlePath().toFile(), "concept-sequence.map"));
+        conceptSequenceMap.write(new File(folderPath.toFile(), "concept-sequence.map"));
         log.info("writing sememe-sequence.map.");
-        sememeSequenceMap.write(new File(Cradle.getCradlePath().toFile(), "sememe-sequence.map"));
+        sememeSequenceMap.write(new File(folderPath.toFile(), "sememe-sequence.map"));
         log.info("writing refex-sequence.map.");
-        refexSequenceMap.write(new File(Cradle.getCradlePath().toFile(), "refex-sequence.map"));
+        refexSequenceMap.write(new File(folderPath.toFile(), "refex-sequence.map"));
         log.info("writing uuid-nid-map.");
         uuidIntMapMap.write();
         log.info("writing sequence-cnid-map.");
-        nidCnidMap.write(new File(Cradle.getCradlePath().toFile(), "sequence-cnid-map"));
+        nidCnidMap.write(new File(folderPath.toFile(), "sequence-cnid-map"));
     }
 
     @Override
@@ -134,7 +129,7 @@ public class IdentifierProvider implements IdentifierService {
         }
         return ObjectChronologyType.OTHER;
     }
-    
+
     @Override
     public int getConceptSequence(int nid) {
         if (nid >= 0) {
@@ -271,12 +266,11 @@ public class IdentifierProvider implements IdentifierService {
      */
     private static HashSet<UUID> watchSet = new HashSet<>();
 
-    {
+//    {
 //        watchSet.add(UUID.fromString("0418a591-f75b-39ad-be2c-3ab849326da9"));
 //        watchSet.add(UUID.fromString("4459d8cf-5a6f-3952-9458-6d64324b27b7"));
-    }
-
-    private static ThreadLocal<LinkedHashMap<UUID, Integer>> threadLocalCache
+//    }
+    private static final ThreadLocal<LinkedHashMap<UUID, Integer>> threadLocalCache
             = new ThreadLocal() {
                 @Override
                 protected LruCache<UUID, Integer> initialValue() {
@@ -316,7 +310,7 @@ public class IdentifierProvider implements IdentifierService {
             nid = getConceptNid(nid);
         }
         Optional<? extends ObjectChronology<? extends StampedVersion>> optionalObj
-                = getIdentifiedObjectService().getIdentifiedObjectChronology(nid);
+                = Get.getIdentifiedObjectService().getIdentifiedObjectChronology(nid);
         if (optionalObj.isPresent()) {
             return Optional.of(optionalObj.get().getPrimordialUuid());
         }
@@ -344,7 +338,7 @@ public class IdentifierProvider implements IdentifierService {
             nid = getConceptNid(nid);
         }
         Optional<? extends ObjectChronology<? extends StampedVersion>> optionalObj
-                = getIdentifiedObjectService().getIdentifiedObjectChronology(nid);
+                = Get.getIdentifiedObjectService().getIdentifiedObjectChronology(nid);
         if (optionalObj.isPresent()) {
             return optionalObj.get().getUuidList();
         }
@@ -378,9 +372,8 @@ public class IdentifierProvider implements IdentifierService {
     @Override
     public ConceptSequenceSet getConceptSequencesForReferencedComponents(SememeSequenceSet sememeSequences) {
         ConceptSequenceSet sequences = new ConceptSequenceSet();
-        getSememeService(); // make sure static is initialized. 
         sememeSequences.stream().forEach((sememeSequence) -> {
-            SememeChronology<?> chronicle = sememeProvider.getSememe(sememeSequence);
+            SememeChronology<?> chronicle = Get.sememeService().getSememe(sememeSequence);
             sequences.add(getConceptSequenceForComponentNid(chronicle.getReferencedComponentNid()));
         });
         return sequences;

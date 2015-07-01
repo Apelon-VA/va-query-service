@@ -7,7 +7,7 @@ import gov.vha.isaac.cradle.taxonomy.DestinationOriginRecord;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
-import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.Get;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 import java.util.UUID;
@@ -18,7 +18,6 @@ import org.ihtsdo.otf.tcc.api.concurrency.ConcurrentReentrantLocks;
 import org.ihtsdo.otf.tcc.api.coordinate.Status;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.cc.attributes.ConceptAttributesVersion;
-import org.ihtsdo.otf.tcc.model.cc.relationship.Relationship;
 
 /**
  * Created by kec on 7/20/14.
@@ -26,7 +25,6 @@ import org.ihtsdo.otf.tcc.model.cc.relationship.Relationship;
 public class ImportEConceptOtfModel implements Callable<Void> {
     private static final Logger log = LogManager.getLogger();
 
-    private static final IdentifierService sequenceProvider = Hk2Looker.getService(IdentifierService.class);
     private static final CradleExtensions cradle = Hk2Looker.getService(CradleExtensions.class);
 
     private static final int isaNid;
@@ -81,7 +79,7 @@ public class ImportEConceptOtfModel implements Callable<Void> {
             ConceptChronicle cc = ConceptChronicle.get(conceptNid);
             ConceptChronicle.mergeWithEConcept(eConcept, cc);
             ConceptChronicleDataEager conceptData = (ConceptChronicleDataEager) cc.getData();
-            int originSequence = sequenceProvider.getConceptSequence(cc.getNid());
+            int originSequence = Get.identifierService().getConceptSequence(cc.getNid());
 
             TaxonomyRecordPrimitive parentTaxonomyRecord;
             if (originDestinationTaxonomyRecords.containsKey(originSequence)) {
@@ -117,13 +115,13 @@ public class ImportEConceptOtfModel implements Callable<Void> {
             TaxonomyRecordPrimitive parentTaxonomyRecord) {
         conceptData.getSourceRels().stream().map((rel) -> {
             int destinationSequence
-                    = sequenceProvider.getConceptSequence(
+                    = Get.identifierService().getConceptSequence(
                             rel.getDestinationNid());
             assert destinationSequence != originSequence;
             lastRelCharacteristic = Integer.MAX_VALUE;
             recordFlags = Integer.MAX_VALUE;
             rel.getVersions().stream().forEach((rv) -> {
-                int typeSequence = sequenceProvider
+                int typeSequence = Get.identifierService()
                         .getConceptSequence(rel.getTypeNid());
                 if (lastRelCharacteristic == Integer.MAX_VALUE) {
                     lastRelCharacteristic = rv.getCharacteristicNid();

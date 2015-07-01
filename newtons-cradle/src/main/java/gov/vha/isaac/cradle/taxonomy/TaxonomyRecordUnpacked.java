@@ -2,9 +2,7 @@ package gov.vha.isaac.cradle.taxonomy;
 
 import gov.vha.isaac.cradle.taxonomy.TypeStampTaxonomyRecords.TypeStampTaxonomyRecord;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
-import gov.vha.isaac.ochre.api.IdentifierService;
-import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePositionCalculator;
@@ -32,21 +30,7 @@ import java.util.stream.IntStream;
  * Created by kec on 11/8/14.
  */
 public class TaxonomyRecordUnpacked {
-    private static ConceptService conceptService;
-    protected static ConceptService getConceptService() {
-        if (conceptService == null) {
-            conceptService = LookupService.getService(ConceptService.class);
-        }
-        return conceptService;
-    }
-    
-    private static IdentifierService identifierService;
-    protected static IdentifierService getIdentifierService() {
-        if (identifierService == null) {
-            identifierService = LookupService.getService(IdentifierService.class);
-        }
-        return identifierService;
-    }
+
 
     /**
      * key = origin concept sequence; value = TypeStampTaxonomyRecords
@@ -306,7 +290,7 @@ public class TaxonomyRecordUnpacked {
         int maxIndex = theKeys.size() - 1;
         for (int i = 0; i <= maxIndex; i++) {
             int conceptSequence = theKeys.get(i);
-            buf.append(getConceptService().getConcept(conceptSequence).toUserString());
+            buf.append(Get.conceptService().getConcept(conceptSequence).toUserString());
             buf.append(" |");
             buf.append(conceptSequence);
             buf.append("|->");
@@ -322,10 +306,10 @@ public class TaxonomyRecordUnpacked {
 
     public void addStampRecord(int destinationSequence, int typeSequence, int stamp, int recordFlags) {
         if (destinationSequence < 0) {
-            destinationSequence = getIdentifierService().getConceptSequence(destinationSequence);
+            destinationSequence = Get.identifierService().getConceptSequence(destinationSequence);
         }
         if (typeSequence < 0) {
-            typeSequence = getIdentifierService().getConceptSequence(typeSequence);
+            typeSequence = Get.identifierService().getConceptSequence(typeSequence);
         }
         TypeStampTaxonomyRecords conceptSequenceStampRecordsUnpacked;
         if (conceptSequenceRecordMap.containsKey(destinationSequence)) {

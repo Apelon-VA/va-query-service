@@ -16,10 +16,9 @@
 package gov.vha.isaac.cradle.sememe;
 
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
-import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
-import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
@@ -39,15 +38,6 @@ import java.util.stream.Stream;
  * @param <V>
  */
 public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSnapshotService<V> {
-
-    private static CommitService commitService;
-
-    private static CommitService getCommitService() {
-        if (commitService == null) {
-            commitService = LookupService.getService(CommitService.class);
-        }
-        return commitService;
-    }
     
     private static int descriptionAssemblageSequence = -1;
 
@@ -126,7 +116,7 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
                     
                     // add active first, incase any contradictions are inactive. 
                     latestStampSequences.stream().filter((int stampSequence) -> 
-                            getCommitService().getStatusForStamp(stampSequence) == State.ACTIVE).forEach((stampSequence) -> {
+                            Get.commitService().getStatusForStamp(stampSequence) == State.ACTIVE).forEach((stampSequence) -> {
                         Optional<V> version = sc.getVersionForStamp(stampSequence);
                         if (version.isPresent()) {
                             latest.addLatest(version.get());
@@ -137,7 +127,7 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
                         
                     });                    
                     latestStampSequences.stream().filter((int stampSequence) -> 
-                            getCommitService().getStatusForStamp(stampSequence) == State.INACTIVE).forEach((stampSequence) -> {
+                            Get.commitService().getStatusForStamp(stampSequence) == State.INACTIVE).forEach((stampSequence) -> {
                         Optional<V> version = sc.getVersionForStamp(stampSequence);
                         if (version.isPresent()) {
                             latest.addLatest(version.get());

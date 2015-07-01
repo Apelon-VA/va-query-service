@@ -15,27 +15,19 @@
  */
 package gov.vha.isaac.cradle.tasks;
 
-import gov.vha.isaac.cradle.CradleExtensions;
-import gov.vha.isaac.cradle.taxonomy.DestinationOriginRecord;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
-import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.coordinates.StampCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.DataTarget;
-import gov.vha.isaac.ochre.api.IdentifierService;
-import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
-import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
-import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeBuilder;
-import gov.vha.isaac.ochre.api.component.sememe.SememeBuilderService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
-import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.MutableLogicGraphSememe;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
@@ -43,12 +35,10 @@ import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampPrecedence;
 import gov.vha.isaac.ochre.api.logic.LogicalExpression;
 import gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder;
-import gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilderService;
 import static gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder.*;
 import gov.vha.isaac.ochre.api.logic.assertions.Assertion;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePosition;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePositionCalculator;
-import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.model.coordinate.StampCoordinateImpl;
 import gov.vha.isaac.ochre.model.coordinate.StampPositionImpl;
 import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
@@ -64,11 +54,9 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.mahout.math.map.OpenIntObjectHashMap;
-import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
 import org.ihtsdo.otf.tcc.dto.component.attribute.TtkConceptAttributesVersion;
 import org.ihtsdo.otf.tcc.dto.component.relationship.TtkRelationshipVersion;
@@ -81,46 +69,22 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
 
     private static final Logger log = LogManager.getLogger();
 
-    private static final CommitService commitService = LookupService.getService(CommitService.class);
-    private static final SememeService sememeService = LookupService.getService(SememeService.class);
-    private static final IdentifierService identifierService = LookupService.getService(IdentifierService.class);
-    private static final ConceptService conceptService = LookupService.getService(ConceptService.class);
-    private static final CradleExtensions cradle = LookupService.getService(CradleExtensions.class);
-    private static final SememeBuilderService sememeBuilderService = LookupService.getService(SememeBuilderService.class);
-    private static final LogicalExpressionBuilderService expressionBuilderService
-            = LookupService.getService(LogicalExpressionBuilderService.class);
 
-    private static final int isaSequence;
-
-    public static CasSequenceObjectMap<TaxonomyRecordPrimitive> originDestinationTaxonomyRecords;
-    public static ConcurrentSkipListSet<DestinationOriginRecord> destinationOriginRecordSet;
-    private static final ConceptSequenceSet neverRoleGroupConceptSequences = new ConceptSequenceSet();
-
-    static {
-        originDestinationTaxonomyRecords = cradle.getOriginDestinationTaxonomyMap();
-        destinationOriginRecordSet = cradle.getDestinationOriginRecordSet();
-        isaSequence = identifierService.getConceptSequenceForUuids(IsaacMetadataAuxiliaryBinding.IS_A.getUuids());
-        neverRoleGroupConceptSequences.add(identifierService.getConceptSequence(Snomed.PART_OF.getNid()));
-        neverRoleGroupConceptSequences.add(identifierService.getConceptSequence(Snomed.LATERALITY.getNid()));
-        neverRoleGroupConceptSequences.add(identifierService.getConceptSequence(Snomed.HAS_ACTIVE_INGREDIENT.getNid()));
-        neverRoleGroupConceptSequences.add(identifierService.getConceptSequence(Snomed.HAS_DOSE_FORM.getNid()));
-    }
-
-    TtkConceptChronicle eConcept;
-    UUID newPathUuid = null;
-    int lastRelCharacteristic = Integer.MAX_VALUE;
-    SememeChronology<LogicGraphSememe> statedChronology = null;
-    SememeChronology<LogicGraphSememe> inferredChronology = null;
-    StampCoordinate latestOnDevCoordinate = StampCoordinates.getDevelopmentLatest();
-    LogicCoordinate logicCoordinate = LogicCoordinates.getStandardElProfile();
-
-    public ConvertOtfToOchreModel(TtkConceptChronicle eConcept, UUID newPathUuid) {
-        this(eConcept);
+    private TtkConceptChronicle eConcept;
+    private UUID newPathUuid = null;
+    private SememeChronology<LogicGraphSememe> statedChronology = null;
+    private SememeChronology<LogicGraphSememe> inferredChronology = null;
+    private final StampCoordinate latestOnDevCoordinate = StampCoordinates.getDevelopmentLatest();
+    private final LogicCoordinate logicCoordinate = LogicCoordinates.getStandardElProfile();
+    private final ImportEConceptFile parentTask;
+    public ConvertOtfToOchreModel(TtkConceptChronicle eConcept, UUID newPathUuid, ImportEConceptFile parentTask) {
+        this(eConcept, parentTask);
         this.newPathUuid = newPathUuid;
     }
 
-    public ConvertOtfToOchreModel(TtkConceptChronicle eConcept) {
+    public ConvertOtfToOchreModel(TtkConceptChronicle eConcept, ImportEConceptFile parentTask) {
         this.eConcept = eConcept;
+        this.parentTask = parentTask;
     }
 
     @Override
@@ -136,13 +100,13 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
             }
 
             ConceptChronology conceptChronology
-                    = conceptService.getConcept(eConcept.getUuidList().toArray(new UUID[0]));
+                    = Get.conceptService().getConcept(eConcept.getUuidList().toArray(new UUID[0]));
 
             TreeSet<StampPositionImpl> stampPositionSet = new TreeSet<>();
             eConcept.getStampSequenceStream().distinct().forEach((stampSequence) -> {
                 stampPositionSet.add(new StampPositionImpl(
-                        commitService.getTimeForStamp(stampSequence),
-                        commitService.getPathSequenceForStamp(stampSequence)));
+                        Get.commitService().getTimeForStamp(stampSequence),
+                        Get.commitService().getPathSequenceForStamp(stampSequence)));
             });
             // Create a logical definition corresponding with each unique
             // stamp position in the concept
@@ -154,8 +118,8 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                         = calc.getLatestVersion(eConcept.getConceptAttributes());
                 if (latestAttributeVersion.isPresent()) {
                     int moduleSequence = latestAttributeVersion.get().value().getModuleSequence();
-                    LogicalExpressionBuilder inferredBuilder = expressionBuilderService.getLogicalExpressionBuilder();
-                    LogicalExpressionBuilder statedBuilder = expressionBuilderService.getLogicalExpressionBuilder();
+                    LogicalExpressionBuilder inferredBuilder = parentTask.expressionBuilderService.getLogicalExpressionBuilder();
+                    LogicalExpressionBuilder statedBuilder = parentTask.expressionBuilderService.getLogicalExpressionBuilder();
                     if (latestAttributeVersion.get().value().isDefined()) {
                         Assertion[] inferredAssertions = makeAssertions(calc, inferredBuilder,
                                 IsaacMetadataAuxiliaryBinding.INFERRED.getPrimodialUuid());
@@ -182,12 +146,12 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                     }
                     LogicalExpression inferredExpression = inferredBuilder.build();
                     if (inferredExpression.isMeaningful()) {
-                        int stampSequence = commitService.getStampSequence(State.ACTIVE, stampPosition.getTime(),
+                        int stampSequence = Get.commitService().getStampSequence(State.ACTIVE, stampPosition.getTime(),
                                 IsaacMetadataAuxiliaryBinding.IHTSDO_CLASSIFIER.getSequence(),
                                 moduleSequence, stampPosition.getStampPathSequence());
                         if (inferredChronology == null) {
                             SememeBuilder<SememeChronology<LogicGraphSememe>> builder
-                                    = sememeBuilderService.getLogicalExpressionSememeBuilder(inferredExpression,
+                                    = parentTask.sememeBuilderService.getLogicalExpressionSememeBuilder(inferredExpression,
                                             conceptChronology.getNid(), logicCoordinate.getInferredAssemblageSequence());
                             inferredChronology = builder.build(stampSequence, new ArrayList());
                         } else {
@@ -201,12 +165,12 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                         statedExpression = inferredExpression;
                     }
                     if (statedExpression.isMeaningful()) {
-                        int stampSequence = commitService.getStampSequence(State.ACTIVE, stampPosition.getTime(),
+                        int stampSequence = Get.commitService().getStampSequence(State.ACTIVE, stampPosition.getTime(),
                                 IsaacMetadataAuxiliaryBinding.USER.getSequence(),
                                 moduleSequence, stampPosition.getStampPathSequence());
                         if (statedChronology == null) {
                             SememeBuilder<SememeChronology<LogicGraphSememe>> builder
-                                    = sememeBuilderService.getLogicalExpressionSememeBuilder(statedExpression,
+                                    = parentTask.sememeBuilderService.getLogicalExpressionSememeBuilder(statedExpression,
                                             conceptChronology.getNid(), logicCoordinate.getStatedAssemblageSequence());
                             statedChronology = builder.build(stampSequence, new ArrayList());
                         } else {
@@ -221,12 +185,12 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
             if (statedChronology != null) {
                 removeDuplicates(statedChronology);
                 extractTaxonomy(conceptChronology, statedChronology, TaxonomyFlags.STATED);
-                sememeService.writeSememe(statedChronology);
+                Get.sememeService().writeSememe(statedChronology);
             }
             if (inferredChronology != null) {
                 removeDuplicates(inferredChronology);
                 extractTaxonomy(conceptChronology, inferredChronology, TaxonomyFlags.INFERRED);
-                sememeService.writeSememe(inferredChronology);
+                Get.sememeService().writeSememe(inferredChronology);
             }
 
             return null;
@@ -248,19 +212,19 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                 if (relVersion.getState() == State.ACTIVE
                         && relVersion.getCharacteristicUuid().equals(characteristicUuid)) {
                     if (relVersion.getGroup() == 0) {
-                        int typeSequence = identifierService.getConceptSequenceForUuids(relVersion.getTypeUuid());
-                        if (typeSequence == isaSequence) {
-                            assertionList.add(ConceptAssertion(conceptService.getConcept(relationship.c2Uuid), defBuilder));
+                        int typeSequence = Get.identifierService().getConceptSequenceForUuids(relVersion.getTypeUuid());
+                        if (typeSequence == parentTask.isaSequence) {
+                            assertionList.add(ConceptAssertion(Get.conceptService().getConcept(relationship.c2Uuid), defBuilder));
                         } else {
-                            if (neverRoleGroupConceptSequences.contains(typeSequence)) {
-                                assertionList.add(SomeRole(conceptService.getConcept(relVersion.getTypeUuid()),
-                                        ConceptAssertion(conceptService.getConcept(relationship.c2Uuid), defBuilder)));
+                            if (parentTask.neverRoleGroupConceptSequences.contains(typeSequence)) {
+                                assertionList.add(SomeRole(Get.conceptService().getConcept(relVersion.getTypeUuid()),
+                                        ConceptAssertion(Get.conceptService().getConcept(relationship.c2Uuid), defBuilder)));
                             } else {
                                 assertionList.add(
-                                        SomeRole(conceptService.getConcept(IsaacMetadataAuxiliaryBinding.ROLE_GROUP.getUuids()),
+                                        SomeRole(Get.conceptService().getConcept(IsaacMetadataAuxiliaryBinding.ROLE_GROUP.getUuids()),
                                                 And(
-                                                    SomeRole(conceptService.getConcept(relVersion.getTypeUuid()),
-                                                        ConceptAssertion(conceptService.getConcept(relationship.c2Uuid), defBuilder)))));
+                                                    SomeRole(Get.conceptService().getConcept(relVersion.getTypeUuid()),
+                                                        ConceptAssertion(Get.conceptService().getConcept(relationship.c2Uuid), defBuilder)))));
                             }
                         }
 
@@ -269,8 +233,8 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                             relGroupMap.put(relVersion.getGroup(), new ArrayList<>());
                         }
                         relGroupMap.get(relVersion.getGroup()).add(
-                                SomeRole(conceptService.getConcept(relVersion.getTypeUuid()),
-                                        ConceptAssertion(conceptService.getConcept(relationship.c2Uuid), defBuilder))
+                                SomeRole(Get.conceptService().getConcept(relVersion.getTypeUuid()),
+                                        ConceptAssertion(Get.conceptService().getConcept(relationship.c2Uuid), defBuilder))
                         );
                     }
                 }
@@ -280,7 +244,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
         relGroupMap.forEachPair((group, assertionsInRelGroupList) -> {
             assertionList.add(
                     SomeRole(
-                        conceptService.getConcept(IsaacMetadataAuxiliaryBinding.ROLE_GROUP.getUuids()),
+                        Get.conceptService().getConcept(IsaacMetadataAuxiliaryBinding.ROLE_GROUP.getUuids()),
                         And(assertionsInRelGroupList.toArray(new Assertion[assertionsInRelGroupList.size()]))));
             return true;
         });
@@ -290,7 +254,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
     private void extractTaxonomy(ConceptChronology conceptChronology,
             SememeChronology<LogicGraphSememe> logicGraphChronology,
             TaxonomyFlags taxonomyFlags) {
-        Optional<TaxonomyRecordPrimitive> record = originDestinationTaxonomyRecords.get(conceptChronology.getConceptSequence());
+        Optional<TaxonomyRecordPrimitive> record = parentTask.originDestinationTaxonomyRecords.get(conceptChronology.getConceptSequence());
 
         TaxonomyRecordPrimitive parentTaxonomyRecord;
         if (record.isPresent()) {
@@ -324,14 +288,14 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                         }));
                     });
         });
-        originDestinationTaxonomyRecords.put(conceptChronology.getConceptSequence(), parentTaxonomyRecord);
+        parentTask.originDestinationTaxonomyRecords.put(conceptChronology.getConceptSequence(), parentTaxonomyRecord);
     }
 
     private void createIsaRel(ConceptNodeWithNids conceptNode, 
             TaxonomyRecordPrimitive parentTaxonomyRecord, 
             TaxonomyFlags taxonomyFlags, int stampSequence) {
         parentTaxonomyRecord.getTaxonomyRecordUnpacked()
-                .addStampRecord(conceptNode.getConceptNid(), isaSequence,
+                .addStampRecord(conceptNode.getConceptNid(), parentTask.isaSequence,
                         stampSequence, taxonomyFlags.bits);
     }
 
@@ -383,9 +347,9 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                 lastGraph = graphToTest;
                 uniqueGraphs.add(graphToTest);
             } else {
-                LogicalExpression lastExpression = expressionBuilderService.fromSememe(lastGraph);
-                LogicalExpression expressionToTest = expressionBuilderService.fromSememe(graphToTest);
-                if (commitService.stampSequencesEqualExceptAuthorAndTime(
+                LogicalExpression lastExpression = parentTask.expressionBuilderService.fromSememe(lastGraph);
+                LogicalExpression expressionToTest = parentTask.expressionBuilderService.fromSememe(graphToTest);
+                if (Get.commitService().stampSequencesEqualExceptAuthorAndTime(
                         lastGraph.getStampSequence(), graphToTest.getStampSequence())
                      &&
                         !lastExpression.equals(expressionToTest)) {

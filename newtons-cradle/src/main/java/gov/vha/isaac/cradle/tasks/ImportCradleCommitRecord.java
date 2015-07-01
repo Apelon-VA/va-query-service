@@ -6,7 +6,7 @@
 package gov.vha.isaac.cradle.tasks;
 
 import gov.vha.isaac.cradle.log.CradleCommitRecord;
-import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.commit.CommitService;
 import java.util.concurrent.Callable;
 
@@ -25,7 +25,7 @@ public class ImportCradleCommitRecord implements Callable<Void> {
 
     @Override
     public Void call() throws Exception {
-        CommitService commitManager = LookupService.getService(CommitService.class);
+        CommitService commitManager = Get.commitService();
         String comment = ccr.getCommitComment();
         ccr.getStampsInCommit().forEachKey((int stamp) -> {
             commitManager.setComment(stamp, comment);

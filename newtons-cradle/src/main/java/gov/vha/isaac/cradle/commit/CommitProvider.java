@@ -6,13 +6,13 @@
 package gov.vha.isaac.cradle.commit;
 
 import gov.vha.isaac.cradle.ConcurrentObjectIntMap;
-import gov.vha.isaac.cradle.Cradle;
 import gov.vha.isaac.cradle.collections.ConcurrentSequenceSerializedObjectMap;
 import gov.vha.isaac.cradle.collections.StampAliasMap;
 import gov.vha.isaac.cradle.collections.StampCommentMap;
 import gov.vha.isaac.cradle.collections.UuidIntMapMap;
 import gov.vha.isaac.cradle.component.StampSerializer;
-import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.ConfigurationService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.SystemStatusService;
@@ -37,7 +37,6 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -51,6 +50,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -98,7 +98,6 @@ public class CommitProvider implements CommitService {
     private final AtomicInteger nextStampSequence = new AtomicInteger(1);
     private final ReentrantLock stampLock = new ReentrantLock();
     private final AtomicLong databaseSequence = new AtomicLong();
-    private final IdentifierService sequenceProvider;
     private final ConcurrentSkipListSet<ChangeChecker> checkers = new ConcurrentSkipListSet<>();
     private final ConcurrentSkipListSet<Alert> alertCollection = new ConcurrentSkipListSet<>();
 
@@ -124,15 +123,18 @@ public class CommitProvider implements CommitService {
     ConcurrentSkipListSet<WeakReference<ChronologyChangeListener>> changeListeners = new ConcurrentSkipListSet<>();
 
     private long lastCommit = Long.MIN_VALUE;
+    private AtomicBoolean loadRequired = new AtomicBoolean();
 
     private CommitProvider() throws IOException {
         try {
-            dbFolderPath = Cradle.getCradlePath();
+            dbFolderPath = LookupService.getService(ConfigurationService.class).getChronicleFolderPath().resolve("commit-provider");
+            loadRequired.set(!Files.exists(dbFolderPath));
+            Files.createDirectories(dbFolderPath);
             inverseStampMap = new ConcurrentSequenceSerializedObjectMap<>(new StampSerializer(),
                     dbFolderPath, null, null);
-            sequenceProvider = LookupService.getService(IdentifierService.class);
-            commitManagerFolder = Paths.get(dbFolderPath.toString(), DEFAULT_CRADLE_COMMIT_MANAGER_FOLDER);
-        } catch (Exception e) {
+            commitManagerFolder = dbFolderPath.resolve(DEFAULT_CRADLE_COMMIT_MANAGER_FOLDER);
+             Files.createDirectories(commitManagerFolder);
+       } catch (Exception e) {
             LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Cradle Commit Provider", e);
             throw e;
         }
@@ -144,9 +146,9 @@ public class CommitProvider implements CommitService {
             log.info("Starting CradleCommitManager post-construct");
             writeConceptCompletionServicePool.submit(writeConceptCompletionService);
             writeSememeCompletionServicePool.submit(writeSememeCompletionService);
-            if (!Cradle.cradleStartedEmpty()) {
-                log.info("Loading existing commit manager data. ");
-                log.info("Loading " + COMMIT_MANAGER_DATA_FILENAME);
+            if (!loadRequired.get()) {
+                log.info("Reading existing commit manager data. ");
+                log.info("Reading " + COMMIT_MANAGER_DATA_FILENAME);
                 try (DataInputStream in = new DataInputStream(new FileInputStream(new File(commitManagerFolder.toFile(), COMMIT_MANAGER_DATA_FILENAME)))) {
                     nextStampSequence.set(in.readInt());
                     databaseSequence.set(in.readLong());
@@ -159,15 +161,10 @@ public class CommitProvider implements CommitService {
                         inverseStampMap.put(stampSequence, stamp);
                     }
                 }
-            }
-
-            if (Files.exists(commitManagerFolder)) {
-                log.info("Loading: " + STAMP_ALIAS_MAP_FILENAME);
+                log.info("Reading: " + STAMP_ALIAS_MAP_FILENAME);
                 stampAliasMap.read(new File(commitManagerFolder.toFile(), STAMP_ALIAS_MAP_FILENAME));
-                log.info("Loading: " + STAMP_COMMENT_MAP_FILENAME);
+                log.info("Reading: " + STAMP_COMMENT_MAP_FILENAME);
                 stampCommentMap.read(new File(commitManagerFolder.toFile(), STAMP_COMMENT_MAP_FILENAME));
-            } else {
-                Files.createDirectories(commitManagerFolder);
             }
         } catch (Exception e) {
             LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Cradle Commit Provider", e);
@@ -240,7 +237,7 @@ public class CommitProvider implements CommitService {
     public int getAuthorSequenceForStamp(int stamp) {
         Optional<Stamp> s = inverseStampMap.get(stamp);
         if (s.isPresent()) {
-            return sequenceProvider.getConceptSequence(
+            return Get.identifierService().getConceptSequence(
                     s.get().getAuthorNid());
         }
         throw new NoSuchElementException("No stampSequence found: " + stamp);
@@ -258,7 +255,7 @@ public class CommitProvider implements CommitService {
     public int getModuleSequenceForStamp(int stamp) {
         Optional<Stamp> s = inverseStampMap.get(stamp);
         if (s.isPresent()) {
-            return sequenceProvider.getConceptSequence(
+            return Get.identifierService().getConceptSequence(
                     s.get().getModuleNid());
         }
         throw new NoSuchElementException("No stampSequence found: " + stamp);
@@ -276,7 +273,7 @@ public class CommitProvider implements CommitService {
     public int getPathSequenceForStamp(int stampSequence) {
         Optional<Stamp> s = inverseStampMap.get(stampSequence);
         if (s.isPresent()) {
-            return sequenceProvider.getConceptSequence(
+            return Get.identifierService().getConceptSequence(
                     s.get().getPathNid());
         }
         throw new NoSuchElementException("No stampSequence found: " + stampSequence);
@@ -310,9 +307,9 @@ public class CommitProvider implements CommitService {
     @Override
     public int getStampSequence(State status, long time, int authorSequence, int moduleSequence, int pathSequence) {
         Stamp stampKey = new Stamp(Status.getStatusFromState(status), time,
-                sequenceProvider.getConceptNid(authorSequence),
-                sequenceProvider.getConceptNid(moduleSequence),
-                sequenceProvider.getConceptNid(pathSequence));
+                Get.identifierService().getConceptNid(authorSequence),
+                Get.identifierService().getConceptNid(moduleSequence),
+                Get.identifierService().getConceptNid(pathSequence));
 
         if (time == Long.MAX_VALUE) {
             UncommittedStamp usp = new UncommittedStamp(status, authorSequence,
@@ -485,7 +482,7 @@ public class CommitProvider implements CommitService {
     }
     
     private String nameForConcept(int conceptSequence) {
-        ConceptService conceptService = LookupService.getService(ConceptService.class);
+        ConceptService conceptService = Get.conceptService();
         ConceptChronology<?> concept = conceptService.getConcept(conceptSequence);
         if (concept != null) {
             return concept.toUserString();
@@ -533,14 +530,14 @@ public class CommitProvider implements CommitService {
         if (sememeChronicle.getCommitState() == CommitStates.UNCOMMITTED) {
             uncommittedSequenceLock.lock();
             try {
-                set.add(sequenceProvider.getSememeSequence(sememeChronicle.getNid()));
+                set.add(Get.identifierService().getSememeSequence(sememeChronicle.getNid()));
             } finally {
                 uncommittedSequenceLock.unlock();
             }
         } else {
             uncommittedSequenceLock.lock();
             try {
-                set.remove(sequenceProvider.getSememeSequence(sememeChronicle.getNid()));
+                set.remove(Get.identifierService().getSememeSequence(sememeChronicle.getNid()));
             } finally {
                 uncommittedSequenceLock.unlock();
             }
@@ -551,14 +548,14 @@ public class CommitProvider implements CommitService {
         if (concept.isUncommitted()) {
             uncommittedSequenceLock.lock();
             try {
-                set.add(sequenceProvider.getConceptSequence(concept.getNid()));
+                set.add(Get.identifierService().getConceptSequence(concept.getNid()));
             } finally {
                 uncommittedSequenceLock.unlock();
             }
         } else {
             uncommittedSequenceLock.lock();
             try {
-                set.remove(sequenceProvider.getConceptSequence(concept.getNid()));
+                set.remove(Get.identifierService().getConceptSequence(concept.getNid()));
             } finally {
                 uncommittedSequenceLock.unlock();
             }

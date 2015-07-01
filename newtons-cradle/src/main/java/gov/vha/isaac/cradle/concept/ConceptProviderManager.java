@@ -25,6 +25,7 @@ import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
@@ -43,6 +44,16 @@ import org.jvnet.hk2.annotations.Service;
 public class ConceptProviderManager implements ConceptService {
     private static final Logger log = LogManager.getLogger();
     ConceptService delegate;
+
+    @Override
+    public Optional<? extends ConceptChronology<? extends ConceptVersion>> getOptionalConcept(int conceptId) {
+        return delegate.getOptionalConcept(conceptId);
+    }
+
+    @Override
+    public Optional<? extends ConceptChronology<? extends ConceptVersion>> getOptionalConcept(UUID... conceptUuids) {
+        return delegate.getOptionalConcept(conceptUuids);
+    }
 
     @Override
     public ConceptChronology<? extends ConceptVersion> getConcept(int conceptSequence) {

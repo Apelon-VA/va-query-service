@@ -11,8 +11,7 @@ import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordUnpacked;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
-import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -47,7 +46,6 @@ public class GraphCollector implements
         return isaacDb;
     }
 
-    final IdentifierService sequenceProvider = LookupService.getService(IdentifierService.class);
     final CasSequenceObjectMap<TaxonomyRecordPrimitive> taxonomyMap;
     final TaxonomyCoordinate taxonomyCoordinate;
     final int taxonomyFlags;
@@ -64,7 +62,7 @@ public class GraphCollector implements
 
     public final void addToWatchList(String uuid) throws RuntimeException {
         int nid = getIsaacDb().getNidForUuids(UUID.fromString(uuid));
-        watchList.add(sequenceProvider.getConceptSequence(nid));
+        watchList.add(Get.identifierService().getConceptSequence(nid));
     }
 
     @Override

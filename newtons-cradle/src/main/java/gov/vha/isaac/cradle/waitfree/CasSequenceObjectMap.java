@@ -186,6 +186,20 @@ public class CasSequenceObjectMap<T extends WaitFreeComparable> {
         DataBuffer buff = new DataBuffer(getSegment(segmentIndex).get(indexInSegment));
         return elementSerializer.deserialize(buff);
     }
+    
+    public Optional<T> getOptional(int sequence) {
+        int segmentIndex = sequence / SEGMENT_SIZE;
+        int indexInSegment = sequence % SEGMENT_SIZE;
+        byte[] data = getSegment(segmentIndex).get(indexInSegment);
+        if (data == null) {
+            return Optional.empty();
+        }
+
+        DataBuffer buff = new DataBuffer(data);
+        return Optional.of(elementSerializer.deserialize(buff));
+    }
+    
+    
 
     /**
      * This method is VERY SLOW!!!!

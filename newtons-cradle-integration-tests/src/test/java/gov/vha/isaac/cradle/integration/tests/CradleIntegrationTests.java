@@ -12,12 +12,11 @@ import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.ConceptModel;
 import gov.vha.isaac.ochre.api.ConfigurationService;
-import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
-import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
 import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
@@ -71,8 +70,6 @@ public class CradleIntegrationTests {
 
     private static final Logger log = LogManager.getLogger();
     private boolean dbExists = false;
-    private static IdentifierService sequenceProvider;
-    private static ConceptService conceptService;
 
     @BeforeGroups(groups = {"db"})
     public void setUpSuite() throws Exception {
@@ -86,8 +83,6 @@ public class CradleIntegrationTests {
 
         LookupService.getService(ConfigurationService.class).setConceptModel(ConceptModel.OCHRE_CONCEPT_MODEL);
         LookupService.startupIsaac();
-        sequenceProvider = LookupService.getService(IdentifierService.class);
-        conceptService = LookupService.getService(ConceptService.class);
         ActiveTasksTicker.start(10);
         HeapUseTicker.start(10);
     }
@@ -145,7 +140,7 @@ public class CradleIntegrationTests {
         log.info("    taxonomy graph roots: " + Arrays.toString(g.getRootSequences()));
         for (int rootSequence : IntStream.of(g.getRootSequences()).limit(100).toArray()) {
             log.info("    rootSequence: " + rootSequence);
-            ConceptChronology aRoot = conceptService.getConcept(rootSequence);
+            ConceptChronology aRoot = Get.conceptService().getConcept(rootSequence);
             log.info("    root concept: " + aRoot.toUserString());
             log.info("    parents of root" + Arrays.toString(g.getParentSequences(rootSequence)));
             TreeNodeVisitData dfsData = g.depthFirstProcess(rootSequence,
@@ -169,8 +164,8 @@ public class CradleIntegrationTests {
         log.info("  Taxonomy graph concepts with children count: " + g.conceptSequencesWithChildrenCount());
 
         StringBuilder sb = new StringBuilder();
-        ConceptChronology root = conceptService.getConcept(IsaacMetadataAuxiliaryBinding.ISAAC_ROOT.getNid());
-        TaxonomyService taxonomyService = LookupService.getService(TaxonomyService.class);
+        ConceptChronology root = Get.conceptService().getConcept(IsaacMetadataAuxiliaryBinding.ISAAC_ROOT.getNid());
+        TaxonomyService taxonomyService = Get.taxonomyService();
 
         int[] originSequences = taxonomyService.getAllRelationshipOriginSequences(root.getConceptSequence()).toArray();
         AtomicInteger relCount = new AtomicInteger(1);
@@ -179,7 +174,7 @@ public class CradleIntegrationTests {
         } else {
             log.info(" Found " + originSequences.length + " incoming rels for: " + root);
             for (int originSequence : originSequences) {
-                sb.append(relCount.getAndIncrement()).append(": ").append(conceptService.getConcept(originSequence).toUserString()).append("\n");
+                sb.append(relCount.getAndIncrement()).append(": ").append(Get.conceptService().getConcept(originSequence).toUserString()).append("\n");
             }
         }
         log.info(sb.toString());
@@ -190,18 +185,18 @@ public class CradleIntegrationTests {
         try {
             ViewCoordinate vc = ViewCoordinates.getDevelopmentInferredLatestActiveOnly();
             log.info("Walking 10 concepts to root inferred.");
-            IntStream conceptSequenceStream = sequenceProvider.getConceptSequenceStream().
-                    filter((int conceptSequence) -> conceptService.isConceptActive(conceptSequence,
+            IntStream conceptSequenceStream = Get.identifierService().getConceptSequenceStream().
+                    filter((int conceptSequence) -> Get.conceptService().isConceptActive(conceptSequence,
                                     vc)).limit(10);
-            TaxonomyService taxonomyService = LookupService.getService(TaxonomyService.class);
+            TaxonomyService taxonomyService = Get.taxonomyService();
             conceptSequenceStream.forEach((int conceptSequence) -> {
                 System.out.println("Concept sequence: " + conceptSequence);
                 walkToRoot(conceptSequence, taxonomyService, vc, 0, new BitSet());
                 System.out.println("\n\n");
             });
             log.info("Walking 10 concepts to root stated.");
-            conceptSequenceStream = sequenceProvider.getConceptSequenceStream().
-                    filter((int conceptSequence) -> conceptService.isConceptActive(conceptSequence,
+            conceptSequenceStream = Get.identifierService().getConceptSequenceStream().
+                    filter((int conceptSequence) -> Get.conceptService().isConceptActive(conceptSequence,
                                     vc)).limit(10);
             ViewCoordinate vc2 = ViewCoordinates.getDevelopmentStatedLatestActiveOnly();
             conceptSequenceStream.forEach((int conceptSequence) -> {
@@ -222,7 +217,7 @@ public class CradleIntegrationTests {
             return;
         }
 
-        if (conceptService.isConceptActive(child, tc.getStampCoordinate())) {
+        if (Get.conceptService().isConceptActive(child, tc.getStampCoordinate())) {
             printTaxonomyLevel(child, depth, "");
             taxonomyService.getTaxonomyParentSequences(child, tc).forEach((parentSequence) -> {
                 if (!visited.get(parentSequence)) {
@@ -235,7 +230,7 @@ public class CradleIntegrationTests {
     }
 
     private void printTaxonomyLevel(int child, int depth, String suffix) {
-        ConceptChronology childConcept = conceptService.getConcept(child);
+        ConceptChronology childConcept = Get.conceptService().getConcept(child);
 
         StringBuilder sb = new StringBuilder();
         sb.append(" ");
@@ -257,7 +252,7 @@ public class CradleIntegrationTests {
 
         Instant start = Instant.now();
 
-        Task<Integer> loadTask = tts.startLoadTask(IsaacMetadataAuxiliaryBinding.DEVELOPMENT,
+        Task<Integer> loadTask = tts.startLoadTask(ConceptModel.OCHRE_CONCEPT_MODEL, IsaacMetadataAuxiliaryBinding.DEVELOPMENT,
                 isaacMetadataFile, snomedDataFile);
         int conceptCount = loadTask.get();
         Instant finish = Instant.now();
@@ -269,9 +264,9 @@ public class CradleIntegrationTests {
         double msPerConcept = 1.0d * duration.toMillis() / conceptCount;
         log.info("  msPerConcept: {}", msPerConcept);
 
-        log.info("  concepts in map: {}", conceptService.getConceptCount());
+        log.info("  concepts in map: {}", Get.conceptService().getConceptCount());
 
-        log.info("  sequences map: {}", sequenceProvider.getConceptSequenceStream().distinct().count());
+        log.info("  sequences map: {}", Get.identifierService().getConceptSequenceStream().distinct().count());
     }
 
     private boolean testLoad(ObjectChronicleTaskService tts) throws ExecutionException, IOException, MultiException, InterruptedException {
@@ -285,8 +280,8 @@ public class CradleIntegrationTests {
         Instant finish = Instant.now();
         Duration duration = Duration.between(start, finish);
         log.info("  Verified concepts in: " + duration);
-        log.info("  concepts in map: {}", conceptService.getConceptCount());
-        log.info("  sequences map: {}", sequenceProvider.getConceptSequenceStream().distinct().count());
+        log.info("  concepts in map: {}", Get.conceptService().getConceptCount());
+        log.info("  sequences map: {}", Get.identifierService().getConceptSequenceStream().distinct().count());
 
         return verified;
     }
@@ -303,7 +298,7 @@ public class CradleIntegrationTests {
     private void testTaxonomy(ViewCoordinate vc) throws IOException, ContradictionException {
         int disorderOfCorneaNid = Snomed.DISORDER_OF_CORNEA.getNid();
         int disorderOfEyeNid = Snomed.DISORDER_OF_EYE.getNid();
-        TaxonomyService taxonomyService = LookupService.getService(TaxonomyService.class);
+        TaxonomyService taxonomyService = Get.taxonomyService();
 
         boolean isChild = taxonomyService.isChildOf(disorderOfCorneaNid, disorderOfEyeNid, vc);
         boolean isKind = taxonomyService.isKindOf(disorderOfCorneaNid, disorderOfEyeNid, vc);
@@ -315,7 +310,7 @@ public class CradleIntegrationTests {
     private void walkTaxonomy() throws IOException {
         log.info("  Start walking taxonomy.");
         Instant collectStart = Instant.now();
-        IntStream conceptSequenceStream = sequenceProvider.getParallelConceptSequenceStream();
+        IntStream conceptSequenceStream = Get.identifierService().getParallelConceptSequenceStream();
         TaxonomyWalkCollector collector = new TaxonomyWalkCollector(
                 ViewCoordinates.getDevelopmentStatedLatestActiveOnly());
         TaxonomyWalkAccumulator taxonomyWalkAccumulator = conceptSequenceStream.collect(
@@ -331,7 +326,7 @@ public class CradleIntegrationTests {
     private HashTreeWithBitSets makeGraph() throws IOException {
         log.info("  Start to make taxonomy snapshot graph.");
         Instant collectStart = Instant.now();
-        TaxonomyService taxonomyService = LookupService.getService(TaxonomyService.class);
+        TaxonomyService taxonomyService = Get.taxonomyService();
         Tree taxonomyTree = taxonomyService.getTaxonomyTree(ViewCoordinates.getDevelopmentInferredLatestActiveOnly());
         Instant collectEnd = Instant.now();
         Duration collectDuration = Duration.between(collectStart, collectEnd);

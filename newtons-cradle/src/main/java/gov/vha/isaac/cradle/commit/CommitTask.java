@@ -15,7 +15,7 @@
  */
 package gov.vha.isaac.cradle.commit;
 
-import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.commit.Alert;
 import gov.vha.isaac.ochre.api.commit.AlertType;
@@ -23,7 +23,6 @@ import gov.vha.isaac.ochre.api.commit.ChangeChecker;
 import gov.vha.isaac.ochre.api.commit.CheckPhase;
 import gov.vha.isaac.ochre.api.commit.CommitRecord;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
-import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
 import gov.vha.isaac.ochre.collections.SequenceSet;
@@ -48,10 +47,6 @@ import org.ihtsdo.otf.tcc.model.version.Stamp;
 public class CommitTask extends Task<Optional<CommitRecord>> {
 
     private static final Logger log = LogManager.getLogger();
-    private static final SememeService sememeService
-            = LookupService.getService(SememeService.class);
-    private static final IdentifierService identifierProvider
-            = LookupService.getService(IdentifierService.class);
 
     final String commitComment;
     final ConceptSequenceSet conceptsToCommit = new ConceptSequenceSet();
@@ -106,7 +101,7 @@ public class CommitTask extends Task<Optional<CommitRecord>> {
             conceptsToCommit.stream().forEach((conceptSequence) -> {
                 try {
                     ConceptChronicle c = ConceptChronicle.get(
-                            identifierProvider.getConceptNid(conceptSequence));
+                            Get.identifierService().getConceptNid(conceptSequence));
                     c.modified(c.getConceptAttributes(), lastCommit);
                     if (conceptsToCheck.contains(conceptSequence)) {
                         checkers.stream().forEach((check) -> {
@@ -118,7 +113,7 @@ public class CommitTask extends Task<Optional<CommitRecord>> {
                 }
             });
             sememesToCommit.stream().forEach((sememeSequence) -> {
-                SememeChronology sc = sememeService.getSememe(sememeSequence);
+                SememeChronology sc = Get.sememeService().getSememe(sememeSequence);
                 if (sememesToCheck.contains(sememeSequence)) {
                     checkers.stream().forEach((check) -> {
                         check.check(sc, alertCollection, CheckPhase.COMMIT);
@@ -142,9 +137,9 @@ public class CommitTask extends Task<Optional<CommitRecord>> {
                 UncommittedStamp uncommittedStamp = entry.getKey();
                 Stamp stamp = new Stamp(Status.getStatusFromState(entry.getKey().status),
                         commitTime,
-                        identifierProvider.getConceptNid(uncommittedStamp.authorSequence),
-                        identifierProvider.getConceptNid(uncommittedStamp.moduleSequence),
-                        identifierProvider.getConceptNid(uncommittedStamp.pathSequence));
+                        Get.identifierService().getConceptNid(uncommittedStamp.authorSequence),
+                        Get.identifierService().getConceptNid(uncommittedStamp.moduleSequence),
+                        Get.identifierService().getConceptNid(uncommittedStamp.pathSequence));
                 commitProvider.addStamp(stamp, stampSequence);
             });
             if (commitComment != null) {

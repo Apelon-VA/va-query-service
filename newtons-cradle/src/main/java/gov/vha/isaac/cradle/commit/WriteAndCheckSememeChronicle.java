@@ -15,6 +15,7 @@
  */
 package gov.vha.isaac.cradle.commit;
 
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.commit.Alert;
 import gov.vha.isaac.ochre.api.commit.ChangeChecker;
@@ -22,7 +23,6 @@ import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
 import gov.vha.isaac.ochre.api.commit.CheckPhase;
 import gov.vha.isaac.ochre.api.commit.CommitStates;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
-import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -35,8 +35,6 @@ import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
  * @author kec
  */
 public class WriteAndCheckSememeChronicle extends Task<Void> implements Callable<Void> {
-
-    private static final SememeService sememeService = LookupService.getService(SememeService.class);
 
     private final SememeChronology sc;
     private final ConcurrentSkipListSet<ChangeChecker> checkers;
@@ -62,7 +60,7 @@ public class WriteAndCheckSememeChronicle extends Task<Void> implements Callable
     @Override
     public Void call() throws Exception {
         try {
-            sememeService.writeSememe(sc);
+            Get.sememeService().writeSememe(sc);
             updateProgress(1, 3);
             updateMessage("checking: " + sc.toUserString());
             if (sc.getCommitState() == CommitStates.UNCOMMITTED) {

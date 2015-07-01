@@ -15,10 +15,10 @@
  */
 package gov.vha.isaac.cradle.commit;
 
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
-import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -31,8 +31,6 @@ import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
  * @author kec
  */
 public class WriteSememeChronicle extends Task<Void>  implements Callable<Void>{
-    
-    private static final SememeService sememeService = LookupService.getService(SememeService.class);
     
     private final SememeChronology sc;
     private final Semaphore writeSemaphore;
@@ -52,7 +50,7 @@ public class WriteSememeChronicle extends Task<Void>  implements Callable<Void>{
     @Override
     public Void call() throws Exception {
         try {
-            sememeService.writeSememe(sc);
+            Get.sememeService().writeSememe(sc);
             updateProgress(1, 2); 
             updateMessage("notifying: " + sc.toUserString());
              

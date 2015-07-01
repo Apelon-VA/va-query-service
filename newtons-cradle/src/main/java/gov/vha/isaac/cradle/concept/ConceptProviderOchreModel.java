@@ -15,11 +15,13 @@
  */
 package gov.vha.isaac.cradle.concept;
 
-import gov.vha.isaac.cradle.Cradle;
+
 import gov.vha.isaac.cradle.builders.ConceptActiveService;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
+import gov.vha.isaac.ochre.api.ConceptModel;
+import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.DelegateService;
-import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
@@ -31,11 +33,15 @@ import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.model.concept.ConceptChronologyImpl;
 import gov.vha.isaac.ochre.model.concept.ConceptSnapshotImpl;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
@@ -50,18 +56,48 @@ import org.apache.logging.log4j.Logger;
 public class ConceptProviderOchreModel implements ConceptService, DelegateService {
 
     private static final Logger log = LogManager.getLogger();
+    private static final String CRADLE_PROPERTIES_FILE_NAME = "cradle.properties";
+    private static final String CRADLE_DATA_VERSION = "1.5";
+    private static final String CRADLE_DATA_VERSION_PROPERTY = "cradle.data.version";
+    private static final String CRADLE_CONCEPT_MODEL_PROPERTY = "cradle.concept.model";
+
+
 
     ConceptActiveService conceptActiveService;
-    IdentifierService identifierProvider;
 
     final CasSequenceObjectMap<ConceptChronologyImpl> conceptMap;
     private AtomicBoolean loadRequired = new AtomicBoolean();
 
     public ConceptProviderOchreModel() throws IOException, NumberFormatException, ParseException {
         try {
-            log.info("Setting up OCHRE ConceptProvider at " + Cradle.getCradlePath().toAbsolutePath().toString());
+            Path folderPath = LookupService.getService(ConfigurationService.class).getChronicleFolderPath().resolve("ochre-concepts");
+            Files.createDirectories(folderPath);
+            log.info("Setting up OCHRE ConceptProvider at " + folderPath.toAbsolutePath());
+            Path propertiesPath = folderPath.resolve(CRADLE_PROPERTIES_FILE_NAME);
+            Properties cradleProps = new Properties();
+            if (propertiesPath.toFile().exists()) {
+                try (FileInputStream in = new FileInputStream("defaultProperties")) {
+                    cradleProps.load(in);
+                }
+                if (!cradleProps.getProperty(CRADLE_DATA_VERSION_PROPERTY).equals(CRADLE_DATA_VERSION)) {
+                    throw new IllegalStateException("Unsupported data version: " + cradleProps);
+                }
+                ConceptModel model = ConceptModel.valueOf(cradleProps.getProperty(CRADLE_CONCEPT_MODEL_PROPERTY));
+                ConceptModel expectedModel = LookupService.getService(ConfigurationService.class).getConceptModel();
+                if (expectedModel != model) {
+                    throw new IllegalStateException("Incompatible concept model in existing database. Expected: " + 
+                            expectedModel + " found: " + model +".\n" + cradleProps);
+                }
+            } else {
+                loadRequired.set(true);
+                cradleProps.put(CRADLE_DATA_VERSION_PROPERTY, CRADLE_DATA_VERSION);
+                cradleProps.put(CRADLE_CONCEPT_MODEL_PROPERTY, ConceptModel.OCHRE_CONCEPT_MODEL.name());
+                try (FileOutputStream out = new FileOutputStream(CRADLE_PROPERTIES_FILE_NAME)) {
+                    cradleProps.store(out, CRADLE_DATA_VERSION);
+                }
+            }
 
-            Path ochreConceptPath = Cradle.getCradlePath().resolve("ochre");
+            Path ochreConceptPath = folderPath.resolve("ochre");
 
             conceptMap = new CasSequenceObjectMap(new OchreConceptSerializer(),
                     ochreConceptPath, "seg.", ".ochre-concepts.map");
@@ -70,19 +106,16 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
             throw e;
         }
     }
-
     @Override
     public void startDelegateService() {
         log.info("Starting OCHRE ConceptProvider post-construct");
-        loadRequired.set(!Cradle.cradleStartedEmpty());
         conceptActiveService = LookupService.getService(ConceptActiveService.class);
-        identifierProvider = LookupService.getService(IdentifierService.class);
-        if (loadRequired.compareAndSet(true, false)) {
+        if (!loadRequired.compareAndSet(true, false)) {
 
-            log.info("Loading OCHRE concept-map.");
+            log.info("Reading existing OCHRE concept-map.");
             conceptMap.initialize();
 
-            log.info("Finished OCHRE load.");
+            log.info("Finished OCHRE read.");
         }
     }
 
@@ -105,17 +138,30 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
     }
 
     @Override
-    public ConceptChronologyImpl getConcept(int conceptSequence) {
-        if (conceptSequence < 0) {
-            conceptSequence = identifierProvider.getConceptSequence(conceptSequence);
+    public Optional<? extends ConceptChronology<? extends ConceptVersion>> getOptionalConcept(int conceptId) {
+        if (conceptId < 0) {
+            conceptId = Get.identifierService().getConceptSequence(conceptId);
         }
-        return conceptMap.getQuick(conceptSequence);
+        return conceptMap.getOptional(conceptId);
+    }
+
+    @Override
+    public Optional<? extends ConceptChronology<? extends ConceptVersion>> getOptionalConcept(UUID... conceptUuids) {
+        return getOptionalConcept(Get.identifierService().getConceptSequenceForUuids(conceptUuids));
+    }
+
+    @Override
+    public ConceptChronologyImpl getConcept(int conceptId) {
+        if (conceptId < 0) {
+            conceptId = Get.identifierService().getConceptSequence(conceptId);
+        }
+        return conceptMap.getQuick(conceptId);
     }
 
     @Override
     public ConceptChronologyImpl getConcept(UUID... conceptUuids) {
-        int conceptNid = identifierProvider.getNidForUuids(conceptUuids);
-        int conceptSequence = identifierProvider.getConceptSequence(conceptNid);
+        int conceptNid = Get.identifierService().getNidForUuids(conceptUuids);
+        int conceptSequence = Get.identifierService().getConceptSequence(conceptNid);
         Optional<ConceptChronologyImpl> optionalConcept = conceptMap.get(conceptSequence);
         if (optionalConcept.isPresent()) {
             return optionalConcept.get();
@@ -125,7 +171,7 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
             concept.setAdditionalUuids(Arrays.asList(Arrays.copyOfRange(conceptUuids, 1, conceptUuids.length)));
         }
         conceptMap.put(conceptSequence, concept);
-        identifierProvider.setConceptSequenceForComponentNid(conceptSequence, conceptNid);
+        Get.identifierService().setConceptSequenceForComponentNid(conceptSequence, conceptNid);
         return conceptMap.getQuick(conceptSequence);
     }
 
@@ -160,7 +206,7 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
 
     @Override
     public Stream<ConceptChronology<? extends ConceptVersion>> getConceptChronologyStream(ConceptSequenceSet conceptSequences) {
-        return identifierProvider.getConceptSequenceStream()
+        return Get.identifierService().getConceptSequenceStream()
                 .filter((int sequence) -> conceptSequences.contains(sequence))
                 .mapToObj((int sequence) -> {
                     Optional<ConceptChronologyImpl> result = conceptMap.get(sequence);
@@ -174,7 +220,7 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
 
     @Override
     public Stream<ConceptChronology<? extends ConceptVersion>> getParallelConceptChronologyStream(ConceptSequenceSet conceptSequences) {
-        return identifierProvider.getParallelConceptSequenceStream()
+        return Get.identifierService().getParallelConceptSequenceStream()
                 .filter((int sequence) -> conceptSequences.contains(sequence))
                 .mapToObj((int sequence) -> {
                     Optional<ConceptChronologyImpl> result = conceptMap.get(sequence);
@@ -193,7 +239,7 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
 
     public Optional<ConceptChronologyImpl> getConceptData(int i) throws IOException {
         if (i < 0) {
-            i = identifierProvider.getConceptSequence(i);
+            i = Get.identifierService().getConceptSequence(i);
         }
         return conceptMap.get(i);
     }

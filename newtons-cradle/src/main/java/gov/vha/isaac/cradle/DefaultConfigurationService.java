@@ -111,7 +111,7 @@ public class DefaultConfigurationService implements ConfigurationService
 		log.info("setDataStoreFolderPath called with " + dataStoreFolderPath);
 		if (LookupService.hasIsaacBeenStartedAtLeastOnce())
 		{
-			throw new IllegalStateException("Can only set the dbFolderPath prior to starting Isaac");
+			throw new IllegalStateException("Can only set the dbFolderPath prior to starting Isaac. Runlevel: " + LookupService.getCurrentRunLevel());
 		}
 		
 		if (Files.exists(dataStoreFolderPath) && !Files.isDirectory(dataStoreFolderPath))
@@ -155,14 +155,17 @@ public class DefaultConfigurationService implements ConfigurationService
 	public void setConceptModel(ConceptModel conceptModel)
 	{
 		log.info("setConceptModel called with " + conceptModel);
-		if (LookupService.isIsaacStarted())
-		{
-			throw new IllegalStateException("Can only set the concept model prior to starting Isaac");
-		}
-		if (conceptModel == null)
-		{
+                if (this.conceptModel_ != conceptModel) {
+                    if (LookupService.isIsaacStarted())
+                    {
+			throw new IllegalStateException("Can only set the concept model prior to starting Isaac. Existing model: "
+                        + this.conceptModel_ + " attempted model: " + conceptModel);
+                    }
+                    if (conceptModel == null)
+                    {
 			throw new IllegalStateException("Concept model must be specified");
-		}
-		this.conceptModel_ = conceptModel;
+                    }
+                    this.conceptModel_ = conceptModel;
+                }
 	}
 }

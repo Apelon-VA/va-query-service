@@ -6,11 +6,9 @@
 package gov.vha.isaac.cradle.taxonomy;
 
 import gov.vha.isaac.cradle.version.StampedObject;
-import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.State;
-import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
-import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePositionCalculator;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
@@ -30,22 +28,6 @@ import org.apache.mahout.math.set.OpenLongHashSet;
  * @author kec
  */
 public class TypeStampTaxonomyRecords {
-    
-    private static CommitService commitService;
-    private static CommitService getCommitService() {
-        if (commitService == null) {
-            commitService = LookupService.getService(CommitService.class);
-        }
-        return commitService;
-    }
-    
-    private static ConceptService conceptService;
-    private static ConceptService getConceptService() {
-        if (conceptService == null) {
-            conceptService = LookupService.getService(ConceptService.class);
-        }
-        return conceptService;
-    }
 
     /**
      * int (the map key) is a stampSequence TaxonomyFlags (the map value) are
@@ -329,26 +311,26 @@ public class TypeStampTaxonomyRecords {
         public String toString() {
             StringBuilder sb = new StringBuilder();
             sb.append("«");
-            sb.append(getConceptService().getConcept(typeSequence).toUserString());
+            sb.append(Get.conceptService().getConcept(typeSequence).toUserString());
             sb.append("|");
             sb.append(typeSequence);
             sb.append("|");
             sb.append(" ss:");
             sb.append(stampSequence);
             sb.append(" (s:");
-            State status = getCommitService().getStatusForStamp(stampSequence);
+            State status = Get.commitService().getStatusForStamp(stampSequence);
             sb.append(status);
             sb.append(" t:");
-            Instant time = getCommitService().getInstantForStamp(stampSequence);
+            Instant time = Get.commitService().getInstantForStamp(stampSequence);
             sb.append(time.toString());
             sb.append(" a:");
-            ConceptChronology author = getConceptService().getConcept(getCommitService().getAuthorSequenceForStamp(stampSequence));
+            ConceptChronology author = Get.conceptService().getConcept(Get.commitService().getAuthorSequenceForStamp(stampSequence));
             sb.append(author.toUserString());
             sb.append(" m:");
-            ConceptChronology module = getConceptService().getConcept(getCommitService().getModuleSequenceForStamp(stampSequence));
+            ConceptChronology module = Get.conceptService().getConcept(Get.commitService().getModuleSequenceForStamp(stampSequence));
             sb.append(module.toUserString());
             sb.append(" p:");
-            ConceptChronology path = getConceptService().getConcept(getCommitService().getPathSequenceForStamp(stampSequence));
+            ConceptChronology path = Get.conceptService().getConcept(Get.commitService().getPathSequenceForStamp(stampSequence));
             sb.append(path.toUserString());
             sb.append(")->");
             sb.append(getTaxonomyFlagsAsEnum());

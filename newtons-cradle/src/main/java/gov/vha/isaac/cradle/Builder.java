@@ -1,7 +1,7 @@
 package gov.vha.isaac.cradle;
 
 
-import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.Get;
 import org.ihtsdo.otf.tcc.api.blueprint.*;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.ihtsdo.otf.tcc.api.conattr.ConceptAttributeChronicleBI;
@@ -45,10 +45,8 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.List;
-import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 
 public class Builder implements TerminologyBuilderBI {
-    private static final IdentifierService sequenceProvider = Hk2Looker.getService(IdentifierService.class);
 
     PersistentStoreI cradle;
 
@@ -613,7 +611,7 @@ public class Builder implements TerminologyBuilderBI {
         if (cc == null) {
             return construct(blueprint);
         } else {
-            ConceptChronicleBI concept = cradle.getConcept(sequenceProvider.getConceptNid(cc.getNid()));
+            ConceptChronicleBI concept = cradle.getConcept(Get.identifierService().getConceptNid(cc.getNid()));
             if (concept.isCanceled() || concept.getPrimordialUuid().toString().length() == 0
                     || concept.getConceptAttributes().getVersions().isEmpty()) {
                 return construct(blueprint);

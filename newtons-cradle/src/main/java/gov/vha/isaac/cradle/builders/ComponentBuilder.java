@@ -16,13 +16,10 @@
 package gov.vha.isaac.cradle.builders;
 
 import gov.vha.isaac.ochre.api.ConceptProxy;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.IdentifiedComponentBuilder;
-import gov.vha.isaac.ochre.api.IdentifierService;
-import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.chronicle.IdentifiedObjectLocal;
 import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
-import gov.vha.isaac.ochre.api.commit.CommitService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,32 +33,13 @@ import java.util.stream.Stream;
  * @param <T>
  */
 public abstract class ComponentBuilder<T extends IdentifiedObjectLocal> implements IdentifiedComponentBuilder<T> {
-    private static final IdentifierService identifierService = LookupService.getService(IdentifierService.class);
-
-    public static IdentifierService getIdentifierService() {
-        return identifierService;
-    }
-    
-    private static final CommitService commitService = LookupService.getService(CommitService.class);
-    
-    public static CommitService getCommitService() {
-        return commitService;
-    }
-    
-    private static ConceptService conceptService;
-    public static ConceptService getConceptService() {
-        if (conceptService == null) {
-            conceptService = LookupService.getService(ConceptService.class);
-        }
-        return conceptService;
-    }
-    
+   
 
     protected final List<UUID> additionalUuids = new ArrayList<>();
     protected UUID primordialUuid = UUID.randomUUID();
     
     protected int getNid() {
-        return getIdentifierService().getNidForUuids(getUuids());
+        return Get.identifierService().getNidForUuids(getUuids());
     }
 
     @Override
