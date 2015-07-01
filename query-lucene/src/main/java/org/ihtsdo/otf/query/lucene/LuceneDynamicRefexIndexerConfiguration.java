@@ -20,6 +20,9 @@ package org.ihtsdo.otf.query.lucene;
 
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
+import gov.vha.isaac.ochre.api.Get;
+import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.util.Arrays;
@@ -30,6 +33,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.inject.Singleton;
 import org.ihtsdo.otf.tcc.api.blueprint.IdDirective;
 import org.ihtsdo.otf.tcc.api.blueprint.InvalidCAB;
@@ -50,6 +55,7 @@ import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicStringBI;
 import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
+import org.ihtsdo.otf.tcc.model.cc.refex.RefexService;
 import org.ihtsdo.otf.tcc.model.cc.refexDynamic.data.RefexDynamicData;
 import org.ihtsdo.otf.tcc.model.cc.refexDynamic.data.dataTypes.RefexDynamicString;
 import org.ihtsdo.otf.tcc.model.index.service.IndexStatusListenerBI;
@@ -98,10 +104,11 @@ public class LuceneDynamicRefexIndexerConfiguration
 					try
 					{
 						HashMap<Integer, Integer[]> updatedWhatToIndex = new HashMap<>();
-		
-						ConceptVersionBI c = Ts.get().getConceptVersion(ViewCoordinates.getMetadataViewCoordinate(), RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getUuids()[0]);
-		
-						for (RefexDynamicChronicleBI<?> r : c.getRefsetDynamicMembers())
+                                                ConceptChronology<?> concept = Get.conceptService().getConcept(RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getUuids());
+                                                
+                                                Stream<RefexDynamicChronicleBI<?>> rdc = LookupService.getService(RefexService.class).getDynamicRefexesForComponent(concept.getNid());
+                                                
+						for (RefexDynamicChronicleBI<?> r : rdc.collect(Collectors.toList()))
 						{
 							Optional<? extends RefexDynamicVersionBI<?>> rdv = r.getVersion(ViewCoordinates.getMetadataViewCoordinate());
 							if (!rdv.isPresent() || !rdv.get().isActive() || rdv.get().getAssemblageNid() != RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid())

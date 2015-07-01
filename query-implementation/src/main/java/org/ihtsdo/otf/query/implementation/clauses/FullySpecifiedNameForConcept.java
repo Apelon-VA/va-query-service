@@ -15,6 +15,7 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
 import gov.vha.isaac.ochre.api.coordinate.LanguageCoordinate;
@@ -69,7 +70,7 @@ public class FullySpecifiedNameForConcept extends ParentClause {
         for (Clause childClause : getChildren()) {
             NidSet childPossibleComponentNids = childClause.computePossibleComponents(incomingComponents);
             ConceptSequenceSet conceptSequenceSet = ConceptSequenceSet.of(childPossibleComponentNids);
-            conceptService.getConceptChronologyStream(conceptSequenceSet)
+            Get.conceptService().getConceptChronologyStream(conceptSequenceSet)
                     .forEach((conceptChronology) -> {
                         Optional<LatestVersion<DescriptionSememe>> desc = 
                                 conceptChronology.getFullySpecifiedDescription(languageCoordinate, stampCoordinate);

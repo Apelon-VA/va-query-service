@@ -18,10 +18,8 @@ package org.ihtsdo.otf.query.integration.tests;
 import gov.vha.isaac.metadata.coordinates.LanguageCoordinates;
 import gov.vha.isaac.metadata.coordinates.StampCoordinates;
 import gov.vha.isaac.metadata.coordinates.TaxonomyCoordinates;
-import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.TaxonomyService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
-import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
@@ -30,10 +28,8 @@ import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.query.implementation.*;
-import org.ihtsdo.otf.query.integration.tests.rest.TermstoreChanges;
 import org.ihtsdo.otf.tcc.api.blueprint.InvalidCAB;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
-import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
@@ -58,24 +54,6 @@ public class QueryTest {
     private static StampCoordinate VC_LATEST_ACTIVE_ONLY;
     private static TaxonomyCoordinate TC_LATEST_ACTIVE_ONLY_INFERRED;
     private static TaxonomyCoordinate TC_LATEST_INFERRED;
-
-    private static ConceptService conceptService;
-
-    public static ConceptService getConceptService() {
-        if (conceptService == null) {
-            conceptService = LookupService.getService(ConceptService.class);
-        }
-        return conceptService;
-    }
-
-    private static TaxonomyService taxonomyService;
-
-    public static TaxonomyService getTaxonomyService() {
-        if (taxonomyService == null) {
-            taxonomyService = LookupService.getService(TaxonomyService.class);
-        }
-        return taxonomyService;
-    }
 
     //private static int cementSize;
     public QueryTest() {
@@ -297,7 +275,7 @@ public class QueryTest {
 //
 //        Set<ConceptVersion> relResults = new HashSet<>();
 //        results.stream().forEach((nid) -> {
-//            ConceptChronology concept = getConceptService().getConcept(nid);
+//            ConceptChronology concept = Get.conceptService.getConcept(nid);
 //            Optional<ConceptVersion> conceptVersion = concept.getLatestVersion(ConceptVersion.class, VC_LATEST_ACTIVE_ONLY);
 //            if (conceptVersion.isPresent()) {
 //                relResults.add(conceptVersion.get());
@@ -436,7 +414,7 @@ public class QueryTest {
         NidSet kindOfResults = kindOfQuery.compute();
         kindOfResults.stream().forEach((nid) -> {
             try {
-                assertTrue(getTaxonomyService().isKindOf(nid,
+                assertTrue(Get.taxonomyService().isKindOf(nid,
                         Snomed.PHYSICAL_FORCE.getNid(), TC_LATEST_ACTIVE_ONLY_INFERRED), "Testing: "
                         + Ts.get().getConcept(nid));
             } catch (IOException ex) {
@@ -509,8 +487,8 @@ public class QueryTest {
 
         ConceptSequenceSet activeSet = new ConceptSequenceSet();
 
-        conceptService.getConceptChronologyStream().forEach((ConceptChronology<?> cc) -> {
-            if (getConceptService().isConceptActive(cc.getNid(), VC_LATEST_ACTIVE_ONLY)) {
+        Get.conceptService().getConceptChronologyStream().forEach((ConceptChronology<?> cc) -> {
+            if (Get.conceptService().isConceptActive(cc.getNid(), VC_LATEST_ACTIVE_ONLY)) {
                 activeSet.add(cc.getNid());
             }
         });

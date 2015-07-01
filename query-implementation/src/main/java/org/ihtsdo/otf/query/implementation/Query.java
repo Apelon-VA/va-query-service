@@ -19,14 +19,10 @@ import gov.vha.isaac.metadata.coordinates.LanguageCoordinates;
 import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.coordinates.StampCoordinates;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
-import gov.vha.isaac.ochre.api.IdentifiedObjectService;
-import gov.vha.isaac.ochre.api.IdentifierService;
-import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
-import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
-import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
 import gov.vha.isaac.ochre.api.coordinate.LanguageCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
@@ -61,11 +57,6 @@ import org.ihtsdo.otf.tcc.api.store.Ts;
         factoryMethod = "createQuery")
 
 public abstract class Query {
-
-    private static IdentifierService identifierService = LookupService.getService(IdentifierService.class);
-    private static ConceptService conceptService = LookupService.getService(ConceptService.class);
-    private static IdentifiedObjectService identifiedObjectService = LookupService.getService(IdentifiedObjectService.class);
-    private static SememeService sememeService = LookupService.getService(SememeService.class);
 
     @XmlElementWrapper(name = "for")
     @XmlElement(name = "component")
@@ -245,10 +236,10 @@ public abstract class Query {
         NidSet possibleComponents
                 = rootClause[0].computePossibleComponents(forSet);
         if (computeTypes.contains(ClauseComputeType.ITERATION)) {
-            NidSet conceptsToIterateOver = NidSet.of(identifierService.getConceptSequencesForConceptNids(possibleComponents));
+            NidSet conceptsToIterateOver = NidSet.of(Get.identifierService().getConceptSequencesForConceptNids(possibleComponents));
 
-            ConceptSequenceSet conceptSequences = identifierService.getConceptSequencesForConceptNids(conceptsToIterateOver);
-            conceptService.getParallelConceptChronologyStream(conceptSequences).forEach((ConceptChronology<? extends ConceptVersion> concept) -> {
+            ConceptSequenceSet conceptSequences = Get.identifierService().getConceptSequencesForConceptNids(conceptsToIterateOver);
+            Get.conceptService().getParallelConceptChronologyStream(conceptSequences).forEach((ConceptChronology<? extends ConceptVersion> concept) -> {
 
                 ConceptVersion mutable = concept.createMutableVersion(concept.getNid()); //TODO needs to return a mutable version, not a ConceptVersion
 
@@ -353,7 +344,7 @@ public abstract class Query {
             case DESCRIPTION_VERSION_FSN:
                 resultSet.stream().forEach((nid) -> {
                     try {
-                        ConceptChronology<? extends ConceptVersion> concept = conceptService.getConcept(nid);
+                        ConceptChronology<? extends ConceptVersion> concept = Get.conceptService().getConcept(nid);
                         Optional<LatestVersion<DescriptionSememe>> desc = concept.getFullySpecifiedDescription(languageCoordinate, stampCoordinate);
                         if (desc.isPresent()) {
                             LatestVersion<DescriptionSememe> descVersion = desc.get();
@@ -372,7 +363,7 @@ public abstract class Query {
             case DESCRIPTION_VERSION_PREFERRED:
                 resultSet.stream().forEach((nid) -> {
                     try {
-                        ConceptChronology<? extends ConceptVersion> concept = conceptService.getConcept(nid);
+                        ConceptChronology<? extends ConceptVersion> concept = Get.conceptService().getConcept(nid);
                         Optional<LatestVersion<DescriptionSememe>> desc = concept.getPreferredDescription(languageCoordinate, stampCoordinate);
                         if (desc.isPresent()) {
                             LatestVersion<DescriptionSememe> descVersion = desc.get();

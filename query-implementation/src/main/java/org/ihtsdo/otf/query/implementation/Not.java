@@ -15,6 +15,7 @@
  */
 package org.ihtsdo.otf.query.implementation;
 
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
@@ -93,7 +94,7 @@ public class Not extends ParentClause {
         assert forSet != null;
         ConceptSequenceSet activeSet = new ConceptSequenceSet();
         
-        conceptService.getConceptChronologyStream(ConceptSequenceSet.of(incomingComponents)).forEach((ConceptChronology cc) -> {
+        Get.conceptService().getConceptChronologyStream(ConceptSequenceSet.of(incomingComponents)).forEach((ConceptChronology cc) -> {
             Optional<ConceptVersion> latestVersion = cc.getLatestVersion(ConceptVersion.class, getEnclosingQuery().getStampCoordinate());
             if (latestVersion.isPresent()) {
                 activeSet.add(cc.getNid());
