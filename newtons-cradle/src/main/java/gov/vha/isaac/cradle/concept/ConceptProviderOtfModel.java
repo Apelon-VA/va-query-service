@@ -217,8 +217,8 @@ public class ConceptProviderOtfModel implements ConceptService, DelegateService 
     @Override
     public Optional<? extends ConceptChronology<? extends ConceptVersion>> getOptionalConcept(int conceptId) {
         try {
-            if (conceptId < 0) {
-                conceptId = Get.identifierService().getConceptSequence(conceptId);
+            if (conceptId >= 0) {
+                conceptId = Get.identifierService().getConceptNid(conceptId);
             }
             return Optional.of(ConceptChronicle.get(conceptId));
         } catch (IOException ex) {
