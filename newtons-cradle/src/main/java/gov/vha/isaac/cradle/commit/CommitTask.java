@@ -22,11 +22,11 @@ import gov.vha.isaac.ochre.api.commit.AlertType;
 import gov.vha.isaac.ochre.api.commit.ChangeChecker;
 import gov.vha.isaac.ochre.api.commit.CheckPhase;
 import gov.vha.isaac.ochre.api.commit.CommitRecord;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
 import gov.vha.isaac.ochre.collections.SequenceSet;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -37,7 +37,6 @@ import org.apache.logging.log4j.Logger;
 import org.apache.mahout.math.map.OpenIntIntHashMap;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.api.coordinate.Status;
-import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 import org.ihtsdo.otf.tcc.model.version.Stamp;
 
 /**
@@ -99,17 +98,12 @@ public class CommitTask extends Task<Optional<CommitRecord>> {
 //                return;
 //            }
             conceptsToCommit.stream().forEach((conceptSequence) -> {
-                try {
-                    ConceptChronicle c = ConceptChronicle.get(
-                            Get.identifierService().getConceptNid(conceptSequence));
-                    c.modified(c.getConceptAttributes(), lastCommit);
-                    if (conceptsToCheck.contains(conceptSequence)) {
-                        checkers.stream().forEach((check) -> {
-                            check.check(c, alertCollection, CheckPhase.COMMIT);
-                        });
-                    }
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
+                ConceptChronology c = Get.conceptService().getConcept(
+                        Get.identifierService().getConceptNid(conceptSequence));
+                if (conceptsToCheck.contains(conceptSequence)) {
+                    checkers.stream().forEach((check) -> {
+                        check.check(c, alertCollection, CheckPhase.COMMIT);
+                    });
                 }
             });
             sememesToCommit.stream().forEach((sememeSequence) -> {

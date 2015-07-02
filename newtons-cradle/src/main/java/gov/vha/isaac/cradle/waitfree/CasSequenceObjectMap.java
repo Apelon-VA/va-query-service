@@ -22,6 +22,8 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  *
@@ -30,6 +32,7 @@ import java.util.stream.Stream;
  */
 public class CasSequenceObjectMap<T extends WaitFreeComparable> {
 
+    private static final Logger log = LogManager.getLogger();
     private static final int SEGMENT_SIZE = 1280;
     private static final int WRITE_SEQUENCES = 64;
 
@@ -190,6 +193,12 @@ public class CasSequenceObjectMap<T extends WaitFreeComparable> {
     public Optional<T> getOptional(int sequence) {
         int segmentIndex = sequence / SEGMENT_SIZE;
         int indexInSegment = sequence % SEGMENT_SIZE;
+        if (segmentIndex >= objectByteList.size()) {
+            log.warn("Tried to access segment that does not exist. Sequence: " +
+                    sequence + " segment: " + segmentIndex +
+                    " index: " + indexInSegment);
+            return Optional.empty();
+        }
         byte[] data = getSegment(segmentIndex).get(indexInSegment);
         if (data == null) {
             return Optional.empty();
@@ -201,11 +210,9 @@ public class CasSequenceObjectMap<T extends WaitFreeComparable> {
     
     
 
-    /**
-     * This method is VERY SLOW!!!!
-     */
     public int getSize() {
-        //TODO determine if this is the best way / if this method is necessary.  Calculating this is taking on the order of seconds, on the SOLOR-ALL db. 
+        // TODO determine if this is the best way / if this method is necessary.  
+        // Calculating this is taking on the order of seconds, on the SOLOR-ALL db. 
         return (int) getParallelStream().count();
     }
 

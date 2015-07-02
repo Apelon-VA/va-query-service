@@ -512,17 +512,15 @@ public class CommitProvider implements CommitService {
 
     @Override
     public Task<Void> addUncommitted(ConceptChronology cc) {
-        ConceptChronicle concept = (ConceptChronicle) cc;
-        handleUncommittedSequenceSet(concept, uncommittedConceptsWithChecksSequenceSet);
-        return writeConceptCompletionService.checkAndWrite(concept, checkers, alertCollection,
+        handleUncommittedSequenceSet(cc, uncommittedConceptsWithChecksSequenceSet);
+        return writeConceptCompletionService.checkAndWrite(cc, checkers, alertCollection,
                 writePermitReference.get(), changeListeners);
     }
 
     @Override
     public Task<Void> addUncommittedNoChecks(ConceptChronology cc) {
-        ConceptChronicle concept = (ConceptChronicle) cc;
-        handleUncommittedSequenceSet(concept, uncommittedConceptsNoChecksSequenceSet);
-        return writeConceptCompletionService.write(concept,
+        handleUncommittedSequenceSet(cc, uncommittedConceptsNoChecksSequenceSet);
+        return writeConceptCompletionService.write(cc,
                 writePermitReference.get(), changeListeners);
     }
 
@@ -544,7 +542,7 @@ public class CommitProvider implements CommitService {
         }
     }
 
-    private void handleUncommittedSequenceSet(ConceptChronicle concept, ConceptSequenceSet set) {
+    private void handleUncommittedSequenceSet(ConceptChronology concept, ConceptSequenceSet set) {
         if (concept.isUncommitted()) {
             uncommittedSequenceLock.lock();
             try {

@@ -70,13 +70,13 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
 
     public ConceptProviderOchreModel() throws IOException, NumberFormatException, ParseException {
         try {
+            Path propertiesPath = LookupService.getService(ConfigurationService.class).getChronicleFolderPath().resolve(CRADLE_PROPERTIES_FILE_NAME);
             Path folderPath = LookupService.getService(ConfigurationService.class).getChronicleFolderPath().resolve("ochre-concepts");
             Files.createDirectories(folderPath);
             log.info("Setting up OCHRE ConceptProvider at " + folderPath.toAbsolutePath());
-            Path propertiesPath = folderPath.resolve(CRADLE_PROPERTIES_FILE_NAME);
             Properties cradleProps = new Properties();
             if (propertiesPath.toFile().exists()) {
-                try (FileInputStream in = new FileInputStream("defaultProperties")) {
+                try (FileInputStream in = new FileInputStream(propertiesPath.toFile())) {
                     cradleProps.load(in);
                 }
                 if (!cradleProps.getProperty(CRADLE_DATA_VERSION_PROPERTY).equals(CRADLE_DATA_VERSION)) {
@@ -92,7 +92,7 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
                 loadRequired.set(true);
                 cradleProps.put(CRADLE_DATA_VERSION_PROPERTY, CRADLE_DATA_VERSION);
                 cradleProps.put(CRADLE_CONCEPT_MODEL_PROPERTY, ConceptModel.OCHRE_CONCEPT_MODEL.name());
-                try (FileOutputStream out = new FileOutputStream(CRADLE_PROPERTIES_FILE_NAME)) {
+                try (FileOutputStream out = new FileOutputStream(propertiesPath.toFile())) {
                     cradleProps.store(out, CRADLE_DATA_VERSION);
                 }
             }
