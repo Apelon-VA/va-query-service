@@ -669,7 +669,7 @@ public class Cradle
     public Optional<? extends ObjectChronology<? extends StampedVersion>> getIdentifiedObjectChronology(int nid) {
         switch (Get.identifierService().getChronologyTypeForNid(nid)) {
             case CONCEPT:
-                return Get.conceptService().getOptionalConcept(Get.identifierService().getConceptSequence(nid));
+                return Get.conceptService().getOptionalConcept(nid);
             case SEMEME:
                 return Optional.ofNullable(Get.sememeService().getSememe(Get.identifierService().getSememeSequence(nid)));
             case REFEX:
