@@ -16,8 +16,7 @@
 package gov.vha.isaac.cradle.sememe;
 
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
-import gov.vha.isaac.ochre.api.Get;
-import gov.vha.isaac.ochre.api.State;
+import gov.vha.isaac.ochre.api.ProgressTracker;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.component.sememe.SememeService;
@@ -27,7 +26,7 @@ import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePositionCalculator;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
 import gov.vha.isaac.ochre.collections.StampSequenceSet;
 import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
-import java.util.NoSuchElementException;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -38,7 +37,7 @@ import java.util.stream.Stream;
  * @param <V>
  */
 public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSnapshotService<V> {
-    
+
     private static int descriptionAssemblageSequence = -1;
 
     private static int getDescriptionAssemblageSequence() {
@@ -47,7 +46,7 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
         }
         return descriptionAssemblageSequence;
     }
-    
+
     Class<V> versionType;
     StampCoordinate stampCoordinate;
     SememeService sememeProvider;
@@ -77,77 +76,45 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
     }
 
     @Override
-    public Stream<LatestVersion<V>> getLatestSememeVersionsFromAssemblage(int assemblageSequence) {
-        return getLatestSememeVersions(sememeProvider.getSememeSequencesFromAssemblage(assemblageSequence));
+    public Stream<LatestVersion<V>> getLatestSememeVersionsFromAssemblage(int assemblageSequence, ProgressTracker... progressTrackers) {
+        return getLatestSememeVersions(sememeProvider.getSememeSequencesFromAssemblage(assemblageSequence), progressTrackers);
     }
-    
-    private Stream<LatestVersion<V>> getLatestSememeVersions(SememeSequenceSet sememeSequenceSet) {
-        return sememeSequenceSet.stream()
+
+    private Stream<LatestVersion<V>> getLatestSememeVersions(SememeSequenceSet sememeSequenceSet, ProgressTracker... progressTrackers) {
+        Arrays.stream(progressTrackers).forEach((tracker) -> {
+            tracker.addToTotalWork(sememeSequenceSet.size());
+        });
+        return sememeSequenceSet.parallelStream()
                 .mapToObj((int sememeSequence) -> {
-                    SememeChronologyImpl sc = (SememeChronologyImpl) sememeProvider.getSememe(sememeSequence);
-                    IntStream stampSequences = sc.getVersionStampSequences();
-                    StampSequenceSet latestStampSequences = calculator.getLatestStampSequencesAsSet(stampSequences);
-                    if (latestStampSequences.isEmpty()) {
-                        return Optional.empty();
+                    try {
+                        SememeChronologyImpl sc = (SememeChronologyImpl) sememeProvider.getSememe(sememeSequence);
+                        IntStream stampSequences = sc.getVersionStampSequences();
+                        StampSequenceSet latestStampSequences = calculator.getLatestStampSequencesAsSet(stampSequences);
+                        if (latestStampSequences.isEmpty()) {
+                            return Optional.empty();
+                        }
+                        LatestVersion<V> latest = new LatestVersion<>(versionType);
+                        latestStampSequences.stream().forEach((stampSequence) -> {
+                            latest.addLatest((V) sc.getVersionForStamp(stampSequence).get());
+                        });
+                        return Optional.of(latest);
+                    } finally {
+                        Arrays.stream(progressTrackers).forEach((tracker) -> {
+                            tracker.completedUnitOfWork();
+                        });
                     }
-                    LatestVersion<V> latest = new LatestVersion<>(versionType);
-                    latestStampSequences.stream().forEach((stampSequence) -> {
-                        latest.addLatest((V) sc.getVersionForStamp(stampSequence).get());
-                    });
-                    return Optional.of(latest);
                 }
                 ).filter((optional) -> {
                     return optional.isPresent();
                 }).map((optional) -> (LatestVersion<V>) optional.get());
-        
-    }
-    
-    private Stream<LatestVersion<V>> getLatestActiveSememeVersions(SememeSequenceSet sememeSequenceSet) {
-        return sememeSequenceSet.stream()
-                .mapToObj((int sememeSequence) -> {
-                    SememeChronologyImpl sc = (SememeChronologyImpl) sememeProvider.getSememe(sememeSequence);
-                    if (versionType.isAssignableFrom(sc.getSememeType().getSememeVersionClass())) {
-                        
-                    }
-                    IntStream stampSequences = sc.getVersionStampSequences();
-                    StampSequenceSet latestStampSequences = calculator.getLatestStampSequencesAsSet(stampSequences);
 
-                    LatestVersion<V> latest = new LatestVersion<>(versionType);
-                    
-                    // add active first, incase any contradictions are inactive. 
-                    latestStampSequences.stream().filter((int stampSequence) -> 
-                            Get.commitService().getStatusForStamp(stampSequence) == State.ACTIVE).forEach((stampSequence) -> {
-                        Optional<V> version = sc.getVersionForStamp(stampSequence);
-                        if (version.isPresent()) {
-                            latest.addLatest(version.get());
-                        } else {
-                            throw new NoSuchElementException("No version for stamp: " + 
-                                    stampSequence + " in: " + sc);
-                        }
-                        
-                    });                    
-                    latestStampSequences.stream().filter((int stampSequence) -> 
-                            Get.commitService().getStatusForStamp(stampSequence) == State.INACTIVE).forEach((stampSequence) -> {
-                        Optional<V> version = sc.getVersionForStamp(stampSequence);
-                        if (version.isPresent()) {
-                            latest.addLatest(version.get());
-                        } else {
-                            throw new NoSuchElementException("No version for stamp: " + 
-                                    stampSequence + " in: " + sc);
-                        }
-                    }); 
-                    
-                    return Optional.of(latest);
-                }
-                ).filter((optional) -> {
-                    return optional.isPresent();
-                }).map((optional) -> (LatestVersion<V>) optional.get());        
     }
 
     @Override
     public Stream<LatestVersion<V>> getLatestSememeVersionsForComponent(int componentNid) {
         return getLatestSememeVersions(sememeProvider.getSememeSequencesForComponent(componentNid));
     }
+
     @Override
     public Stream<LatestVersion<V>> getLatestSememeVersionsForComponentFromAssemblage(int componentNid, int assemblageSequence) {
         return getLatestSememeVersions(sememeProvider.getSememeSequencesForComponentFromAssemblage(componentNid, assemblageSequence));

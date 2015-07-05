@@ -310,7 +310,7 @@ public class IdentifierProvider implements IdentifierService {
             nid = getConceptNid(nid);
         }
         Optional<? extends ObjectChronology<? extends StampedVersion>> optionalObj
-                = Get.getIdentifiedObjectService().getIdentifiedObjectChronology(nid);
+                = Get.identifiedObjectService().getIdentifiedObjectChronology(nid);
         if (optionalObj.isPresent()) {
             return Optional.of(optionalObj.get().getPrimordialUuid());
         }
@@ -338,7 +338,7 @@ public class IdentifierProvider implements IdentifierService {
             nid = getConceptNid(nid);
         }
         Optional<? extends ObjectChronology<? extends StampedVersion>> optionalObj
-                = Get.getIdentifiedObjectService().getIdentifiedObjectChronology(nid);
+                = Get.identifiedObjectService().getIdentifiedObjectChronology(nid);
         if (optionalObj.isPresent()) {
             return optionalObj.get().getUuidList();
         }
