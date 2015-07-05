@@ -91,7 +91,7 @@ public class DescriptionLuceneMatch extends LeafClause {
         //Filter the results, based upon the input ViewCoordinate
         nids.stream().forEach((nid) -> {
             Optional<? extends ObjectChronology<? extends StampedVersion>> chronology = 
-                    Get.getIdentifiedObjectService().getIdentifiedObjectChronology(nid);
+                    Get.identifiedObjectService().getIdentifiedObjectChronology(nid);
             if (chronology.isPresent()) {
                 if (!chronology.get().isLatestVersionActive(viewCoordinate)) {
                     getResultsCache().remove(nid);

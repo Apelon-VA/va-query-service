@@ -57,7 +57,7 @@ public class DescriptionActiveLuceneMatch extends DescriptionLuceneMatch {
         
         incomingComponents.stream().forEach((nid) -> {
             Optional<? extends ObjectChronology<? extends StampedVersion>> chronology = 
-                    Get.getIdentifiedObjectService().getIdentifiedObjectChronology(nid);
+                    Get.identifiedObjectService().getIdentifiedObjectChronology(nid);
             if (chronology.isPresent()) {
                 if (!chronology.get().isLatestVersionActive(viewCoordinate)) {
                     getResultsCache().remove(nid);
