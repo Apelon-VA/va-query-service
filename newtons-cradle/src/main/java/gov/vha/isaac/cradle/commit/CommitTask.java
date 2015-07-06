@@ -123,6 +123,8 @@ public class CommitTask extends TimedTask<Optional<CommitRecord>> {
         this.alertCollection = alertCollection;
         this.pendingStampsForCommit = pendingStampsForCommit;
         this.commitProvider = commitProvider;
+        updateTitle("Commit");
+        updateMessage(commitComment);
 
     }
 
