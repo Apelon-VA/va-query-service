@@ -36,6 +36,7 @@ import static gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder.*;
 import gov.vha.isaac.ochre.api.logic.assertions.Assertion;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePosition;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePositionCalculator;
+import gov.vha.isaac.ochre.collections.SememeSequenceSet;
 import gov.vha.isaac.ochre.model.coordinate.StampCoordinateImpl;
 import gov.vha.isaac.ochre.model.coordinate.StampPositionImpl;
 import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
@@ -94,7 +95,27 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
 
             ConceptChronology conceptChronology
                     = Get.conceptService().getConcept(eConcept.getUuidList().toArray(new UUID[0]));
+            SememeSequenceSet inferredSememeSequences
+                    = Get.sememeService().getSememeSequencesForComponentFromAssemblage(Get.identifierService().getConceptNid(conceptChronology.getConceptSequence()), logicCoordinate.getInferredAssemblageSequence());
+            SememeSequenceSet statedSememeSequences
+                    = Get.sememeService().getSememeSequencesForComponentFromAssemblage(Get.identifierService().getConceptNid(conceptChronology.getConceptSequence()), logicCoordinate.getStatedAssemblageSequence());
 
+            if (!inferredSememeSequences.isEmpty()) {
+                if (inferredSememeSequences.size() > 1) {
+                    throw new IllegalStateException("Error importing: " + conceptChronology.toUserString()
+                       + "<" + conceptChronology.getConceptSequence() + "> Found more than one inferred definition" +
+                            inferredSememeSequences);
+                }
+                inferredChronology = (SememeChronology<LogicGraphSememe>) Get.sememeService().getSememe(inferredSememeSequences.stream().findFirst().getAsInt());
+            }
+            if (!statedSememeSequences.isEmpty()) {
+                if (statedSememeSequences.size() > 1) {
+                    throw new IllegalStateException("Error importing: " + conceptChronology.toUserString()
+                       + "<" + conceptChronology.getConceptSequence() + "> Found more than one stated definition" +
+                            statedSememeSequences);
+                }
+                statedChronology = (SememeChronology<LogicGraphSememe>) Get.sememeService().getSememe(statedSememeSequences.stream().findFirst().getAsInt());
+            }
             TreeSet<StampPositionImpl> stampPositionSet = new TreeSet<>();
             eConcept.getStampSequenceStream().distinct().forEach((stampSequence) -> {
                 stampPositionSet.add(new StampPositionImpl(
