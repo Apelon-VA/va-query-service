@@ -64,7 +64,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.runlevel.RunLevel;
 import org.ihtsdo.otf.tcc.api.coordinate.Status;
-import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 import org.ihtsdo.otf.tcc.model.version.Stamp;
 import org.jvnet.hk2.annotations.Service;
 
@@ -116,10 +115,6 @@ public class CommitProvider implements CommitService {
         return new Thread(r, "writeSememeCompletionService");
     });
 
-    private final ExecutorService commitExecutorPool = Executors.newSingleThreadExecutor((Runnable r) -> {
-        return new Thread(r, "commit executor");
-    });
-    
     ConcurrentSkipListSet<WeakReference<ChronologyChangeListener>> changeListeners = new ConcurrentSkipListSet<>();
 
     private long lastCommit = Long.MIN_VALUE;
@@ -371,6 +366,12 @@ public class CommitProvider implements CommitService {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
+    /**
+     * Perform a global commit. The caller may chose to block on the returned
+     * task if synchronous operation is desired. 
+     * @param commitComment
+     * @return a task that is already submitted to an executor. 
+     */
     @Override
     public synchronized Task<Optional<CommitRecord>> commit(String commitComment) {
         Semaphore pendingWrites = writePermitReference.getAndSet(new Semaphore(WRITE_POOL_SIZE));
@@ -381,7 +382,7 @@ public class CommitProvider implements CommitService {
         Map<UncommittedStamp, Integer> pendingStampsForCommit = new HashMap<>(uncomittedStampEntries);
         uncomittedStampEntries.clear();
         
-        CommitTask task = new CommitTask(commitComment,
+        CommitTask task = CommitTask.get(commitComment,
             uncommittedConceptsWithChecksSequenceSet,
             uncommittedConceptsNoChecksSequenceSet,
             uncommittedSememesWithChecksSequenceSet,
@@ -391,7 +392,6 @@ public class CommitProvider implements CommitService {
             alertCollection,
             pendingStampsForCommit,
             this);
-        commitExecutorPool.execute(task);
         return task;
     }
     
@@ -461,7 +461,14 @@ public class CommitProvider implements CommitService {
         sb.append("Stamp{s:");
         sb.append(getStatusForStamp(stampSequence));
         sb.append(", t:");
-        sb.append(Instant.ofEpochMilli(getTimeForStamp(stampSequence)));
+        long time = getTimeForStamp(stampSequence);
+        if (time == Long.MAX_VALUE) {
+            sb.append("UNCOMMITTED:");
+        } else if (time == Long.MIN_VALUE) {
+            sb.append("CANCELED:");
+        } else {
+            sb.append(Instant.ofEpochMilli(time));
+        }
         sb.append(", a:");
         sb.append(nameForConcept(getAuthorSequenceForStamp(stampSequence)));
         sb.append(" <");

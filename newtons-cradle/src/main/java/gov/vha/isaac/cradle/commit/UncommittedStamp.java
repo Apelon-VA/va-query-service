@@ -69,7 +69,7 @@ public class UncommittedStamp {
     public String toString() {
         if (Ts.get() != null) {
             StringBuilder sb = new StringBuilder();
-            sb.append("Stamp{s:");
+            sb.append("UncommittedStamp{s:");
              sb.append(status);
              sb.append(", a:");
              sb.append(Ts.get().informAboutNid(Get.identifierService().getConceptNid(authorSequence)));
@@ -81,7 +81,7 @@ public class UncommittedStamp {
              return sb.toString();
         }
         
-        return "Stamp{s:" + status + ", a:" + authorSequence + 
+        return "UncommittedStamp{s:" + status + ", a:" + authorSequence + 
                 ", m:" + moduleSequence + ", p: " + pathSequence +'}';
     }
     

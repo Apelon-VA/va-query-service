@@ -27,9 +27,8 @@ public class ImportCradleCommitRecord implements Callable<Void> {
     public Void call() throws Exception {
         CommitService commitManager = Get.commitService();
         String comment = ccr.getCommitComment();
-        ccr.getStampsInCommit().forEachKey((int stamp) -> {
+        ccr.getStampsInCommit().stream().forEach((stamp) -> {
             commitManager.setComment(stamp, comment);
-            return true;
         });
         
         ccr.getStampAliases().forEachPair((int stamp, int alias) -> {

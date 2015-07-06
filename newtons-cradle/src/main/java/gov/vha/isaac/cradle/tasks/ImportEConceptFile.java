@@ -50,13 +50,9 @@ public class ImportEConceptFile extends TimedTask<Integer> {
 
     final int isaSequence;
 
-    final CasSequenceObjectMap<TaxonomyRecordPrimitive> originDestinationTaxonomyRecords;
-    final ConcurrentSkipListSet<DestinationOriginRecord> destinationOriginRecordSet;
     final ConceptSequenceSet neverRoleGroupConceptSequences = new ConceptSequenceSet();
 
     {
-        originDestinationTaxonomyRecords = cradle.getOriginDestinationTaxonomyMap();
-        destinationOriginRecordSet = cradle.getDestinationOriginRecordSet();
         isaSequence = Get.identifierService().getConceptSequenceForUuids(IsaacMetadataAuxiliaryBinding.IS_A.getUuids());
         neverRoleGroupConceptSequences.add(Get.identifierService().getConceptSequenceForUuids(Snomed.PART_OF.getUuids()));
         neverRoleGroupConceptSequences.add(Get.identifierService().getConceptSequenceForUuids(Snomed.LATERALITY.getUuids()));

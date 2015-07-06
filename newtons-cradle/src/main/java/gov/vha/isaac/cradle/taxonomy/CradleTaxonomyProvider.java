@@ -18,20 +18,37 @@ package gov.vha.isaac.cradle.taxonomy;
 import gov.vha.isaac.cradle.builders.ConceptActiveService;
 import gov.vha.isaac.cradle.taxonomy.graph.GraphCollector;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
+import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.ConfigurationService;
+import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.TaxonomySnapshotService;
+import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
+import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
+import gov.vha.isaac.ochre.api.commit.CommitRecord;
+import gov.vha.isaac.ochre.api.commit.CommitStates;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.api.component.sememe.SememeType;
+import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
+import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
+import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
+import gov.vha.isaac.ochre.api.logic.Node;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePositionCalculator;
 import gov.vha.isaac.ochre.api.tree.Tree;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeBuilder;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
+import gov.vha.isaac.ochre.model.logic.node.AndNode;
+import gov.vha.isaac.ochre.model.logic.node.internal.ConceptNodeWithNids;
+import gov.vha.isaac.ochre.model.logic.node.internal.RoleNodeSomeWithNids;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -46,6 +63,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.NavigableSet;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
@@ -62,7 +80,7 @@ import org.jvnet.hk2.annotations.Service;
  */
 @Service
 @RunLevel(value = 1)
-public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveService {
+public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveService, ChronologyChangeListener {
 
     private static final Logger log = LogManager.getLogger();
 
@@ -71,21 +89,25 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
      * taxonomy record, which represents the destination, stamp, and taxonomy
      * flags for parent and child concepts.
      */
-    final CasSequenceObjectMap<TaxonomyRecordPrimitive> originDestinationTaxonomyRecordMap;
+    private final CasSequenceObjectMap<TaxonomyRecordPrimitive> originDestinationTaxonomyRecordMap;
     private static final String TAXONOMY = "taxonomy";
-    final ConcurrentSkipListSet<DestinationOriginRecord> destinationOriginRecordSet = new ConcurrentSkipListSet<>();
+    private final ConcurrentSkipListSet<DestinationOriginRecord> destinationOriginRecordSet = new ConcurrentSkipListSet<>();
     private final Path folderPath;
     private final Path taxonomyProviderFolder;
     private final AtomicBoolean loadRequired = new AtomicBoolean();
+    private final LogicCoordinate logicCoordinate = LogicCoordinates.getStandardElProfile();
+    private final int isaSequence = IsaacMetadataAuxiliaryBinding.IS_A.getSequence();
+    private final UUID providerUuid = UUID.randomUUID();
+    private final ConcurrentSkipListSet<Integer> unhandledChanges = new ConcurrentSkipListSet<>();
 
     private CradleTaxonomyProvider() throws IOException {
-           folderPath = LookupService.getService(ConfigurationService.class).getChronicleFolderPath(); 
-           taxonomyProviderFolder = folderPath.resolve(TAXONOMY);
-           loadRequired.set(!Files.exists(taxonomyProviderFolder));
-            Files.createDirectories(taxonomyProviderFolder);
-           originDestinationTaxonomyRecordMap
-            = new CasSequenceObjectMap(new TaxonomyRecordSerializer(),
-                    taxonomyProviderFolder, "seg.", ".taxonomy.map");            
+        folderPath = LookupService.getService(ConfigurationService.class).getChronicleFolderPath();
+        taxonomyProviderFolder = folderPath.resolve(TAXONOMY);
+        loadRequired.set(!Files.exists(taxonomyProviderFolder));
+        Files.createDirectories(taxonomyProviderFolder);
+        originDestinationTaxonomyRecordMap
+                = new CasSequenceObjectMap(new TaxonomyRecordSerializer(),
+                        taxonomyProviderFolder, "seg.", ".taxonomy.map");
         log.info("CradleTaxonomyProvider constructed");
     }
 
@@ -105,6 +127,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
                     }
                 }
             }
+            Get.commitService().addChangeListener(this);
 
         } catch (Exception e) {
             LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Cradle Taxonomy Provider", e);
@@ -449,6 +472,117 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
         return new TaxonomySnapshotProvider(tc);
     }
 
+    @Override
+    public UUID getListenerUuid() {
+        return providerUuid;
+    }
+
+    @Override
+    public void handleChange(ConceptChronology<? extends StampedVersion> cc) {
+        // not interested on conpcept changes
+    }
+
+    @Override
+    public void handleChange(SememeChronology<? extends SememeVersion> sc) {
+        if (sc.getSememeType() == SememeType.LOGIC_GRAPH) {
+            log.info("Notified of change: " + sc);
+            unhandledChanges.add(sc.getSememeSequence());
+            updateTaxonomy((SememeChronology<LogicGraphSememe>) sc);
+        }
+    }
+
+    @Override
+    public void handleCommit(CommitRecord commitRecord) {
+        unhandledChanges.stream().forEach((sememeSequence) -> {
+            if (commitRecord.getSememesInCommit().contains(sememeSequence)) {
+                log.info("Handling commit for: " + sememeSequence);
+                updateTaxonomy((SememeChronology<LogicGraphSememe>) Get.sememeService().getSememe(sememeSequence));
+                unhandledChanges.remove(sememeSequence);
+            }
+        });
+    }
+
+    @Override
+    public void updateTaxonomy(SememeChronology<LogicGraphSememe> logicGraphChronology) {
+        int conceptSequence = Get.identifierService().getConceptSequence(logicGraphChronology.getReferencedComponentNid());
+        Optional<TaxonomyRecordPrimitive> record = originDestinationTaxonomyRecordMap.get(conceptSequence);
+        TaxonomyFlags taxonomyFlags;
+        if (logicGraphChronology.getAssemblageSequence() == logicCoordinate.getInferredAssemblageSequence()) {
+            taxonomyFlags = TaxonomyFlags.INFERRED;
+        } else {
+            taxonomyFlags = TaxonomyFlags.STATED;
+        }
+
+        TaxonomyRecordPrimitive parentTaxonomyRecord;
+        if (record.isPresent()) {
+            parentTaxonomyRecord = record.get();
+        } else {
+            parentTaxonomyRecord = new TaxonomyRecordPrimitive();
+        }
+
+        logicGraphChronology.getVersionList().forEach((logicVersion) -> {
+            if (logicVersion.getCommitState() == CommitStates.COMMITTED) {
+                LogicalExpressionOchreImpl expression
+                        = new LogicalExpressionOchreImpl(logicVersion.getGraphData(),
+                                DataSource.INTERNAL,
+                                conceptSequence);
+
+                expression.getRoot()
+                        .getChildStream().forEach((necessaryOrSufficientSet) -> {
+                            necessaryOrSufficientSet.getChildStream().forEach((Node andOrOrNode)
+                                    -> andOrOrNode.getChildStream().forEach((Node aNode) -> {
+                                switch (aNode.getNodeSemantic()) {
+                                    case CONCEPT:
+                                        createIsaRel((ConceptNodeWithNids) aNode, parentTaxonomyRecord,
+                                                taxonomyFlags, logicVersion.getStampSequence(),
+                                                conceptSequence);
+                                        break;
+                                    case ROLE_SOME:
+                                        createSomeRole((RoleNodeSomeWithNids) aNode, parentTaxonomyRecord,
+                                                taxonomyFlags, logicVersion.getStampSequence(),
+                                                conceptSequence);
+                                        break;
+                                    default:
+                                        throw new UnsupportedOperationException("Can't handle: " + aNode.getNodeSemantic());
+                                }
+                            }));
+                        });
+            }
+
+        });
+        originDestinationTaxonomyRecordMap.put(conceptSequence, parentTaxonomyRecord);
+    }
+
+    private void createIsaRel(ConceptNodeWithNids conceptNode,
+            TaxonomyRecordPrimitive parentTaxonomyRecord,
+            TaxonomyFlags taxonomyFlags, int stampSequence, int originSequence) {
+        parentTaxonomyRecord.getTaxonomyRecordUnpacked()
+                .addStampRecord(conceptNode.getConceptNid(), isaSequence,
+                        stampSequence, taxonomyFlags.bits);
+        destinationOriginRecordSet.add(new DestinationOriginRecord(conceptNode.getConceptNid(), originSequence));
+
+    }
+
+    private void createSomeRole(RoleNodeSomeWithNids someNode,
+            TaxonomyRecordPrimitive parentTaxonomyRecord,
+            TaxonomyFlags taxonomyFlags, int stampSequence, int originSequence) {
+
+        if (someNode.getTypeConceptNid() == IsaacMetadataAuxiliaryBinding.ROLE_GROUP.getNid()) {
+            AndNode andNode = (AndNode) someNode.getOnlyChild();
+            andNode.getChildStream().forEach((roleGroupSomeNode) -> {
+                createSomeRole((RoleNodeSomeWithNids) roleGroupSomeNode,
+                        parentTaxonomyRecord, taxonomyFlags, stampSequence, originSequence);
+            });
+
+        } else {
+            ConceptNodeWithNids restrictionNode = (ConceptNodeWithNids) someNode.getOnlyChild();
+            parentTaxonomyRecord.getTaxonomyRecordUnpacked()
+                    .addStampRecord(restrictionNode.getConceptNid(), someNode.getTypeConceptNid(),
+                            stampSequence, taxonomyFlags.bits);
+            destinationOriginRecordSet.add(new DestinationOriginRecord(restrictionNode.getConceptNid(), originSequence));
+        }
+    }
+
     private class TaxonomySnapshotProvider implements TaxonomySnapshotService {
 
         TaxonomyCoordinate tc;
@@ -510,6 +644,6 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
         @Override
         public IntStream getAllRelationshipOriginSequences(int destination) {
             return CradleTaxonomyProvider.this.getAllRelationshipOriginSequences(destination, tc);
-         }
+        }
     }
 }

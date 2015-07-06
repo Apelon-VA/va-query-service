@@ -15,13 +15,9 @@
  */
 package gov.vha.isaac.cradle.tasks;
 
-import gov.vha.isaac.cradle.taxonomy.DestinationOriginRecord;
-import gov.vha.isaac.cradle.taxonomy.TaxonomyFlags;
-import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.coordinates.StampCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
-import gov.vha.isaac.ochre.api.DataSource;
 import gov.vha.isaac.ochre.api.DataTarget;
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.State;
@@ -42,11 +38,6 @@ import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePosition;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePositionCalculator;
 import gov.vha.isaac.ochre.model.coordinate.StampCoordinateImpl;
 import gov.vha.isaac.ochre.model.coordinate.StampPositionImpl;
-import gov.vha.isaac.ochre.model.logic.LogicalExpressionOchreImpl;
-import gov.vha.isaac.ochre.api.logic.Node;
-import gov.vha.isaac.ochre.model.logic.node.AndNode;
-import gov.vha.isaac.ochre.model.logic.node.internal.ConceptNodeWithNids;
-import gov.vha.isaac.ochre.model.logic.node.internal.RoleNodeSomeWithNids;
 import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
 import java.util.ArrayList;
 import java.util.List;
@@ -186,12 +177,12 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
 
             if (statedChronology != null) {
                 removeDuplicates(statedChronology);
-                extractTaxonomy(conceptChronology, statedChronology, TaxonomyFlags.STATED);
+                Get.taxonomyService().updateTaxonomy(statedChronology);
                 Get.sememeService().writeSememe(statedChronology);
             }
             if (inferredChronology != null) {
                 removeDuplicates(inferredChronology);
-                extractTaxonomy(conceptChronology, inferredChronology, TaxonomyFlags.INFERRED);
+                Get.taxonomyService().updateTaxonomy(inferredChronology);
                 Get.sememeService().writeSememe(inferredChronology);
             }
 
@@ -251,78 +242,6 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
             return true;
         });
         return assertionList.toArray(new Assertion[assertionList.size()]);
-    }
-
-    private void extractTaxonomy(ConceptChronology conceptChronology,
-            SememeChronology<LogicGraphSememe> logicGraphChronology,
-            TaxonomyFlags taxonomyFlags) {
-        Optional<TaxonomyRecordPrimitive> record = parentTask.originDestinationTaxonomyRecords.get(conceptChronology.getConceptSequence());
-
-        TaxonomyRecordPrimitive parentTaxonomyRecord;
-        if (record.isPresent()) {
-            parentTaxonomyRecord = record.get();
-        } else {
-            parentTaxonomyRecord = new TaxonomyRecordPrimitive();
-        }
-
-        logicGraphChronology.getVersionList().forEach((logicVersion) -> {
-             LogicalExpressionOchreImpl expression
-                    = new LogicalExpressionOchreImpl(logicVersion.getGraphData(),
-                            DataSource.INTERNAL,
-                            conceptChronology.getConceptSequence());
-
-            expression.getRoot()
-                    .getChildStream().forEach((necessaryOrSufficientSet) -> {
-                        necessaryOrSufficientSet.getChildStream().forEach((Node andOrOrNode)
-                                -> andOrOrNode.getChildStream().forEach((Node aNode) -> {
-                            switch (aNode.getNodeSemantic()) {
-                                case CONCEPT:
-                                    createIsaRel((ConceptNodeWithNids) aNode, parentTaxonomyRecord, 
-                                            taxonomyFlags, logicVersion.getStampSequence(),
-                                            conceptChronology.getConceptSequence());
-                                    break;
-                                case ROLE_SOME:
-                                    createSomeRole((RoleNodeSomeWithNids) aNode, parentTaxonomyRecord, 
-                                            taxonomyFlags, logicVersion.getStampSequence(),
-                                            conceptChronology.getConceptSequence());
-                                    break;
-                                default:
-                                    throw new UnsupportedOperationException("Can't handle: " + aNode.getNodeSemantic());
-                            }
-                        }));
-                    });
-        });
-        parentTask.originDestinationTaxonomyRecords.put(conceptChronology.getConceptSequence(), parentTaxonomyRecord);
-    }
-
-    private void createIsaRel(ConceptNodeWithNids conceptNode, 
-            TaxonomyRecordPrimitive parentTaxonomyRecord, 
-            TaxonomyFlags taxonomyFlags, int stampSequence, int originSequence) {
-        parentTaxonomyRecord.getTaxonomyRecordUnpacked()
-                .addStampRecord(conceptNode.getConceptNid(), parentTask.isaSequence,
-                        stampSequence, taxonomyFlags.bits);
-        parentTask.destinationOriginRecordSet.add(new DestinationOriginRecord(conceptNode.getConceptNid(), originSequence));
-        
-    }
-
-    private void createSomeRole(RoleNodeSomeWithNids someNode, 
-            TaxonomyRecordPrimitive parentTaxonomyRecord, 
-            TaxonomyFlags taxonomyFlags, int stampSequence, int originSequence) {
-        
-            if (someNode.getTypeConceptNid() == IsaacMetadataAuxiliaryBinding.ROLE_GROUP.getNid()) {
-                AndNode andNode = (AndNode) someNode.getOnlyChild();
-                andNode.getChildStream().forEach((roleGroupSomeNode) -> {
-                    createSomeRole((RoleNodeSomeWithNids) roleGroupSomeNode, 
-                            parentTaxonomyRecord, taxonomyFlags, stampSequence, originSequence);
-                });
-                
-            } else {
-                ConceptNodeWithNids restrictionNode = (ConceptNodeWithNids) someNode.getOnlyChild();
-                parentTaxonomyRecord.getTaxonomyRecordUnpacked()
-                            .addStampRecord(restrictionNode.getConceptNid(), someNode.getTypeConceptNid(), 
-                                    stampSequence, taxonomyFlags.bits);
-                parentTask.destinationOriginRecordSet.add(new DestinationOriginRecord(restrictionNode.getConceptNid(), originSequence));
-            }
     }
 
     private void removeDuplicates(SememeChronology<LogicGraphSememe> logicChronology) {
