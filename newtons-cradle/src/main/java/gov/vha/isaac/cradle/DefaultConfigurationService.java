@@ -109,7 +109,7 @@ public class DefaultConfigurationService implements ConfigurationService
 	public void setDataStoreFolderPath(Path dataStoreFolderPath) throws IllegalStateException, IllegalArgumentException
 	{
 		log.info("setDataStoreFolderPath called with " + dataStoreFolderPath);
-		if (LookupService.hasIsaacBeenStartedAtLeastOnce())
+		if (LookupService.isIsaacStarted())
 		{
 			throw new IllegalStateException("Can only set the dbFolderPath prior to starting Isaac. Runlevel: " + LookupService.getCurrentRunLevel());
 		}
