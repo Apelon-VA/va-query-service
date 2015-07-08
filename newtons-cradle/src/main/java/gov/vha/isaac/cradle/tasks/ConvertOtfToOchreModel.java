@@ -104,7 +104,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                 if (inferredSememeSequences.size() > 1) {
                     throw new IllegalStateException("Error importing: " + conceptChronology.toUserString()
                        + "<" + conceptChronology.getConceptSequence() + "> Found more than one inferred definition" +
-                            inferredSememeSequences);
+                            inferredSememeSequences + "\n eConcept: " + eConcept);
                 }
                 inferredChronology = (SememeChronology<LogicGraphSememe>) Get.sememeService().getSememe(inferredSememeSequences.stream().findFirst().getAsInt());
             }
@@ -112,7 +112,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                 if (statedSememeSequences.size() > 1) {
                     throw new IllegalStateException("Error importing: " + conceptChronology.toUserString()
                        + "<" + conceptChronology.getConceptSequence() + "> Found more than one stated definition" +
-                            statedSememeSequences);
+                            statedSememeSequences + "\n eConcept: " + eConcept);
                 }
                 statedChronology = (SememeChronology<LogicGraphSememe>) Get.sememeService().getSememe(statedSememeSequences.stream().findFirst().getAsInt());
             }
