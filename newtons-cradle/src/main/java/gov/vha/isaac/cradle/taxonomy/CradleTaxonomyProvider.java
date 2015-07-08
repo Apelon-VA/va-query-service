@@ -695,7 +695,6 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     @Override
     public void handleChange(SememeChronology<? extends SememeVersion> sc) {
         if (sc.getSememeType() == SememeType.LOGIC_GRAPH) {
-            log.info("Notified of change: " + sc);
             sememeSequencesForUnhandledChanges.add(sc.getSememeSequence());
         }
     }

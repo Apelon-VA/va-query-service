@@ -52,7 +52,7 @@ public class WriteSememeChronicle extends Task<Void>  implements Callable<Void>{
         try {
             Get.sememeService().writeSememe(sc);
             updateProgress(1, 2); 
-            updateMessage("notifying: " + sc.toUserString());
+            updateMessage("notifying: " + sc.getAssemblageSequence());
              
              changeListeners.forEach((listenerRef) -> {
                 ChronologyChangeListener listener = listenerRef.get();
