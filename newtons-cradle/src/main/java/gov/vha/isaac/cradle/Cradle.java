@@ -186,7 +186,7 @@ public class Cradle
             sb.append("comp: '");
 
             if (component.isPresent()) {
-                sb.append(component.get().toUserString());
+                sb.append(component.get().getClass().getSimpleName());
             } else {
                 sb.append("null");
             }
