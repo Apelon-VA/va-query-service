@@ -56,10 +56,10 @@ import org.apache.logging.log4j.Logger;
 public class ConceptProviderOchreModel implements ConceptService, DelegateService {
 
     private static final Logger log = LogManager.getLogger();
-    private static final String CRADLE_PROPERTIES_FILE_NAME = "cradle.properties";
-    private static final String CRADLE_DATA_VERSION = "1.5";
-    private static final String CRADLE_DATA_VERSION_PROPERTY = "cradle.data.version";
-    private static final String CRADLE_CONCEPT_MODEL_PROPERTY = "cradle.concept.model";
+    public static final String CRADLE_PROPERTIES_FILE_NAME = "cradle.properties";
+    public static final String CRADLE_DATA_VERSION = "1.5";
+    public static final String CRADLE_DATA_VERSION_PROPERTY = "cradle.data.version";
+    public static final String CRADLE_CONCEPT_MODEL_PROPERTY = "cradle.concept.model";
 
 
 
