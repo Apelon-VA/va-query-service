@@ -24,6 +24,7 @@ import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampPosition;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.api.component.sememe.SememeConstraints;
 import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeServiceTyped;
 import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
@@ -42,6 +43,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.NavigableSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -248,15 +250,34 @@ public class SememeProvider implements SememeService {
                     = referencedNidAssemblageSequenceSememeSequenceMap.subSet(rcRangeStart, true,
                             rcRangeEnd, true
                     );
-            referencedComponentRefexKeys.stream().forEach((key) -> {resultSet.add(key.sememeSequence);});
-            
+            referencedComponentRefexKeys.stream().forEach((key) -> {
+                resultSet.add(key.sememeSequence);
+            });
+
         });
 
         return resultSet;
     }
 
     @Override
-    public void writeSememe(SememeChronology sememeChronicle) {
+    public void writeSememe(SememeChronology sememeChronicle, SememeConstraints... constraints) {
+        Arrays.stream(constraints).forEach((constraint) -> {
+            switch (constraint) {
+                case ONE_SEMEME_PER_COMPONENT:
+                    ReferencedNidAssemblageSequenceSememeSequenceKey rcRangeStart = new ReferencedNidAssemblageSequenceSememeSequenceKey(sememeChronicle.getReferencedComponentNid(), sememeChronicle.getAssemblageSequence(), Integer.MIN_VALUE); // yes
+                    ReferencedNidAssemblageSequenceSememeSequenceKey rcRangeEnd = new ReferencedNidAssemblageSequenceSememeSequenceKey(sememeChronicle.getReferencedComponentNid(), sememeChronicle.getAssemblageSequence(), Integer.MAX_VALUE); // no
+                    NavigableSet<ReferencedNidAssemblageSequenceSememeSequenceKey> subset = referencedNidAssemblageSequenceSememeSequenceMap.subSet(rcRangeStart, rcRangeEnd);
+                    if (!subset.isEmpty()) {
+                        if (!subset.stream().allMatch((value) -> value.sememeSequence == sememeChronicle.getSememeSequence())) {
+                            throw new IllegalStateException("Attempt to add a second sememe for component, where assemblage has a ONE_SEMEME_PER_COMPONENT constraint."
+                                    + "\n New sememe: " + sememeChronicle + "\n Existing in index: " + subset);
+                        }
+                    }
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Can't handle " + constraint);
+            }
+        });
         assemblageSequenceSememeSequenceMap.add(
                 new AssemblageSememeKey(sememeChronicle.getAssemblageSequence(),
                         sememeChronicle.getSememeSequence()));

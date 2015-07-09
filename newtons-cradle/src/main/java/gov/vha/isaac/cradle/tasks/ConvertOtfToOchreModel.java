@@ -25,6 +25,7 @@ import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeBuilder;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.api.component.sememe.SememeConstraints;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.MutableLogicGraphSememe;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
@@ -51,6 +52,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.mahout.math.map.OpenIntObjectHashMap;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
+import org.ihtsdo.otf.tcc.dto.TtkConceptLock;
 import org.ihtsdo.otf.tcc.dto.component.attribute.TtkConceptAttributesVersion;
 import org.ihtsdo.otf.tcc.dto.component.relationship.TtkRelationshipVersion;
 
@@ -88,6 +90,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
 //            log.info("Found watch");
 //        }
 
+        TtkConceptLock.getLock(eConcept.getUuidList()).lock();
         try {
             if (this.newPathUuid != null) {
                 eConcept.processComponentRevisions(r -> r.setPathUuid(newPathUuid));
@@ -106,7 +109,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                        + "<" + conceptChronology.getConceptSequence() + "> Found more than one inferred definition" +
                             inferredSememeSequences + "\n eConcept: " + eConcept);
                 }
-                inferredChronology = (SememeChronology<LogicGraphSememe>) Get.sememeService().getSememe(inferredSememeSequences.stream().findFirst().getAsInt());
+                inferredChronology = (SememeChronology<LogicGraphSememe>) Get.sememeService().getSememe(inferredSememeSequences.findFirst().getAsInt());
             }
             if (!statedSememeSequences.isEmpty()) {
                 if (statedSememeSequences.size() > 1) {
@@ -114,7 +117,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                        + "<" + conceptChronology.getConceptSequence() + "> Found more than one stated definition" +
                             statedSememeSequences + "\n eConcept: " + eConcept);
                 }
-                statedChronology = (SememeChronology<LogicGraphSememe>) Get.sememeService().getSememe(statedSememeSequences.stream().findFirst().getAsInt());
+                statedChronology = (SememeChronology<LogicGraphSememe>) Get.sememeService().getSememe(statedSememeSequences.findFirst().getAsInt());
             }
             TreeSet<StampPositionImpl> stampPositionSet = new TreeSet<>();
             eConcept.getStampSequenceStream().distinct().forEach((stampSequence) -> {
@@ -199,18 +202,20 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
             if (statedChronology != null) {
                 removeDuplicates(statedChronology);
                 Get.taxonomyService().updateTaxonomy(statedChronology);
-                Get.sememeService().writeSememe(statedChronology);
+                Get.sememeService().writeSememe(statedChronology, SememeConstraints.ONE_SEMEME_PER_COMPONENT);
             }
             if (inferredChronology != null) {
                 removeDuplicates(inferredChronology);
                 Get.taxonomyService().updateTaxonomy(inferredChronology);
-                Get.sememeService().writeSememe(inferredChronology);
+                Get.sememeService().writeSememe(inferredChronology, SememeConstraints.ONE_SEMEME_PER_COMPONENT);
             }
 
             return null;
         } catch (Exception e) {
             log.error("Failure converting " + eConcept.toString(), e);
             throw e;
+        } finally {
+            TtkConceptLock.getLock(eConcept.getUuidList()).unlock();
         }
     }
 

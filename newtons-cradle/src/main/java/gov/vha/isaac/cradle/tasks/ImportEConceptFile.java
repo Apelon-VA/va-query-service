@@ -1,9 +1,6 @@
 package gov.vha.isaac.cradle.tasks;
 
 import gov.vha.isaac.cradle.CradleExtensions;
-import gov.vha.isaac.cradle.taxonomy.DestinationOriginRecord;
-import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
-import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.ConceptModel;
 import gov.vha.isaac.ochre.api.ConceptProxy;
@@ -62,6 +59,7 @@ public class ImportEConceptFile extends TimedTask<Integer> {
     // above fields are to cache expensive operations once for use by delegate tasks. 
     
     Semaphore importPermits = new Semaphore(100);
+    
 
     Path[] paths;
     CradleExtensions termService;

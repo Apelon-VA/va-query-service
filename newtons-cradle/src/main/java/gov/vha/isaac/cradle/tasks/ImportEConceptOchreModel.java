@@ -42,6 +42,7 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
+import org.ihtsdo.otf.tcc.dto.TtkConceptLock;
 import org.ihtsdo.otf.tcc.dto.component.TtkRevision;
 import org.ihtsdo.otf.tcc.dto.component.attribute.TtkConceptAttributesChronicle;
 import org.ihtsdo.otf.tcc.dto.component.attribute.TtkConceptAttributesRevision;
@@ -90,6 +91,7 @@ public class ImportEConceptOchreModel implements Callable<Void> {
     @Override
     public Void call() throws Exception {
 
+        TtkConceptLock.getLock(eConcept.getUuidList()).lock();
         try {
             if (this.newPathUuid != null) {
                 eConcept.processComponentRevisions(r -> r.setPathUuid(newPathUuid));
@@ -163,6 +165,8 @@ public class ImportEConceptOchreModel implements Callable<Void> {
         } catch (Exception e) {
             System.err.println("Failure importing " + eConcept.toString());
             throw e;
+        } finally {
+            TtkConceptLock.getLock(eConcept.getUuidList()).unlock();
         }
     }
     
