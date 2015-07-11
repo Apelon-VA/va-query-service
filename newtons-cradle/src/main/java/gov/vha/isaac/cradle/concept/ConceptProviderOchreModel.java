@@ -15,7 +15,6 @@
  */
 package gov.vha.isaac.cradle.concept;
 
-
 import gov.vha.isaac.cradle.builders.ConceptActiveService;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import gov.vha.isaac.ochre.api.ConceptModel;
@@ -24,11 +23,14 @@ import gov.vha.isaac.ochre.api.DelegateService;
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SystemStatusService;
+import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshot;
 import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshotService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
+import gov.vha.isaac.ochre.api.coordinate.LanguageCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.model.concept.ConceptChronologyImpl;
@@ -44,6 +46,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,7 +55,6 @@ import org.apache.logging.log4j.Logger;
  *
  * @author kec
  */
-
 public class ConceptProviderOchreModel implements ConceptService, DelegateService {
 
     private static final Logger log = LogManager.getLogger();
@@ -60,8 +62,6 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
     public static final String CRADLE_DATA_VERSION = "1.5";
     public static final String CRADLE_DATA_VERSION_PROPERTY = "cradle.data.version";
     public static final String CRADLE_CONCEPT_MODEL_PROPERTY = "cradle.concept.model";
-
-
 
     ConceptActiveService conceptActiveService;
 
@@ -85,8 +85,8 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
                 ConceptModel model = ConceptModel.valueOf(cradleProps.getProperty(CRADLE_CONCEPT_MODEL_PROPERTY));
                 ConceptModel expectedModel = LookupService.getService(ConfigurationService.class).getConceptModel();
                 if (expectedModel != model) {
-                    throw new IllegalStateException("Incompatible concept model in existing database. Expected: " + 
-                            expectedModel + " found: " + model +".\n" + cradleProps);
+                    throw new IllegalStateException("Incompatible concept model in existing database. Expected: "
+                            + expectedModel + " found: " + model + ".\n" + cradleProps);
                 }
             } else {
                 loadRequired.set(true);
@@ -106,6 +106,7 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
             throw e;
         }
     }
+
     @Override
     public void startDelegateService() {
         log.info("Starting OCHRE ConceptProvider post-construct");
@@ -133,8 +134,8 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
     }
 
     @Override
-    public ConceptSnapshotService getSnapshot(StampCoordinate stampCoordinate) {
-        return new ConceptSnapshotProvider(stampCoordinate);
+    public ConceptSnapshotService getSnapshot(StampCoordinate stampCoordinate, LanguageCoordinate languageCoordinate) {
+        return new ConceptSnapshotProvider(stampCoordinate, languageCoordinate);
     }
 
     @Override
@@ -178,9 +179,11 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
     public class ConceptSnapshotProvider implements ConceptSnapshotService {
 
         StampCoordinate stampCoordinate;
+        LanguageCoordinate languageCoordinate;
 
-        public ConceptSnapshotProvider(StampCoordinate stampCoordinate) {
+        public ConceptSnapshotProvider(StampCoordinate stampCoordinate, LanguageCoordinate languageCoordinate) {
             this.stampCoordinate = stampCoordinate;
+            this.languageCoordinate = languageCoordinate;
         }
 
         @Override
@@ -195,13 +198,44 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
 
         @Override
         public ConceptSnapshot getConceptSnapshot(int conceptSequence) {
-            return new ConceptSnapshotImpl(getConcept(conceptSequence), stampCoordinate);
+            return new ConceptSnapshotImpl(getConcept(conceptSequence), stampCoordinate, languageCoordinate);
         }
+
+        @Override
+        public LanguageCoordinate getLanguageCoordinate() {
+            return languageCoordinate;
+        }
+
+        @Override
+        public Optional<LatestVersion<DescriptionSememe>> getFullySpecifiedDescription(int conceptId) {
+            return languageCoordinate.getFullySpecifiedDescription(Get.sememeService().getDescriptionsForComponent(conceptId).collect(Collectors.toList()), stampCoordinate);
+        }
+
+        @Override
+        public Optional<LatestVersion<DescriptionSememe>> getPreferredDescription(int conceptId) {
+            return languageCoordinate.getPreferredDescription(Get.sememeService().getDescriptionsForComponent(conceptId).collect(Collectors.toList()), stampCoordinate);
+        }
+
+        @Override
+        public DescriptionSememe getDescription(int conceptId) {
+            Optional<LatestVersion<DescriptionSememe>> fsd = getFullySpecifiedDescription(conceptId);
+            if (fsd.isPresent()) {
+                return fsd.get().value();
+            }
+            Optional<LatestVersion<DescriptionSememe>> pd = getPreferredDescription(conceptId);
+            if (pd.isPresent()) {
+                return pd.get().value();
+            }
+            return Get.sememeService().getDescriptionsForComponent(conceptId).findAny().get().getVersionList().get(0);
+        }
+
     }
 
     @Override
     public Stream<ConceptChronology<? extends ConceptVersion>> getConceptChronologyStream() {
-        return conceptMap.getStream().map((cc) -> {return (ConceptChronology<? extends ConceptVersion>) cc;});
+        return conceptMap.getStream().map((cc) -> {
+            return (ConceptChronology<? extends ConceptVersion>) cc;
+        });
     }
 
     @Override
@@ -233,9 +267,10 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
 
     @Override
     public Stream<ConceptChronology<? extends ConceptVersion>> getParallelConceptChronologyStream() {
-        return conceptMap.getParallelStream().map((cc) -> {return cc;});
+        return conceptMap.getParallelStream().map((cc) -> {
+            return cc;
+        });
     }
-
 
     public Optional<ConceptChronologyImpl> getConceptData(int i) throws IOException {
         if (i < 0) {

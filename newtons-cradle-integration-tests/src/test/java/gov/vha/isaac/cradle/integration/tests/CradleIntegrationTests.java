@@ -17,12 +17,15 @@ import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
 import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
 import gov.vha.isaac.ochre.api.tree.Tree;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeWithBitSets;
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,6 +33,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
@@ -335,4 +340,31 @@ public class CradleIntegrationTests {
         return (HashTreeWithBitSets) taxonomyTree;
     }
 
+    private void cycleTest() {
+        
+    }
+    
+public static ConceptSequenceSet getParentsAsConceptNids(ConceptChronology<? extends ConceptVersion> child, Tree taxonomyTree, TaxonomyCoordinate tc) {
+        int[] parentSequences = taxonomyTree.getParentSequences(child.getConceptSequence());
+        
+        ConceptSequenceSet parentSequenceSet = new ConceptSequenceSet();
+        
+        for (int parentSequence : parentSequences) {
+            if (Get.taxonomyService().isChildOf(child.getConceptSequence(), parentSequence, tc)) {
+                if (!Get.taxonomyService().isChildOf(parentSequence, child.getConceptSequence(), tc)) {
+                    parentSequenceSet.add(parentSequence);
+                } else {
+                    log.debug("{} is both child and parent of concept (retrieved by taxonomyTree.getParentSequences()) {}", 
+                            Get.conceptSnapshot().getDescription(child.getConceptSequence()), 
+                            Get.conceptSnapshot().getDescription(parentSequence));
+                }
+            } else {
+                log.debug("{} is not a child of concept (retrieved by taxonomyTree.getParentSequences()) {}", 
+                        Get.conceptSnapshot().getDescription(child.getConceptSequence()), 
+                        Get.conceptSnapshot().getDescription(parentSequence));
+           }
+        }
+        
+        return parentSequenceSet;
+    }    
 }

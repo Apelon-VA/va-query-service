@@ -19,16 +19,20 @@ import gov.vha.isaac.cradle.builders.ConceptActiveService;
 import gov.vha.isaac.cradle.collections.ConcurrentSequenceSerializedObjectMap;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEagerSerializer;
+import gov.vha.isaac.metadata.coordinates.LanguageCoordinates;
 import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.DelegateService;
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SystemStatusService;
+import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshot;
 import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshotService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
+import gov.vha.isaac.ochre.api.coordinate.LanguageCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.model.concept.ConceptChronologyImpl;
@@ -101,16 +105,18 @@ public class ConceptProviderOtfModel implements ConceptService, DelegateService 
     }
 
     @Override
-    public ConceptSnapshotService getSnapshot(StampCoordinate stampCoordinate) {
-        return new ConceptSnapshotProvider(stampCoordinate);
+    public ConceptSnapshotService getSnapshot(StampCoordinate stampCoordinate, LanguageCoordinate languageCoordinate) {
+       return new ConceptSnapshotProvider(stampCoordinate, languageCoordinate);
     }
 
     public class ConceptSnapshotProvider implements ConceptSnapshotService {
 
         StampCoordinate stampCoordinate;
-
-        public ConceptSnapshotProvider(StampCoordinate stampCoordinate) {
+        LanguageCoordinate languageCoordinate;
+        
+        public ConceptSnapshotProvider(StampCoordinate stampCoordinate, LanguageCoordinate languageCoordinate) {
             this.stampCoordinate = stampCoordinate;
+            this.languageCoordinate = languageCoordinate;
         }
 
         @Override
@@ -125,8 +131,30 @@ public class ConceptProviderOtfModel implements ConceptService, DelegateService 
 
         @Override
         public ConceptSnapshot getConceptSnapshot(int conceptSequence) {
-            return new ConceptSnapshotImpl((ConceptChronologyImpl) getConcept(conceptSequence), stampCoordinate);
+            return new ConceptSnapshotImpl((ConceptChronologyImpl) getConcept(conceptSequence), stampCoordinate, languageCoordinate);
         }
+
+        @Override
+        public LanguageCoordinate getLanguageCoordinate() {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public Optional<LatestVersion<DescriptionSememe>> getFullySpecifiedDescription(int conceptId) {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public Optional<LatestVersion<DescriptionSememe>> getPreferredDescription(int conceptId) {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+        @Override
+        public DescriptionSememe getDescription(int conceptId) {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+        
+        
     }
 
     public Stream<ConceptChronicleDataEager> getConceptDataEagerStream() {

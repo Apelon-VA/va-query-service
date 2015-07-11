@@ -22,6 +22,7 @@ import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshotService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.api.coordinate.LanguageCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import java.io.IOException;
@@ -76,8 +77,8 @@ public class ConceptProviderManager implements ConceptService {
     }
 
     @Override
-    public ConceptSnapshotService getSnapshot(StampCoordinate stampCoordinate) {
-        return delegate.getSnapshot(stampCoordinate);
+    public ConceptSnapshotService getSnapshot(StampCoordinate stampCoordinate, LanguageCoordinate languageCoordinate) {
+        return delegate.getSnapshot(stampCoordinate, languageCoordinate);
     }
 
     @Override
