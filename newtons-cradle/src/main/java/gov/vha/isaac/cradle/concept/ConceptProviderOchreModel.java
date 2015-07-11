@@ -208,16 +208,19 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
 
         @Override
         public Optional<LatestVersion<DescriptionSememe>> getFullySpecifiedDescription(int conceptId) {
+            conceptId = Get.identifierService().getConceptNid(conceptId);
             return languageCoordinate.getFullySpecifiedDescription(Get.sememeService().getDescriptionsForComponent(conceptId).collect(Collectors.toList()), stampCoordinate);
         }
 
         @Override
         public Optional<LatestVersion<DescriptionSememe>> getPreferredDescription(int conceptId) {
+            conceptId = Get.identifierService().getConceptNid(conceptId);
             return languageCoordinate.getPreferredDescription(Get.sememeService().getDescriptionsForComponent(conceptId).collect(Collectors.toList()), stampCoordinate);
         }
 
         @Override
         public DescriptionSememe getDescription(int conceptId) {
+            conceptId = Get.identifierService().getConceptNid(conceptId);
             Optional<LatestVersion<DescriptionSememe>> fsd = getFullySpecifiedDescription(conceptId);
             if (fsd.isPresent()) {
                 return fsd.get().value();

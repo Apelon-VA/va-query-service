@@ -8,9 +8,13 @@ package gov.vha.isaac.cradle.integration.tests;
 import static gov.vha.isaac.ochre.api.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
 import gov.vha.isaac.cradle.taxonomy.walk.TaxonomyWalkAccumulator;
 import gov.vha.isaac.cradle.taxonomy.walk.TaxonomyWalkCollector;
+import gov.vha.isaac.metadata.coordinates.LanguageCoordinates;
+import gov.vha.isaac.metadata.coordinates.StampCoordinates;
+import gov.vha.isaac.metadata.coordinates.TaxonomyCoordinates;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.ConceptModel;
+import gov.vha.isaac.ochre.api.ConceptProxy;
 import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
@@ -35,6 +39,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
@@ -184,6 +189,8 @@ public class CradleIntegrationTests {
         }
         log.info(sb.toString());
         //
+        
+        cycleTest();
     }
 
     private void findRoots() {
@@ -231,7 +238,7 @@ public class CradleIntegrationTests {
                     printTaxonomyLevel(parentSequence, depth + 1, "...");
                 }
             });
-       }
+        }
     }
 
     private void printTaxonomyLevel(int child, int depth, String suffix) {
@@ -341,30 +348,43 @@ public class CradleIntegrationTests {
     }
 
     private void cycleTest() {
+        TaxonomyCoordinate taxonomyCoordinate = TaxonomyCoordinates.getInferredTaxonomyCoordinate(StampCoordinates.getDevelopmentLatestActiveOnly(), 
+                LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate());
+        Tree tree = Get.taxonomyService().getTaxonomyTree(taxonomyCoordinate);
         
+        ConceptProxy calcinosisProxy = new ConceptProxy("Calcinosis (disorder)", UUID.fromString("779ece66-7e95-323e-a261-214caf48c408"));
+        ConceptSequenceSet calcinosisParents = getParentsSequences(calcinosisProxy.getSequence(), tree, taxonomyCoordinate);
+        log.info(calcinosisProxy.getDescription() + " parents: " + calcinosisParents);
+        ConceptProxy psychoactiveAbuseProxy = new ConceptProxy("Psychoactive substance abuse (disorder)", UUID.fromString("778a75c9-8264-36aa-9ad6-b9c6e5ee9187"));
+        
+        
+        
+        ConceptSequenceSet psychoactiveAbuseParents = getParentsSequences(psychoactiveAbuseProxy.getSequence(), tree, taxonomyCoordinate);
+        log.info(psychoactiveAbuseProxy.getDescription() + " parents: " + psychoactiveAbuseParents);
     }
-    
-public static ConceptSequenceSet getParentsAsConceptNids(ConceptChronology<? extends ConceptVersion> child, Tree taxonomyTree, TaxonomyCoordinate tc) {
-        int[] parentSequences = taxonomyTree.getParentSequences(child.getConceptSequence());
-        
+
+    public static ConceptSequenceSet getParentsSequences(int childSequence, 
+            Tree taxonomyTree, TaxonomyCoordinate tc) {
+        int[] parentSequences = taxonomyTree.getParentSequences(childSequence);
+
         ConceptSequenceSet parentSequenceSet = new ConceptSequenceSet();
-        
+
         for (int parentSequence : parentSequences) {
-            if (Get.taxonomyService().isChildOf(child.getConceptSequence(), parentSequence, tc)) {
-                if (!Get.taxonomyService().isChildOf(parentSequence, child.getConceptSequence(), tc)) {
+            if (Get.taxonomyService().isChildOf(childSequence, parentSequence, tc)) {
+                if (!Get.taxonomyService().isChildOf(parentSequence, childSequence, tc)) {
                     parentSequenceSet.add(parentSequence);
                 } else {
-                    log.debug("{} is both child and parent of concept (retrieved by taxonomyTree.getParentSequences()) {}", 
-                            Get.conceptSnapshot().getDescription(child.getConceptSequence()), 
+                    log.debug("{} is both child and parent of concept (retrieved by taxonomyTree.getParentSequences()) {}",
+                            Get.conceptSnapshot().getDescription(childSequence),
                             Get.conceptSnapshot().getDescription(parentSequence));
                 }
             } else {
-                log.debug("{} is not a child of concept (retrieved by taxonomyTree.getParentSequences()) {}", 
-                        Get.conceptSnapshot().getDescription(child.getConceptSequence()), 
+                log.debug("{} is not a child of concept (retrieved by taxonomyTree.getParentSequences()) {}",
+                        Get.conceptSnapshot().getDescription(childSequence),
                         Get.conceptSnapshot().getDescription(parentSequence));
-           }
+            }
         }
-        
+
         return parentSequenceSet;
-    }    
+    }
 }
