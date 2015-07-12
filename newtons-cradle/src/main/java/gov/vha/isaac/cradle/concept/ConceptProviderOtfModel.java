@@ -19,7 +19,6 @@ import gov.vha.isaac.cradle.builders.ConceptActiveService;
 import gov.vha.isaac.cradle.collections.ConcurrentSequenceSerializedObjectMap;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEagerSerializer;
-import gov.vha.isaac.metadata.coordinates.LanguageCoordinates;
 import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.DelegateService;
 import gov.vha.isaac.ochre.api.Get;
@@ -31,6 +30,7 @@ import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshot;
 import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshotService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
 import gov.vha.isaac.ochre.api.coordinate.LanguageCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -153,8 +154,28 @@ public class ConceptProviderOtfModel implements ConceptService, DelegateService 
         public DescriptionSememe getDescription(int conceptId) {
             throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         }
-        
-        
+
+    
+        @Override
+        public Optional<DescriptionSememe> getDescriptionOptional(int conceptId) {
+            conceptId = Get.identifierService().getConceptNid(conceptId);
+            Optional<LatestVersion<DescriptionSememe>> fsd = getFullySpecifiedDescription(conceptId);
+            if (fsd.isPresent()) {
+                return Optional.of(fsd.get().value());
+            }
+            Optional<LatestVersion<DescriptionSememe>> pd = getPreferredDescription(conceptId);
+            if (pd.isPresent()) {
+                return Optional.of(pd.get().value());
+            }
+            Optional<SememeChronology<DescriptionSememe>> optionalDescriptions = Get.sememeService().getDescriptionsForComponent(conceptId).findAny();
+            if (optionalDescriptions.isPresent()) {
+                List<? extends DescriptionSememe> versions = optionalDescriptions.get().getVersionList();
+                if (!versions.isEmpty()) {
+                    return Optional.of(versions.get(0));
+                } 
+            }
+            return Optional.empty();
+        }        
     }
 
     public Stream<ConceptChronicleDataEager> getConceptDataEagerStream() {

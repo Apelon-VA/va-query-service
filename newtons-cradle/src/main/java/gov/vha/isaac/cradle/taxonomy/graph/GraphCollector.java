@@ -56,22 +56,21 @@ public class GraphCollector implements
         this.taxonomyMap = taxonomyMap;
         this.taxonomyCoordinate = viewCoordinate;
         taxonomyFlags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(viewCoordinate);
-        //addToWatchList("728828c6-b802-3f4e-a45b-3dcf238e48fd");
-        //addToWatchList("6be31736-e4b2-392f-840a-482393b43d55");
+        addToWatchList("779ece66-7e95-323e-a261-214caf48c408");
+        addToWatchList("778a75c9-8264-36aa-9ad6-b9c6e5ee9187");
     }
 
     public final void addToWatchList(String uuid) throws RuntimeException {
-        int nid = getIsaacDb().getNidForUuids(UUID.fromString(uuid));
-        watchList.add(Get.identifierService().getConceptSequence(nid));
+        watchList.add(Get.identifierService().getConceptSequenceForUuids(UUID.fromString(uuid)));
     }
 
     @Override
     public void accept(HashTreeBuilder graphBuilder, int originSequence) {
         originSequenceBeingProcessed = originSequence;
         // For debugging. 
-//        if (watchList.contains(originSequence)) {
-//            System.out.println("Found watch: " + this.toString());
-//        }
+        if (watchList.contains(originSequence)) {
+            System.out.println("Found watch: " + this.toString());
+        }
         Optional<TaxonomyRecordPrimitive> isaacPrimitiveTaxonomyRecord = taxonomyMap.get(originSequence);
         
         if (isaacPrimitiveTaxonomyRecord.isPresent()) {

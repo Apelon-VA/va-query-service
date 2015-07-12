@@ -243,9 +243,6 @@ public class CradleIntegrationTests {
             sb.append("  ");
         }
         sb.append(Get.conceptDescriptionText(child));
-        sb.append("<");
-        sb.append(child);
-        sb.append(">");
         sb.append(suffix);
         System.out.println(sb.toString());
     }

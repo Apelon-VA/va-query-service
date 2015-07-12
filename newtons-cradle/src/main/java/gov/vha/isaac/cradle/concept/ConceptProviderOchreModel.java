@@ -29,6 +29,7 @@ import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshot;
 import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshotService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
 import gov.vha.isaac.ochre.api.coordinate.LanguageCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
@@ -42,6 +43,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
@@ -229,11 +231,42 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
             if (pd.isPresent()) {
                 return pd.get().value();
             }
+            Optional<SememeChronology<DescriptionSememe>> optionalDescriptions = Get.sememeService().getDescriptionsForComponent(conceptId).findAny();
+            if (optionalDescriptions.isPresent()) {
+                List<? extends DescriptionSememe> versions = optionalDescriptions.get().getVersionList();
+                if (versions.isEmpty()) {
+                    
+                } 
+                return versions.get(0);
+            }
             return Get.sememeService().getDescriptionsForComponent(conceptId).findAny().get().getVersionList().get(0);
+        }
+
+    
+        @Override
+        public Optional<DescriptionSememe> getDescriptionOptional(int conceptId) {
+            conceptId = Get.identifierService().getConceptNid(conceptId);
+            Optional<LatestVersion<DescriptionSememe>> fsd = getFullySpecifiedDescription(conceptId);
+            if (fsd.isPresent()) {
+                return Optional.of(fsd.get().value());
+            }
+            Optional<LatestVersion<DescriptionSememe>> pd = getPreferredDescription(conceptId);
+            if (pd.isPresent()) {
+                return Optional.of(pd.get().value());
+            }
+            Optional<SememeChronology<DescriptionSememe>> optionalDescriptions = Get.sememeService().getDescriptionsForComponent(conceptId).findAny();
+            if (optionalDescriptions.isPresent()) {
+                List<? extends DescriptionSememe> versions = optionalDescriptions.get().getVersionList();
+                if (!versions.isEmpty()) {
+                    return Optional.of(versions.get(0));
+                } 
+            }
+            return Optional.empty();
         }
 
     }
 
+    
     @Override
     public Stream<ConceptChronology<? extends ConceptVersion>> getConceptChronologyStream() {
         return conceptMap.getStream().map((cc) -> {
