@@ -134,7 +134,20 @@ public class ImportEConceptOchreModel implements Callable<Void> {
             for (TtkDescriptionChronicle desc : eConcept.getDescriptions()) {
                 int caseSignificanceConceptSequence = LanguageCoordinates.caseSignificanceToConceptSequence(desc.initialCaseSignificant);
                 int languageConceptSequence = LanguageCoordinates.iso639toConceptSequence(desc.getLang());
+                assert languageConceptSequence == IsaacMetadataAuxiliaryBinding.ENGLISH.getSequence(): "Converting:  " + desc.getLang() + " " + desc;
                 int descriptionTypeConceptSequence = Get.identifierService().getConceptSequenceForUuids(desc.getTypeUuid());
+                if (descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.PREFERRED.getSequence() ||
+                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.ACCEPTABLE.getSequence()) {
+                    log.error("Found incorrect descripiton type: " + desc);
+                }
+                assert descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.FULLY_SPECIFIED_NAME.getSequence() ||
+                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.PREFERRED.getSequence() ||
+                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.ACCEPTABLE.getSequence() ||
+                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.SYNONYM.getSequence() ||
+                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.DEFINITION_DESCRIPTION_TYPE.getSequence(): "Converting: " + desc.getTypeUuid()
+                        + " " + desc;
+                
+                
                 SememeBuilder<? extends SememeChronology<? extends DescriptionSememe>> descBuilder
                         = sememeBuilderService.getDescriptionSememeBuilder(caseSignificanceConceptSequence,
                                 languageConceptSequence,

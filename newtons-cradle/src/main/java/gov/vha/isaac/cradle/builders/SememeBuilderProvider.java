@@ -90,7 +90,7 @@ public class SememeBuilderProvider implements SememeBuilderService {
             int assemblageConceptSequence) {
         return new SememeBuilderImpl(referencedComponent, assemblageConceptSequence, 
                 SememeType.DESCRIPTION, new Object[] {caseSignificanceConceptSequence, 
-                    languageConceptSequence, descriptionTypeConceptSequence, text});
+                    descriptionTypeConceptSequence, languageConceptSequence, text});
     }
 
     @Override
@@ -102,9 +102,6 @@ public class SememeBuilderProvider implements SememeBuilderService {
             int referencedComponentNid, int assemblageConceptSequence) {
         return new SememeBuilderImpl(referencedComponentNid, assemblageConceptSequence, 
                 SememeType.DESCRIPTION, new Object[] {caseSignificanceConceptSequence, 
-                    languageConceptSequence, descriptionTypeConceptSequence, text});
+                    descriptionTypeConceptSequence, languageConceptSequence, text});
     }
-    
-    
-    
 }

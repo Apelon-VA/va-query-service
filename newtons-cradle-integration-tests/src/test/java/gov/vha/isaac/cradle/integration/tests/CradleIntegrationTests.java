@@ -21,7 +21,6 @@ import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
-import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
 import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
@@ -29,7 +28,6 @@ import gov.vha.isaac.ochre.api.tree.Tree;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeWithBitSets;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
-import gov.vha.isaac.ochre.collections.NidSet;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -37,8 +35,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -202,7 +198,6 @@ public class CradleIntegrationTests {
                                     vc)).limit(10);
             TaxonomyService taxonomyService = Get.taxonomyService();
             conceptSequenceStream.forEach((int conceptSequence) -> {
-                System.out.println("Concept sequence: " + conceptSequence);
                 walkToRoot(conceptSequence, taxonomyService, vc, 0, new BitSet());
                 System.out.println("\n\n");
             });
@@ -212,7 +207,6 @@ public class CradleIntegrationTests {
                                     vc)).limit(10);
             ViewCoordinate vc2 = ViewCoordinates.getDevelopmentStatedLatestActiveOnly();
             conceptSequenceStream.forEach((int conceptSequence) -> {
-                System.out.println("Concept sequence: " + conceptSequence);
                 walkToRoot(conceptSequence, taxonomyService, vc2, 0, new BitSet());
                 System.out.println("\n\n");
             });
@@ -242,18 +236,16 @@ public class CradleIntegrationTests {
     }
 
     private void printTaxonomyLevel(int child, int depth, String suffix) {
-        ConceptChronology childConcept = Get.conceptService().getConcept(child);
 
         StringBuilder sb = new StringBuilder();
         sb.append(" ");
         for (int i = 0; i < depth; i++) {
             sb.append("  ");
         }
-        sb.append(childConcept.toUserString());
-        sb.append("; ");
-        sb.append(childConcept.getNid());
-        sb.append(":");
+        sb.append(Get.conceptDescriptionText(child));
+        sb.append("<");
         sb.append(child);
+        sb.append(">");
         sb.append(suffix);
         System.out.println(sb.toString());
     }
@@ -348,8 +340,15 @@ public class CradleIntegrationTests {
     }
 
     private void cycleTest() {
-        TaxonomyCoordinate taxonomyCoordinate = TaxonomyCoordinates.getInferredTaxonomyCoordinate(StampCoordinates.getDevelopmentLatestActiveOnly(), 
-                LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate());
+        log.info("Testing with DevelopmentLatestActiveOnly StampCoordinate");
+        cycleTestForTaxonomyCoordinate(TaxonomyCoordinates.getInferredTaxonomyCoordinate(StampCoordinates.getDevelopmentLatestActiveOnly(), 
+                LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate()));
+        log.info("Testing with DevelopmentLatest StampCoordinate (includes active and inactive)");
+        cycleTestForTaxonomyCoordinate(TaxonomyCoordinates.getInferredTaxonomyCoordinate(StampCoordinates.getDevelopmentLatest(), 
+                LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate()));
+    }
+
+    private void cycleTestForTaxonomyCoordinate(TaxonomyCoordinate taxonomyCoordinate) {
         Tree tree = Get.taxonomyService().getTaxonomyTree(taxonomyCoordinate);
         
         ConceptProxy calcinosisProxy = new ConceptProxy("Calcinosis (disorder)", UUID.fromString("779ece66-7e95-323e-a261-214caf48c408"));
@@ -374,14 +373,14 @@ public class CradleIntegrationTests {
                 if (!Get.taxonomyService().isChildOf(parentSequence, childSequence, tc)) {
                     parentSequenceSet.add(parentSequence);
                 } else {
-                    log.debug("{} is both child and parent of concept (retrieved by taxonomyTree.getParentSequences()) {}",
-                            Get.conceptSnapshot().getDescription(childSequence),
-                            Get.conceptSnapshot().getDescription(parentSequence));
+                    log.info("{} is BOTH child and parent of concept (retrieved by taxonomyTree.getParentSequences()) {}",
+                            Get.conceptDescriptionText(childSequence),
+                            Get.conceptDescriptionText(parentSequence));
                 }
             } else {
-                log.debug("{} is not a child of concept (retrieved by taxonomyTree.getParentSequences()) {}",
-                        Get.conceptSnapshot().getDescription(childSequence),
-                        Get.conceptSnapshot().getDescription(parentSequence));
+                log.info("{} is NOT a child of concept (retrieved by taxonomyTree.getParentSequences()) {}",
+                            Get.conceptDescriptionText(childSequence),
+                            Get.conceptDescriptionText(parentSequence));
             }
         }
 

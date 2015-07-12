@@ -458,9 +458,9 @@ public class CommitProvider implements CommitService {
     @Override
     public String describeStampSequence(int stampSequence) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Stamp{s:");
+        sb.append("⦙");
         sb.append(getStatusForStamp(stampSequence));
-        sb.append(", t:");
+        sb.append(", ");
         long time = getTimeForStamp(stampSequence);
         if (time == Long.MAX_VALUE) {
             sb.append("UNCOMMITTED:");
@@ -470,31 +470,21 @@ public class CommitProvider implements CommitService {
             sb.append(Instant.ofEpochMilli(time));
         }
         sb.append(", a:");
-        sb.append(nameForConcept(getAuthorSequenceForStamp(stampSequence)));
+        sb.append(Get.conceptDescriptionText(getAuthorSequenceForStamp(stampSequence)));
         sb.append(" <");
         sb.append(getAuthorSequenceForStamp(stampSequence));
         sb.append(">");
         sb.append(", m:");
-        sb.append(nameForConcept(getModuleSequenceForStamp(stampSequence)));
+        sb.append(Get.conceptDescriptionText(getModuleSequenceForStamp(stampSequence)));
         sb.append(" <");
         sb.append(getModuleSequenceForStamp(stampSequence));
         sb.append(">");
         sb.append(", p: ");
-        sb.append(nameForConcept(getPathSequenceForStamp(stampSequence)));
+        sb.append(Get.conceptDescriptionText(getPathSequenceForStamp(stampSequence)));
         sb.append(" <");
         sb.append(getPathSequenceForStamp(stampSequence));
-        sb.append(">");
-        sb.append('}');
+        sb.append(">⦙");
         return sb.toString();
-    }
-    
-    private String nameForConcept(int conceptSequence) {
-        ConceptService conceptService = Get.conceptService();
-        ConceptChronology<?> concept = conceptService.getConcept(conceptSequence);
-        if (concept != null) {
-            return concept.toUserString();
-        }
-        return "no concept with sequence: " + conceptSequence;
     }
 
     @Override
