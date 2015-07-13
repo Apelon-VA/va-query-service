@@ -210,63 +210,36 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
 
         @Override
         public Optional<LatestVersion<DescriptionSememe>> getFullySpecifiedDescription(int conceptId) {
-            conceptId = Get.identifierService().getConceptNid(conceptId);
-            return languageCoordinate.getFullySpecifiedDescription(Get.sememeService().getDescriptionsForComponent(conceptId).collect(Collectors.toList()), stampCoordinate);
+            return languageCoordinate.getFullySpecifiedDescription(getDescriptionList(conceptId), stampCoordinate);
         }
 
         @Override
         public Optional<LatestVersion<DescriptionSememe>> getPreferredDescription(int conceptId) {
+            return languageCoordinate.getPreferredDescription(getDescriptionList(conceptId), stampCoordinate);
+        }
+
+        private List<SememeChronology<DescriptionSememe>> getDescriptionList(int conceptId) {
             conceptId = Get.identifierService().getConceptNid(conceptId);
-            return languageCoordinate.getPreferredDescription(Get.sememeService().getDescriptionsForComponent(conceptId).collect(Collectors.toList()), stampCoordinate);
+            return Get.sememeService().getDescriptionsForComponent(conceptId).collect(Collectors.toList());
         }
 
         @Override
-        public DescriptionSememe getDescription(int conceptId) {
-            conceptId = Get.identifierService().getConceptNid(conceptId);
-            Optional<LatestVersion<DescriptionSememe>> fsd = getFullySpecifiedDescription(conceptId);
-            if (fsd.isPresent()) {
-                return fsd.get().value();
-            }
-            Optional<LatestVersion<DescriptionSememe>> pd = getPreferredDescription(conceptId);
-            if (pd.isPresent()) {
-                return pd.get().value();
-            }
-            Optional<SememeChronology<DescriptionSememe>> optionalDescriptions = Get.sememeService().getDescriptionsForComponent(conceptId).findAny();
-            if (optionalDescriptions.isPresent()) {
-                List<? extends DescriptionSememe> versions = optionalDescriptions.get().getVersionList();
-                if (versions.isEmpty()) {
-                    
-                } 
-                return versions.get(0);
-            }
-            return Get.sememeService().getDescriptionsForComponent(conceptId).findAny().get().getVersionList().get(0);
+        public Optional<LatestVersion<DescriptionSememe>> getDescriptionOptional(int conceptId) {
+            return languageCoordinate.getDescription(getDescriptionList(conceptId), stampCoordinate);
         }
 
-    
         @Override
-        public Optional<DescriptionSememe> getDescriptionOptional(int conceptId) {
-            conceptId = Get.identifierService().getConceptNid(conceptId);
-            Optional<LatestVersion<DescriptionSememe>> fsd = getFullySpecifiedDescription(conceptId);
-            if (fsd.isPresent()) {
-                return Optional.of(fsd.get().value());
+        public String conceptDescriptionText(int conceptId) {
+            Optional<LatestVersion<DescriptionSememe>> descriptionOptional
+                    = getDescriptionOptional(conceptId);
+            if (descriptionOptional.isPresent()) {
+                return descriptionOptional.get().value().getText();
             }
-            Optional<LatestVersion<DescriptionSememe>> pd = getPreferredDescription(conceptId);
-            if (pd.isPresent()) {
-                return Optional.of(pd.get().value());
-            }
-            Optional<SememeChronology<DescriptionSememe>> optionalDescriptions = Get.sememeService().getDescriptionsForComponent(conceptId).findAny();
-            if (optionalDescriptions.isPresent()) {
-                List<? extends DescriptionSememe> versions = optionalDescriptions.get().getVersionList();
-                if (!versions.isEmpty()) {
-                    return Optional.of(versions.get(0));
-                } 
-            }
-            return Optional.empty();
+            return "No desc for: " + conceptId;
         }
 
     }
 
-    
     @Override
     public Stream<ConceptChronology<? extends ConceptVersion>> getConceptChronologyStream() {
         return conceptMap.getStream().map((cc) -> {

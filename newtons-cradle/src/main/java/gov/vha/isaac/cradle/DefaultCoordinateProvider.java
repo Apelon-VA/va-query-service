@@ -115,6 +115,7 @@ public class DefaultCoordinateProvider {
                 = observableLanguageCoordinate.descriptionTypePreferenceListProperty().get();
         descriptionTypeIntegerArray.clear();
         descriptionTypeIntegerArray.addAll(descriptionTypePreferenceList);
+        observableLanguageCoordinate.descriptionTypePreferenceListProperty().set(descriptionTypeIntegerArray);
     }
 
     public void setDefaultStatedAssemblage(int conceptId) {

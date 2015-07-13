@@ -337,6 +337,11 @@ public class CradleIntegrationTests {
     }
 
     private void cycleTest() {
+        int[] descriptionTypePreferenceList = new int[] {
+            IsaacMetadataAuxiliaryBinding.SYNONYM.getSequence(),
+            IsaacMetadataAuxiliaryBinding.FULLY_SPECIFIED_NAME.getSequence()
+        };
+        Get.configurationService().setDefaultDescriptionTypePreferenceList(descriptionTypePreferenceList);
         log.info("Testing with DevelopmentLatestActiveOnly StampCoordinate");
         cycleTestForTaxonomyCoordinate(TaxonomyCoordinates.getInferredTaxonomyCoordinate(StampCoordinates.getDevelopmentLatestActiveOnly(), 
                 LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate()));
@@ -373,6 +378,9 @@ public class CradleIntegrationTests {
                     log.info("{} is BOTH child and parent of concept (retrieved by taxonomyTree.getParentSequences()) {}",
                             Get.conceptDescriptionText(childSequence),
                             Get.conceptDescriptionText(parentSequence));
+                    log.info("\nStated definition: {}\nInferred definition: {}",
+                            Get.statedDefinitionChronology(childSequence),
+                            Get.statedDefinitionChronology(parentSequence));
                 }
             } else {
                 log.info("{} is NOT a child of concept (retrieved by taxonomyTree.getParentSequences()) {}",

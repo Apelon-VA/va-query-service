@@ -459,8 +459,10 @@ public class CommitProvider implements CommitService {
     public String describeStampSequence(int stampSequence) {
         StringBuilder sb = new StringBuilder();
         sb.append("⦙");
+        sb.append(stampSequence);
+        sb.append("::");
         sb.append(getStatusForStamp(stampSequence));
-        sb.append(", ");
+        sb.append(" ");
         long time = getTimeForStamp(stampSequence);
         if (time == Long.MAX_VALUE) {
             sb.append("UNCOMMITTED:");
@@ -469,17 +471,17 @@ public class CommitProvider implements CommitService {
         } else {
             sb.append(Instant.ofEpochMilli(time));
         }
-        sb.append(", a:");
+        sb.append(" a:");
         sb.append(Get.conceptDescriptionText(getAuthorSequenceForStamp(stampSequence)));
         sb.append(" <");
         sb.append(getAuthorSequenceForStamp(stampSequence));
         sb.append(">");
-        sb.append(", m:");
+        sb.append(" m:");
         sb.append(Get.conceptDescriptionText(getModuleSequenceForStamp(stampSequence)));
         sb.append(" <");
         sb.append(getModuleSequenceForStamp(stampSequence));
         sb.append(">");
-        sb.append(", p: ");
+        sb.append(" p: ");
         sb.append(Get.conceptDescriptionText(getPathSequenceForStamp(stampSequence)));
         sb.append(" <");
         sb.append(getPathSequenceForStamp(stampSequence));

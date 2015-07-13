@@ -58,6 +58,7 @@ public class GraphCollector implements
         taxonomyFlags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(viewCoordinate);
         addToWatchList("779ece66-7e95-323e-a261-214caf48c408");
         addToWatchList("778a75c9-8264-36aa-9ad6-b9c6e5ee9187");
+        addToWatchList("c377a425-6ac0-3574-9110-b17deb9d49ff");
     }
 
     public final void addToWatchList(String uuid) throws RuntimeException {
@@ -67,13 +68,13 @@ public class GraphCollector implements
     @Override
     public void accept(HashTreeBuilder graphBuilder, int originSequence) {
         originSequenceBeingProcessed = originSequence;
-        // For debugging. 
-        if (watchList.contains(originSequence)) {
-            System.out.println("Found watch: " + this.toString());
-        }
         Optional<TaxonomyRecordPrimitive> isaacPrimitiveTaxonomyRecord = taxonomyMap.get(originSequence);
         
         if (isaacPrimitiveTaxonomyRecord.isPresent()) {
+        // For debugging. 
+        if (watchList.contains(originSequence)) {
+            System.out.println("Found watch: " + isaacPrimitiveTaxonomyRecord);
+        }
             TaxonomyRecordUnpacked taxonomyRecordUnpacked = isaacPrimitiveTaxonomyRecord.get().getTaxonomyRecordUnpacked();
             IntStream destinationStream = taxonomyRecordUnpacked.getConceptSequencesForType(ISA_CONCEPT_SEQUENCE, taxonomyCoordinate);
             destinationStream.forEach((int destinationSequence) -> graphBuilder.add(destinationSequence, originSequence));
@@ -93,15 +94,11 @@ public class GraphCollector implements
         buff.append(TaxonomyFlags.getTaxonomyFlags(taxonomyFlags));
         
         if (originSequenceBeingProcessed != -1) {
-            try {
-                buff.append("} processing: ");
-                buff.append(getIsaacDb().getConcept(originSequenceBeingProcessed));
-                buff.append(" (");
-                buff.append(originSequenceBeingProcessed);
-                buff.append(")");
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
+            buff.append("} processing: ");
+            buff.append(Get.conceptDescriptionText(originSequenceBeingProcessed));
+            buff.append(" <");
+            buff.append(originSequenceBeingProcessed);
+            buff.append(">");
         } else {
             buff.append("}");
         }

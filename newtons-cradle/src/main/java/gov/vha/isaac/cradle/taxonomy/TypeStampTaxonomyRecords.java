@@ -18,6 +18,8 @@ import java.util.EnumSet;
 import java.util.stream.IntStream;
 import java.util.stream.IntStream.Builder;
 import java.util.stream.LongStream;
+import java.util.stream.Stream;
+import javax.swing.text.Document;
 import org.apache.mahout.math.function.LongProcedure;
 import org.apache.mahout.math.set.OpenLongHashSet;
 
@@ -230,6 +232,15 @@ public class TypeStampTaxonomyRecords {
         return sb.toString();
     }
 
+    public Stream<TypeStampTaxonomyRecord> stream() {
+        Stream.Builder<TypeStampTaxonomyRecord> builder = Stream.builder();
+        typeStampFlagsSet.forEachKey((long record) -> {
+            builder.accept(new TypeStampTaxonomyRecord(record));
+            return true;
+        });
+        return builder.build();
+    }
+
     public static long convertToLong(int typeSequence, int stampSequence, int taxonomyFlags) {
         long record = stampSequence;
         if (taxonomyFlags > 512) {
@@ -312,27 +323,14 @@ public class TypeStampTaxonomyRecords {
             StringBuilder sb = new StringBuilder();
             sb.append("«");
             sb.append(Get.conceptService().getConcept(typeSequence).toUserString());
-            sb.append("|");
+            sb.append(" <");
             sb.append(typeSequence);
-            sb.append("|");
+            sb.append(">");
             sb.append(" ss:");
             sb.append(stampSequence);
-            sb.append(" (s:");
-            State status = Get.commitService().getStatusForStamp(stampSequence);
-            sb.append(status);
-            sb.append(" t:");
-            Instant time = Get.commitService().getInstantForStamp(stampSequence);
-            sb.append(time.toString());
-            sb.append(" a:");
-            ConceptChronology author = Get.conceptService().getConcept(Get.commitService().getAuthorSequenceForStamp(stampSequence));
-            sb.append(author.toUserString());
-            sb.append(" m:");
-            ConceptChronology module = Get.conceptService().getConcept(Get.commitService().getModuleSequenceForStamp(stampSequence));
-            sb.append(module.toUserString());
-            sb.append(" p:");
-            ConceptChronology path = Get.conceptService().getConcept(Get.commitService().getPathSequenceForStamp(stampSequence));
-            sb.append(path.toUserString());
-            sb.append(")->");
+            sb.append(" ");
+            sb.append(Get.commitService().describeStampSequence(stampSequence));
+            sb.append(" ");
             sb.append(getTaxonomyFlagsAsEnum());
             sb.append("»");
 

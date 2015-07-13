@@ -290,15 +290,16 @@ public class TaxonomyRecordUnpacked {
         int maxIndex = theKeys.size() - 1;
         for (int i = 0; i <= maxIndex; i++) {
             int conceptSequence = theKeys.get(i);
+            buf.append("\n   ");
             buf.append(Get.conceptService().getConcept(conceptSequence).toUserString());
-            buf.append(" |");
+            buf.append(" <");
             buf.append(conceptSequence);
-            buf.append("|->");
+            buf.append("> <-");
             TypeStampTaxonomyRecords value = conceptSequenceRecordMap.get(conceptSequence);
-            buf.append(value.toString());
-            if (i < maxIndex) {
-                buf.append(",");
-            }
+            value.stream().forEach((TypeStampTaxonomyRecord record) -> {
+                buf.append("\n      ");
+                buf.append(record.toString());
+            });
         }
         buf.append(']');
         return buf.toString();
