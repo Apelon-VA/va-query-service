@@ -135,32 +135,23 @@ public class ConceptProviderOtfModel implements ConceptService, DelegateService 
 
         @Override
         public LanguageCoordinate getLanguageCoordinate() {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            return languageCoordinate;
         }
 
         @Override
         public Optional<LatestVersion<DescriptionSememe>> getFullySpecifiedDescription(int conceptId) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            return languageCoordinate.getFullySpecifiedDescription(getConcept(conceptId).getConceptDescriptionList(), stampCoordinate);
         }
 
         @Override
         public Optional<LatestVersion<DescriptionSememe>> getPreferredDescription(int conceptId) {
-            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+           return languageCoordinate.getPreferredDescription(getConcept(conceptId).getConceptDescriptionList(), stampCoordinate);
         }
 
     
         @Override
         public Optional<LatestVersion<DescriptionSememe>> getDescriptionOptional(int conceptId) {
-            conceptId = Get.identifierService().getConceptNid(conceptId);
-            Optional<LatestVersion<DescriptionSememe>> fsd = getFullySpecifiedDescription(conceptId);
-            if (fsd.isPresent()) {
-                return fsd;
-            }
-            Optional<LatestVersion<DescriptionSememe>> pd = getPreferredDescription(conceptId);
-            if (pd.isPresent()) {
-                return pd;
-            }
-            return Optional.empty();
+            return languageCoordinate.getDescription(getConcept(conceptId).getConceptDescriptionList(), stampCoordinate);
         }        
 
         @Override
