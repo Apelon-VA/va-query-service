@@ -54,7 +54,7 @@ public class WriteAndCheckConceptChronicle extends Task<Void> implements Callabl
         this.writeSemaphore = writeSemaphore;
         this.changeListeners = changeListeners;
         updateTitle("Write and check concept");
-        updateMessage(cc.toUserString());
+        updateMessage(Get.conceptDescriptionText(cc.getConceptSequence()));
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         LookupService.getService(ActiveTaskSet.class).get().add(this);
     }
@@ -64,7 +64,7 @@ public class WriteAndCheckConceptChronicle extends Task<Void> implements Callabl
         try {
             Get.conceptService().writeConcept(cc);
             updateProgress(1, 3);
-            updateMessage("checking: " + cc.toUserString());
+            updateMessage("checking: " + Get.conceptDescriptionText(cc.getConceptSequence()));
             
             if (cc.isUncommitted()) {
                 checkers.stream().forEach((check) -> {
@@ -73,7 +73,7 @@ public class WriteAndCheckConceptChronicle extends Task<Void> implements Callabl
             }
 
             updateProgress(2, 3);
-            updateMessage("notifying: " + cc.toUserString());
+            updateMessage("notifying: " + Get.conceptDescriptionText(cc.getConceptSequence()));
 
              changeListeners.forEach((listenerRef) -> {
                 ChronologyChangeListener listener = listenerRef.get();
@@ -85,7 +85,7 @@ public class WriteAndCheckConceptChronicle extends Task<Void> implements Callabl
              });
 
             updateProgress(3, 3);
-            updateMessage("complete: " + cc.toUserString());
+            updateMessage("complete: " + Get.conceptDescriptionText(cc.getConceptSequence()));
             
              return null;
         } finally {

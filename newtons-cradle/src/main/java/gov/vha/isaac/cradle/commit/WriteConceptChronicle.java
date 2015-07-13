@@ -45,7 +45,7 @@ public class WriteConceptChronicle extends Task<Void>  implements Callable<Void>
         this.writeSemaphore = writeSemaphore;
         this.changeListeners = changeListeners;
         updateTitle("Write concept");
-        updateMessage(cc.toUserString());
+        updateMessage(Get.conceptDescriptionText(cc.getConceptSequence()));
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         LookupService.getService(ActiveTaskSet.class).get().add(this);
     }
@@ -55,7 +55,7 @@ public class WriteConceptChronicle extends Task<Void>  implements Callable<Void>
         try {
             Get.conceptService().writeConcept(cc);
             updateProgress(1, 2); 
-            updateMessage("notifying: " + cc.toUserString());
+            updateMessage("notifying: " + Get.conceptDescriptionText(cc.getConceptSequence()));
 
              changeListeners.forEach((listenerRef) -> {
                 ChronologyChangeListener listener = listenerRef.get();
@@ -67,7 +67,7 @@ public class WriteConceptChronicle extends Task<Void>  implements Callable<Void>
              });
 
             updateProgress(2, 2); 
-            updateMessage("complete: " + cc.toUserString());
+            updateMessage("complete: " + Get.conceptDescriptionText(cc.getConceptSequence()));
              
              return null;
         } finally {

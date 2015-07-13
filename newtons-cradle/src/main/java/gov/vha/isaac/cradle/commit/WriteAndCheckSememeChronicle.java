@@ -52,7 +52,7 @@ public class WriteAndCheckSememeChronicle extends Task<Void> implements Callable
         this.writeSemaphore = writeSemaphore;
         this.changeListeners = changeListeners;
         updateTitle("Write, check, and notify for sememe change");
-        updateMessage("write: " + sc.toUserString());
+        updateMessage("write: " + sc.getSememeType() + " " + sc.getSememeSequence());
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         LookupService.getService(ActiveTaskSet.class).get().add(this);
     }
@@ -62,7 +62,7 @@ public class WriteAndCheckSememeChronicle extends Task<Void> implements Callable
         try {
             Get.sememeService().writeSememe(sc);
             updateProgress(1, 3);
-            updateMessage("checking: " + sc.toUserString());
+            updateMessage("checking: " + sc.getSememeType() + " " + sc.getSememeSequence());
             if (sc.getCommitState() == CommitStates.UNCOMMITTED) {
                 checkers.stream().forEach((check) -> {
                     check.check(sc, alertCollection, CheckPhase.ADD_UNCOMMITTED);
@@ -70,7 +70,7 @@ public class WriteAndCheckSememeChronicle extends Task<Void> implements Callable
             }
 
             updateProgress(2, 3);
-            updateMessage("notifying: " + sc.toUserString());
+            updateMessage("notifying: " + sc.getSememeType() + " " + sc.getSememeSequence());
              
              changeListeners.forEach((listenerRef) -> {
                 ChronologyChangeListener listener = listenerRef.get();

@@ -42,7 +42,7 @@ public class WriteSememeChronicle extends Task<Void>  implements Callable<Void>{
         this.writeSemaphore = writeSemaphore;
         this.changeListeners = changeListeners;
         updateTitle("Write and notify sememe change");
-        updateMessage(sc.toUserString());
+        updateMessage("write: " + sc.getSememeType() + " " + sc.getSememeSequence());
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         LookupService.getService(ActiveTaskSet.class).get().add(this);
     }
@@ -63,7 +63,7 @@ public class WriteSememeChronicle extends Task<Void>  implements Callable<Void>{
                 }
              });
             updateProgress(2, 2); 
-            updateMessage("complete: " + sc.toUserString());
+            updateMessage("complete: " + sc.getSememeType() + " " + sc.getSememeSequence());
 
             return null;
         } finally {
