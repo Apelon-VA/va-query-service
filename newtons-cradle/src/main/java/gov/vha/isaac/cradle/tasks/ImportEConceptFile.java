@@ -12,8 +12,6 @@ import gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilderService;
 import gov.vha.isaac.ochre.api.task.TimedTask;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.util.WorkExecutors;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
@@ -37,7 +35,6 @@ import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
  */
 public class ImportEConceptFile extends TimedTask<Integer> {
 
-    private static final Logger log = LogManager.getLogger();
     // Below fields are to cache expensive operations once, so no need to repeat for
     // each import task, and not put in static to prevent data cache issues. 
     final CradleExtensions cradle = LookupService.getService(CradleExtensions.class);
@@ -66,6 +63,9 @@ public class ImportEConceptFile extends TimedTask<Integer> {
     ConceptProxy stampPath = null;
     UUID stampPathUuid = null;
     ConceptModel conceptModel;
+    
+    AtomicInteger maxDefinitionNodeCount = new AtomicInteger();
+    AtomicInteger maxDefinitionVersionCount = new AtomicInteger();
 
     private ImportEConceptFile(Path[] paths, CradleExtensions termService) {
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress

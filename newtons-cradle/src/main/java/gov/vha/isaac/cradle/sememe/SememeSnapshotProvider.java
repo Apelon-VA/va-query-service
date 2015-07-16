@@ -76,8 +76,8 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
     }
 
     @Override
-    public Stream<LatestVersion<V>> getLatestSememeVersionsFromAssemblage(int assemblageSequence, ProgressTracker... progressTrackers) {
-        return getLatestSememeVersions(sememeProvider.getSememeSequencesFromAssemblage(assemblageSequence), progressTrackers);
+    public Stream<LatestVersion<V>> getLatestSememeVersionsFromAssemblage(int assemblageConceptSequence, ProgressTracker... progressTrackers) {
+        return getLatestSememeVersions(sememeProvider.getSememeSequencesFromAssemblage(assemblageConceptSequence), progressTrackers);
     }
 
     private Stream<LatestVersion<V>> getLatestSememeVersions(SememeSequenceSet sememeSequenceSet, ProgressTracker... progressTrackers) {
@@ -116,8 +116,8 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
     }
 
     @Override
-    public Stream<LatestVersion<V>> getLatestSememeVersionsForComponentFromAssemblage(int componentNid, int assemblageSequence) {
-        return getLatestSememeVersions(sememeProvider.getSememeSequencesForComponentFromAssemblage(componentNid, assemblageSequence));
+    public Stream<LatestVersion<V>> getLatestSememeVersionsForComponentFromAssemblage(int componentNid, int assemblageConceptSequence) {
+        return getLatestSememeVersions(sememeProvider.getSememeSequencesForComponentFromAssemblage(componentNid, assemblageConceptSequence));
     }
 
     @Override

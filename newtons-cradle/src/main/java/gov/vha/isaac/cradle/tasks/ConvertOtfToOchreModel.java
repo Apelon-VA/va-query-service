@@ -29,6 +29,7 @@ import gov.vha.isaac.ochre.api.component.sememe.SememeConstraints;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.MutableLogicGraphSememe;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
+import gov.vha.isaac.ochre.api.coordinate.PremiseType;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.StampPrecedence;
 import gov.vha.isaac.ochre.api.logic.LogicalExpression;
@@ -64,7 +65,6 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
 
     private static final Logger log = LogManager.getLogger();
 
-
     private TtkConceptChronicle eConcept;
     private UUID newPathUuid = null;
     private SememeChronology<LogicGraphSememe> statedChronology = null;
@@ -72,7 +72,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
     private final StampCoordinate latestOnDevCoordinate = StampCoordinates.getDevelopmentLatest();
     private final LogicCoordinate logicCoordinate = LogicCoordinates.getStandardElProfile();
     private final ImportEConceptFile parentTask;
-    
+
     public ConvertOtfToOchreModel(TtkConceptChronicle eConcept, UUID newPathUuid, ImportEConceptFile parentTask) {
         this(eConcept, parentTask);
         this.newPathUuid = newPathUuid;
@@ -85,11 +85,10 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
 
     @Override
     public Void call() throws Exception {
-        
+
 //        if (eConcept.getPrimordialUuid().equals(UUID.fromString("164d0c37-67b3-3bd3-b304-79d09c3f1411"))) {
 //            log.info("Found watch");
 //        }
-
         TtkConceptLock.getLock(eConcept.getUuidList()).lock();
         try {
             if (this.newPathUuid != null) {
@@ -106,16 +105,16 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
             if (!inferredSememeSequences.isEmpty()) {
                 if (inferredSememeSequences.size() > 1) {
                     throw new IllegalStateException("Error importing: " + conceptChronology.toUserString()
-                       + "<" + conceptChronology.getConceptSequence() + "> Found more than one inferred definition" +
-                            inferredSememeSequences + "\n eConcept: " + eConcept);
+                            + "<" + conceptChronology.getConceptSequence() + "> Found more than one inferred definition"
+                            + inferredSememeSequences + "\n eConcept: " + eConcept);
                 }
                 inferredChronology = (SememeChronology<LogicGraphSememe>) Get.sememeService().getSememe(inferredSememeSequences.findFirst().getAsInt());
             }
             if (!statedSememeSequences.isEmpty()) {
                 if (statedSememeSequences.size() > 1) {
                     throw new IllegalStateException("Error importing: " + conceptChronology.toUserString()
-                       + "<" + conceptChronology.getConceptSequence() + "> Found more than one stated definition" +
-                            statedSememeSequences + "\n eConcept: " + eConcept);
+                            + "<" + conceptChronology.getConceptSequence() + "> Found more than one stated definition"
+                            + statedSememeSequences + "\n eConcept: " + eConcept);
                 }
                 statedChronology = (SememeChronology<LogicGraphSememe>) Get.sememeService().getSememe(statedSememeSequences.findFirst().getAsInt());
             }
@@ -163,6 +162,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                     }
                     LogicalExpression inferredExpression = inferredBuilder.build();
                     if (inferredExpression.isMeaningful()) {
+                        printIfMoreNodes(conceptChronology, inferredExpression);
                         int stampSequence = Get.commitService().getStampSequence(State.ACTIVE, stampPosition.getTime(),
                                 IsaacMetadataAuxiliaryBinding.IHTSDO_CLASSIFIER.getSequence(),
                                 moduleSequence, stampPosition.getStampPathSequence());
@@ -182,6 +182,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                         statedExpression = inferredExpression;
                     }
                     if (statedExpression.isMeaningful()) {
+                        printIfMoreNodes(conceptChronology, statedExpression);
                         int stampSequence = Get.commitService().getStampSequence(State.ACTIVE, stampPosition.getTime(),
                                 IsaacMetadataAuxiliaryBinding.USER.getSequence(),
                                 moduleSequence, stampPosition.getStampPathSequence());
@@ -203,11 +204,21 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                 removeDuplicates(statedChronology);
                 Get.taxonomyService().updateTaxonomy(statedChronology);
                 Get.sememeService().writeSememe(statedChronology, SememeConstraints.ONE_SEMEME_PER_COMPONENT);
+                if (statedChronology.getVersionStampSequences().count() > parentTask.maxDefinitionVersionCount.get()) {
+                    parentTask.maxDefinitionVersionCount.set((int) statedChronology.getVersionStampSequences().count());
+                    String report = conceptChronology.getLogicalDefinitionChronologyReport(latestOnDevCoordinate, PremiseType.STATED, logicCoordinate);
+                    log.info("\n" + report);
+                }
             }
             if (inferredChronology != null) {
                 removeDuplicates(inferredChronology);
                 Get.taxonomyService().updateTaxonomy(inferredChronology);
                 Get.sememeService().writeSememe(inferredChronology, SememeConstraints.ONE_SEMEME_PER_COMPONENT);
+                if (inferredChronology.getVersionStampSequences().count() > parentTask.maxDefinitionVersionCount.get()) {
+                    parentTask.maxDefinitionVersionCount.set((int) inferredChronology.getVersionStampSequences().count());
+                    String report = conceptChronology.getLogicalDefinitionChronologyReport(latestOnDevCoordinate, PremiseType.INFERRED, logicCoordinate);
+                    log.info("\n" + report);
+                }
             }
 
             return null;
@@ -216,6 +227,22 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
             throw e;
         } finally {
             TtkConceptLock.getLock(eConcept.getUuidList()).unlock();
+        }
+    }
+
+    public void printIfMoreNodes(ConceptChronology conceptChronicle, LogicalExpression logicGraph) {
+        if (logicGraph.getNodeCount() > parentTask.maxDefinitionNodeCount.get()) {
+            parentTask.maxDefinitionNodeCount.set(logicGraph.getNodeCount());
+            StringBuilder builder = new StringBuilder();
+            builder.append("================================================================================\n");
+            builder.append(" Encountered concept '")
+                    .append(Get.conceptDescriptionText(conceptChronicle.getNid()))
+                    .append("' with ").append(logicGraph.getNodeCount())
+                    .append(" nodes in definition:\n");
+            builder.append("================================================================================\n");
+            builder.append(logicGraph);
+            builder.append("================================================================================\n");
+            System.out.println(builder.toString());
         }
     }
 
@@ -242,8 +269,8 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                                 assertionList.add(
                                         SomeRole(Get.conceptService().getConcept(IsaacMetadataAuxiliaryBinding.ROLE_GROUP.getUuids()),
                                                 And(
-                                                    SomeRole(Get.conceptService().getConcept(relVersion.getTypeUuid()),
-                                                        ConceptAssertion(Get.conceptService().getConcept(relationship.c2Uuid), defBuilder)))));
+                                                        SomeRole(Get.conceptService().getConcept(relVersion.getTypeUuid()),
+                                                                ConceptAssertion(Get.conceptService().getConcept(relationship.c2Uuid), defBuilder)))));
                             }
                         }
 
@@ -263,15 +290,15 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
         relGroupMap.forEachPair((group, assertionsInRelGroupList) -> {
             assertionList.add(
                     SomeRole(
-                        Get.conceptService().getConcept(IsaacMetadataAuxiliaryBinding.ROLE_GROUP.getUuids()),
-                        And(assertionsInRelGroupList.toArray(new Assertion[assertionsInRelGroupList.size()]))));
+                            Get.conceptService().getConcept(IsaacMetadataAuxiliaryBinding.ROLE_GROUP.getUuids()),
+                            And(assertionsInRelGroupList.toArray(new Assertion[assertionsInRelGroupList.size()]))));
             return true;
         });
         return assertionList.toArray(new Assertion[assertionList.size()]);
     }
 
     private void removeDuplicates(SememeChronology<LogicGraphSememe> logicChronology) {
-        
+
         RelativePositionCalculator calc = RelativePositionCalculator.getCalculator(latestOnDevCoordinate);
         SortedSet<LogicGraphSememe> sortedLogicGraphs = new TreeSet<>((LogicGraphSememe graph1, LogicGraphSememe graph2) -> {
             RelativePosition relativePosition = calc.fastRelativePosition(graph1, graph2, latestOnDevCoordinate.getStampPrecedence());
@@ -288,13 +315,13 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                     throw new UnsupportedOperationException("Can't handle: " + relativePosition);
             }
         });
-        
+
         sortedLogicGraphs.addAll(logicChronology.getVersionList());
-        
+
         List<LogicGraphSememe> uniqueGraphs = new ArrayList();
         LogicGraphSememe lastGraph = null;
-        
-        for (LogicGraphSememe graphToTest: sortedLogicGraphs) {
+
+        for (LogicGraphSememe graphToTest : sortedLogicGraphs) {
             if (lastGraph == null) {
                 lastGraph = graphToTest;
                 uniqueGraphs.add(graphToTest);
@@ -303,13 +330,12 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                 LogicalExpression expressionToTest = parentTask.expressionBuilderService.fromSememe(graphToTest);
                 if (Get.commitService().stampSequencesEqualExceptAuthorAndTime(
                         lastGraph.getStampSequence(), graphToTest.getStampSequence())
-                     &&
-                        !lastExpression.equals(expressionToTest)) {
+                        && !lastExpression.equals(expressionToTest)) {
                     lastGraph = graphToTest;
                     uniqueGraphs.add(graphToTest);
                 }
             }
         }
-        ((SememeChronologyImpl)logicChronology).setVersions(uniqueGraphs);
+        ((SememeChronologyImpl) logicChronology).setVersions(uniqueGraphs);
     }
 }

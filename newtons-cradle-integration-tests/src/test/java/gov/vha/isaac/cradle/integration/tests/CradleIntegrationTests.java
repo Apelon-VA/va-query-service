@@ -21,7 +21,11 @@ import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
+import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
+import gov.vha.isaac.ochre.api.logic.IsomorphicResults;
 import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
 import gov.vha.isaac.ochre.api.progress.ActiveTasksTicker;
 import gov.vha.isaac.ochre.api.tree.Tree;
@@ -35,6 +39,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -356,12 +362,24 @@ public class CradleIntegrationTests {
         ConceptProxy calcinosisProxy = new ConceptProxy("Calcinosis (disorder)", UUID.fromString("779ece66-7e95-323e-a261-214caf48c408"));
         ConceptSequenceSet calcinosisParents = getParentsSequences(calcinosisProxy.getSequence(), tree, taxonomyCoordinate);
         log.info(calcinosisProxy.getDescription() + " parents: " + calcinosisParents);
-        ConceptProxy psychoactiveAbuseProxy = new ConceptProxy("Psychoactive substance abuse (disorder)", UUID.fromString("778a75c9-8264-36aa-9ad6-b9c6e5ee9187"));
         
+        Optional<SememeChronology<? extends SememeVersion>> statedDefinition = Get.statedDefinitionChronology(calcinosisProxy.getNid());
+        if (statedDefinition.isPresent()) {
+            List<? extends SememeVersion> versions = statedDefinition.get().getVisibleOrderedVersionList(taxonomyCoordinate.getStampCoordinate());
+            for (int i = 1; i < versions.size(); i++) {
+                LogicGraphSememe comparison = (LogicGraphSememe) versions.get(i -1);
+                LogicGraphSememe reference = (LogicGraphSememe) versions.get(i);
+                IsomorphicResults isomorphicResults = reference.getLogicalExpression().findIsomorphisms(comparison.getLogicalExpression());
+                log.info("isomorphic results: " + isomorphicResults);
+            }
+        }
         
-        
-        ConceptSequenceSet psychoactiveAbuseParents = getParentsSequences(psychoactiveAbuseProxy.getSequence(), tree, taxonomyCoordinate);
-        log.info(psychoactiveAbuseProxy.getDescription() + " parents: " + psychoactiveAbuseParents);
+//        ConceptProxy psychoactiveAbuseProxy = new ConceptProxy("Psychoactive substance abuse (disorder)", UUID.fromString("778a75c9-8264-36aa-9ad6-b9c6e5ee9187"));
+//        
+//        
+//        
+//        ConceptSequenceSet psychoactiveAbuseParents = getParentsSequences(psychoactiveAbuseProxy.getSequence(), tree, taxonomyCoordinate);
+//        log.info(psychoactiveAbuseProxy.getDescription() + " parents: " + psychoactiveAbuseParents);
     }
 
     public static ConceptSequenceSet getParentsSequences(int childSequence, 
