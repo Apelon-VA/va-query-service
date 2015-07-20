@@ -65,6 +65,8 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
 
     private static final Logger log = LogManager.getLogger();
 
+    private static final boolean VERBOSE = false;
+
     private TtkConceptChronicle eConcept;
     private UUID newPathUuid = null;
     private SememeChronology<LogicGraphSememe> statedChronology = null;
@@ -86,9 +88,6 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
     @Override
     public Void call() throws Exception {
 
-//        if (eConcept.getPrimordialUuid().equals(UUID.fromString("164d0c37-67b3-3bd3-b304-79d09c3f1411"))) {
-//            log.info("Found watch");
-//        }
         TtkConceptLock.getLock(eConcept.getUuidList()).lock();
         try {
             if (this.newPathUuid != null) {
@@ -199,12 +198,16 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
 
                 }
             });
+            if (eConcept.getPrimordialUuid().equals(UUID.fromString("128f5d97-8523-38d5-addc-a691fd8a3674"))
+                    || eConcept.getPrimordialUuid().equals(UUID.fromString("128f5d97-8523-38d5-addc-a691fd8a3674"))) {
+                log.info("Found watch");
+            }
 
             if (statedChronology != null) {
                 removeDuplicates(statedChronology);
                 Get.taxonomyService().updateTaxonomy(statedChronology);
                 Get.sememeService().writeSememe(statedChronology, SememeConstraints.ONE_SEMEME_PER_COMPONENT);
-                if (statedChronology.getVersionStampSequences().count() > parentTask.maxDefinitionVersionCount.get()) {
+                if (VERBOSE && statedChronology.getVersionStampSequences().count() > parentTask.maxDefinitionVersionCount.get()) {
                     parentTask.maxDefinitionVersionCount.set((int) statedChronology.getVersionStampSequences().count());
                     String report = conceptChronology.getLogicalDefinitionChronologyReport(latestOnDevCoordinate, PremiseType.STATED, logicCoordinate);
                     log.info("\n" + report);
@@ -214,7 +217,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                 removeDuplicates(inferredChronology);
                 Get.taxonomyService().updateTaxonomy(inferredChronology);
                 Get.sememeService().writeSememe(inferredChronology, SememeConstraints.ONE_SEMEME_PER_COMPONENT);
-                if (inferredChronology.getVersionStampSequences().count() > parentTask.maxDefinitionVersionCount.get()) {
+                if (VERBOSE && inferredChronology.getVersionStampSequences().count() > parentTask.maxDefinitionVersionCount.get()) {
                     parentTask.maxDefinitionVersionCount.set((int) inferredChronology.getVersionStampSequences().count());
                     String report = conceptChronology.getLogicalDefinitionChronologyReport(latestOnDevCoordinate, PremiseType.INFERRED, logicCoordinate);
                     log.info("\n" + report);
@@ -230,19 +233,21 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
         }
     }
 
-    public void printIfMoreNodes(ConceptChronology conceptChronicle, LogicalExpression logicGraph) {
-        if (logicGraph.getNodeCount() > parentTask.maxDefinitionNodeCount.get()) {
-            parentTask.maxDefinitionNodeCount.set(logicGraph.getNodeCount());
-            StringBuilder builder = new StringBuilder();
-            builder.append("================================================================================\n");
-            builder.append(" Encountered concept '")
-                    .append(Get.conceptDescriptionText(conceptChronicle.getNid()))
-                    .append("' with ").append(logicGraph.getNodeCount())
-                    .append(" nodes in definition:\n");
-            builder.append("================================================================================\n");
-            builder.append(logicGraph);
-            builder.append("================================================================================\n");
-            System.out.println(builder.toString());
+    private void printIfMoreNodes(ConceptChronology conceptChronicle, LogicalExpression logicGraph) {
+        if (VERBOSE) {
+            if (logicGraph.getNodeCount() > parentTask.maxDefinitionNodeCount.get()) {
+                parentTask.maxDefinitionNodeCount.set(logicGraph.getNodeCount());
+                StringBuilder builder = new StringBuilder();
+                builder.append("================================================================================\n");
+                builder.append(" Encountered concept '")
+                        .append(Get.conceptDescriptionText(conceptChronicle.getNid()))
+                        .append("' with ").append(logicGraph.getNodeCount())
+                        .append(" nodes in definition:\n");
+                builder.append("================================================================================\n");
+                builder.append(logicGraph);
+                builder.append("================================================================================\n");
+                System.out.println(builder.toString());
+            }
         }
     }
 

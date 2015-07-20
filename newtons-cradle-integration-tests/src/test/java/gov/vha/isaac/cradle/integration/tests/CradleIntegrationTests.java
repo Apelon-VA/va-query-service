@@ -9,6 +9,7 @@ import static gov.vha.isaac.ochre.api.constants.Constants.CHRONICLE_COLLECTIONS_
 import gov.vha.isaac.cradle.taxonomy.walk.TaxonomyWalkAccumulator;
 import gov.vha.isaac.cradle.taxonomy.walk.TaxonomyWalkCollector;
 import gov.vha.isaac.metadata.coordinates.LanguageCoordinates;
+import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.coordinates.StampCoordinates;
 import gov.vha.isaac.metadata.coordinates.TaxonomyCoordinates;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
@@ -24,6 +25,7 @@ import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
+import gov.vha.isaac.ochre.api.coordinate.PremiseType;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.api.logic.IsomorphicResults;
 import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
@@ -141,6 +143,8 @@ public class CradleIntegrationTests {
              Assert.assertTrue(differences);
              */
         }
+
+        testDifferenceAlgorithm();
         testTaxonomy();
 
         walkTaxonomy();
@@ -191,8 +195,21 @@ public class CradleIntegrationTests {
         }
         log.info(sb.toString());
         //
-        
+
         cycleTest();
+    }
+
+    private void testDifferenceAlgorithm() {
+
+        logDifferenceReport("8001dc9b-39c2-38fb-b4f5-df1dbdd5dbe5");
+        logDifferenceReport("800bf3d7-498a-3b60-888f-41042a317b41");
+    }
+
+    private void logDifferenceReport(String uuidStr) {
+        ConceptChronology conceptToTest = Get.conceptService().getConcept(UUID.fromString(uuidStr));
+        String report = conceptToTest.getLogicalDefinitionChronologyReport(StampCoordinates.getDevelopmentLatest(), PremiseType.STATED, LogicCoordinates.getStandardElProfile());
+        log.info(Get.conceptDescriptionText(conceptToTest.getConceptSequence()) + " UUID: " + conceptToTest.getUuidList());
+        log.info("\n" + report);
     }
 
     private void findRoots() {
@@ -343,37 +360,37 @@ public class CradleIntegrationTests {
     }
 
     private void cycleTest() {
-        int[] descriptionTypePreferenceList = new int[] {
+        int[] descriptionTypePreferenceList = new int[]{
             IsaacMetadataAuxiliaryBinding.SYNONYM.getSequence(),
             IsaacMetadataAuxiliaryBinding.FULLY_SPECIFIED_NAME.getSequence()
         };
         Get.configurationService().setDefaultDescriptionTypePreferenceList(descriptionTypePreferenceList);
         log.info("Testing with DevelopmentLatestActiveOnly StampCoordinate");
-        cycleTestForTaxonomyCoordinate(TaxonomyCoordinates.getInferredTaxonomyCoordinate(StampCoordinates.getDevelopmentLatestActiveOnly(), 
+        cycleTestForTaxonomyCoordinate(TaxonomyCoordinates.getInferredTaxonomyCoordinate(StampCoordinates.getDevelopmentLatestActiveOnly(),
                 LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate()));
         log.info("Testing with DevelopmentLatest StampCoordinate (includes active and inactive)");
-        cycleTestForTaxonomyCoordinate(TaxonomyCoordinates.getInferredTaxonomyCoordinate(StampCoordinates.getDevelopmentLatest(), 
+        cycleTestForTaxonomyCoordinate(TaxonomyCoordinates.getInferredTaxonomyCoordinate(StampCoordinates.getDevelopmentLatest(),
                 LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate()));
     }
 
     private void cycleTestForTaxonomyCoordinate(TaxonomyCoordinate taxonomyCoordinate) {
         Tree tree = Get.taxonomyService().getTaxonomyTree(taxonomyCoordinate);
-        
+
         ConceptProxy calcinosisProxy = new ConceptProxy("Calcinosis (disorder)", UUID.fromString("779ece66-7e95-323e-a261-214caf48c408"));
         ConceptSequenceSet calcinosisParents = getParentsSequences(calcinosisProxy.getSequence(), tree, taxonomyCoordinate);
         log.info(calcinosisProxy.getDescription() + " parents: " + calcinosisParents);
-        
+
         Optional<SememeChronology<? extends SememeVersion>> statedDefinition = Get.statedDefinitionChronology(calcinosisProxy.getNid());
         if (statedDefinition.isPresent()) {
             List<? extends SememeVersion> versions = statedDefinition.get().getVisibleOrderedVersionList(taxonomyCoordinate.getStampCoordinate());
             for (int i = 1; i < versions.size(); i++) {
-                LogicGraphSememe comparison = (LogicGraphSememe) versions.get(i -1);
+                LogicGraphSememe comparison = (LogicGraphSememe) versions.get(i - 1);
                 LogicGraphSememe reference = (LogicGraphSememe) versions.get(i);
                 IsomorphicResults isomorphicResults = reference.getLogicalExpression().findIsomorphisms(comparison.getLogicalExpression());
                 log.info("isomorphic results: " + isomorphicResults);
             }
         }
-        
+
 //        ConceptProxy psychoactiveAbuseProxy = new ConceptProxy("Psychoactive substance abuse (disorder)", UUID.fromString("778a75c9-8264-36aa-9ad6-b9c6e5ee9187"));
 //        
 //        
@@ -382,7 +399,7 @@ public class CradleIntegrationTests {
 //        log.info(psychoactiveAbuseProxy.getDescription() + " parents: " + psychoactiveAbuseParents);
     }
 
-    public static ConceptSequenceSet getParentsSequences(int childSequence, 
+    public static ConceptSequenceSet getParentsSequences(int childSequence,
             Tree taxonomyTree, TaxonomyCoordinate tc) {
         int[] parentSequences = taxonomyTree.getParentSequences(childSequence);
 
@@ -402,8 +419,8 @@ public class CradleIntegrationTests {
                 }
             } else {
                 log.info("{} is NOT a child of concept (retrieved by taxonomyTree.getParentSequences()) {}",
-                            Get.conceptDescriptionText(childSequence),
-                            Get.conceptDescriptionText(parentSequence));
+                        Get.conceptDescriptionText(childSequence),
+                        Get.conceptDescriptionText(parentSequence));
             }
         }
 

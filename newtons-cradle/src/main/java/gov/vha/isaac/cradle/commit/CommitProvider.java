@@ -23,7 +23,6 @@ import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
 import gov.vha.isaac.ochre.api.commit.CommitRecord;
 import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.commit.CommitStates;
-import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
@@ -297,6 +296,15 @@ public class CommitProvider implements CommitService {
             return s.get().getTime();
         }
         throw new NoSuchElementException("No stampSequence found: " + stampSequence);
+    }
+
+    @Override
+    public int getRetiredStampSequence(int stampSequence) {
+        return getStampSequence(State.INACTIVE, 
+                getTimeForStamp(stampSequence), 
+                getAuthorSequenceForStamp(stampSequence), 
+                getModuleSequenceForStamp(stampSequence), 
+                getPathSequenceForStamp(stampSequence));
     }
 
     @Override
