@@ -239,12 +239,14 @@ public abstract class Query {
             NidSet conceptsToIterateOver = NidSet.of(Get.identifierService().getConceptSequencesForConceptNids(possibleComponents));
 
             ConceptSequenceSet conceptSequences = Get.identifierService().getConceptSequencesForConceptNids(conceptsToIterateOver);
-            Get.conceptService().getParallelConceptChronologyStream(conceptSequences).forEach((ConceptChronology<? extends ConceptVersion> concept) -> {
-
+            Get.conceptService().getParallelConceptChronologyStream(conceptSequences).forEach((concept) -> {
+                
                 ConceptVersion mutable = concept.createMutableVersion(concept.getNid()); //TODO needs to return a mutable version, not a ConceptVersion
 
-                Optional<LatestVersion<ConceptVersion>> latest
-                        = ((ConceptChronology<ConceptVersion>) concept).getLatestVersion(ConceptVersion.class, stampCoordinate);
+                ConceptChronology cch = (ConceptChronology)concept;
+                Optional<LatestVersion<ConceptVersion<?>>> latest = cch.getLatestVersion(ConceptVersion.class, stampCoordinate);
+                //Optional<LatestVersion<ConceptVersion<?>>> latest
+                //        = ((ConceptChronology<ConceptVersion<?>>) concept).getLatestVersion(ConceptVersion.class, stampCoordinate);
 
                 if (latest.isPresent()) {
                     rootClause[0].getChildren().stream().forEach((c) -> {
