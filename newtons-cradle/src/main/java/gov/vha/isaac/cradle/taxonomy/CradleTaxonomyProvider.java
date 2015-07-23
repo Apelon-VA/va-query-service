@@ -709,7 +709,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     }
 
     @Override
-    public void updateTaxonomy(SememeChronology<LogicGraphSememe> logicGraphChronology) {
+    public void updateTaxonomy(SememeChronology<LogicGraphSememe<?>> logicGraphChronology) {
         int conceptSequence = Get.identifierService().getConceptSequence(logicGraphChronology.getReferencedComponentNid());
         Optional<TaxonomyRecordPrimitive> record = originDestinationTaxonomyRecordMap.get(conceptSequence);
 
@@ -727,7 +727,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
             taxonomyFlags = TaxonomyFlags.STATED;
         }
 
-        List<Graph<? extends LogicGraphSememe>> versionGraphList = logicGraphChronology.getVersionGraphList();
+        List<Graph<? extends LogicGraphSememe<?>>> versionGraphList = logicGraphChronology.getVersionGraphList();
 
         versionGraphList.forEach((versionGraph) -> {
             processVersionNode(versionGraph.getRoot(), parentTaxonomyRecord, taxonomyFlags);

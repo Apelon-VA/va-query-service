@@ -40,7 +40,7 @@ import java.util.List;
  * @author kec
  * @param <C>
  */
-public class SememeBuilderImpl<C extends SememeChronology<? extends SememeVersion>> extends ComponentBuilder<C> implements SememeBuilder<C> {
+public class SememeBuilderImpl<C extends SememeChronology<? extends SememeVersion<?>>> extends ComponentBuilder<C> implements SememeBuilder<C> {
 
     IdentifiedComponentBuilder referencedComponentBuilder;
     int referencedComponentNid = Integer.MAX_VALUE;

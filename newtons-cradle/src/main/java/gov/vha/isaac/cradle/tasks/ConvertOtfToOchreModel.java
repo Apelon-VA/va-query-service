@@ -69,8 +69,8 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
 
     private TtkConceptChronicle eConcept;
     private UUID newPathUuid = null;
-    private SememeChronology<LogicGraphSememe> statedChronology = null;
-    private SememeChronology<LogicGraphSememe> inferredChronology = null;
+    private SememeChronology<LogicGraphSememe<?>> statedChronology = null;
+    private SememeChronology<LogicGraphSememe<?>> inferredChronology = null;
     private final StampCoordinate latestOnDevCoordinate = StampCoordinates.getDevelopmentLatest();
     private final LogicCoordinate logicCoordinate = LogicCoordinates.getStandardElProfile();
     private final ImportEConceptFile parentTask;
@@ -107,7 +107,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                             + "<" + conceptChronology.getConceptSequence() + "> Found more than one inferred definition"
                             + inferredSememeSequences + "\n eConcept: " + eConcept);
                 }
-                inferredChronology = (SememeChronology<LogicGraphSememe>) Get.sememeService().getSememe(inferredSememeSequences.findFirst().getAsInt());
+                inferredChronology = (SememeChronology<LogicGraphSememe<?>>) Get.sememeService().getSememe(inferredSememeSequences.findFirst().getAsInt());
             }
             if (!statedSememeSequences.isEmpty()) {
                 if (statedSememeSequences.size() > 1) {
@@ -115,7 +115,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                             + "<" + conceptChronology.getConceptSequence() + "> Found more than one stated definition"
                             + statedSememeSequences + "\n eConcept: " + eConcept);
                 }
-                statedChronology = (SememeChronology<LogicGraphSememe>) Get.sememeService().getSememe(statedSememeSequences.findFirst().getAsInt());
+                statedChronology = (SememeChronology<LogicGraphSememe<?>>) Get.sememeService().getSememe(statedSememeSequences.findFirst().getAsInt());
             }
             TreeSet<StampPositionImpl> stampPositionSet = new TreeSet<>();
             eConcept.getStampSequenceStream().distinct().forEach((stampSequence) -> {
@@ -166,7 +166,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                                 IsaacMetadataAuxiliaryBinding.IHTSDO_CLASSIFIER.getSequence(),
                                 moduleSequence, stampPosition.getStampPathSequence());
                         if (inferredChronology == null) {
-                            SememeBuilder<SememeChronology<LogicGraphSememe>> builder
+                            SememeBuilder<SememeChronology<LogicGraphSememe<?>>> builder
                                     = parentTask.sememeBuilderService.getLogicalExpressionSememeBuilder(inferredExpression,
                                             conceptChronology.getNid(), logicCoordinate.getInferredAssemblageSequence());
                             inferredChronology = builder.build(stampSequence, new ArrayList());
@@ -186,7 +186,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                                 IsaacMetadataAuxiliaryBinding.USER.getSequence(),
                                 moduleSequence, stampPosition.getStampPathSequence());
                         if (statedChronology == null) {
-                            SememeBuilder<SememeChronology<LogicGraphSememe>> builder
+                            SememeBuilder<SememeChronology<LogicGraphSememe<?>>> builder
                                     = parentTask.sememeBuilderService.getLogicalExpressionSememeBuilder(statedExpression,
                                             conceptChronology.getNid(), logicCoordinate.getStatedAssemblageSequence());
                             statedChronology = builder.build(stampSequence, new ArrayList());
@@ -302,7 +302,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
         return assertionList.toArray(new Assertion[assertionList.size()]);
     }
 
-    private void removeDuplicates(SememeChronology<LogicGraphSememe> logicChronology) {
+    private void removeDuplicates(SememeChronology<LogicGraphSememe<?>> logicChronology) {
 
         RelativePositionCalculator calc = RelativePositionCalculator.getCalculator(latestOnDevCoordinate);
         SortedSet<LogicGraphSememe> sortedLogicGraphs = new TreeSet<>((LogicGraphSememe graph1, LogicGraphSememe graph2) -> {

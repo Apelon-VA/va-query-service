@@ -202,11 +202,11 @@ public class ImportEConceptOchreModel implements Callable<Void> {
         switch (member.getType()) {
             case CID:
                 TtkRefexUuidMemberChronicle cidMember = (TtkRefexUuidMemberChronicle) member;
-                SememeBuilder<SememeChronology<MutableComponentNidSememe>> cidBuilder =
+                SememeBuilder<SememeChronology<MutableComponentNidSememe<?>>> cidBuilder =
                         sememeBuilderService.getComponentSememeBuilder(Get.identifierService().getNidForUuids(cidMember.uuid1),
                                 referencedComponentNid,
                                 assemblageSequence);
-                SememeChronology<MutableComponentNidSememe> cidSememe = cidBuilder.build(stampSequence, new ArrayList());
+                SememeChronology<MutableComponentNidSememe<?>> cidSememe = cidBuilder.build(stampSequence, new ArrayList());
                 stream(cidMember.revisions).forEach((TtkRefexUuidRevision r) -> {
                         int revisionStampSequence = getStampSequence(r);
                         MutableComponentNidSememe mutable = cidSememe.createMutableVersion(MutableComponentNidSememe.class, revisionStampSequence);
@@ -217,10 +217,10 @@ public class ImportEConceptOchreModel implements Callable<Void> {
                 
             case MEMBER:
                 TtkRefexMemberChronicle memberMember = (TtkRefexMemberChronicle) member;
-                SememeBuilder<SememeChronology<MutableSememeVersion>> mb =
+                SememeBuilder<SememeChronology<MutableSememeVersion<?>>> mb =
                         sememeBuilderService.getMembershipSememeBuilder(referencedComponentNid,
                                 assemblageSequence);
-                SememeChronology<MutableSememeVersion> memberSememe = mb.build(stampSequence, new ArrayList());
+                SememeChronology<MutableSememeVersion<?>> memberSememe = mb.build(stampSequence, new ArrayList());
                 
                 stream(memberMember.revisions).forEach((TtkRefexRevision r) -> {
                         int revisionStampSequence = getStampSequence(r);

@@ -81,7 +81,7 @@ public class UpdateTaxonomyAfterCommitTask extends TimedTask<Void> {
                 this.updateProgress(workDone, totalWork);
                 if (commitRecord.getSememesInCommit().contains(sememeSequence)) {
                     this.updateMessage("Updating taxonomy for: " + sememeSequence);
-                    taxonomyService.updateTaxonomy((SememeChronology<LogicGraphSememe>) Get.sememeService().getSememe(sememeSequence));
+                    taxonomyService.updateTaxonomy((SememeChronology<LogicGraphSememe<?>>) Get.sememeService().getSememe(sememeSequence));
                     sememeSequencesForUnhandledChanges.remove(sememeSequence);
                 }
             });
