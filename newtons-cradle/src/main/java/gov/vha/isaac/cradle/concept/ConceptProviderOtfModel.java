@@ -36,6 +36,7 @@ import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.model.concept.ConceptChronologyImpl;
 import gov.vha.isaac.ochre.model.concept.ConceptSnapshotImpl;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,7 +44,9 @@ import java.text.ParseException;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.IntFunction;
 import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
@@ -232,8 +235,11 @@ public class ConceptProviderOtfModel implements ConceptService, DelegateService 
     }
 
     @Override
-    public void writeConcept(ConceptChronology<? extends ConceptVersion> concept) {
-        ConceptChronicleDataEager conceptData = (ConceptChronicleDataEager) ((ConceptChronicle) concept).getData();
+    public void writeConcept(ConceptChronology<? extends ConceptVersion<?>> concept) {
+    	// TODO I don't know how this can work since ConceptChronology does not
+    	// derive from ConceptChronicle and does not have a getData() method
+    	ConceptChronicle cchronicle = ConceptChronicle.class.cast(concept);
+        ConceptChronicleDataEager conceptData = (ConceptChronicleDataEager) cchronicle.getData();
         writeConceptData(conceptData);
     }
 
@@ -250,44 +256,67 @@ public class ConceptProviderOtfModel implements ConceptService, DelegateService 
     }
 
     @Override
-    public Optional<? extends ConceptChronology<? extends ConceptVersion>> getOptionalConcept(int conceptId) {
+    public Optional<? extends ConceptChronology<? extends ConceptVersion<?>>> getOptionalConcept(int conceptId) {
         try {
             if (conceptId >= 0) {
                 conceptId = Get.identifierService().getConceptNid(conceptId);
             }
-            return Optional.of(ConceptChronicle.get(conceptId));
+            ConceptChronology cc = ConceptChronicle.get(conceptId);
+            return Optional.of((ConceptChronology<? extends ConceptVersion<?>>)cc);
+
+            //return (Optional<? extends ConceptChronology<? extends ConceptVersion<?>>>)Optional.of(ConceptChronicle.get(conceptId));
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
     }
 
     @Override
-    public Optional<? extends ConceptChronology<? extends ConceptVersion>> getOptionalConcept(UUID... conceptUuids) {
+    public Optional<? extends ConceptChronology<? extends ConceptVersion<?>>> getOptionalConcept(UUID... conceptUuids) {
         return getOptionalConcept(Get.identifierService().getConceptSequenceForUuids(conceptUuids));
     }
 
     @Override
-    public ConceptChronology<? extends ConceptVersion> getConcept(UUID... conceptUuids) {
+    public ConceptChronology<? extends ConceptVersion<?>> getConcept(UUID... conceptUuids) {
         return getConcept(Get.identifierService().getNidForUuids(conceptUuids));
     }
 
     @Override
-    public Stream<ConceptChronology<? extends ConceptVersion>> getConceptChronologyStream() {
-        return getConceptStream().map((cc) -> {return (ConceptChronology<? extends ConceptVersion>) cc;});
+    public Stream<ConceptChronology<? extends ConceptVersion<?>>> getConceptChronologyStream() {
+        return getConceptStream().map((cc) -> {
+        	ConceptChronology cch = (ConceptChronology)cc;
+        	return (ConceptChronology<? extends ConceptVersion<?>>) cch;
+        });
     }
 
     @Override
-    public Stream<ConceptChronology<? extends ConceptVersion>> getParallelConceptChronologyStream() {
-        return getParallelConceptStream().map((cc) -> {return (ConceptChronology<? extends ConceptVersion>) cc;});
+    public Stream<ConceptChronology<? extends ConceptVersion<?>>> getParallelConceptChronologyStream() {
+        return getParallelConceptStream().map((cc) -> {
+        	ConceptChronology cch = (ConceptChronology)cc;
+        	return (ConceptChronology<? extends ConceptVersion<?>>) cch;
+        });
     }
     @Override
-    public Stream<ConceptChronology<? extends ConceptVersion>> getParallelConceptChronologyStream(ConceptSequenceSet conceptSequences) {
-        return conceptSequences.stream().parallel().mapToObj((int sequence) -> conceptMap.getQuick(sequence).getConceptChronicle());
+    public Stream<ConceptChronology<? extends ConceptVersion<?>>> getParallelConceptChronologyStream(ConceptSequenceSet conceptSequences) {
+    	final IntFunction<? extends ConceptChronology<? extends ConceptVersion<?>>> func = new IntFunction<ConceptChronology<? extends ConceptVersion<?>>>() {
+            @Override
+            public ConceptChronology<? extends ConceptVersion<?>> apply(int sequence) {
+            	ConceptChronology cch = conceptMap.getQuick(sequence).getConceptChronicle();
+                return (ConceptChronology<? extends ConceptVersion<?>>)cch;
+            }
+        };
+    	return conceptSequences.stream().parallel().mapToObj(func);
     }
 
     @Override
-    public Stream<ConceptChronology<? extends ConceptVersion>> getConceptChronologyStream(ConceptSequenceSet conceptSequences) {
-        return conceptSequences.stream().mapToObj((int sequence) -> conceptMap.getQuick(sequence).getConceptChronicle());
+    public Stream<ConceptChronology<? extends ConceptVersion<?>>> getConceptChronologyStream(ConceptSequenceSet conceptSequences) {
+    	final IntFunction<? extends ConceptChronology<? extends ConceptVersion<?>>> func = new IntFunction<ConceptChronology<? extends ConceptVersion<?>>>() {
+            @Override
+            public ConceptChronology<? extends ConceptVersion<?>> apply(int sequence) {
+            	ConceptChronology cch = conceptMap.getQuick(sequence).getConceptChronicle();
+                return (ConceptChronology<? extends ConceptVersion<?>>)cch;
+            }
+        };
+    	return conceptSequences.stream().mapToObj(func);
     }
 
     @Override

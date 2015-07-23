@@ -141,7 +141,7 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
     }
 
     @Override
-    public Optional<? extends ConceptChronology<? extends ConceptVersion>> getOptionalConcept(int conceptId) {
+    public Optional<? extends ConceptChronology<? extends ConceptVersion<?>>> getOptionalConcept(int conceptId) {
         if (conceptId < 0) {
             conceptId = Get.identifierService().getConceptSequence(conceptId);
         }
@@ -149,7 +149,7 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
     }
 
     @Override
-    public Optional<? extends ConceptChronology<? extends ConceptVersion>> getOptionalConcept(UUID... conceptUuids) {
+    public Optional<? extends ConceptChronology<? extends ConceptVersion<?>>> getOptionalConcept(UUID... conceptUuids) {
         return getOptionalConcept(Get.identifierService().getConceptSequenceForUuids(conceptUuids));
     }
 
@@ -241,14 +241,14 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
     }
 
     @Override
-    public Stream<ConceptChronology<? extends ConceptVersion>> getConceptChronologyStream() {
+    public Stream<ConceptChronology<? extends ConceptVersion<?>>> getConceptChronologyStream() {
         return conceptMap.getStream().map((cc) -> {
-            return (ConceptChronology<? extends ConceptVersion>) cc;
+            return (ConceptChronology<? extends ConceptVersion<?>>) cc;
         });
     }
 
     @Override
-    public Stream<ConceptChronology<? extends ConceptVersion>> getConceptChronologyStream(ConceptSequenceSet conceptSequences) {
+    public Stream<ConceptChronology<? extends ConceptVersion<?>>> getConceptChronologyStream(ConceptSequenceSet conceptSequences) {
         return Get.identifierService().getConceptSequenceStream()
                 .filter((int sequence) -> conceptSequences.contains(sequence))
                 .mapToObj((int sequence) -> {
@@ -262,7 +262,7 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
     }
 
     @Override
-    public Stream<ConceptChronology<? extends ConceptVersion>> getParallelConceptChronologyStream(ConceptSequenceSet conceptSequences) {
+    public Stream<ConceptChronology<? extends ConceptVersion<?>>> getParallelConceptChronologyStream(ConceptSequenceSet conceptSequences) {
         return Get.identifierService().getParallelConceptSequenceStream()
                 .filter((int sequence) -> conceptSequences.contains(sequence))
                 .mapToObj((int sequence) -> {
@@ -275,7 +275,7 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
     }
 
     @Override
-    public Stream<ConceptChronology<? extends ConceptVersion>> getParallelConceptChronologyStream() {
+    public Stream<ConceptChronology<? extends ConceptVersion<?>>> getParallelConceptChronologyStream() {
         return conceptMap.getParallelStream().map((cc) -> {
             return cc;
         });
@@ -294,7 +294,7 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
     }
 
     @Override
-    public void writeConcept(ConceptChronology<? extends ConceptVersion> concept) {
+    public void writeConcept(ConceptChronology<? extends ConceptVersion<?>> concept) {
         conceptMap.put(concept.getConceptSequence(), (ConceptChronologyImpl) concept);
     }
 

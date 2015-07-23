@@ -47,27 +47,27 @@ public class ConceptProviderManager implements ConceptService {
     ConceptService delegate;
 
     @Override
-    public Optional<? extends ConceptChronology<? extends ConceptVersion>> getOptionalConcept(int conceptId) {
+    public Optional<? extends ConceptChronology<? extends ConceptVersion<?>>> getOptionalConcept(int conceptId) {
         return delegate.getOptionalConcept(conceptId);
     }
 
     @Override
-    public Optional<? extends ConceptChronology<? extends ConceptVersion>> getOptionalConcept(UUID... conceptUuids) {
+    public Optional<? extends ConceptChronology<? extends ConceptVersion<?>>> getOptionalConcept(UUID... conceptUuids) {
         return delegate.getOptionalConcept(conceptUuids);
     }
 
     @Override
-    public ConceptChronology<? extends ConceptVersion> getConcept(int conceptSequence) {
+    public ConceptChronology<? extends ConceptVersion<?>> getConcept(int conceptSequence) {
         return delegate.getConcept(conceptSequence);
     }
 
     @Override
-    public ConceptChronology<? extends ConceptVersion> getConcept(UUID... conceptUuids) {
+    public ConceptChronology<? extends ConceptVersion<?>> getConcept(UUID... conceptUuids) {
         return delegate.getConcept(conceptUuids);
     }
 
     @Override
-    public void writeConcept(ConceptChronology<? extends ConceptVersion> concept) {
+    public void writeConcept(ConceptChronology<? extends ConceptVersion<?>> concept) {
         delegate.writeConcept(concept);
     }
 
@@ -87,22 +87,22 @@ public class ConceptProviderManager implements ConceptService {
     }
 
     @Override
-    public Stream<ConceptChronology<? extends ConceptVersion>> getConceptChronologyStream() {
+    public Stream<ConceptChronology<? extends ConceptVersion<?>>> getConceptChronologyStream() {
         return delegate.getConceptChronologyStream();
     }
 
     @Override
-    public Stream<ConceptChronology<? extends ConceptVersion>> getParallelConceptChronologyStream() {
+    public Stream<ConceptChronology<? extends ConceptVersion<?>>> getParallelConceptChronologyStream() {
         return delegate.getParallelConceptChronologyStream();
     }
 
     @Override
-    public Stream<ConceptChronology<? extends ConceptVersion>> getConceptChronologyStream(ConceptSequenceSet conceptSequences) {
+    public Stream<ConceptChronology<? extends ConceptVersion<?>>> getConceptChronologyStream(ConceptSequenceSet conceptSequences) {
         return delegate.getConceptChronologyStream(conceptSequences);
     }
 
     @Override
-    public Stream<ConceptChronology<? extends ConceptVersion>> getParallelConceptChronologyStream(ConceptSequenceSet conceptSequences) {
+    public Stream<ConceptChronology<? extends ConceptVersion<?>>> getParallelConceptChronologyStream(ConceptSequenceSet conceptSequences) {
         return delegate.getParallelConceptChronologyStream(conceptSequences);
     }
 

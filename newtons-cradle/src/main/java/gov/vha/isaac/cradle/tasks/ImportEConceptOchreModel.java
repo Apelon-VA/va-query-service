@@ -24,6 +24,8 @@ import gov.vha.isaac.metadata.coordinates.LanguageCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import gov.vha.isaac.ochre.api.component.sememe.SememeBuilder;
 import gov.vha.isaac.ochre.api.component.sememe.SememeBuilderService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
@@ -33,12 +35,14 @@ import gov.vha.isaac.ochre.api.component.sememe.version.MutableSememeVersion;
 import gov.vha.isaac.ochre.model.concept.ConceptChronologyImpl;
 import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
 import gov.vha.isaac.ochre.model.sememe.version.DescriptionSememeImpl;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;

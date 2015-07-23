@@ -680,7 +680,7 @@ public class Cradle
             try {
                 int conNid = Get.identifierService().getConceptSequenceForComponentNid(nid);
                 if (conNid != Integer.MAX_VALUE) {
-                    ConceptChronicle concept = (ConceptChronicle) Get.conceptService().getConcept(conNid);
+                    ConceptChronicle concept = ConceptChronicle.class.cast(Get.conceptService().getConcept(conNid));
                     return Optional.ofNullable(concept.getComponent(nid));
                 }
             } catch (IOException ex) {
