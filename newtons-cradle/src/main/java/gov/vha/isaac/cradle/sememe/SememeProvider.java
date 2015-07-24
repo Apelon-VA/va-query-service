@@ -328,7 +328,7 @@ public class SememeProvider implements SememeService {
     int descriptionAssemblageSequence = Integer.MIN_VALUE;
 
     @Override
-    public Stream<SememeChronology<DescriptionSememe>> getDescriptionsForComponent(int componentNid) {
+    public Stream<SememeChronology<DescriptionSememe<?>>> getDescriptionsForComponent(int componentNid) {
         if (descriptionAssemblageSequence == Integer.MIN_VALUE) {
             descriptionAssemblageSequence = Get.identifierService().getConceptSequenceForUuids(IsaacMetadataAuxiliaryBinding.DESCRIPTION_ASSEMBLAGE.getUuids());
         }

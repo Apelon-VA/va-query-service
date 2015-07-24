@@ -142,24 +142,24 @@ public class ConceptProviderOtfModel implements ConceptService, DelegateService 
         }
 
         @Override
-        public Optional<LatestVersion<DescriptionSememe>> getFullySpecifiedDescription(int conceptId) {
+        public Optional<LatestVersion<DescriptionSememe<?>>> getFullySpecifiedDescription(int conceptId) {
             return languageCoordinate.getFullySpecifiedDescription(getConcept(conceptId).getConceptDescriptionList(), stampCoordinate);
         }
 
         @Override
-        public Optional<LatestVersion<DescriptionSememe>> getPreferredDescription(int conceptId) {
+        public Optional<LatestVersion<DescriptionSememe<?>>> getPreferredDescription(int conceptId) {
            return languageCoordinate.getPreferredDescription(getConcept(conceptId).getConceptDescriptionList(), stampCoordinate);
         }
 
     
         @Override
-        public Optional<LatestVersion<DescriptionSememe>> getDescriptionOptional(int conceptId) {
+        public Optional<LatestVersion<DescriptionSememe<?>>> getDescriptionOptional(int conceptId) {
             return languageCoordinate.getDescription(getConcept(conceptId).getConceptDescriptionList(), stampCoordinate);
         }        
 
         @Override
         public String conceptDescriptionText(int conceptId) {
-            Optional<LatestVersion<DescriptionSememe>> value = getDescriptionOptional(conceptId);
+            Optional<LatestVersion<DescriptionSememe<?>>> value = getDescriptionOptional(conceptId);
             if (value.isPresent()) {
                 return value.get().value().getText();
             }

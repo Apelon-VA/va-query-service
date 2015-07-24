@@ -209,28 +209,28 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
         }
 
         @Override
-        public Optional<LatestVersion<DescriptionSememe>> getFullySpecifiedDescription(int conceptId) {
+        public Optional<LatestVersion<DescriptionSememe<?>>> getFullySpecifiedDescription(int conceptId) {
             return languageCoordinate.getFullySpecifiedDescription(getDescriptionList(conceptId), stampCoordinate);
         }
 
         @Override
-        public Optional<LatestVersion<DescriptionSememe>> getPreferredDescription(int conceptId) {
+        public Optional<LatestVersion<DescriptionSememe<?>>> getPreferredDescription(int conceptId) {
             return languageCoordinate.getPreferredDescription(getDescriptionList(conceptId), stampCoordinate);
         }
 
-        private List<SememeChronology<DescriptionSememe>> getDescriptionList(int conceptId) {
+        private List<SememeChronology<DescriptionSememe<?>>> getDescriptionList(int conceptId) {
             conceptId = Get.identifierService().getConceptNid(conceptId);
             return Get.sememeService().getDescriptionsForComponent(conceptId).collect(Collectors.toList());
         }
 
         @Override
-        public Optional<LatestVersion<DescriptionSememe>> getDescriptionOptional(int conceptId) {
+        public Optional<LatestVersion<DescriptionSememe<?>>> getDescriptionOptional(int conceptId) {
             return languageCoordinate.getDescription(getDescriptionList(conceptId), stampCoordinate);
         }
 
         @Override
         public String conceptDescriptionText(int conceptId) {
-            Optional<LatestVersion<DescriptionSememe>> descriptionOptional
+            Optional<LatestVersion<DescriptionSememe<?>>> descriptionOptional
                     = getDescriptionOptional(conceptId);
             if (descriptionOptional.isPresent()) {
                 return descriptionOptional.get().value().getText();
