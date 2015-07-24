@@ -38,7 +38,7 @@ import java.util.List;
  *
  * @author kec
  */
-public class ConceptBuilderOchreImpl extends ComponentBuilder<ConceptChronology> implements ConceptBuilder {
+public class ConceptBuilderOchreImpl extends ComponentBuilder<ConceptChronology<?>> implements ConceptBuilder {
 
     private final String conceptName;
     private final String semanticTag;

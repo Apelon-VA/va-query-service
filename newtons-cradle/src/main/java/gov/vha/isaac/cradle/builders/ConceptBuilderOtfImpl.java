@@ -42,7 +42,7 @@ import org.ihtsdo.otf.tcc.model.cc.description.Description;
  *
  * @author kec
  */
-public class ConceptBuilderOtfImpl extends ComponentBuilder<ConceptChronology> implements ConceptBuilder {
+public class ConceptBuilderOtfImpl extends ComponentBuilder<ConceptChronology<?>> implements ConceptBuilder {
     private final String conceptName;
     private final String semanticTag;
     private final ConceptProxy defaultLanguageForDescriptions;
