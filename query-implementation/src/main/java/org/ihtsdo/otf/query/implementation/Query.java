@@ -347,9 +347,9 @@ public abstract class Query {
                 resultSet.stream().forEach((nid) -> {
                     try {
                         ConceptChronology<? extends ConceptVersion> concept = Get.conceptService().getConcept(nid);
-                        Optional<LatestVersion<DescriptionSememe>> desc = concept.getFullySpecifiedDescription(languageCoordinate, stampCoordinate);
+                        Optional<LatestVersion<DescriptionSememe<?>>> desc = concept.getFullySpecifiedDescription(languageCoordinate, stampCoordinate);
                         if (desc.isPresent()) {
-                            LatestVersion<DescriptionSememe> descVersion = desc.get();
+                            LatestVersion<DescriptionSememe<?>> descVersion = desc.get();
                             ConceptChronicleDdo cc = new ConceptChronicleDdo(taxonomyCoordinate, concept,
                                     RefexPolicy.REFEX_MEMBERS_AND_REFSET_MEMBERS, RelationshipPolicy.DESTINATION_RELATIONSHIPS);
                             DescriptionChronicleDdo descChronicle = new DescriptionChronicleDdo(taxonomyCoordinate, cc, descVersion.value().getChronology());
@@ -366,9 +366,9 @@ public abstract class Query {
                 resultSet.stream().forEach((nid) -> {
                     try {
                         ConceptChronology<? extends ConceptVersion> concept = Get.conceptService().getConcept(nid);
-                        Optional<LatestVersion<DescriptionSememe>> desc = concept.getPreferredDescription(languageCoordinate, stampCoordinate);
+                        Optional<LatestVersion<DescriptionSememe<?>>> desc = concept.getPreferredDescription(languageCoordinate, stampCoordinate);
                         if (desc.isPresent()) {
-                            LatestVersion<DescriptionSememe> descVersion = desc.get();
+                            LatestVersion<DescriptionSememe<?>> descVersion = desc.get();
                             ConceptChronicleDdo cc = new ConceptChronicleDdo(taxonomyCoordinate, concept,
                                     RefexPolicy.REFEX_MEMBERS_AND_REFSET_MEMBERS, RelationshipPolicy.DESTINATION_RELATIONSHIPS);
                             DescriptionChronicleDdo descChronicle = new DescriptionChronicleDdo(taxonomyCoordinate, cc, descVersion.value().getChronology());

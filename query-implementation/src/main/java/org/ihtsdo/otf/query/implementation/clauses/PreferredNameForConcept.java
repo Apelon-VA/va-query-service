@@ -78,7 +78,7 @@ public class PreferredNameForConcept extends ParentClause {
         getChildren().stream().map((childClause) -> childClause.computePossibleComponents(incomingConcepts)).map((childPossibleComponentNids) -> ConceptSequenceSet.of(childPossibleComponentNids)).forEach((conceptSequenceSet) -> {
             Get.conceptService().getConceptChronologyStream(conceptSequenceSet)
                     .forEach((conceptChronology) -> {
-                        Optional<LatestVersion<DescriptionSememe>> desc = 
+                        Optional<LatestVersion<DescriptionSememe<?>>> desc = 
                                 conceptChronology.getPreferredDescription(languageCoordinate, stampCoordinate);
                         if (desc.isPresent()) {
                             outgoingPreferredNids.add(desc.get().value().getNid());

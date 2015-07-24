@@ -72,7 +72,7 @@ public class FullySpecifiedNameForConcept extends ParentClause {
             ConceptSequenceSet conceptSequenceSet = ConceptSequenceSet.of(childPossibleComponentNids);
             Get.conceptService().getConceptChronologyStream(conceptSequenceSet)
                     .forEach((conceptChronology) -> {
-                        Optional<LatestVersion<DescriptionSememe>> desc = 
+                        Optional<LatestVersion<DescriptionSememe<?>>> desc = 
                                 conceptChronology.getFullySpecifiedDescription(languageCoordinate, stampCoordinate);
                         if (desc.isPresent()) {
                             outgoingFullySpecifiedNids.add(desc.get().value().getNid());
