@@ -380,7 +380,7 @@ public class CradleIntegrationTests {
         ConceptSequenceSet calcinosisParents = getParentsSequences(calcinosisProxy.getSequence(), tree, taxonomyCoordinate);
         log.info(calcinosisProxy.getDescription() + " parents: " + calcinosisParents);
 
-        Optional<SememeChronology<? extends SememeVersion>> statedDefinition = Get.statedDefinitionChronology(calcinosisProxy.getNid());
+        Optional<SememeChronology<? extends SememeVersion<?>>> statedDefinition = Get.statedDefinitionChronology(calcinosisProxy.getNid());
         if (statedDefinition.isPresent()) {
             List<? extends SememeVersion> versions = statedDefinition.get().getVisibleOrderedVersionList(taxonomyCoordinate.getStampCoordinate());
             for (int i = 1; i < versions.size(); i++) {

@@ -169,7 +169,7 @@ public class SememeProvider implements SememeService {
     }
 
     @Override
-    public Stream<SememeChronology<? extends SememeVersion>> getSememesFromAssemblage(int assemblageConceptSequence) {
+    public Stream<SememeChronology<? extends SememeVersion<?>>> getSememesFromAssemblage(int assemblageConceptSequence) {
         SememeSequenceSet sememeSequences = getSememeSequencesFromAssemblage(assemblageConceptSequence);
         return sememeSequences.stream().mapToObj((int sememeSequence) -> getSememe(sememeSequence));
     }
@@ -187,7 +187,7 @@ public class SememeProvider implements SememeService {
     }
 
     @Override
-    public Stream<SememeChronology<? extends SememeVersion>> getSememesForComponent(int componentNid) {
+    public Stream<SememeChronology<? extends SememeVersion<?>>> getSememesForComponent(int componentNid) {
         SememeSequenceSet sememeSequences = getSememeSequencesForComponent(componentNid);
         return sememeSequences.stream().mapToObj((int sememeSequence) -> getSememe(sememeSequence));
     }
@@ -206,7 +206,7 @@ public class SememeProvider implements SememeService {
     }
 
     @Override
-    public Stream<SememeChronology<? extends SememeVersion>> getSememesForComponentFromAssemblage(int componentNid, int mblageConceptSequence) {
+    public Stream<SememeChronology<? extends SememeVersion<?>>> getSememesForComponentFromAssemblage(int componentNid, int mblageConceptSequence) {
         if (componentNid >= 0) {
             componentNid = Get.identifierService().getConceptNid(componentNid);
         }
@@ -308,12 +308,12 @@ public class SememeProvider implements SememeService {
     }
 
     @Override
-    public Stream<SememeChronology<? extends SememeVersion>> getSememeStream() {
+    public Stream<SememeChronology<? extends SememeVersion<?>>> getSememeStream() {
         return Get.identifierService().getSememeSequenceStream().mapToObj((int sememeSequence) -> getSememe(sememeSequence));
     }
 
     @Override
-    public Stream<SememeChronology<? extends SememeVersion>> getParallelSememeStream() {
+    public Stream<SememeChronology<? extends SememeVersion<?>>> getParallelSememeStream() {
         return Get.identifierService().getSememeSequenceStream().parallel().mapToObj((int sememeSequence) -> {
             try {
                 //TODO Keith - this is DEBUG code that should be removed - it isn't proper to inject a null into the return stream.  However, something _ELSE_
@@ -328,7 +328,7 @@ public class SememeProvider implements SememeService {
     int descriptionAssemblageSequence = Integer.MIN_VALUE;
 
     @Override
-    public Stream<SememeChronology<DescriptionSememe>> getDescriptionsForComponent(int componentNid) {
+    public Stream<SememeChronology<DescriptionSememe<?>>> getDescriptionsForComponent(int componentNid) {
         if (descriptionAssemblageSequence == Integer.MIN_VALUE) {
             descriptionAssemblageSequence = Get.identifierService().getConceptSequenceForUuids(IsaacMetadataAuxiliaryBinding.DESCRIPTION_ASSEMBLAGE.getUuids());
         }
