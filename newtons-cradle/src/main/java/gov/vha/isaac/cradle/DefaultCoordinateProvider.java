@@ -59,7 +59,7 @@ public class DefaultCoordinateProvider {
                 observableLogicCoordinate = new ObservableLogicCoordinateImpl(LogicCoordinates.getStandardElProfile());
                 observableStampCoordinate = new ObservableStampCoordinateImpl(StampCoordinates.getDevelopmentLatestActiveOnly());
                 observableStampPosition = new ObservableStampPositionImpl(StampCoordinates.getDevelopmentLatestActiveOnly().getStampPosition());
-                observableTaxonomyCoordinate = new ObservableTaxonomyCoordinateImpl(TaxonomyCoordinates.getInferredTaxonomyCoordinate(observableStampCoordinate, observableLanguageCoordinate));
+                observableTaxonomyCoordinate = new ObservableTaxonomyCoordinateImpl(TaxonomyCoordinates.getInferredTaxonomyCoordinate(observableStampCoordinate, observableLanguageCoordinate, observableLogicCoordinate));
                 observableStampCoordinate.stampPositionProperty().setValue(observableStampPosition);
                 defaultsSetupLatch.countDown();
             }
@@ -92,7 +92,7 @@ public class DefaultCoordinateProvider {
 
     public void setDefaultLanguage(int conceptId) {
         setupDefaults();
-        observableLanguageCoordinate.lanugageConceptSequenceProperty().set(Get.identifierService().getConceptSequence(conceptId));
+        observableLanguageCoordinate.languageConceptSequenceProperty().set(Get.identifierService().getConceptSequence(conceptId));
     }
 
     public void setDefaultDialectAssemblagePreferenceList(int[] dialectAssemblagePreferenceList) {
