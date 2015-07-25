@@ -169,7 +169,7 @@ public class SememeProvider implements SememeService {
     }
 
     @Override
-    public Stream<SememeChronology<? extends SememeVersion>> getSememesFromAssemblage(int assemblageConceptSequence) {
+    public Stream<SememeChronology<? extends SememeVersion<?>>> getSememesFromAssemblage(int assemblageConceptSequence) {
         SememeSequenceSet sememeSequences = getSememeSequencesFromAssemblage(assemblageConceptSequence);
         return sememeSequences.stream().mapToObj((int sememeSequence) -> getSememe(sememeSequence));
     }
@@ -187,7 +187,7 @@ public class SememeProvider implements SememeService {
     }
 
     @Override
-    public Stream<SememeChronology<? extends SememeVersion>> getSememesForComponent(int componentNid) {
+    public Stream<SememeChronology<? extends SememeVersion<?>>> getSememesForComponent(int componentNid) {
         SememeSequenceSet sememeSequences = getSememeSequencesForComponent(componentNid);
         return sememeSequences.stream().mapToObj((int sememeSequence) -> getSememe(sememeSequence));
     }
