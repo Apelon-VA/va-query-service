@@ -297,7 +297,7 @@ public abstract class Query {
 
     public static ArrayList<Object> returnDisplayObjects(NidSet resultSet, ReturnTypes returnType, StampCoordinate stampCoordinate,
             LanguageCoordinate languageCoordinate) throws ContradictionException, UnsupportedOperationException, IOException {
-        TaxonomyCoordinateImpl taxonomyCoordinate = new TaxonomyCoordinateImpl(PremiseType.STATED, stampCoordinate, languageCoordinate);
+        TaxonomyCoordinateImpl taxonomyCoordinate = new TaxonomyCoordinateImpl(PremiseType.STATED, stampCoordinate, languageCoordinate, Get.configurationService().getDefaultLogicCoordinate());
 
         ArrayList<Object> results = new ArrayList<>();
         switch (returnType) {
