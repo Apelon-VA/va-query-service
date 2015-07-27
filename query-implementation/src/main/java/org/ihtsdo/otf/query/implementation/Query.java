@@ -152,6 +152,9 @@ public abstract class Query {
      */
     public Query(TaxonomyCoordinate taxonomyCoordinate) {
         this.taxonomyCoordinate = taxonomyCoordinate;
+        if (taxonomyCoordinate != null) {
+            this.logicCoordinate = taxonomyCoordinate.getLogicCoordinate();
+        }
     }
 
     /**
@@ -254,8 +257,9 @@ public abstract class Query {
         return logicCoordinate;
     }
 
-    public void setLogicCoordinate(LogicCoordinate logicCoordinate) {
-        this.logicCoordinate = logicCoordinate;
+    public void setTaxonomyCoordinate(TaxonomyCoordinate taxonomyCoordinate) {
+        this.logicCoordinate = taxonomyCoordinate.getLogicCoordinate();
+        this.taxonomyCoordinate = taxonomyCoordinate;
     }
 
     /**
