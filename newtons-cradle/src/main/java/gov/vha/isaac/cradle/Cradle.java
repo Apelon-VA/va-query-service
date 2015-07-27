@@ -188,7 +188,7 @@ public class Cradle
             if (component.isPresent()) {
                 sb.append(component.get().getClass().getSimpleName());
             } else {
-                sb.append("null");
+                sb.append("null - ").append(nid);
             }
 
             sb.append("' ");
@@ -671,8 +671,8 @@ public class Cradle
             case CONCEPT:
                 return Get.conceptService().getOptionalConcept(nid);
             case SEMEME:
-                return Optional.ofNullable(Get.sememeService().getSememe(Get.identifierService().getSememeSequence(nid)));
-            case REFEX:
+                return Get.sememeService().getOptionalSememe(Get.identifierService().getSememeSequence(nid));
+             case REFEX:
                 return Optional.ofNullable(refexProvider.getRefex(Get.identifierService().getRefexSequence(nid)));
         }
         //If the above code doesn't identify descriptions (SEMEMEs in OCHRE) - try to find them in OTF concepts...

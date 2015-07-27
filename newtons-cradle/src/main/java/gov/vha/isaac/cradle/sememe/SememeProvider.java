@@ -45,6 +45,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.NavigableSet;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
@@ -339,6 +340,11 @@ public class SememeProvider implements SememeService {
     @Override
     public <V extends SememeVersion> SememeServiceTyped<V> ofType(Class<V> versionType) {
         return new SememeTypeProvider<>(versionType, this);
+    }
+
+    @Override
+    public Optional<? extends SememeChronology<? extends SememeVersion<?>>> getOptionalSememe(int sememeSequence) {
+        return sememeMap.getOptional(sememeSequence);
     }
 
 }
