@@ -161,7 +161,7 @@ public class ImportEConceptOchreModel implements Callable<Void> {
                                 descriptionAssemblageSequence);
                 int stampSequence = getStampSequence(desc);
                 List createdComponents = new ArrayList();
-                SememeChronologyImpl<DescriptionSememeImpl> newDescription = (SememeChronologyImpl<DescriptionSememeImpl>) descBuilder.build(stampSequence, createdComponents);
+                SememeChronologyImpl newDescription = (SememeChronologyImpl) descBuilder.build(stampSequence, createdComponents);
                 if (desc.revisions != null) {
                     for (TtkDescriptionRevision revision : desc.revisions) {
                         stampSequence = getStampSequence(revision);
