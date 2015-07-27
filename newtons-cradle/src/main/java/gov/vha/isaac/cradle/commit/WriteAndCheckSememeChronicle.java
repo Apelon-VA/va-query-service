@@ -82,7 +82,7 @@ public class WriteAndCheckSememeChronicle extends Task<Void> implements Callable
              });
              
             updateProgress(3, 3);
-            updateMessage("completed change: " + sc.toUserString());
+            updateMessage("completed change: " + sc.getSememeType() + " " + sc.getSememeSequence());
             return null;
         } finally {
             writeSemaphore.release();
