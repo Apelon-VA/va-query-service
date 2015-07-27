@@ -15,6 +15,8 @@
  */
 package org.ihtsdo.otf.query.integration.tests;
 
+import gov.vha.isaac.ochre.api.Get;
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import java.io.IOException;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
@@ -30,7 +32,11 @@ import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 public class ConceptIsTest extends QueryClauseTest {
 
     public ConceptIsTest() throws IOException {
-        final SetViewCoordinate vc = new SetViewCoordinate(2001, 1, 31, 0, 0);
+        final  TaxonomyCoordinate tc = Get.coordinateFactory().createInferredTaxonomyCoordinate(
+                Get.coordinateFactory().createDevelopmentLatestActiveOnlyStampCoordinate().makeAnalog(2002, 1, 31, 0, 0, 0), 
+                Get.coordinateFactory().getUsEnglishLanguageFullySpecifiedNameCoordinate(), 
+                Get.coordinateFactory().createStandardElProfileLogicCoordinate());
+        
         this.q = new Query() {
             @Override
             protected ForSetSpecification ForSetSpecification() {
@@ -40,7 +46,7 @@ public class ConceptIsTest extends QueryClauseTest {
             @Override
             public void Let() {
                 let("motion", Snomed.MOTION);
-                let("v2", vc.getViewCoordinate());
+                let("v2", tc);
             }
 
             @Override

@@ -71,7 +71,7 @@ public class LuceneRefexIndexer extends LuceneIndexer {
             SememeChronology<?> sememeChronology = (SememeChronology) chronicle;
             if (sememeChronology.getSememeType() == SememeType.STRING) {
                 if (snomedAssemblageSequence == Integer.MIN_VALUE) {
-                    snomedAssemblageSequence = IsaacMetadataAuxiliaryBinding.SNOMED_INTEGER_ID.getSequence();
+                    snomedAssemblageSequence = IsaacMetadataAuxiliaryBinding.SNOMED_INTEGER_ID.getConceptSequence();
                 }
 
                 if (sememeChronology.getAssemblageSequence() == snomedAssemblageSequence) {

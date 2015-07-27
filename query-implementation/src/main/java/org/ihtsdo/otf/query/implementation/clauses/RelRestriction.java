@@ -109,15 +109,15 @@ public class RelRestriction extends LeafClause {
         }
 
         relTypeSet = new ConceptSequenceSet();
-        relTypeSet.add(relType.getSequence());
+        relTypeSet.add(relType.getConceptSequence());
         if (relTypeSubsumption) {
-            relTypeSet.or(Get.taxonomyService().getKindOfSequenceSet(relType.getSequence(), viewCoordinate));
+            relTypeSet.or(Get.taxonomyService().getKindOfSequenceSet(relType.getConceptSequence(), viewCoordinate));
         }
 
         destinationSet = new ConceptSequenceSet();
-        destinationSet.add(destinationSpec.getSequence());
+        destinationSet.add(destinationSpec.getConceptSequence());
         if (destinationSubsumption) {
-            destinationSet.or(Get.taxonomyService().getKindOfSequenceSet(destinationSpec.getSequence(), viewCoordinate));
+            destinationSet.or(Get.taxonomyService().getKindOfSequenceSet(destinationSpec.getConceptSequence(), viewCoordinate));
         }
 
         return incomingPossibleComponents;

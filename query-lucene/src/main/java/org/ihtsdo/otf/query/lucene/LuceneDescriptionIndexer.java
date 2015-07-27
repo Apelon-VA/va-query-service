@@ -292,9 +292,9 @@ public class LuceneDescriptionIndexer extends LuceneIndexer implements IndexerBI
                     nidTypeMap.put(IsaacMetadataAuxiliaryBinding.DEFINITION_DESCRIPTION_TYPE.getNid(), LuceneDescriptionType.DEFINITION.name());
                     nidTypeMap.put(IsaacMetadataAuxiliaryBinding.SYNONYM.getNid(), LuceneDescriptionType.SYNONYM.name());
                     // add sequences also. 
-                    nidTypeMap.put(IsaacMetadataAuxiliaryBinding.FULLY_SPECIFIED_NAME.getSequence(), LuceneDescriptionType.FSN.name());
-                    nidTypeMap.put(IsaacMetadataAuxiliaryBinding.DEFINITION_DESCRIPTION_TYPE.getSequence(), LuceneDescriptionType.DEFINITION.name());
-                    nidTypeMap.put(IsaacMetadataAuxiliaryBinding.SYNONYM.getSequence(), LuceneDescriptionType.SYNONYM.name());
+                    nidTypeMap.put(IsaacMetadataAuxiliaryBinding.FULLY_SPECIFIED_NAME.getConceptSequence(), LuceneDescriptionType.FSN.name());
+                    nidTypeMap.put(IsaacMetadataAuxiliaryBinding.DEFINITION_DESCRIPTION_TYPE.getConceptSequence(), LuceneDescriptionType.DEFINITION.name());
+                    nidTypeMap.put(IsaacMetadataAuxiliaryBinding.SYNONYM.getConceptSequence(), LuceneDescriptionType.SYNONYM.name());
                     descSourceTypeNid = IsaacMetadataAuxiliaryBinding.DESCRIPTION_SOURCE_TYPE_REFERENCE_SETS.getNid();
                 }
                 nidsSetup.set(true);

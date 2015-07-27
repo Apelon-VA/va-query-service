@@ -16,6 +16,7 @@ package org.ihtsdo.otf.query.integration.tests;
  * limitations under the License.
  */
 import gov.vha.isaac.metadata.coordinates.LanguageCoordinates;
+import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.coordinates.StampCoordinates;
 import gov.vha.isaac.metadata.coordinates.TaxonomyCoordinates;
 import gov.vha.isaac.ochre.api.Get;
@@ -69,9 +70,9 @@ public class QueryTest {
        VC_LATEST_ACTIVE_AND_INACTIVE = StampCoordinates.getDevelopmentLatest();
         VC_LATEST_ACTIVE_ONLY = StampCoordinates.getDevelopmentLatestActiveOnly();
         TC_LATEST_ACTIVE_ONLY_INFERRED = TaxonomyCoordinates.getInferredTaxonomyCoordinate(VC_LATEST_ACTIVE_ONLY,
-                LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate());
+                LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate(), LogicCoordinates.getStandardElProfile());
         TC_LATEST_INFERRED = TaxonomyCoordinates.getInferredTaxonomyCoordinate(VC_LATEST_ACTIVE_AND_INACTIVE,
-                LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate());
+                LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate(), LogicCoordinates.getStandardElProfile());
     }
     
 
@@ -117,8 +118,11 @@ public class QueryTest {
     @Test(groups = "QueryServiceTests")
     public void testConceptIsKindOfVersioned() throws IOException, Exception {
         log.info("Test ConceptIsKindOf versioned");
-        final SetViewCoordinate d = new SetViewCoordinate(2002, 1, 31, 0, 0);
-        Query q = new Query(d.getViewCoordinate()) {
+        final TaxonomyCoordinate taxonomyCoordinate = Get.coordinateFactory().createInferredTaxonomyCoordinate(
+                Get.coordinateFactory().createDevelopmentLatestActiveOnlyStampCoordinate().makeAnalog(2002, 1, 31, 0, 0, 0), 
+                Get.coordinateFactory().getUsEnglishLanguageFullySpecifiedNameCoordinate(), 
+                Get.coordinateFactory().createStandardElProfileLogicCoordinate());;
+        Query q = new Query(taxonomyCoordinate) {
 
             @Override
             protected ForSetSpecification ForSetSpecification() {
@@ -129,7 +133,7 @@ public class QueryTest {
             @Override
             public void Let() {
                 let("motion", Snomed.MOTION);
-                let("v2", d.getViewCoordinate());
+                let("v2", taxonomyCoordinate);
             }
 
             @Override
@@ -138,7 +142,7 @@ public class QueryTest {
             }
         };
         NidSet results = q.compute();
-        log.info(d.v1.toString());
+        log.info(taxonomyCoordinate.toString());
         results.stream().forEach((nid) -> {
             try {
                 log.info(PersistentStore.get().getConcept(nid).toLongString());
@@ -195,7 +199,7 @@ public class QueryTest {
     @Test(groups = "QueryServiceTests")
     public void testXor() throws IOException, Exception {
 
-        Query q = new Query(VC_LATEST_ACTIVE_ONLY) {
+        Query q = new Query(Get.coordinateFactory().createDefaultInferredTaxonomyCoordinate()) {
             @Override
             protected ForSetSpecification ForSetSpecification() {
                 ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
@@ -234,8 +238,11 @@ public class QueryTest {
 
     @Test(groups = "QueryServiceTests")
     public void testRelTypeVersioning() throws IOException, Exception {
-        final SetViewCoordinate setViewCoordinate = new SetViewCoordinate(2002, 1, 31, 0, 0);
-        Query q = new Query(VC_LATEST_ACTIVE_ONLY) {
+        final TaxonomyCoordinate taxonomyCoordinate = Get.coordinateFactory().createInferredTaxonomyCoordinate(
+                Get.coordinateFactory().createDevelopmentLatestActiveOnlyStampCoordinate().makeAnalog(2002, 1, 31, 0, 0, 0), 
+                Get.coordinateFactory().getUsEnglishLanguageFullySpecifiedNameCoordinate(), 
+                Get.coordinateFactory().createStandardElProfileLogicCoordinate());;
+        Query q = new Query(Get.coordinateFactory().createDefaultInferredTaxonomyCoordinate()) {
             @Override
             protected ForSetSpecification ForSetSpecification() {
                 ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
@@ -246,7 +253,7 @@ public class QueryTest {
             public void Let() {
                 let("endocrine system", Snomed.STRUCTURE_OF_ENDOCRINE_SYSTEM);
                 let("finding site", Snomed.FINDING_SITE);
-                let("v2", setViewCoordinate.getViewCoordinate());
+                let("v2", taxonomyCoordinate);
             }
 
             @Override
@@ -334,7 +341,7 @@ public class QueryTest {
 
     @Test(groups = "QueryServiceTests")
     public void testRelRestrictionSubsumptionNull() throws IOException, Exception {
-        Query q = new Query(VC_LATEST_ACTIVE_ONLY) {
+        Query q = new Query(Get.coordinateFactory().createDefaultInferredTaxonomyCoordinate()) {
             @Override
             protected ForSetSpecification ForSetSpecification() {
                 ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
@@ -427,7 +434,7 @@ public class QueryTest {
 
     @Test(groups = "QueryServiceTests")
     public void queryTest() throws IOException, Exception {
-        Query q = new Query(VC_LATEST_ACTIVE_AND_INACTIVE) {
+        Query q = new Query(Get.coordinateFactory().createDefaultInferredTaxonomyCoordinate()) {
             @Override
             protected ForSetSpecification ForSetSpecification() {
                 ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
@@ -662,8 +669,11 @@ public class QueryTest {
 
     @Test(groups = "QueryServiceTests")
     public void testKindOfDiseaseVersioned() throws Exception {
-        final SetViewCoordinate setVC = new SetViewCoordinate(2002, 1, 31, 0, 0);
-        Query q = new Query(setVC.getViewCoordinate()) {
+        final TaxonomyCoordinate taxonomyCoordinate = Get.coordinateFactory().createInferredTaxonomyCoordinate(
+                Get.coordinateFactory().createDevelopmentLatestActiveOnlyStampCoordinate().makeAnalog(2002, 1, 31, 0, 0, 0), 
+                Get.coordinateFactory().getUsEnglishLanguageFullySpecifiedNameCoordinate(), 
+                Get.coordinateFactory().createStandardElProfileLogicCoordinate());;
+        Query q = new Query(taxonomyCoordinate) {
             @Override
             protected ForSetSpecification ForSetSpecification() {
                 ForSetSpecification forSetSpecification = new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
@@ -673,7 +683,7 @@ public class QueryTest {
             @Override
             public void Let() {
                 let("Disease", Snomed.DISEASE);
-                let("v2", setVC.getViewCoordinate());
+                let("v2", Get.coordinateFactory().createDefaultInferredTaxonomyCoordinate());
             }
 
             @Override

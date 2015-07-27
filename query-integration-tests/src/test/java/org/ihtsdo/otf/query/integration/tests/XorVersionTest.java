@@ -15,16 +15,16 @@
  */
 package org.ihtsdo.otf.query.integration.tests;
 
-import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
+import gov.vha.isaac.ochre.api.Get;
+import gov.vha.isaac.ochre.api.coordinate.CoordinateFactory;
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import java.io.IOException;
-import java.util.EnumSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
 import org.ihtsdo.otf.query.implementation.ForSetSpecification;
 import org.ihtsdo.otf.query.implementation.Query;
-import org.ihtsdo.otf.tcc.api.coordinate.Status;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 
 /**
@@ -35,13 +35,25 @@ import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
  */
 public class XorVersionTest extends QueryClauseTest {
     
-    SetViewCoordinate setViewCoordinate;
+    TaxonomyCoordinate taxonomyCoordinateV1;
+    TaxonomyCoordinate taxonomyCoordinateV2;
     
     public XorVersionTest() throws IOException {
-        this.setViewCoordinate = new SetViewCoordinate(2002, 1, 31, 0, 0);
-        this.setViewCoordinate.getViewCoordinate().setAllowedStatus(EnumSet.of(Status.ACTIVE));
-        Logger.getLogger(XorVersionTest.class.getName()).log(Level.INFO, "ViewCoordinate in XorVersionTest: {0}", this.setViewCoordinate.getViewCoordinate().toString());
-        this.q = new Query(ViewCoordinates.getDevelopmentInferredLatestActiveOnly()) {
+        CoordinateFactory factory = Get.coordinateFactory();
+        
+        this.taxonomyCoordinateV1 = Get.coordinateFactory().createInferredTaxonomyCoordinate(
+                factory.createDevelopmentLatestActiveOnlyStampCoordinate().makeAnalog(2002, 1, 31, 0, 0, 0), 
+                factory.getUsEnglishLanguageFullySpecifiedNameCoordinate(), 
+                factory.createStandardElProfileLogicCoordinate());
+ 
+        this.taxonomyCoordinateV2 = Get.coordinateFactory().createInferredTaxonomyCoordinate(
+                factory.createDevelopmentLatestActiveOnlyStampCoordinate(), 
+                factory.getUsEnglishLanguageFullySpecifiedNameCoordinate(), 
+                factory.createStandardElProfileLogicCoordinate());
+ 
+        Logger.getLogger(XorVersionTest.class.getName()).log(Level.INFO, 
+                "ViewCoordinate in XorVersionTest: {0}", this.taxonomyCoordinateV1);
+        this.q = new Query(taxonomyCoordinateV2) {
             @Override
             protected ForSetSpecification ForSetSpecification() {
                 return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);
@@ -50,7 +62,7 @@ public class XorVersionTest extends QueryClauseTest {
             @Override
             public void Let() {
                 let("disease", Snomed.DISEASE);
-                let("v2", setViewCoordinate.getViewCoordinate());
+                let("v2", taxonomyCoordinateV2);
             }
             
             @Override

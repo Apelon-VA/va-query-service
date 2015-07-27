@@ -18,7 +18,6 @@ package org.ihtsdo.otf.query.implementation;
 import gov.vha.isaac.metadata.coordinates.LanguageCoordinates;
 import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.coordinates.StampCoordinates;
-import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
@@ -28,6 +27,7 @@ import gov.vha.isaac.ochre.api.coordinate.LanguageCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.PremiseType;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
@@ -66,7 +66,7 @@ public abstract class Query {
     @XmlElement(name = "uuid")
     protected Set<UUID> customCollection = new HashSet<>();
 
-    public static final String currentViewCoordinateKey = "Current view coordinate";
+    public static final String currentTaxonomyCoordinateKey = "Current taxonomy coordinate";
     @XmlElementWrapper(name = "let")
     private HashMap<String, Object> letDeclarations;
 
@@ -91,11 +91,11 @@ public abstract class Query {
     public HashMap<String, Object> getLetDeclarations() {
         if (letDeclarations == null) {
             letDeclarations = new HashMap<>();
-            if (!letDeclarations.containsKey(currentViewCoordinateKey)) {
-                if (stampCoordinate != null) {
-                    letDeclarations.put(currentViewCoordinateKey, stampCoordinate);
+            if (!letDeclarations.containsKey(currentTaxonomyCoordinateKey)) {
+                if (taxonomyCoordinate != null) {
+                    letDeclarations.put(currentTaxonomyCoordinateKey, taxonomyCoordinate);
                 } else {
-                    letDeclarations.put(currentViewCoordinateKey, ViewCoordinates.getDevelopmentInferredLatestActiveOnly());
+                    letDeclarations.put(currentTaxonomyCoordinateKey, Get.configurationService().getDefaultTaxonomyCoordinate());
                 }
             }
 
@@ -119,14 +119,9 @@ public abstract class Query {
     private final EnumSet<ClauseComputeType> computeTypes
             = EnumSet.noneOf(ClauseComputeType.class);
     /**
-     * The <code>StampCoordinate</code> used in the query.
+     * The <code>TaxonomyCoordinate</code> used in the query.
      */
-    private StampCoordinate stampCoordinate;
-
-    /**
-     * The <code>LanguageCoordinate</code> used in the query.
-     */
-    private LanguageCoordinate languageCoordinate;
+    private TaxonomyCoordinate taxonomyCoordinate;
 
     private PremiseType premiseType = PremiseType.INFERRED;
 
@@ -146,30 +141,17 @@ public abstract class Query {
      * Snomed inferred latest as the input <code>ViewCoordinate</code>.
      */
     public Query() {
-        this(null, null);
+        this(null);
     }
 
     /**
      * Constructor for <code>Query</code>. If a <code>ViewCoordinate</code> is
      * not specified, the default is the Snomed inferred latest.
      *
-     * @param stampCoordinate
+     * @param taxonomyCoordinate
      */
-    public Query(StampCoordinate stampCoordinate) {
-        this(stampCoordinate, null);
-    }
-
-    public Query(StampCoordinate stampCoordinate, LanguageCoordinate languageCoordinate) {
-        if (stampCoordinate == null) {
-            this.stampCoordinate = StampCoordinates.getDevelopmentLatestActiveOnly();
-        } else {
-            this.stampCoordinate = stampCoordinate;
-        }
-        if (languageCoordinate == null) {
-            this.languageCoordinate = LanguageCoordinates.getUsEnglishLanguagePreferredTermCoordinate();
-        } else {
-            this.languageCoordinate = languageCoordinate;
-        }
+    public Query(TaxonomyCoordinate taxonomyCoordinate) {
+        this.taxonomyCoordinate = taxonomyCoordinate;
     }
 
     /**
@@ -244,7 +226,8 @@ public abstract class Query {
                 ConceptVersion mutable = concept.createMutableVersion(concept.getNid()); //TODO needs to return a mutable version, not a ConceptVersion
 
                 ConceptChronology cch = (ConceptChronology)concept;
-                Optional<LatestVersion<ConceptVersion<?>>> latest = cch.getLatestVersion(ConceptVersion.class, stampCoordinate);
+                Optional<LatestVersion<ConceptVersion<?>>> latest = 
+                        cch.getLatestVersion(ConceptVersion.class, taxonomyCoordinate.getStampCoordinate());
                 //Optional<LatestVersion<ConceptVersion<?>>> latest
                 //        = ((ConceptChronology<ConceptVersion<?>>) concept).getLatestVersion(ConceptVersion.class, stampCoordinate);
 
@@ -280,19 +263,11 @@ public abstract class Query {
      * @return the <code>StampCoordinate</code> in the query
      */
     public StampCoordinate getStampCoordinate() {
-        return stampCoordinate;
-    }
-
-    public void setStampCoordinate(StampCoordinate vc) {
-        this.stampCoordinate = vc;
+        return taxonomyCoordinate.getStampCoordinate();
     }
 
     public LanguageCoordinate getLanguageCoordinate() {
-        return languageCoordinate;
-    }
-
-    public void setLanguageCoordinate(LanguageCoordinate languageCoordinate) {
-        this.languageCoordinate = languageCoordinate;
+        return taxonomyCoordinate.getLanguageCoordinate();
     }
 
     public static ArrayList<Object> returnDisplayObjects(NidSet resultSet, ReturnTypes returnType, StampCoordinate stampCoordinate,
@@ -415,7 +390,8 @@ public abstract class Query {
      * @throws ContradictionException
      */
     public ArrayList<Object> returnDisplayObjects(NidSet resultSet, ReturnTypes returnType) throws IOException, ContradictionException {
-        return returnDisplayObjects(resultSet, returnType, stampCoordinate, languageCoordinate);
+        return returnDisplayObjects(resultSet, returnType, taxonomyCoordinate.getStampCoordinate(), 
+                taxonomyCoordinate.getLanguageCoordinate());
 
     }
 
@@ -431,7 +407,7 @@ public abstract class Query {
      * @return
      */
     protected ConceptIsKindOf ConceptIsKindOf(String conceptSpecKey) {
-        return new ConceptIsKindOf(this, conceptSpecKey, currentViewCoordinateKey);
+        return new ConceptIsKindOf(this, conceptSpecKey, currentTaxonomyCoordinateKey);
     }
 
     /**
@@ -447,7 +423,7 @@ public abstract class Query {
     }
 
     protected DescriptionRegexMatch DescriptionRegexMatch(String regexKey) {
-        return new DescriptionRegexMatch(this, regexKey, currentViewCoordinateKey);
+        return new DescriptionRegexMatch(this, regexKey, currentTaxonomyCoordinateKey);
     }
 
     protected DescriptionRegexMatch DescriptionRegexMatch(String regexKey, String viewCoordinateKey) {
@@ -455,7 +431,7 @@ public abstract class Query {
     }
 
     protected DescriptionActiveRegexMatch DescriptionActiveRegexMatch(String regexKey) {
-        return new DescriptionActiveRegexMatch(this, regexKey, currentViewCoordinateKey);
+        return new DescriptionActiveRegexMatch(this, regexKey, currentTaxonomyCoordinateKey);
     }
 
     protected DescriptionActiveRegexMatch DescriptionActiveRegexMatch(String regexKey, String viewCoordinateKey) {
@@ -473,7 +449,7 @@ public abstract class Query {
     }
 
     protected ConceptIs ConceptIs(String conceptSpecKey) {
-        return new ConceptIs(this, conceptSpecKey, currentViewCoordinateKey);
+        return new ConceptIs(this, conceptSpecKey, currentTaxonomyCoordinateKey);
     }
 
     /**
@@ -489,7 +465,7 @@ public abstract class Query {
     }
 
     protected ConceptIsDescendentOf ConceptIsDescendentOf(String conceptSpecKey) {
-        return new ConceptIsDescendentOf(this, conceptSpecKey, currentViewCoordinateKey);
+        return new ConceptIsDescendentOf(this, conceptSpecKey, currentTaxonomyCoordinateKey);
     }
 
     /**
@@ -505,7 +481,7 @@ public abstract class Query {
     }
 
     protected ConceptIsChildOf ConceptIsChildOf(String conceptSpecKey) {
-        return new ConceptIsChildOf(this, conceptSpecKey, currentViewCoordinateKey);
+        return new ConceptIsChildOf(this, conceptSpecKey, currentTaxonomyCoordinateKey);
     }
 
     /**
@@ -521,7 +497,7 @@ public abstract class Query {
     }
 
     protected DescriptionActiveLuceneMatch DescriptionActiveLuceneMatch(String queryTextKey) {
-        return new DescriptionActiveLuceneMatch(this, queryTextKey, currentViewCoordinateKey);
+        return new DescriptionActiveLuceneMatch(this, queryTextKey, currentTaxonomyCoordinateKey);
     }
 
     protected DescriptionActiveLuceneMatch DescriptionActiveLuceneMatch(String queryTextKey, String viewCoordinateKey) {
@@ -529,7 +505,7 @@ public abstract class Query {
     }
 
     protected DescriptionLuceneMatch DescriptionLuceneMatch(String queryTextKey) {
-        return new DescriptionLuceneMatch(this, queryTextKey, currentViewCoordinateKey);
+        return new DescriptionLuceneMatch(this, queryTextKey, currentTaxonomyCoordinateKey);
     }
 
     protected And And(Clause... clauses) {
@@ -537,19 +513,19 @@ public abstract class Query {
     }
 
     protected RelRestriction RelRestriction(String relTypeKey, String destinationSpecKey) {
-        return new RelRestriction(this, relTypeKey, destinationSpecKey, currentViewCoordinateKey, null, null);
+        return new RelRestriction(this, relTypeKey, destinationSpecKey, currentTaxonomyCoordinateKey, null, null);
     }
 
     protected RelRestriction RelRestriction(String relTypeKey, String destinationSpecKey, String key) {
         if (this.letDeclarations.get(key) instanceof Boolean) {
-            return new RelRestriction(this, relTypeKey, destinationSpecKey, currentViewCoordinateKey, key, null);
+            return new RelRestriction(this, relTypeKey, destinationSpecKey, currentTaxonomyCoordinateKey, key, null);
         } else {
             return new RelRestriction(this, relTypeKey, destinationSpecKey, key, null, null);
         }
     }
 
     protected RelRestriction RelRestriction(String relTypeKey, String destinatonSpecKey, String relTypeSubsumptionKey, String targetSubsumptionKey) {
-        return new RelRestriction(this, relTypeKey, destinatonSpecKey, currentViewCoordinateKey, relTypeSubsumptionKey, targetSubsumptionKey);
+        return new RelRestriction(this, relTypeKey, destinatonSpecKey, currentTaxonomyCoordinateKey, relTypeSubsumptionKey, targetSubsumptionKey);
 
     }
 
@@ -558,7 +534,7 @@ public abstract class Query {
     }
 
     protected RefsetContainsConcept RefsetContainsConcept(String refsetSpecKey, String conceptSpecKey) {
-        return new RefsetContainsConcept(this, refsetSpecKey, conceptSpecKey, currentViewCoordinateKey);
+        return new RefsetContainsConcept(this, refsetSpecKey, conceptSpecKey, currentTaxonomyCoordinateKey);
     }
 
     protected RefsetContainsConcept RefsetContainsConcept(String refsetSpecKey, String conceptSpecKey, String viewCoordinateKey) {
@@ -566,7 +542,7 @@ public abstract class Query {
     }
 
     protected RefsetContainsKindOfConcept RefsetContainsKindOfConcept(String refsetSpecKey, String conceptSpecKey) {
-        return new RefsetContainsKindOfConcept(this, refsetSpecKey, conceptSpecKey, currentViewCoordinateKey);
+        return new RefsetContainsKindOfConcept(this, refsetSpecKey, conceptSpecKey, currentTaxonomyCoordinateKey);
     }
 
     protected RefsetContainsKindOfConcept RefsetContainsKindOfConcept(String refsetSpecKey, String conceptSpecKey, String viewCoordinateKey) {
@@ -574,7 +550,7 @@ public abstract class Query {
     }
 
     protected RefsetContainsString RefsetContainsString(String refsetSpecKey, String stringMatchKey) {
-        return new RefsetContainsString(this, refsetSpecKey, stringMatchKey, currentViewCoordinateKey);
+        return new RefsetContainsString(this, refsetSpecKey, stringMatchKey, currentTaxonomyCoordinateKey);
     }
 
     protected RefsetContainsString RefsetContainsString(String refsetSpecKey, String stringMatchKey, String viewCoordinateKey) {
@@ -582,7 +558,7 @@ public abstract class Query {
     }
 
     protected RefsetLuceneMatch RefsetLuceneMatch(String queryString) {
-        return new RefsetLuceneMatch(this, queryString, currentViewCoordinateKey);
+        return new RefsetLuceneMatch(this, queryString, currentTaxonomyCoordinateKey);
     }
 
     protected PreferredNameForConcept PreferredNameForConcept(Clause clause) {
