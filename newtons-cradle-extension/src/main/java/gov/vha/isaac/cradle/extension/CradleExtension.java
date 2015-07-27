@@ -29,7 +29,7 @@ public class CradleExtension extends DatabaseBuildExtension {
         super("Cradle");
         tickSubscription = EventStreams.ticks(Duration.ofSeconds(10))
                 .subscribe(tick -> {
-                    Set<Task> taskSet = Hk2Looker.get().getService(ActiveTaskSet.class).get();
+                    Set<Task<?>> taskSet = Hk2Looker.get().getService(ActiveTaskSet.class).get();
                     taskSet.stream().forEach((task) -> {
                         tick(task);
                     });
