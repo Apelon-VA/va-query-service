@@ -39,7 +39,7 @@ import java.util.List;
  * @param <T>
  * @param <V>
  */
-public class DescriptionBuilderOchreImpl<T extends SememeChronology<V>, V extends DescriptionSememeImpl<V>> extends 
+public class DescriptionBuilderOchreImpl<T extends SememeChronology<V>, V extends DescriptionSememeImpl> extends 
             ComponentBuilder<T> 
     implements DescriptionBuilder<T,V> {
    private static final int descriptionAssemblageSequence;
@@ -106,7 +106,7 @@ public class DescriptionBuilderOchreImpl<T extends SememeChronology<V>, V extend
                         Get.identifierService().getConceptNid(conceptSequence),
                         descriptionAssemblageSequence);
         descBuilder.setPrimordialUuid(this.primordialUuid);
-        SememeChronologyImpl<V> newDescription = (SememeChronologyImpl<V>)
+        SememeChronologyImpl<DescriptionSememeImpl> newDescription = (SememeChronologyImpl<DescriptionSememeImpl>)
                 descBuilder.build(editCoordinate, changeCheckerMode, builtObjects);
         builtObjects.add(newDescription);
         SememeBuilderService sememeBuilderService = LookupService.getService(SememeBuilderService.class);
@@ -139,7 +139,7 @@ public class DescriptionBuilderOchreImpl<T extends SememeChronology<V>, V extend
                         descriptionText,
                         Get.identifierService().getConceptNid(conceptSequence),
                         descriptionAssemblageSequence);
-        SememeChronologyImpl<V> newDescription = (SememeChronologyImpl<V>)
+        SememeChronologyImpl<DescriptionSememeImpl> newDescription = (SememeChronologyImpl<DescriptionSememeImpl>)
                 descBuilder.build(stampSequence, builtObjects);
         Get.identifierService().setConceptSequenceForComponentNid(conceptSequence, newDescription.getNid());
         builtObjects.add(newDescription);
