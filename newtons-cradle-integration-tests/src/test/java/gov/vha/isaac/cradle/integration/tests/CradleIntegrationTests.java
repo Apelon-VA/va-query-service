@@ -361,8 +361,8 @@ public class CradleIntegrationTests {
 
     private void cycleTest() {
         int[] descriptionTypePreferenceList = new int[]{
-            IsaacMetadataAuxiliaryBinding.SYNONYM.getSequence(),
-            IsaacMetadataAuxiliaryBinding.FULLY_SPECIFIED_NAME.getSequence()
+            IsaacMetadataAuxiliaryBinding.SYNONYM.getConceptSequence(),
+            IsaacMetadataAuxiliaryBinding.FULLY_SPECIFIED_NAME.getConceptSequence()
         };
         Get.configurationService().setDefaultDescriptionTypePreferenceList(descriptionTypePreferenceList);
         log.info("Testing with DevelopmentLatestActiveOnly StampCoordinate");
@@ -377,8 +377,8 @@ public class CradleIntegrationTests {
         Tree tree = Get.taxonomyService().getTaxonomyTree(taxonomyCoordinate);
 
         ConceptProxy calcinosisProxy = new ConceptProxy("Calcinosis (disorder)", UUID.fromString("779ece66-7e95-323e-a261-214caf48c408"));
-        ConceptSequenceSet calcinosisParents = getParentsSequences(calcinosisProxy.getSequence(), tree, taxonomyCoordinate);
-        log.info(calcinosisProxy.getDescription() + " parents: " + calcinosisParents);
+        ConceptSequenceSet calcinosisParents = getParentsSequences(calcinosisProxy.getConceptSequence(), tree, taxonomyCoordinate);
+        log.info(calcinosisProxy.getConceptDescriptionText() + " parents: " + calcinosisParents);
 
         Optional<SememeChronology<? extends SememeVersion<?>>> statedDefinition = Get.statedDefinitionChronology(calcinosisProxy.getNid());
         if (statedDefinition.isPresent()) {
@@ -395,8 +395,8 @@ public class CradleIntegrationTests {
 //        
 //        
 //        
-//        ConceptSequenceSet psychoactiveAbuseParents = getParentsSequences(psychoactiveAbuseProxy.getSequence(), tree, taxonomyCoordinate);
-//        log.info(psychoactiveAbuseProxy.getDescription() + " parents: " + psychoactiveAbuseParents);
+//        ConceptSequenceSet psychoactiveAbuseParents = getParentsSequences(psychoactiveAbuseProxy.getConceptSequence(), tree, taxonomyCoordinate);
+//        log.info(psychoactiveAbuseProxy.getConceptDescriptionText() + " parents: " + psychoactiveAbuseParents);
     }
 
     public static ConceptSequenceSet getParentsSequences(int childSequence,

@@ -138,17 +138,17 @@ public class ImportEConceptOchreModel implements Callable<Void> {
             for (TtkDescriptionChronicle desc : eConcept.getDescriptions()) {
                 int caseSignificanceConceptSequence = LanguageCoordinates.caseSignificanceToConceptSequence(desc.initialCaseSignificant);
                 int languageConceptSequence = LanguageCoordinates.iso639toConceptSequence(desc.getLang());
-                assert languageConceptSequence == IsaacMetadataAuxiliaryBinding.ENGLISH.getSequence(): "Converting:  " + desc.getLang() + " " + desc;
+                assert languageConceptSequence == IsaacMetadataAuxiliaryBinding.ENGLISH.getConceptSequence(): "Converting:  " + desc.getLang() + " " + desc;
                 int descriptionTypeConceptSequence = Get.identifierService().getConceptSequenceForUuids(desc.getTypeUuid());
-                if (descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.PREFERRED.getSequence() ||
-                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.ACCEPTABLE.getSequence()) {
+                if (descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.PREFERRED.getConceptSequence() ||
+                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.ACCEPTABLE.getConceptSequence()) {
                     log.error("Found incorrect descripiton type: " + desc);
                 }
-                assert descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.FULLY_SPECIFIED_NAME.getSequence() ||
-                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.PREFERRED.getSequence() ||
-                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.ACCEPTABLE.getSequence() ||
-                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.SYNONYM.getSequence() ||
-                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.DEFINITION_DESCRIPTION_TYPE.getSequence(): "Converting: " + desc.getTypeUuid()
+                assert descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.FULLY_SPECIFIED_NAME.getConceptSequence() ||
+                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.PREFERRED.getConceptSequence() ||
+                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.ACCEPTABLE.getConceptSequence() ||
+                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.SYNONYM.getConceptSequence() ||
+                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.DEFINITION_DESCRIPTION_TYPE.getConceptSequence(): "Converting: " + desc.getTypeUuid()
                         + " " + desc;
                 
                 

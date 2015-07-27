@@ -42,7 +42,7 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
 
     private static int getDescriptionAssemblageSequence() {
         if (descriptionAssemblageSequence == -1) {
-            descriptionAssemblageSequence = IsaacMetadataAuxiliaryBinding.DESCRIPTION_ASSEMBLAGE.getSequence();
+            descriptionAssemblageSequence = IsaacMetadataAuxiliaryBinding.DESCRIPTION_ASSEMBLAGE.getConceptSequence();
         }
         return descriptionAssemblageSequence;
     }

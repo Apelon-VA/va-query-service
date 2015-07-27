@@ -100,8 +100,8 @@ public class DescriptionBuilderOchreImpl<T extends SememeChronology<V>, V extend
         SememeBuilderService sememeBuilder = LookupService.getService(SememeBuilderService.class);
         SememeBuilder<? extends SememeChronology<? extends DescriptionSememe>> descBuilder
                 = sememeBuilder.getDescriptionSememeBuilder(LanguageCoordinates.caseSignificanceToConceptSequence(false),
-                        languageForDescription.getSequence(),
-                        descriptionType.getSequence(),
+                        languageForDescription.getConceptSequence(),
+                        descriptionType.getConceptSequence(),
                         descriptionText,
                         Get.identifierService().getConceptNid(conceptSequence),
                         descriptionAssemblageSequence);
@@ -134,8 +134,8 @@ public class DescriptionBuilderOchreImpl<T extends SememeChronology<V>, V extend
         SememeBuilderService sememeBuilder = LookupService.getService(SememeBuilderService.class);
         SememeBuilder<? extends SememeChronology<? extends DescriptionSememe>> descBuilder
                 = sememeBuilder.getDescriptionSememeBuilder(LanguageCoordinates.caseSignificanceToConceptSequence(false),
-                        languageForDescription.getSequence(),
-                        descriptionType.getSequence(),
+                        languageForDescription.getConceptSequence(),
+                        descriptionType.getConceptSequence(),
                         descriptionText,
                         Get.identifierService().getConceptNid(conceptSequence),
                         descriptionAssemblageSequence);

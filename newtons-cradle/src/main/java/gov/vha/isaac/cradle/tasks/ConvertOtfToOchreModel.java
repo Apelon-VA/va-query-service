@@ -38,6 +38,7 @@ import static gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilder.*;
 import gov.vha.isaac.ochre.api.logic.assertions.Assertion;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePosition;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePositionCalculator;
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
 import gov.vha.isaac.ochre.model.coordinate.StampCoordinateImpl;
 import gov.vha.isaac.ochre.model.coordinate.StampPositionImpl;
@@ -127,7 +128,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
             // stamp position in the concept
             stampPositionSet.forEach((stampPosition) -> {
                 StampCoordinateImpl stampCoordinate
-                        = new StampCoordinateImpl(StampPrecedence.PATH, stampPosition, null, State.ANY_STATE_SET);
+                        = new StampCoordinateImpl(StampPrecedence.PATH, stampPosition, ConceptSequenceSet.EMPTY, State.ANY_STATE_SET);
                 RelativePositionCalculator calc = RelativePositionCalculator.getCalculator(stampCoordinate);
                 Optional<LatestVersion<TtkConceptAttributesVersion>> latestAttributeVersion
                         = calc.getLatestVersion(eConcept.getConceptAttributes());
@@ -163,7 +164,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                     if (inferredExpression.isMeaningful()) {
                         printIfMoreNodes(conceptChronology, inferredExpression);
                         int stampSequence = Get.commitService().getStampSequence(State.ACTIVE, stampPosition.getTime(),
-                                IsaacMetadataAuxiliaryBinding.IHTSDO_CLASSIFIER.getSequence(),
+                                IsaacMetadataAuxiliaryBinding.IHTSDO_CLASSIFIER.getConceptSequence(),
                                 moduleSequence, stampPosition.getStampPathSequence());
                         if (inferredChronology == null) {
                             SememeBuilder<SememeChronology<LogicGraphSememe<?>>> builder
@@ -183,7 +184,7 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                     if (statedExpression.isMeaningful()) {
                         printIfMoreNodes(conceptChronology, statedExpression);
                         int stampSequence = Get.commitService().getStampSequence(State.ACTIVE, stampPosition.getTime(),
-                                IsaacMetadataAuxiliaryBinding.USER.getSequence(),
+                                IsaacMetadataAuxiliaryBinding.USER.getConceptSequence(),
                                 moduleSequence, stampPosition.getStampPathSequence());
                         if (statedChronology == null) {
                             SememeBuilder<SememeChronology<LogicGraphSememe<?>>> builder

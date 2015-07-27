@@ -72,7 +72,7 @@ public class OchrePathProvider implements PathService {
             try {
                 pathMap = new ConcurrentHashMap<>();
                 Get.sememeService().getSememesFromAssemblage(
-                        IsaacMetadataAuxiliaryBinding.PATHS_ASSEMBLAGE.getSequence()).forEach((pathSememe) -> {
+                        IsaacMetadataAuxiliaryBinding.PATHS_ASSEMBLAGE.getConceptSequence()).forEach((pathSememe) -> {
                             int pathSequence = Get.identifierService().getConceptSequence(pathSememe.getReferencedComponentNid());
                             pathMap.put(pathSequence,
                                     new StampPathImpl(pathSequence));
@@ -85,7 +85,7 @@ public class OchrePathProvider implements PathService {
     
     private Optional<StampPath> getFromDisk(int stampPathSequence) {
         return Get.sememeService().getSememesForComponentFromAssemblage(stampPathSequence,
-                IsaacMetadataAuxiliaryBinding.PATHS_ASSEMBLAGE.getSequence()).map((sememeChronicle) -> {
+                IsaacMetadataAuxiliaryBinding.PATHS_ASSEMBLAGE.getConceptSequence()).map((sememeChronicle) -> {
                     
                     int pathId = sememeChronicle.getReferencedComponentNid();
                     pathId = Get.identifierService().getConceptSequence(pathId);
@@ -107,7 +107,7 @@ public class OchrePathProvider implements PathService {
     
     private List<StampPosition> getPathOriginsFromDb(int nid) {
         return Get.sememeService().getSememesForComponentFromAssemblage(nid,
-                IsaacMetadataAuxiliaryBinding.PATH_ORIGINS_ASSEMBLAGE.getSequence())
+                IsaacMetadataAuxiliaryBinding.PATH_ORIGINS_ASSEMBLAGE.getConceptSequence())
                 .map((pathOrigin) -> {
                     long time = ((LongSememe) pathOrigin.getVersionList().get(0)).getLongValue();
                     return new StampPositionImpl(time, Get.identifierService().getConceptSequence(nid));
@@ -135,7 +135,7 @@ public class OchrePathProvider implements PathService {
     @Override
     public Collection<? extends StampPath> getPaths() {
         return Get.sememeService().getSememesFromAssemblage(
-                IsaacMetadataAuxiliaryBinding.PATHS_ASSEMBLAGE.getSequence()).map((sememeChronicle) -> {
+                IsaacMetadataAuxiliaryBinding.PATHS_ASSEMBLAGE.getConceptSequence()).map((sememeChronicle) -> {
                     int pathId = sememeChronicle.getReferencedComponentNid();
                     pathId = Get.identifierService().getConceptSequence(pathId);
                     StampPath stampPath = new StampPathImpl(pathId);

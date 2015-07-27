@@ -171,7 +171,7 @@ public class TaxonomyRecordUnpacked {
         IntStream.Builder conceptSequenceIntStream = IntStream.builder();
         conceptSequenceRecordMap.forEachPair((int possibleParentSequence, TypeStampTaxonomyRecords stampRecords) -> {
             stampRecords.getTypeStampFlagStream().forEach((typeStampFlag) -> {
-                if ((typeStampFlag & TaxonomyRecordPrimitive.SEQUENCE_BIT_MASK) == IsaacMetadataAuxiliaryBinding.IS_A.getSequence()) {
+                if ((typeStampFlag & TaxonomyRecordPrimitive.SEQUENCE_BIT_MASK) == IsaacMetadataAuxiliaryBinding.IS_A.getConceptSequence()) {
                     conceptSequenceIntStream.accept(possibleParentSequence);
                 }
             });

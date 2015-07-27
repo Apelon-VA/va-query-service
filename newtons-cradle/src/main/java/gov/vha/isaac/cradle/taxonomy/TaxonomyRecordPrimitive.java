@@ -149,7 +149,7 @@ public class TaxonomyRecordPrimitive implements WaitFreeComparable {
     }
     
     public IntStream getParentSequences(TaxonomyCoordinate tc) {
-        return getTaxonomyRecordUnpacked().getConceptSequencesForType(IsaacMetadataAuxiliaryBinding.IS_A.getSequence(), tc);
+        return getTaxonomyRecordUnpacked().getConceptSequencesForType(IsaacMetadataAuxiliaryBinding.IS_A.getConceptSequence(), tc);
     }
 
     public IntStream getParentSequences() {

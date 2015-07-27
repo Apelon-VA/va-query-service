@@ -34,7 +34,7 @@ public class GraphCollector implements
         ObjIntConsumer<HashTreeBuilder>, BiConsumer<HashTreeBuilder,HashTreeBuilder>{
     private static CradleExtensions isaacDb;
 
-    private final static int ISA_CONCEPT_SEQUENCE = IsaacMetadataAuxiliaryBinding.IS_A.getSequence();
+    private final static int ISA_CONCEPT_SEQUENCE = IsaacMetadataAuxiliaryBinding.IS_A.getConceptSequence();
 
     /**
      * @return the isaacDb

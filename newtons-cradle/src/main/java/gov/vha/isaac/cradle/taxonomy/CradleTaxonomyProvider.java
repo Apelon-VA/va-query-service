@@ -100,7 +100,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     private final Path taxonomyProviderFolder;
     private final AtomicBoolean loadRequired = new AtomicBoolean();
     private final LogicCoordinate logicCoordinate = LogicCoordinates.getStandardElProfile();
-    private final int isaSequence = IsaacMetadataAuxiliaryBinding.IS_A.getSequence();
+    private final int isaSequence = IsaacMetadataAuxiliaryBinding.IS_A.getConceptSequence();
     private final UUID providerUuid = UUID.randomUUID();
     private final ConcurrentSkipListSet<Integer> sememeSequencesForUnhandledChanges = new ConcurrentSkipListSet<>();
     private final StampedLock stampedLock = new StampedLock();
@@ -215,7 +215,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
                 if (parentStampRecordsOptional.isPresent()) {
                     TypeStampTaxonomyRecords parentStampRecords = parentStampRecordsOptional.get();
                     if (computer.isLatestActive(parentStampRecords.getStampsOfTypeWithFlags(
-                            IsaacMetadataAuxiliaryBinding.IS_A.getSequence(), flags))) {
+                            IsaacMetadataAuxiliaryBinding.IS_A.getConceptSequence(), flags))) {
                         if (stampedLock.validate(stamp)) {
                             return true;
                         }
@@ -235,7 +235,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
                 if (parentStampRecordsOptional.isPresent()) {
                     TypeStampTaxonomyRecords parentStampRecords = parentStampRecordsOptional.get();
                     if (computer.isLatestActive(parentStampRecords.getStampsOfTypeWithFlags(
-                            IsaacMetadataAuxiliaryBinding.IS_A.getSequence(), flags))) {
+                            IsaacMetadataAuxiliaryBinding.IS_A.getConceptSequence(), flags))) {
                         if (stampedLock.validate(stamp)) {
                             return true;
                         }
@@ -281,7 +281,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
             TaxonomyRecordUnpacked childTaxonomyRecords = new TaxonomyRecordUnpacked(record.get().getArray());
             int[] conceptSequencesForType
                     = childTaxonomyRecords.getConceptSequencesForType(
-                            IsaacMetadataAuxiliaryBinding.IS_A.getSequence()).toArray();
+                            IsaacMetadataAuxiliaryBinding.IS_A.getConceptSequence()).toArray();
             if (Arrays.stream(conceptSequencesForType).anyMatch((int parentSequenceOfType) -> parentSequenceOfType == parentSequence)) {
                 return true;
             }
@@ -323,7 +323,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
             TaxonomyRecordUnpacked childTaxonomyRecords = new TaxonomyRecordUnpacked(record.get().getArray());
             int[] activeConceptSequences
                     = childTaxonomyRecords.getConceptSequencesForType(
-                            IsaacMetadataAuxiliaryBinding.IS_A.getSequence(), tc).toArray();
+                            IsaacMetadataAuxiliaryBinding.IS_A.getConceptSequence(), tc).toArray();
             if (Arrays.stream(activeConceptSequences).anyMatch((int activeParentSequence) -> activeParentSequence == parentSequence)) {
                 return true;
             }
@@ -529,7 +529,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
         // lock handled by getOriginSequenceStream
         IntStream origins = getOriginSequenceStream(parentId);
         return filterOriginSequences(origins, parentId,
-                IsaacMetadataAuxiliaryBinding.IS_A.getSequence(), tc, AllowedRelTypes.HIERARCHICAL_ONLY);
+                IsaacMetadataAuxiliaryBinding.IS_A.getConceptSequence(), tc, AllowedRelTypes.HIERARCHICAL_ONLY);
     }
 
     @Override
@@ -538,7 +538,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
         // lock handled by getOriginSequenceStream
         IntStream origins = getOriginSequenceStream(parentId);
         return filterOriginSequences(origins, parentId,
-                IsaacMetadataAuxiliaryBinding.IS_A.getSequence(), TaxonomyFlags.ALL_RELS);
+                IsaacMetadataAuxiliaryBinding.IS_A.getConceptSequence(), TaxonomyFlags.ALL_RELS);
     }
 
     @Override
@@ -547,7 +547,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
         // lock handled by getOriginSequenceStream
         IntStream origins = getOriginSequenceStream(destination);
         return filterOriginSequences(origins, destination,
-                IsaacMetadataAuxiliaryBinding.IS_A.getSequence(), tc, AllowedRelTypes.ALL_RELS);
+                IsaacMetadataAuxiliaryBinding.IS_A.getConceptSequence(), tc, AllowedRelTypes.ALL_RELS);
     }
 
     @Override
@@ -562,7 +562,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
         // lock handled by getOriginSequenceStream
         IntStream origins = getOriginSequenceStream(parentId);
         return ConceptSequenceSet.of(filterOriginSequences(origins, parentId,
-                IsaacMetadataAuxiliaryBinding.IS_A.getSequence(), tc, AllowedRelTypes.HIERARCHICAL_ONLY));
+                IsaacMetadataAuxiliaryBinding.IS_A.getConceptSequence(), tc, AllowedRelTypes.HIERARCHICAL_ONLY));
     }
 
     @Override
