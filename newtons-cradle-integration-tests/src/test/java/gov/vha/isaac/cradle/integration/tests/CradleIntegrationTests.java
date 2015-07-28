@@ -312,6 +312,12 @@ public class CradleIntegrationTests {
 
     private void testTaxonomy() {
         try {
+            StringBuilder circularRelConcepts = new StringBuilder();
+            Get.taxonomyService().getAllCircularRelationshipOriginSequences(Get.coordinateFactory()
+                    .createDefaultStatedTaxonomyCoordinate()).forEach((conceptSequence) -> {
+                        circularRelConcepts.append(Get.conceptDescriptionText(conceptSequence)).append("\n");
+                    });
+            log.info("Circular stated rel concepts: \n" + circularRelConcepts.toString());
             testTaxonomy(ViewCoordinates.getDevelopmentInferredLatest());
             testTaxonomy(ViewCoordinates.getDevelopmentStatedLatest());
         } catch (IOException | ContradictionException ex) {
@@ -319,7 +325,7 @@ public class CradleIntegrationTests {
         }
     }
 
-    private void testTaxonomy(ViewCoordinate vc) throws IOException, ContradictionException {
+    private void testTaxonomy(TaxonomyCoordinate<?> vc) throws IOException, ContradictionException {
         int disorderOfCorneaNid = Snomed.DISORDER_OF_CORNEA.getNid();
         int disorderOfEyeNid = Snomed.DISORDER_OF_EYE.getNid();
         TaxonomyService taxonomyService = Get.taxonomyService();
@@ -327,8 +333,8 @@ public class CradleIntegrationTests {
         boolean isChild = taxonomyService.isChildOf(disorderOfCorneaNid, disorderOfEyeNid, vc);
         boolean isKind = taxonomyService.isKindOf(disorderOfCorneaNid, disorderOfEyeNid, vc);
 
-        System.out.println("Cornea is a " + vc.getRelationshipAssertionType() + " child-of disorder of eye: " + isChild);
-        System.out.println("Cornea is a " + vc.getRelationshipAssertionType() + " kind-of of disorder of eye: " + isKind);
+        System.out.println("Cornea is a " + vc.getTaxonomyType() + " child-of disorder of eye: " + isChild);
+        System.out.println("Cornea is a " + vc.getTaxonomyType() + " kind-of of disorder of eye: " + isKind);
     }
 
     private void walkTaxonomy() throws IOException {

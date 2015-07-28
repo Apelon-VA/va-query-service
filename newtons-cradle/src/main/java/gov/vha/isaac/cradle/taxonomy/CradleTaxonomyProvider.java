@@ -31,11 +31,13 @@ import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
 import gov.vha.isaac.ochre.api.commit.CommitRecord;
 import gov.vha.isaac.ochre.api.commit.CommitStates;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeType;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
 import gov.vha.isaac.ochre.api.coordinate.LogicCoordinate;
+import gov.vha.isaac.ochre.api.coordinate.PremiseType;
 import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.api.dag.DagNode;
@@ -885,5 +887,82 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
         public IntStream getAllRelationshipOriginSequences(int destination) {
             return CradleTaxonomyProvider.this.getAllRelationshipOriginSequences(destination, tc);
         }
+    }
+
+    @Override
+    public IntStream getAllCircularRelationshipOriginSequences(TaxonomyCoordinate tc) {
+        ConceptService conceptService = Get.conceptService();
+        StampCoordinate stampCoordinate = tc.getStampCoordinate();
+        return Get.identifierService().getParallelConceptSequenceStream().filter((conceptSequence) -> {
+            if (conceptService.isConceptActive(conceptSequence, stampCoordinate)) {
+                if (getAllCircularRelationshipTypeSequences(conceptSequence, tc).anyMatch(((typeSequence) -> true))) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    }
+
+
+    private void recursiveFindAncestors(int childSequence, ConceptSequenceSet ancestors,
+            TaxonomyCoordinate tc) {
+        // currently unpacking from array to object.
+        // TODO operate directly on array if unpacking is a performance bottleneck.
+
+        Optional<TaxonomyRecordPrimitive> record = originDestinationTaxonomyRecordMap.get(childSequence);
+
+        if (record.isPresent()) {
+            TaxonomyRecordUnpacked childTaxonomyRecords = new TaxonomyRecordUnpacked(record.get().getArray());
+            int[] activeConceptSequences
+                    = childTaxonomyRecords.getConceptSequencesForType(
+                            IsaacMetadataAuxiliaryBinding.IS_A.getConceptSequence(), tc).toArray();
+            Arrays.stream(activeConceptSequences).forEach((parent) -> {
+                if (!ancestors.contains(parent)) {
+                    ancestors.add(parent);
+                    recursiveFindAncestors(parent, ancestors, tc);
+                }
+            });
+        }
+    }
+    
+    @Override
+    public ConceptSequenceSet getAncestorOfSequenceSet(int childId, TaxonomyCoordinate tc) {
+        ConceptSequenceSet ancestors = new ConceptSequenceSet();
+        recursiveFindAncestors(Get.identifierService().getConceptSequence(childId), ancestors, tc);
+        return ancestors;
+    }
+
+    @Override
+    public IntStream getAllRelationshipDestinationSequencesNotOfType(int originId, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc) {
+        originId = Get.identifierService().getConceptSequence(originId);
+        long stamp = stampedLock.tryOptimisticRead();
+        Optional<TaxonomyRecordPrimitive> taxonomyRecordOptional = originDestinationTaxonomyRecordMap.get(originId);
+        if (stampedLock.validate(stamp)) {
+            if (taxonomyRecordOptional.isPresent()) {
+                return taxonomyRecordOptional.get().getDestinationSequencesNotOfType(typeSequenceSet, tc);
+            }
+            return IntStream.empty();
+        }
+        stamp = stampedLock.readLock();
+        try {
+            taxonomyRecordOptional = originDestinationTaxonomyRecordMap.get(originId);
+            if (taxonomyRecordOptional.isPresent()) {
+                return taxonomyRecordOptional.get().getDestinationSequencesNotOfType(typeSequenceSet, tc);
+            }
+        } finally {
+            stampedLock.unlock(stamp);
+        }
+        return IntStream.empty();
+    }
+
+    @Override
+    public IntStream getAllCircularRelationshipTypeSequences(int originId, TaxonomyCoordinate tc) {
+        ConceptSequenceSet ancestors = getAncestorOfSequenceSet(originId, tc);
+        if (tc.getTaxonomyType() != PremiseType.INFERRED) {
+            ancestors.or(getAncestorOfSequenceSet(originId, tc.makeAnalog(PremiseType.INFERRED)));
+         }
+        ConceptSequenceSet excludedTypes = ConceptSequenceSet.of(IsaacMetadataAuxiliaryBinding.IS_A.getConceptSequence());
+        return getAllRelationshipDestinationSequencesNotOfType(originId, excludedTypes, tc)
+                .filter((destinationSequence) -> ancestors.contains(destinationSequence));
     }
 }

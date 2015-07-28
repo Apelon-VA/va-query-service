@@ -168,6 +168,10 @@ public class TaxonomyRecordPrimitive implements WaitFreeComparable {
        return getTaxonomyRecordUnpacked().getDestinationConceptSequencesOfType(typeSequenceSet, tc);
     }
 
+    public IntStream getDestinationSequencesNotOfType(ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc) {
+       return getTaxonomyRecordUnpacked().getDestinationConceptSequencesNotOfType(typeSequenceSet, tc);
+    }
+
     public TaxonomyRecordUnpacked unpack() {
         return new TaxonomyRecordUnpacked(taxonomyData);
     }

@@ -213,9 +213,34 @@ public class TaxonomyRecordUnpacked {
                 if ((record.getTaxonomyFlags() & flags) == flags) {
                     if (computer.onRoute(record.getStampSequence())) {
                         if (typeSet.isEmpty()) {
-                            stampsForConceptIntStream.accept(destinationSequence);
+                            stampsForConceptIntStream.accept(record.getStampSequence());
                         } else if (typeSet.contains(record.getTypeSequence())) {
-                            stampsForConceptIntStream.accept(destinationSequence);
+                            stampsForConceptIntStream.accept(record.getStampSequence());
+                        }
+                    }
+                }
+            });
+            if (computer.isLatestActive(stampsForConceptIntStream.build())) {
+                conceptSequenceIntStream.accept(destinationSequence);
+            }
+            return true;
+        });
+        return conceptSequenceIntStream.build();
+    }
+    public IntStream getDestinationConceptSequencesNotOfType(ConceptSequenceSet typeSet, TaxonomyCoordinate tc) {
+        final int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
+        RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
+        IntStream.Builder conceptSequenceIntStream = IntStream.builder();
+        conceptSequenceRecordMap.forEachPair((int destinationSequence, TypeStampTaxonomyRecords stampRecords) -> {
+            IntStream.Builder stampsForConceptIntStream = IntStream.builder();
+            stampRecords.getTypeStampFlagStream().forEach((typeStampFlag) -> {
+                TypeStampTaxonomyRecord record = new TypeStampTaxonomyRecord(typeStampFlag);
+                if ((record.getTaxonomyFlags() & flags) == flags) {
+                    if (computer.onRoute(record.getStampSequence())) {
+                        if (typeSet.isEmpty()) {
+                            stampsForConceptIntStream.accept(record.getStampSequence());
+                        } else if (!typeSet.contains(record.getTypeSequence())) {
+                            stampsForConceptIntStream.accept(record.getStampSequence());
                         }
                     }
                 }
