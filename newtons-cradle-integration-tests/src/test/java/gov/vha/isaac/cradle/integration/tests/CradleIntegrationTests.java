@@ -39,10 +39,18 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -121,6 +129,14 @@ public class CradleIntegrationTests {
 
     @Test(groups = {"db"})
     public void testLoad() throws Exception {
+
+        Instant instant = Instant.now();
+        
+         log.info(DateTimeFormatter.ISO_DATE.format(instant.atOffset(ZoneOffset.UTC)));           
+         
+         TaxonomyCoordinate tc = Get.coordinateFactory().createDefaultStatedTaxonomyCoordinate().makeAnalog(2002, 01, 31, 0, 0, 0).makeAnalog(PremiseType.STATED);
+        log.info(DateTimeFormatter.ISO_DATE.format(tc.getStampCoordinate().getStampPosition().getTimeAsInstant().atOffset(ZoneOffset.UTC)));           
+ 
 
         log.info("  Testing load...");
         ObjectChronicleTaskService tts = LookupService.get().getService(ObjectChronicleTaskService.class);
@@ -312,17 +328,111 @@ public class CradleIntegrationTests {
 
     private void testTaxonomy() {
         try {
-            StringBuilder circularRelConcepts = new StringBuilder();
-            Get.taxonomyService().getAllCircularRelationshipOriginSequences(Get.coordinateFactory()
-                    .createDefaultStatedTaxonomyCoordinate()).forEach((conceptSequence) -> {
-                        circularRelConcepts.append(Get.conceptDescriptionText(conceptSequence)).append("\n");
-                    });
-            log.info("Circular stated rel concepts: \n" + circularRelConcepts.toString());
+            log.info("Stated circular rels, latest: \n");
+            checkForCircularRels(Get.coordinateFactory().createDefaultStatedTaxonomyCoordinate());
+            log.info("Inferred circular rels, latest: \n");
+            checkForCircularRels(Get.coordinateFactory().createDefaultInferredTaxonomyCoordinate());
+            
+            //createCircularRelsMetrics();
             testTaxonomy(ViewCoordinates.getDevelopmentInferredLatest());
             testTaxonomy(ViewCoordinates.getDevelopmentStatedLatest());
         } catch (IOException | ContradictionException ex) {
             log.error(ex.getLocalizedMessage(), ex);
         }
+    }
+
+    private void createCircularRelsMetrics() {
+        TaxonomyService taxonomy = Get.taxonomyService();
+        Map<PremiseType, Map<String, Map<Instant, Integer>>> data = new HashMap<>();
+        PremiseType[] premiseTypes = new PremiseType[]{PremiseType.STATED, PremiseType.INFERRED};
+        Set<Instant> timeSet = new TreeSet<>();
+       Set<String> roleSet = new TreeSet<>();
+        int[] years = new int[]{2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015};
+        //int[] years = new int[]{2003};
+        int[] months = new int[]{01, 07};
+        for (PremiseType premiseType : premiseTypes) {
+            data.put(premiseType, new TreeMap<>());
+            Map<String, Map<Instant, Integer>> roleTimeCountMap = data.get(premiseType);
+            for (int year : years) {
+                for (int month : months) {
+                    TaxonomyCoordinate tc = Get.coordinateFactory().createDefaultStatedTaxonomyCoordinate().makeAnalog(year, month, 31, 0, 0, 0).makeAnalog(premiseType);
+                    Instant time = tc.getStampCoordinate().getStampPosition().getTimeAsInstant();
+                    timeSet.add(time);
+                    Get.taxonomyService().getAllCircularRelationshipOriginSequences(tc).forEach((conceptSequence) -> {
+                        taxonomy.getAllCircularRelationshipTypeSequences(conceptSequence, tc).forEach((typeSequence) -> {
+                            String typeDescription = Get.conceptDescriptionText(typeSequence);
+                            roleSet.add(typeDescription);
+                            if (!roleTimeCountMap.containsKey(typeDescription)) {
+                                roleTimeCountMap.put(typeDescription, new TreeMap<>());
+                            }
+                            Map<Instant, Integer> timeCountMap = roleTimeCountMap.get(typeDescription);
+                            if (timeCountMap.containsKey(time)) {
+                                timeCountMap.put(time, timeCountMap.get(time) + 1);
+                            } else {
+                                timeCountMap.put(time, 1);
+                            }
+                        });
+                    });
+                }
+            }
+        }
+        
+                
+        StringBuilder statedResults = assembleResults(data, PremiseType.STATED, timeSet, roleSet);
+        StringBuilder inferredResults = assembleResults(data, PremiseType.INFERRED, timeSet, roleSet);
+        log.info("Stated results\n" + statedResults.toString());
+        log.info("Inferred results\n" + inferredResults.toString());
+    }
+
+    private StringBuilder assembleResults(Map<PremiseType, Map<String, Map<Instant, Integer>>> data, PremiseType premiseType, Set<Instant> timeSet, Set<String> roleSet) {
+        DateTimeFormatter formatter =DateTimeFormatter.ISO_LOCAL_DATE.withZone(ZoneId.of("Z"));
+        Map<String, Map<Instant, Integer>> roleTimeCountMap = data.get(premiseType);
+        StringBuilder builder = new StringBuilder();
+        builder.append("role\t");
+        timeSet.forEach((time) -> {
+            builder.append(formatter.format(time)).append('\t');
+        });
+        builder.deleteCharAt(builder.length()-1);
+        builder.append('\n');
+        
+        roleSet.forEach((roleText) -> {
+            builder.append(roleText).append('\t');
+            Map<Instant, Integer> timeCountMap = roleTimeCountMap.get(roleText);
+            timeSet.forEach((time) -> {
+                if (timeCountMap == null) {
+                    builder.append(0).append('\t');
+                } else {
+                    builder.append(timeCountMap.getOrDefault(time, 0)).append('\t');
+                }
+            });
+            builder.deleteCharAt(builder.length()-1);
+            builder.append('\n');
+        });
+        return builder;
+    }
+
+    private void checkForCircularRels(TaxonomyCoordinate tc) {
+        TaxonomyService taxonomy = Get.taxonomyService();
+        Map<Integer, Integer> typeCountMap = new HashMap<>();
+
+        StringBuilder circularRelConcepts = new StringBuilder();
+
+        Get.taxonomyService().getAllCircularRelationshipOriginSequences(tc).forEach((conceptSequence) -> {
+            taxonomy.getAllCircularRelationshipTypeSequences(conceptSequence, tc).forEach((typeSequence) -> {
+                if (typeCountMap.containsKey(typeSequence)) {
+                    typeCountMap.put(typeSequence, typeCountMap.get(typeSequence) + 1);
+                } else {
+                    typeCountMap.put(typeSequence, 1);
+                }
+                circularRelConcepts.append(Get.conceptDescriptionText(typeSequence))
+                        .append(": ").append(Get.conceptDescriptionText(conceptSequence))
+                        .append("\n");
+            });
+        });
+        log.info("Circular stated rel concepts: \n" + circularRelConcepts.toString());
+        typeCountMap.forEach((typeSequence, count) -> {
+            log.info(Get.conceptDescriptionText(typeSequence) + ": " + count);
+        });
     }
 
     private void testTaxonomy(TaxonomyCoordinate<?> vc) throws IOException, ContradictionException {

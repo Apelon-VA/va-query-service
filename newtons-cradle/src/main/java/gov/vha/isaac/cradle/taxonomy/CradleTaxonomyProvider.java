@@ -957,12 +957,46 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
 
     @Override
     public IntStream getAllCircularRelationshipTypeSequences(int originId, TaxonomyCoordinate tc) {
+        int originSequence= Get.identifierService().getConceptSequence(originId);
         ConceptSequenceSet ancestors = getAncestorOfSequenceSet(originId, tc);
         if (tc.getTaxonomyType() != PremiseType.INFERRED) {
             ancestors.or(getAncestorOfSequenceSet(originId, tc.makeAnalog(PremiseType.INFERRED)));
          }
         ConceptSequenceSet excludedTypes = ConceptSequenceSet.of(IsaacMetadataAuxiliaryBinding.IS_A.getConceptSequence());
-        return getAllRelationshipDestinationSequencesNotOfType(originId, excludedTypes, tc)
-                .filter((destinationSequence) -> ancestors.contains(destinationSequence));
+        
+        IntStream.Builder typeSequenceBuilder = IntStream.builder();
+        
+        getAllRelationshipDestinationSequencesNotOfType(originId, excludedTypes, tc)
+                .filter((destinationSequence) -> ancestors.contains(destinationSequence)).forEach((destinationSequence) -> {
+                    getAllTypesForRelationship(originSequence, destinationSequence, tc)
+                            .forEach((typeSequence) -> typeSequenceBuilder.accept(typeSequence));
+                });
+        
+        return typeSequenceBuilder.build();
     }
+
+    @Override
+    public IntStream getAllTypesForRelationship(int originId, int destinationId, TaxonomyCoordinate tc) {
+       originId = Get.identifierService().getConceptSequence(originId);
+        long stamp = stampedLock.tryOptimisticRead();
+        Optional<TaxonomyRecordPrimitive> taxonomyRecordOptional = originDestinationTaxonomyRecordMap.get(originId);
+        if (stampedLock.validate(stamp)) {
+            if (taxonomyRecordOptional.isPresent()) {
+                return taxonomyRecordOptional.get().getTypesForRelationship(destinationId, tc);
+            }
+            return IntStream.empty();
+        }
+        stamp = stampedLock.readLock();
+        try {
+            taxonomyRecordOptional = originDestinationTaxonomyRecordMap.get(originId);
+            if (taxonomyRecordOptional.isPresent()) {
+                return taxonomyRecordOptional.get().getTypesForRelationship(destinationId, tc);
+            }
+        } finally {
+            stampedLock.unlock(stamp);
+        }
+        return IntStream.empty();
+    }
+    
+    
 }

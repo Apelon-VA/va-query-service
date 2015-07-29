@@ -217,4 +217,8 @@ public class TaxonomyRecordPrimitive implements WaitFreeComparable {
     public void setWriteSequence(int sequence) {
         this.writeSequence = sequence;
     }
+
+    public IntStream getTypesForRelationship(int destinationId, TaxonomyCoordinate tc) {
+        return getTaxonomyRecordUnpacked().getTypesForRelationship(destinationId, tc);
+    }
 }
