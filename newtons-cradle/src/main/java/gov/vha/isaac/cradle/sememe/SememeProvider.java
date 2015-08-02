@@ -344,6 +344,7 @@ public class SememeProvider implements SememeService {
 
     @Override
     public Optional<? extends SememeChronology<? extends SememeVersion<?>>> getOptionalSememe(int sememeSequence) {
+        sememeSequence = Get.identifierService().getSememeSequence(sememeSequence);
         return sememeMap.getOptional(sememeSequence);
     }
 

@@ -23,6 +23,7 @@ import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
 import gov.vha.isaac.ochre.api.coordinate.PremiseType;
@@ -62,7 +63,10 @@ import org.glassfish.hk2.api.MultiException;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
+import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
+import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 import org.jvnet.testing.hk2testng.HK2;
+import static org.testng.Assert.assertEquals;
 import org.testng.annotations.AfterGroups;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeGroups;
@@ -160,6 +164,8 @@ public class CradleIntegrationTests {
              */
         }
 
+        testDescriptions();
+        
         testDifferenceAlgorithm();
         testTaxonomy();
 
@@ -214,6 +220,42 @@ public class CradleIntegrationTests {
 
         cycleTest();
     }
+   
+    private void testDescriptions() throws ValidationException{
+        log.info("Testing descriptions.");
+        
+        ConceptSpec substance = new ConceptSpec("Substance (substance)", 
+                UUID.fromString("95f41098-8391-3f5e-9d61-4b019f1de99d"));
+        String substanceFSN = "Substance (substance)";
+        String substancePT = "Substance";
+        
+        ConceptSpec object = new ConceptSpec("Physical object (physical object)", 
+                UUID.fromString("72765109-6b53-3814-9b05-34ebddd16592"));
+        String objectFSN = "Physical object (physical object)";
+        String objectPT = "Physical object";
+        
+        DescriptionSememe<?> fsn = Get.conceptService().getConcept(substance.getLenient().getPrimordialUuid()).getFullySpecifiedDescription(
+                LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate(),
+                StampCoordinates.getDevelopmentLatestActiveOnly()).get().value();
+        assertEquals(fsn.getText(), substanceFSN);
+        
+         DescriptionSememe<?> pt = Get.conceptService().getConcept(substance.getLenient().getPrimordialUuid()).getPreferredDescription(
+                LanguageCoordinates.getUsEnglishLanguagePreferredTermCoordinate(),
+                StampCoordinates.getDevelopmentLatestActiveOnly()).get().value();
+        assertEquals(pt.getText(), substancePT);
+        
+        fsn = Get.conceptService().getConcept(object.getLenient().getPrimordialUuid()).getFullySpecifiedDescription(
+                LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate(),
+                StampCoordinates.getDevelopmentLatestActiveOnly()).get().value();
+        assertEquals(fsn.getText(), objectFSN);
+        
+        pt = Get.conceptService().getConcept(object.getLenient().getPrimordialUuid()).getPreferredDescription(
+                LanguageCoordinates.getUsEnglishLanguagePreferredTermCoordinate(),
+                StampCoordinates.getDevelopmentLatestActiveOnly()).get().value();
+        assertEquals(pt.getText(), objectPT);
+    }
+
+
 
     private void testDifferenceAlgorithm() {
 

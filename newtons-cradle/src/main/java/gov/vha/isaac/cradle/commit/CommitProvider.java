@@ -6,6 +6,7 @@
 package gov.vha.isaac.cradle.commit;
 
 import gov.vha.isaac.cradle.ConcurrentObjectIntMap;
+import gov.vha.isaac.cradle.ConcurrentSequenceIntMap;
 import gov.vha.isaac.cradle.collections.ConcurrentSequenceSerializedObjectMap;
 import gov.vha.isaac.cradle.collections.StampAliasMap;
 import gov.vha.isaac.cradle.collections.StampCommentMap;
@@ -263,12 +264,17 @@ public class CommitProvider implements CommitService {
         throw new NoSuchElementException("No stampSequence found: " + stamp);
     }
 
+    ConcurrentHashMap<Integer, Integer> stampSequencePathSequenceMap = new ConcurrentHashMap();
     @Override
     public int getPathSequenceForStamp(int stampSequence) {
+        if (stampSequencePathSequenceMap.containsKey(stampSequence)) {
+            return stampSequencePathSequenceMap.get(stampSequence);
+        }
         Optional<Stamp> s = inverseStampMap.get(stampSequence);
         if (s.isPresent()) {
-            return Get.identifierService().getConceptSequence(
-                    s.get().getPathNid());
+            stampSequencePathSequenceMap.put(stampSequence, Get.identifierService().getConceptSequence(
+                    s.get().getPathNid()));
+            return stampSequencePathSequenceMap.get(stampSequence);
         }
         throw new NoSuchElementException("No stampSequence found: " + stampSequence);
     }

@@ -45,6 +45,8 @@ import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ihtsdo.otf.tcc.api.id.UuidIdBI;
+import org.ihtsdo.otf.tcc.ddo.concept.component.identifier.IDENTIFIER_PART_TYPES;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
 import org.ihtsdo.otf.tcc.dto.TtkConceptLock;
 import org.ihtsdo.otf.tcc.dto.component.TtkRevision;
@@ -159,6 +161,13 @@ public class ImportEConceptOchreModel implements Callable<Void> {
                                 desc.text,
                                 conceptChronology.getNid(),
                                 descriptionAssemblageSequence);
+                descBuilder.setPrimordialUuid(desc.getPrimordialUuid());
+                desc.getAdditionalIdComponents().forEach((additionalId) -> {
+                    if (additionalId.getIdType() == IDENTIFIER_PART_TYPES.UUID) {
+                        descBuilder.addUuids(((UuidIdBI)additionalId).getDenotation());
+                    }
+                });
+                
                 int stampSequence = getStampSequence(desc);
                 List createdComponents = new ArrayList();
                 SememeChronologyImpl newDescription = (SememeChronologyImpl) descBuilder.build(stampSequence, createdComponents);
