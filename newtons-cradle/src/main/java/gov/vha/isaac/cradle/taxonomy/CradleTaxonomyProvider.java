@@ -703,8 +703,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
 
     @Override
     public void handleCommit(CommitRecord commitRecord) {
-        long stamp = stampedLock.writeLock();
-        UpdateTaxonomyAfterCommitTask.get(this, commitRecord, sememeSequencesForUnhandledChanges, stampedLock, stamp);
+        UpdateTaxonomyAfterCommitTask.get(this, commitRecord, sememeSequencesForUnhandledChanges, stampedLock);
     }
 
     @Override

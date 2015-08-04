@@ -34,18 +34,16 @@ public class UpdateTaxonomyAfterCommitTask extends TimedTask<Void> {
     CommitRecord commitRecord;
     ConcurrentSkipListSet<Integer> sememeSequencesForUnhandledChanges;
     StampedLock lock;
-    long stamp;
     int workDone = 0;
     int totalWork = 0;
 
     private UpdateTaxonomyAfterCommitTask(TaxonomyService taxonomyService,
             CommitRecord commitRecord, 
             ConcurrentSkipListSet<Integer> sememeSequencesForUnhandledChanges, 
-            StampedLock lock, long stamp) {
+            StampedLock lock) {
         this.commitRecord = commitRecord;
         this.sememeSequencesForUnhandledChanges = sememeSequencesForUnhandledChanges;
         this.lock = lock;
-        this.stamp = stamp;
         this.taxonomyService = taxonomyService;
         this.totalWork = sememeSequencesForUnhandledChanges.size();
         this.updateTitle("Update taxonomy after commit");
@@ -65,9 +63,9 @@ public class UpdateTaxonomyAfterCommitTask extends TimedTask<Void> {
     public static UpdateTaxonomyAfterCommitTask get(TaxonomyService taxonomyService,
             CommitRecord commitRecord, 
             ConcurrentSkipListSet<Integer> unhandledChanges, 
-            StampedLock lock, long stamp) {
+            StampedLock lock) {
         UpdateTaxonomyAfterCommitTask task = 
-                new UpdateTaxonomyAfterCommitTask(taxonomyService, commitRecord, unhandledChanges, lock, stamp);
+                new UpdateTaxonomyAfterCommitTask(taxonomyService, commitRecord, unhandledChanges, lock);
         Get.activeTasks().add(task);
         Get.workExecutors().getExecutor().execute(task);
         return task;
@@ -75,6 +73,7 @@ public class UpdateTaxonomyAfterCommitTask extends TimedTask<Void> {
 
     @Override
     protected Void call() throws Exception {
+        long stamp = lock.writeLock();
         try {
             sememeSequencesForUnhandledChanges.stream().forEach((sememeSequence) -> {
                 workDone++;
