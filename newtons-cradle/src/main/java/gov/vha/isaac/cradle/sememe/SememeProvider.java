@@ -164,9 +164,9 @@ public class SememeProvider implements SememeService {
     }
 
     @Override
-    public SememeChronology getSememe(int sememeSequence) {
-        sememeSequence = Get.identifierService().getSememeSequence(sememeSequence);
-        return sememeMap.getQuick(sememeSequence);
+    public SememeChronology getSememe(int sememeId) {
+        sememeId = Get.identifierService().getSememeSequence(sememeId);
+        return sememeMap.getQuick(sememeId);
     }
 
     @Override
