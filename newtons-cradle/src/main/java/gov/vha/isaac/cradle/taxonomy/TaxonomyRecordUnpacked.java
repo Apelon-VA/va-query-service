@@ -78,7 +78,7 @@ public class TaxonomyRecordUnpacked {
         return false;
     }
 
-    public boolean isConceptActive(int conceptSequence, StampCoordinate stampCoordinate) {
+    public boolean conceptSatisfiesStamp(int conceptSequence, StampCoordinate stampCoordinate) {
         RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(stampCoordinate);
         if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
             return conceptSequenceRecordMap.get(conceptSequence).
@@ -343,12 +343,15 @@ public class TaxonomyRecordUnpacked {
         IntArrayList theKeys = conceptSequenceRecordMap.keys();
         theKeys.sort();
         StringBuilder buf = new StringBuilder();
-        buf.append(" [");
+        buf.append("[");
         int maxIndex = theKeys.size() - 1;
         for (int i = 0; i <= maxIndex; i++) {
             int conceptSequence = theKeys.get(i);
-            buf.append("\n   ");
-            buf.append(Get.conceptService().getConcept(conceptSequence).toUserString());
+            if (i > 0) {
+                buf.append("\n   ");
+            }
+            
+            buf.append(Get.conceptDescriptionText(conceptSequence));
             buf.append(" <");
             buf.append(conceptSequence);
             buf.append("> <-");

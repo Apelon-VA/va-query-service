@@ -404,7 +404,9 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
             Optional<TaxonomyRecordPrimitive> taxonomyRecordOptional = originDestinationTaxonomyRecordMap.get(originSequence);
             if (taxonomyRecordOptional.isPresent()) {
                 TaxonomyRecordPrimitive taxonomyRecord = taxonomyRecordOptional.get();
-                return taxonomyRecord.containsSequenceViaType(parentSequence, typeSequenceSet, tc, TaxonomyFlags.ALL_RELS);
+                if (taxonomyRecord.conceptSatisfiesStamp(originSequence, tc.getStampCoordinate())) {
+                    return taxonomyRecord.containsSequenceViaType(parentSequence, typeSequenceSet, tc, TaxonomyFlags.ALL_RELS);
+                }
             }
             return false;
         });
@@ -415,10 +417,12 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
             Optional<TaxonomyRecordPrimitive> taxonomyRecordOptional = originDestinationTaxonomyRecordMap.get(originSequence);
             if (taxonomyRecordOptional.isPresent()) {
                 TaxonomyRecordPrimitive taxonomyRecord = taxonomyRecordOptional.get();
-                if (allowedRelTypes == AllowedRelTypes.ALL_RELS) {
-                    return taxonomyRecord.containsSequenceViaType(parentSequence, typeSequence, tc, TaxonomyFlags.ALL_RELS);
+                if (taxonomyRecord.conceptSatisfiesStamp(originSequence, tc.getStampCoordinate())) {
+                    if (allowedRelTypes == AllowedRelTypes.ALL_RELS) {
+                        return taxonomyRecord.containsSequenceViaType(parentSequence, typeSequence, tc, TaxonomyFlags.ALL_RELS);
+                    }
+                    return taxonomyRecord.containsSequenceViaType(parentSequence, typeSequence, tc);
                 }
-                return taxonomyRecord.containsSequenceViaType(parentSequence, typeSequence, tc);
             }
             return false;
         });
@@ -431,6 +435,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
                 TaxonomyRecordPrimitive taxonomyRecord = taxonomyRecordOptional.get();
                 return taxonomyRecord.containsSequenceViaTypeWithFlags(parentSequence, typeSequence, flags);
             }
+
             return false;
         });
     }
@@ -899,7 +904,6 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
         });
     }
 
-
     private void recursiveFindAncestors(int childSequence, ConceptSequenceSet ancestors,
             TaxonomyCoordinate tc) {
         // currently unpacking from array to object.
@@ -920,7 +924,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
             });
         }
     }
-    
+
     @Override
     public ConceptSequenceSet getAncestorOfSequenceSet(int childId, TaxonomyCoordinate tc) {
         ConceptSequenceSet ancestors = new ConceptSequenceSet();
@@ -953,27 +957,27 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
 
     @Override
     public IntStream getAllCircularRelationshipTypeSequences(int originId, TaxonomyCoordinate tc) {
-        int originSequence= Get.identifierService().getConceptSequence(originId);
+        int originSequence = Get.identifierService().getConceptSequence(originId);
         ConceptSequenceSet ancestors = getAncestorOfSequenceSet(originId, tc);
         if (tc.getTaxonomyType() != PremiseType.INFERRED) {
             ancestors.or(getAncestorOfSequenceSet(originId, tc.makeAnalog(PremiseType.INFERRED)));
-         }
+        }
         ConceptSequenceSet excludedTypes = ConceptSequenceSet.of(IsaacMetadataAuxiliaryBinding.IS_A.getConceptSequence());
-        
+
         IntStream.Builder typeSequenceBuilder = IntStream.builder();
-        
+
         getAllRelationshipDestinationSequencesNotOfType(originId, excludedTypes, tc)
                 .filter((destinationSequence) -> ancestors.contains(destinationSequence)).forEach((destinationSequence) -> {
                     getAllTypesForRelationship(originSequence, destinationSequence, tc)
-                            .forEach((typeSequence) -> typeSequenceBuilder.accept(typeSequence));
+                    .forEach((typeSequence) -> typeSequenceBuilder.accept(typeSequence));
                 });
-        
+
         return typeSequenceBuilder.build();
     }
 
     @Override
     public IntStream getAllTypesForRelationship(int originId, int destinationId, TaxonomyCoordinate tc) {
-       originId = Get.identifierService().getConceptSequence(originId);
+        originId = Get.identifierService().getConceptSequence(originId);
         long stamp = stampedLock.tryOptimisticRead();
         Optional<TaxonomyRecordPrimitive> taxonomyRecordOptional = originDestinationTaxonomyRecordMap.get(originId);
         if (stampedLock.validate(stamp)) {
@@ -993,6 +997,5 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
         }
         return IntStream.empty();
     }
-    
-    
+
 }

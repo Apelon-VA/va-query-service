@@ -258,6 +258,8 @@ public class CradleIntegrationTests {
 
 
     private void testDifferenceAlgorithm() {
+        logDifferenceReport("0ff6e6b0-5896-33cd-a354-aabb14dc07d3");
+        logDifferenceReport("0bab48ac-3030-3568-93d8-aee0f63bf072");
 
         logDifferenceReport("8001dc9b-39c2-38fb-b4f5-df1dbdd5dbe5");
         logDifferenceReport("800bf3d7-498a-3b60-888f-41042a317b41");

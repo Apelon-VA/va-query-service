@@ -86,7 +86,7 @@ public class DestinationOriginRecord implements Comparable<DestinationOriginReco
 
     @Override
     public String toString() {
-        return "origin:" + originSequence + ", destination:" + destinationSequence + '}';
+        return Get.conceptDescriptionText(originSequence) +  "<" + originSequence + ">➞" + Get.conceptDescriptionText(destinationSequence) + "<" + destinationSequence + ">";
     }
     
 }

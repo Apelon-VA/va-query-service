@@ -201,7 +201,11 @@ public class TaxonomyRecordPrimitive implements WaitFreeComparable {
     }
     
     public boolean isConceptActive(int conceptSequence, StampCoordinate stampCoordinate) {
-        return getTaxonomyRecordUnpacked().isConceptActive(conceptSequence, stampCoordinate);
+        return getTaxonomyRecordUnpacked().conceptSatisfiesStamp(conceptSequence, stampCoordinate);
+    }
+
+    public boolean conceptSatisfiesStamp(int conceptSequence, StampCoordinate stampCoordinate) {
+        return getTaxonomyRecordUnpacked().conceptSatisfiesStamp(conceptSequence, stampCoordinate);
     }
 
     public boolean containsSequenceViaType(int conceptSequence, ConceptSequenceSet typeSequenceSet, int flags) {
