@@ -81,18 +81,24 @@ public class IdentifierProvider implements IdentifierService {
         try {
             log.info("Starting IdentifierProvider post-construct - reading from " + folderPath);
             if (!loadRequired.get()) {
-                log.info("Loading concept-sequence.map.");
-
-                conceptSequenceMap.read(new File(folderPath.toFile(), "concept-sequence.map"));
-                log.info("Loading sememe-sequence.map.");
-                sememeSequenceMap.read(new File(folderPath.toFile(), "sememe-sequence.map"));
-                log.info("Loading refex-sequence.map.");
-                refexSequenceMap.read(new File(folderPath.toFile(), "refex-sequence.map"));
+                final String conceptSequenceMapBaseName = "concept-sequence.map";
+                log.info("Loading {} from dir {}.", conceptSequenceMapBaseName, folderPath.toAbsolutePath().normalize().toString());
+                conceptSequenceMap.read(new File(folderPath.toFile(), conceptSequenceMapBaseName));
+                
+                final String sememeSequenceMapBaseName = "sememe-sequence.map";
+                log.info("Loading {} from dir {}.", sememeSequenceMapBaseName, folderPath.toAbsolutePath().normalize().toString());
+                sememeSequenceMap.read(new File(folderPath.toFile(), sememeSequenceMapBaseName));
+                
+                final String refexSequenceMapBaseName = "refex-sequence.map";
+                log.info("Loading {} from dir {}.", refexSequenceMapBaseName, folderPath.toAbsolutePath().normalize().toString());
+                refexSequenceMap.read(new File(folderPath.toFile(), refexSequenceMapBaseName));
+                
                 // uuid-nid-map can do dynamic load, no need to read all at the beginning.
                 // log.info("Loading uuid-nid-map.");
                 // uuidIntMapMap.read();
-                log.info("Loading sequence-cnid-map.");
-                nidCnidMap.read(new File(folderPath.toFile(), "sequence-cnid-map"));
+                final String sequenceCNidMapBaseName = "sequence-cnid-map";
+                log.info("Loading {} from dir {}.", sequenceCNidMapBaseName, folderPath.toAbsolutePath().normalize().toString());
+                nidCnidMap.read(new File(folderPath.toFile(), sequenceCNidMapBaseName));
             }
         } catch (Exception e) {
             LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Identifier Provider", e);
