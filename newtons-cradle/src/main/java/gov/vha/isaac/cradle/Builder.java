@@ -17,7 +17,6 @@ import org.ihtsdo.otf.tcc.api.media.MediaVersionBI;
 import org.ihtsdo.otf.tcc.api.refex.RefexChronicleBI;
 import org.ihtsdo.otf.tcc.api.refex.RefexType;
 import org.ihtsdo.otf.tcc.api.refex.RefexVersionBI;
-import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicChronicleBI;
 import org.ihtsdo.otf.tcc.api.relationship.RelationshipChronicleBI;
 import org.ihtsdo.otf.tcc.api.relationship.RelationshipVersionBI;
 import org.ihtsdo.otf.tcc.api.store.Ts;
@@ -70,17 +69,6 @@ public class Builder implements TerminologyBuilderBI {
         return refex;
     }
 
-    @Override
-    public RefexDynamicChronicleBI<?> construct(RefexDynamicCAB blueprint)
-            throws IOException, InvalidCAB, ContradictionException {
-        RefexDynamicMember refex = getRefex(blueprint);
-        if (refex != null) {
-            return updateRefex(refex, blueprint);
-        }
-        refex = createRefex(blueprint);
-        return refex;
-    }
-
     public ConceptAttributes getConAttr(ConceptAttributeAB blueprint) throws IOException, InvalidCAB {
         ConceptAttributes cac = (ConceptAttributes) PersistentStore.get().getConcept(blueprint.getComponentUuid()).getConceptAttributes();
         if (cac == null) {
@@ -109,34 +97,6 @@ public class Builder implements TerminologyBuilderBI {
         for (RefexCAB annotBp : blueprint.getAnnotationBlueprints()) {
             construct(annotBp);
         }
-        for (RefexDynamicCAB annotBp : blueprint.getAnnotationDynamicBlueprints()) {
-            construct(annotBp);
-        }
-        return member;
-    }
-
-    private RefexDynamicChronicleBI<?> updateRefex(RefexDynamicMember member,
-                                                   RefexDynamicCAB blueprint) throws InvalidCAB, IOException, ContradictionException {
-        for (int pathNid : ec.getEditPaths().getSetValues()) {
-            RefexDynamicRevision refexRevision
-                    = member.makeAnalog(blueprint.getStatus(),
-                    Long.MAX_VALUE,
-                    ec.getAuthorNid(),
-                    ec.getModuleNid(),
-                    pathNid);
-            try {
-                blueprint.writeTo(refexRevision, false);
-            } catch (PropertyVetoException ex) {
-                throw new InvalidCAB("Refex: " + member
-                        + "\n\nRefexAmendmentSpec: " + blueprint, ex);
-            }
-        }
-        for (RefexCAB annotBp : blueprint.getAnnotationBlueprints()) {
-            construct(annotBp);
-        }
-        for (RefexDynamicCAB annotBp : blueprint.getAnnotationDynamicBlueprints()) {
-            construct(annotBp);
-        }
         return member;
     }
 
@@ -159,20 +119,6 @@ public class Builder implements TerminologyBuilderBI {
                                 + "\ncomponent: "
                                 + component + "\n\nRefexCAB: " + blueprint);
             }
-        }
-        return null;
-    }
-
-    private RefexDynamicMember getRefex(RefexDynamicCAB blueprint)
-            throws InvalidCAB, IOException {
-        if (PersistentStore.get().hasUuid(blueprint.getMemberUUID()) && Integer.MAX_VALUE
-                != PersistentStore.get().getConceptNidForNid(PersistentStore.get().getNidForUuids(blueprint.getMemberUUID()))) {
-            ComponentChronicleBI<?> component
-                    = PersistentStore.get().getComponent(blueprint.getMemberUUID());
-            if (component == null) {
-                return null;
-            }
-            return (RefexDynamicMember) component;
         }
         return null;
     }
@@ -230,42 +176,6 @@ public class Builder implements TerminologyBuilderBI {
         RefexMember<?, ?> newRefex = RefexMemberFactory.create(blueprint, ec);
 
         for (RefexCAB annotBp : blueprint.getAnnotationBlueprints()) {
-            annotBp.setReferencedComponent(newRefex);
-            construct(annotBp);
-        }
-        for (RefexDynamicCAB annotBp : blueprint.getAnnotationDynamicBlueprints()) {
-            annotBp.setReferencedComponent(newRefex);
-            construct(annotBp);
-        }
-        return newRefex;
-    }
-
-    private RefexDynamicMember createRefex(RefexDynamicCAB blueprint)
-            throws IOException, InvalidCAB, ContradictionException {
-
-        ConceptChronicle refexColCon = (ConceptChronicle) PersistentStore.get().getConcept(blueprint.getRefexAssemblageNid());
-
-        if (blueprint.hasProperty(ComponentProperty.ENCLOSING_CONCEPT_ID)) {
-            PersistentStore.get().setConceptNidForNid(blueprint.getInt(ComponentProperty.ENCLOSING_CONCEPT_ID),
-                    PersistentStore.get().getNidForUuids(blueprint.getComponentUuid()));
-        } else if (refexColCon.isAnnotationStyleRefex()) {
-            int rcNid = PersistentStore.get().getNidForUuids(blueprint.getReferencedComponentUuid());
-
-            int enclosingConceptNid = PersistentStore.get().getConceptNidForNid(rcNid);
-            PersistentStore.get().setConceptNidForNid(enclosingConceptNid, blueprint.getComponentNid());
-        } else {
-            int enclosingConceptNid = refexColCon.getNid();
-            int blueprintNid = Ts.get().getConceptNidForNid(blueprint.getComponentNid());
-            PersistentStore.get().setConceptNidForNid(enclosingConceptNid, blueprint.getComponentNid());
-        }
-
-        RefexDynamicMember newRefex = RefexDynamicMemberFactory.create(blueprint, ec, vc);
-
-        for (RefexCAB annotBp : blueprint.getAnnotationBlueprints()) {
-            annotBp.setReferencedComponent(newRefex);
-            construct(annotBp);
-        }
-        for (RefexDynamicCAB annotBp : blueprint.getAnnotationDynamicBlueprints()) {
             annotBp.setReferencedComponent(newRefex);
             construct(annotBp);
         }
@@ -334,9 +244,6 @@ public class Builder implements TerminologyBuilderBI {
                 for (RefexCAB annotBp : blueprint.getAnnotationBlueprints()) {
                     construct(annotBp);
                 }
-                for (RefexDynamicCAB annotBp : blueprint.getAnnotationDynamicBlueprints()) {
-                    construct(annotBp);
-                }
             }
             return r;
         } else {
@@ -358,9 +265,6 @@ public class Builder implements TerminologyBuilderBI {
                 rv.setGroup(blueprint.getGroup());
             }
             for (RefexCAB annotBp : blueprint.getAnnotationBlueprints()) {
-                construct(annotBp);
-            }
-            for (RefexDynamicCAB annotBp : blueprint.getAnnotationDynamicBlueprints()) {
                 construct(annotBp);
             }
         }
@@ -456,9 +360,6 @@ public class Builder implements TerminologyBuilderBI {
                 for (RefexCAB annotBp : blueprint.getAnnotationBlueprints()) {
                     construct(annotBp);
                 }
-                for (RefexDynamicCAB annotBp : blueprint.getAnnotationDynamicBlueprints()) {
-                    construct(annotBp);
-                }
             }
             return d;
         } else {
@@ -475,9 +376,6 @@ public class Builder implements TerminologyBuilderBI {
                 dr.setStatus(blueprint.getStatus());
                 dr.setInitialCaseSignificant(blueprint.isInitialCaseSignificant());
                 for (RefexCAB annotBp : blueprint.getAnnotationBlueprints()) {
-                    construct(annotBp);
-                }
-                for (RefexDynamicCAB annotBp : blueprint.getAnnotationDynamicBlueprints()) {
                     construct(annotBp);
                 }
             }
@@ -558,9 +456,6 @@ public class Builder implements TerminologyBuilderBI {
                 for (RefexCAB annotBp : blueprint.getAnnotationBlueprints()) {
                     construct(annotBp);
                 }
-                for (RefexDynamicCAB annotBp : blueprint.getAnnotationDynamicBlueprints()) {
-                    construct(annotBp);
-                }
             }
             return img;
         } else {
@@ -574,9 +469,6 @@ public class Builder implements TerminologyBuilderBI {
                 imgR.setTypeNid(blueprint.getTypeNid());
                 imgR.setTextDescription(blueprint.getTextDescription());
                 for (RefexCAB annotBp : blueprint.getAnnotationBlueprints()) {
-                    construct(annotBp);
-                }
-                for (RefexDynamicCAB annotBp : blueprint.getAnnotationDynamicBlueprints()) {
                     construct(annotBp);
                 }
             }
@@ -680,9 +572,6 @@ public class Builder implements TerminologyBuilderBI {
                 for (RefexCAB annot : blueprint.getConceptAttributeAB().getAnnotationBlueprints()) {
                     this.construct(annot);
                 }
-                for (RefexDynamicCAB annot : blueprint.getConceptAttributeAB().getAnnotationDynamicBlueprints()) {
-                    this.construct(annot);
-                }
             }
 
             for (DescriptionCAB fsnBp : fsnBps) {
@@ -731,9 +620,6 @@ public class Builder implements TerminologyBuilderBI {
         }
         for (int p : ec.getEditPaths().getSetValues()) {
             for (RefexCAB annotBp : blueprint.getAnnotationBlueprints()) {
-                construct(annotBp);
-            }
-            for (RefexDynamicCAB annotBp : blueprint.getAnnotationDynamicBlueprints()) {
                 construct(annotBp);
             }
         }

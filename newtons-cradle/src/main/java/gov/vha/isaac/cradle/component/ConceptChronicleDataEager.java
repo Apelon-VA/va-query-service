@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicChronicleBI;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexService;
@@ -146,11 +145,6 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
 
     private Collection<RefexMember<?, ?>> getRefsetMembers(int nid) {
         return (Collection<RefexMember<?, ?>>) Ts.get().getRefexesForAssemblage(nid);
-    }
-
-    @Override
-    public void add(RefexDynamicMember refexDynamicMember) {
-        getRefexService().writeDynamicRefex(refexDynamicMember);
     }
 
     @Override
@@ -287,29 +281,10 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
     public Set<Integer> getMemberNids() {
         return getNidSet(getRefsetMembers());
     }
-    
-    @Override
-    public Set<Integer> getDynamicMemberNids() {
-        return getNidSet(getRefsetDynamicMembers());
-    }
 
     @Override
     public int getNid() {
         return attributes == null ? Integer.MAX_VALUE : this.attributes.getNid();
-    }
-
-    @Override
-    public Optional<RefexDynamicMember> getRefsetDynamicMember(int memberNid) {
-        return getRefexService().getDynamicRefexesFromAssemblage(this.getNid())
-                .map((RefexDynamicChronicleBI<?> rdc) -> (RefexDynamicMember) rdc)
-                .filter((rdc)-> rdc.getNid() == memberNid).findFirst();
-    }
-
-    @Override
-    public Collection<RefexDynamicMember> getRefsetDynamicMembers() {
-        return getRefexService().getDynamicRefexesFromAssemblage(this.getNid())
-                .map((RefexDynamicChronicleBI<?> rdc) -> (RefexDynamicMember) rdc)
-                .collect(Collectors.toList());
     }
 
     @Override

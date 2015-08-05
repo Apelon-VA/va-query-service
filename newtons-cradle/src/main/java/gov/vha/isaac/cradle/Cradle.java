@@ -35,7 +35,6 @@ import org.ihtsdo.otf.tcc.api.description.DescriptionVersionBI;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 import org.ihtsdo.otf.tcc.api.nid.NidSetBI;
 import org.ihtsdo.otf.tcc.api.refex.RefexChronicleBI;
-import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicChronicleBI;
 import org.ihtsdo.otf.tcc.api.relationship.RelationshipVersionBI;
 import org.ihtsdo.otf.tcc.ddo.ComponentReference;
 import org.ihtsdo.otf.tcc.ddo.concept.ConceptChronicleDdo;
@@ -656,11 +655,6 @@ public class Cradle
     }
 
     @Override
-    public void forget(RefexDynamicChronicleBI refexDynamicChronicleBI) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void forget(RelationshipVersionBI relationshipVersionBI) throws IOException {
         throw new UnsupportedOperationException();
     }
@@ -830,11 +824,6 @@ public class Cradle
     @Override
     public RefexMember<?, ?> getRefex(int refexId) {
         return refexProvider.getRefex(refexId);
-    }
-
-    @Override
-    public RefexDynamicChronicleBI<?> getDynamicRefex(int refexId) {
-        return refexProvider.getRefexDynamic(refexId);
     }
 
     @Override
