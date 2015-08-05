@@ -24,5 +24,5 @@ import org.jvnet.hk2.annotations.Contract;
  */
 @Contract
 public interface ConceptActiveService {
-    boolean isConceptActive(int conceptSequence, StampCoordinate stampCoordinate);
+    boolean isConceptActive(int conceptSequence, StampCoordinate<?> stampCoordinate);
 }
