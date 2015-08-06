@@ -79,11 +79,9 @@ public class GenerateIndexes extends TimedTask<Void> {
             //TODO performance problem... all of these count methods are incredibly slow
             int conceptCount = Get.conceptService().getConceptCount();
             log.info("Concepts to index: " + conceptCount);
-            long refexCount = (int) Get.identifierService().getRefexSequenceStream().count();
-            log.info("Refexes to index: " + refexCount);
             long sememeCount = (int) Get.identifierService().getSememeSequenceStream().count();
             log.info("Sememes to index: " + sememeCount);
-            componentCount = conceptCount + refexCount + sememeCount;
+            componentCount = conceptCount + sememeCount;
             log.info("Total components to index: " + componentCount);
             Get.conceptService().getParallelConceptChronologyStream().forEach((ConceptChronology<?> conceptChronology) -> {
                     indexers.stream().forEach((i) -> {
@@ -95,34 +93,12 @@ public class GenerateIndexes extends TimedTask<Void> {
                     });
                 updateProcessedCount();
             });
-            
-            //TODO Keith - I don't think we have any old-style refexes any longer, do we?  SCTIDs seem to be coming through the sememe
-            //provider below.
-//            refexProvider.getParallelRefexStream().forEach((RefexMember<?, ?> refex) -> {
-//                indexers.stream().forEach((i) -> {
-//                    i.index(refex);
-//                });
-//                updateProcessedCount();
-//            });
-            
-            //TODO Keith - but I don't understand this bit - this seems to be the only place I can find the dynamic sememes, they aren't coming
-            //through the sememe iteration below.
-            refexProvider.getParallelDynamicRefexStream().forEach((RefexDynamicChronicleBI<?> refex) -> {
+             
+             Get.sememeService().getParallelSememeStream().forEach((SememeChronology sememe) -> {
                 indexers.stream().forEach((i) -> {
-                    i.index(refex);
+                        i.index(sememe);
                 });
                 updateProcessedCount();
-            });
-            
-            //TODO Keith - why isn't this returning dynamic sememes?
-            Get.sememeService().getParallelSememeStream().forEach((SememeChronology sememe) -> {
-                if (sememe != null)  //TODO Keith -  this IF should not be necessary, but is at the moment, to deal with another bug in sememe provider
-                {
-                    indexers.stream().forEach((i) -> {
-                        i.index(sememe);
-                    });
-                    updateProcessedCount();
-                }
             });
             
             List<IndexStatusListenerBI> islList = LookupService.get().getAllServices(IndexStatusListenerBI.class);
