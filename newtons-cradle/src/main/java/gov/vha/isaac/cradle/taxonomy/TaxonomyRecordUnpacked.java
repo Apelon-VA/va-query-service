@@ -62,7 +62,7 @@ public class TaxonomyRecordUnpacked {
         return false;
     }
 
-    public boolean containsConceptSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc) {
+    public boolean containsConceptSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate<?> tc) {
         RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
         if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
             return conceptSequenceRecordMap.get(conceptSequence).containsConceptSequenceViaType(typeSequence, tc, computer);
@@ -70,7 +70,7 @@ public class TaxonomyRecordUnpacked {
         return false;
     }
 
-    public boolean containsConceptSequenceViaType(int conceptSequence, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc) {
+    public boolean containsConceptSequenceViaType(int conceptSequence, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate<?> tc) {
         RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
         if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
             return conceptSequenceRecordMap.get(conceptSequence).containsConceptSequenceViaType(typeSequenceSet, tc, computer);
@@ -78,7 +78,7 @@ public class TaxonomyRecordUnpacked {
         return false;
     }
 
-    public boolean conceptSatisfiesStamp(int conceptSequence, StampCoordinate stampCoordinate) {
+    public boolean conceptSatisfiesStamp(int conceptSequence, StampCoordinate<?> stampCoordinate) {
         RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(stampCoordinate);
         if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
             return conceptSequenceRecordMap.get(conceptSequence).
@@ -87,7 +87,7 @@ public class TaxonomyRecordUnpacked {
         return false;
     }
 
-    public boolean containsConceptSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate tc, int flags) {
+    public boolean containsConceptSequenceViaType(int conceptSequence, int typeSequence, TaxonomyCoordinate<?> tc, int flags) {
         RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
         if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
             return conceptSequenceRecordMap.get(conceptSequence).containsConceptSequenceViaType(typeSequence, flags, computer);
@@ -95,7 +95,7 @@ public class TaxonomyRecordUnpacked {
         return false;
     }
 
-    public boolean containsConceptSequenceViaType(int conceptSequence, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc, int flags) {
+    public boolean containsConceptSequenceViaType(int conceptSequence, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate<?> tc, int flags) {
         RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
         if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
             return conceptSequenceRecordMap.get(conceptSequence).containsConceptSequenceViaType(typeSequenceSet, flags, computer);
@@ -144,7 +144,7 @@ public class TaxonomyRecordUnpacked {
      * @param tc used to determine if a concept is active.
      * @return active concepts identified by their sequence value.
      */
-    public IntStream getConceptSequencesForType(int typeSequence, TaxonomyCoordinate tc) {
+    public IntStream getConceptSequencesForType(int typeSequence, TaxonomyCoordinate<?> tc) {
         int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
         RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
         IntStream.Builder conceptSequenceIntStream = IntStream.builder();
@@ -191,7 +191,7 @@ public class TaxonomyRecordUnpacked {
         return conceptSequenceIntStream.build();
     }
 
-    IntStream getTypesForRelationship(int destinationId, TaxonomyCoordinate tc) {
+    IntStream getTypesForRelationship(int destinationId, TaxonomyCoordinate<?> tc) {
         final int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
         RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
         IntStream.Builder typeSequenceIntStream = IntStream.builder();
@@ -233,7 +233,7 @@ public class TaxonomyRecordUnpacked {
         return conceptSequenceIntStream.build();
     }
 
-    public IntStream getDestinationConceptSequencesOfType(ConceptSequenceSet typeSet, TaxonomyCoordinate tc) {
+    public IntStream getDestinationConceptSequencesOfType(ConceptSequenceSet typeSet, TaxonomyCoordinate<?> tc) {
         final int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
         RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
         IntStream.Builder conceptSequenceIntStream = IntStream.builder();
@@ -259,7 +259,7 @@ public class TaxonomyRecordUnpacked {
         return conceptSequenceIntStream.build();
     }
 
-    public IntStream getDestinationConceptSequencesNotOfType(ConceptSequenceSet typeSet, TaxonomyCoordinate tc) {
+    public IntStream getDestinationConceptSequencesNotOfType(ConceptSequenceSet typeSet, TaxonomyCoordinate<?> tc) {
         final int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
         RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(tc.getStampCoordinate());
         IntStream.Builder conceptSequenceIntStream = IntStream.builder();

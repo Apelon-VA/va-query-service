@@ -30,7 +30,7 @@ public enum TaxonomyFlags {
 
     public static final int ALL_RELS = 0;
 
-    public static int getFlagsFromTaxonomyCoordinate(TaxonomyCoordinate viewCoordinate) {
+    public static int getFlagsFromTaxonomyCoordinate(TaxonomyCoordinate<?> viewCoordinate) {
          switch (viewCoordinate.getTaxonomyType()) {
             case INFERRED:
                 return TaxonomyFlags.INFERRED.bits;
