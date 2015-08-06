@@ -18,13 +18,6 @@
  */
 package org.ihtsdo.otf.query.lucene;
 
-import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
-import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
-import gov.vha.isaac.ochre.api.Get;
-import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
-import gov.vha.isaac.ochre.impl.sememe.RefexDynamicUsageDescription;
-
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.util.Arrays;
@@ -41,26 +34,29 @@ import javax.inject.Singleton;
 import org.ihtsdo.otf.tcc.api.blueprint.IdDirective;
 import org.ihtsdo.otf.tcc.api.blueprint.InvalidCAB;
 import org.ihtsdo.otf.tcc.api.blueprint.RefexDirective;
-import org.ihtsdo.otf.tcc.api.blueprint.RefexDynamicCAB;
 import org.ihtsdo.otf.tcc.api.concept.ConceptChronicleBI;
 import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.ihtsdo.otf.tcc.api.coordinate.EditCoordinate;
 import org.ihtsdo.otf.tcc.api.coordinate.Status;
-import org.ihtsdo.otf.tcc.api.metadata.binding.RefexDynamic;
-import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicChronicleBI;
-import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicVersionBI;
-import org.ihtsdo.otf.tcc.api.refexDynamic.data.RefexDynamicDataBI;
-import org.ihtsdo.otf.tcc.api.refexDynamic.data.RefexDynamicDataType;
-import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicStringBI;
 import org.ihtsdo.otf.tcc.api.spec.ValidationException;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexService;
-import org.ihtsdo.otf.tcc.model.cc.refexDynamic.data.RefexDynamicData;
-import org.ihtsdo.otf.tcc.model.cc.refexDynamic.data.dataTypes.RefexDynamicString;
 import org.ihtsdo.otf.tcc.model.index.service.IndexStatusListenerBI;
 import org.jvnet.hk2.annotations.Service;
+import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
+import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
+import gov.vha.isaac.ochre.api.Get;
+import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.component.sememe.version.DynamicSememe;
+import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.DynamicSememeConstants;
+import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.DynamicSememeDataBI;
+import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.DynamicSememeDataType;
+import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.dataTypes.DynamicSememeStringBI;
+import gov.vha.isaac.ochre.model.sememe.dataTypes.DynamicSememeData;
+import gov.vha.isaac.ochre.model.sememe.dataTypes.DynamicSememeString;
 
 /**
  * {@link LuceneDynamicRefexIndexerConfiguration} Holds a cache of the configuration for the dynamic refex indexer (which is read from the DB, and may
@@ -105,23 +101,23 @@ public class LuceneDynamicRefexIndexerConfiguration
 					try
 					{
 						HashMap<Integer, Integer[]> updatedWhatToIndex = new HashMap<>();
-                                                ConceptChronology<?> concept = Get.conceptService().getConcept(RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getUuids());
+                                                ConceptChronology<?> concept = Get.conceptService().getConcept(DynamicSememeConstants.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getUuids());
                                                 
-                                                Stream<RefexDynamicChronicleBI<?>> rdc = LookupService.getService(RefexService.class).getDynamicRefexesForComponent(concept.getNid());
+                                                Stream<DynamicSememeChronicleBI<?>> rdc = LookupService.getService(RefexService.class).getDynamicRefexesForComponent(concept.getNid());
                                                 
-						for (RefexDynamicChronicleBI<?> r : rdc.collect(Collectors.toList()))
+						for (DynamicSememeChronicleBI<?> r : rdc.collect(Collectors.toList()))
 						{
-							Optional<? extends RefexDynamicVersionBI<?>> rdv = r.getVersion(ViewCoordinates.getMetadataViewCoordinate());
-							if (!rdv.isPresent() || !rdv.get().isActive() || rdv.get().getAssemblageNid() != RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid())
+							Optional<? extends DynamicSememeVersionBI<?>> rdv = r.getVersion(ViewCoordinates.getMetadataViewCoordinate());
+							if (!rdv.isPresent() || !rdv.get().isActive() || rdv.get().getAssemblageNid() != DynamicSememeConstants.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid())
 							{
 								continue;
 							}
 							int assemblageToIndex = rdv.get().getReferencedComponentNid();
 							Integer[] finalCols = new Integer[] {};
-							RefexDynamicDataBI[] data = rdv.get().getData();
+							DynamicSememeDataBI[] data = rdv.get().getData();
 							if (data != null && data.length > 0)
 							{
-								String colsToIndex = ((RefexDynamicStringBI) data[0]).getDataString();
+								String colsToIndex = ((DynamicSememeStringBI) data[0]).getDataString();
 								String[] split = colsToIndex.split(",");
 								finalCols = new Integer[split.length];
 								for (int i = 0; i < split.length; i++)
@@ -132,10 +128,10 @@ public class LuceneDynamicRefexIndexerConfiguration
 							else
 							{
 								//make sure it is an annotation style if the col list is empty
-								if (!RefexDynamicUsageDescription.read(assemblageToIndex).isAnnotationStyle())
+								if (!DynamicSememeUsageDescription.readDynamicSememeUsageDescription(assemblageToIndex).isAnnotationStyle())
 								{
 									
-									RefexDynamicUsageDescription rdud = RefexDynamicUsageDescription.read(assemblageToIndex);
+									DynamicSememeUsageDescription rdud = DynamicSememeUsageDescription.readDynamicSememeUsageDescription(assemblageToIndex);
 									finalCols = new Integer[rdud.getColumnInfo().length];
 									for (int i = 0; i < rdud.getColumnInfo().length; i++)
 									{
@@ -198,12 +194,12 @@ public class LuceneDynamicRefexIndexerConfiguration
 		ConceptChronicleBI referencedAssemblageConceptC = Ts.get().getConcept(assemblageNid);
 		
 		ConceptVersionBI assemblageConceptC = Ts.get().getConceptVersion(ViewCoordinates.getMetadataViewCoordinate(),
-				RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid());
+				DynamicSememeConstants.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid());
 		
 		logger.info("Configuring index for dynamic refex assemblage '" + referencedAssemblageConceptC.toUserString() + "' on columns " + Arrays.deepToString(columnsToIndex));
 
 		StringBuilder buf = new StringBuilder();
-		RefexDynamicData[] data = null;
+		DynamicSememeData[] data = null;
 		if (columnsToIndex != null)
 		{
 			for (int i : columnsToIndex)
@@ -218,11 +214,11 @@ public class LuceneDynamicRefexIndexerConfiguration
 
 			if (buf.length() > 0)
 			{
-				data = new RefexDynamicData[1];
+				data = new DynamicSememeData[1];
 
 				try
 				{
-					data[0] = new RefexDynamicString(buf.toString());
+					data[0] = new DynamicSememeString(buf.toString());
 				}
 				catch (PropertyVetoException e)
 				{
@@ -235,9 +231,9 @@ public class LuceneDynamicRefexIndexerConfiguration
 			throw new IOException("It doesn't make sense to index a member-style refex (without indexing any column data)");
 		}
 
-		RefexDynamicVersionBI<?> rdv = findCurrentIndexConfigRefex(assemblageNid);
+		DynamicSememeVersionBI<?> rdv = findCurrentIndexConfigRefex(assemblageNid);
 		
-		RefexDynamicCAB rdb = null;
+		DynamicSememeCAB rdb = null;
 		
 		if (rdv != null)
 		{
@@ -245,7 +241,7 @@ public class LuceneDynamicRefexIndexerConfiguration
 		}
 		else
 		{
-			rdb = new RefexDynamicCAB(assemblageNid, RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid());
+			rdb = new DynamicSememeCAB(assemblageNid, DynamicSememe.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid());
 		}
 		rdb.setData(data, null);
 		
@@ -276,18 +272,18 @@ public class LuceneDynamicRefexIndexerConfiguration
 		return Hk2Looker.get().getService(LuceneDynamicRefexIndexerConfiguration.class).whatColumnsToIndex(assemblageNid);
 	}
 	
-	private static RefexDynamicVersionBI<?> findCurrentIndexConfigRefex(int assemblageNid) throws ValidationException, IOException, ContradictionException
+	private static DynamicSememeVersionBI<?> findCurrentIndexConfigRefex(int assemblageNid) throws ValidationException, IOException, ContradictionException
 	{
 		ConceptVersionBI indexConfigConcept = Ts.get().getConceptVersion(ViewCoordinates.getMetadataViewCoordinate(),
-				RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid());
+				DynamicSememe.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid());
 
-		for (RefexDynamicChronicleBI<?> r : indexConfigConcept.getRefsetDynamicMembers())
+		for (DynamicSememeChronicleBI<?> r : indexConfigConcept.getRefsetDynamicMembers())
 		{
-			if (r.getAssemblageNid() == RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid() && r.getReferencedComponentNid() == assemblageNid)
+			if (r.getAssemblageNid() == DynamicSememe.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid() && r.getReferencedComponentNid() == assemblageNid)
 			{
-				Optional<? extends RefexDynamicVersionBI<?>> rdv = r.getVersion(ViewCoordinates.getMetadataViewCoordinate());
+				Optional<? extends DynamicSememeVersionBI<?>> rdv = r.getVersion(ViewCoordinates.getMetadataViewCoordinate());
 				
-				if (rdv.isPresent() && rdv.get().getAssemblageNid() == RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid() && rdv.get().getReferencedComponentNid() == assemblageNid)
+				if (rdv.isPresent() && rdv.get().getAssemblageNid() == DynamicSememe.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid() && rdv.get().getReferencedComponentNid() == assemblageNid)
 				{
 					return rdv.get();
 				}
@@ -310,7 +306,7 @@ public class LuceneDynamicRefexIndexerConfiguration
 	{
 		logger.info("Disabling index for dynamic refex assemblage concept '" + assemblageNid + "'");
 		
-		RefexDynamicVersionBI<?> rdv = findCurrentIndexConfigRefex(assemblageNid);
+		DynamicSememeVersionBI<?> rdv = findCurrentIndexConfigRefex(assemblageNid);
 		
 		if (rdv != null && rdv.isActive())
 		{
@@ -320,10 +316,10 @@ public class LuceneDynamicRefexIndexerConfiguration
 			{
 				isl.indexConfigurationChanged(Hk2Looker.get().getService(LuceneDynamicRefexIndexer.class));
 			}
-			RefexDynamicCAB rb = rdv.makeBlueprint(ViewCoordinates.getMetadataViewCoordinate(), IdDirective.PRESERVE, RefexDirective.EXCLUDE);
+			DynamicSememeCAB rb = rdv.makeBlueprint(ViewCoordinates.getMetadataViewCoordinate(), IdDirective.PRESERVE, RefexDirective.EXCLUDE);
 			rb.setStatus(Status.INACTIVE);
 			ConceptVersionBI indexConfigConceptC = Ts.get().getConceptVersion(ViewCoordinates.getMetadataViewCoordinate(),
-					RefexDynamic.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid());
+					DynamicSememeConstants.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getNid());
 			ConceptChronicleBI referencedAssemblageConceptC = Ts.get().getConcept(assemblageNid);
 			
 			Ts.get().getTerminologyBuilder(new EditCoordinate(IsaacMetadataAuxiliaryBinding.USER.getLenient().getConceptNid(), 
@@ -341,9 +337,9 @@ public class LuceneDynamicRefexIndexerConfiguration
 		logger.info("No index configuration was found to disable for dynamic refex assemblage concept '" + assemblageNid + "'");
 	}
 	
-	public static boolean isColumnTypeIndexable(RefexDynamicDataType dataType)
+	public static boolean isColumnTypeIndexable(DynamicSememeDataType dataType)
 	{
-		if (dataType == RefexDynamicDataType.BYTEARRAY)
+		if (dataType == DynamicSememeDataType.BYTEARRAY)
 		{
 			return false;
 		}

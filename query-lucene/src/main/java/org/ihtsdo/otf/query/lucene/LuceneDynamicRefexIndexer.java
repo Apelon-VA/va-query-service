@@ -19,8 +19,6 @@
 
 package org.ihtsdo.otf.query.lucene;
 
-import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
-import gov.vha.isaac.ochre.api.index.SearchResult;
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.util.Iterator;
@@ -47,30 +45,28 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.glassfish.hk2.runlevel.RunLevel;
 import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
-import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicChronicleBI;
-import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicVersionBI;
-import org.ihtsdo.otf.tcc.api.refexDynamic.data.RefexDynamicDataBI;
-import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicArrayBI;
-import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicBooleanBI;
-import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicByteArrayBI;
-import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicDoubleBI;
-import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicFloatBI;
-import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicIntegerBI;
-import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicLongBI;
-import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicNidBI;
-import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicPolymorphicBI;
-import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicStringBI;
-import org.ihtsdo.otf.tcc.api.refexDynamic.data.dataTypes.RefexDynamicUUIDBI;
-import org.ihtsdo.otf.tcc.model.cc.refexDynamic.RefexDynamicMember;
-import org.ihtsdo.otf.tcc.model.cc.refexDynamic.RefexDynamicMemberVersion;
-import org.ihtsdo.otf.tcc.model.cc.refexDynamic.data.dataTypes.RefexDynamicString;
 import org.jvnet.hk2.annotations.Service;
+import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
+import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.DynamicSememeDataBI;
+import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.dataTypes.DynamicSememeArrayBI;
+import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.dataTypes.DynamicSememeBooleanBI;
+import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.dataTypes.DynamicSememeByteArrayBI;
+import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.dataTypes.DynamicSememeDoubleBI;
+import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.dataTypes.DynamicSememeFloatBI;
+import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.dataTypes.DynamicSememeIntegerBI;
+import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.dataTypes.DynamicSememeLongBI;
+import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.dataTypes.DynamicSememeNidBI;
+import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.dataTypes.DynamicSememePolymorphicBI;
+import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.dataTypes.DynamicSememeStringBI;
+import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.dataTypes.DynamicSememeUUIDBI;
+import gov.vha.isaac.ochre.api.index.SearchResult;
+import gov.vha.isaac.ochre.model.sememe.dataTypes.DynamicSememeString;
 
 /**
  * {@link LuceneDynamicRefexIndexer} An indexer that can be used both to index the reverse mapping of annotation style refexes, and to index
  * the attached data of dynamic refexes.
  *
- * This class provides specialized query methods for handling very specific queries against RefexDynamic data.
+ * This class provides specialized query methods for handling very specific queries against DynamicSememe data.
  *
  * @author <a href="mailto:daniel.armbrust.list@gmail.com">Dan Armbrust</a>
  */
@@ -112,9 +108,9 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 	@Override
 	protected boolean indexChronicle(ObjectChronology<?> chronicle)
 	{
-		if (chronicle instanceof RefexDynamicMember)
+		if (chronicle instanceof DynamicSememeMember)
 		{
-			RefexDynamicMember rdm = (RefexDynamicMember) chronicle;
+			DynamicSememeMember rdm = (DynamicSememeMember) chronicle;
 			return lric.needsIndexing(rdm.getAssemblageNid());
 		}
 
@@ -126,10 +122,10 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 	{
 		doc.add(new IntField(ComponentProperty.COMPONENT_ID.name(), chronicle.getNid(), LuceneIndexer.indexedComponentNidType));
 
-		RefexDynamicMember rdm = (RefexDynamicMember) chronicle;
-		for (Iterator<? extends RefexDynamicMemberVersion> it = rdm.getVersions().iterator(); it.hasNext();)
+		DynamicSememeMember rdm = (DynamicSememeMember) chronicle;
+		for (Iterator<? extends DynamicSememeMemberVersion> it = rdm.getVersions().iterator(); it.hasNext();)
 		{
-			RefexDynamicMemberVersion rdv = it.next();
+			DynamicSememeMemberVersion rdv = it.next();
 			
 			//Yes, this is a long, but we never do anything other than exact matches, so it performs better to index it as a string
 			//rather that indexing it as a long... as we never need to match things like nid > X
@@ -141,7 +137,7 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 				int dataColCount = rdv.getData().length;
 				for (int col : columns)
 				{
-					RefexDynamicDataBI dataCol = col >= dataColCount ? null : rdv.getData(col);
+					DynamicSememeDataBI dataCol = col >= dataColCount ? null : rdv.getData(col);
 					
 					//Not the greatest design for diskspace / performance... but if we want to be able to support searching across 
 					//all fields / all refexes - and also support searching per-field within a single refex, we need to double index 
@@ -161,70 +157,70 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 		}
 	}
 	
-	private void handleType(Document doc, RefexDynamicDataBI dataCol, int colNumber, RefexDynamicVersionBI<?> rdv)
+	private void handleType(Document doc, DynamicSememeDataBI dataCol, int colNumber, DynamicSememeVersionBI<?> rdv)
 	{
 		if (dataCol == null)
 		{
 			//noop
 		}
-		else if (dataCol instanceof RefexDynamicBooleanBI)
+		else if (dataCol instanceof DynamicSememeBooleanBI)
 		{
-			doc.add(new StringField(COLUMN_FIELD_DATA, ((RefexDynamicBooleanBI) dataCol).getDataBoolean() + "", Store.NO));
-			doc.add(new StringField(COLUMN_FIELD_DATA + "_" + colNumber, ((RefexDynamicBooleanBI) dataCol).getDataBoolean() + "", Store.NO));
+			doc.add(new StringField(COLUMN_FIELD_DATA, ((DynamicSememeBooleanBI) dataCol).getDataBoolean() + "", Store.NO));
+			doc.add(new StringField(COLUMN_FIELD_DATA + "_" + colNumber, ((DynamicSememeBooleanBI) dataCol).getDataBoolean() + "", Store.NO));
 		}
-		else if (dataCol instanceof RefexDynamicByteArrayBI)
+		else if (dataCol instanceof DynamicSememeByteArrayBI)
 		{
 			logger.log(Level.WARNING, "Dynamic Refex Indexer configured to index a field that isn''t indexable (byte array) in {0}", rdv.toUserString());
 		}
-		else if (dataCol instanceof RefexDynamicDoubleBI)
+		else if (dataCol instanceof DynamicSememeDoubleBI)
 		{
-			doc.add(new DoubleField(COLUMN_FIELD_DATA, ((RefexDynamicDoubleBI) dataCol).getDataDouble(), Store.NO));
-			doc.add(new DoubleField(COLUMN_FIELD_DATA + "_" + colNumber, ((RefexDynamicDoubleBI) dataCol).getDataDouble(), Store.NO));
+			doc.add(new DoubleField(COLUMN_FIELD_DATA, ((DynamicSememeDoubleBI) dataCol).getDataDouble(), Store.NO));
+			doc.add(new DoubleField(COLUMN_FIELD_DATA + "_" + colNumber, ((DynamicSememeDoubleBI) dataCol).getDataDouble(), Store.NO));
 		}
-		else if (dataCol instanceof RefexDynamicFloatBI)
+		else if (dataCol instanceof DynamicSememeFloatBI)
 		{
-			doc.add(new FloatField(COLUMN_FIELD_DATA, ((RefexDynamicFloatBI) dataCol).getDataFloat(), Store.NO));
-			doc.add(new FloatField(COLUMN_FIELD_DATA + "_" + colNumber, ((RefexDynamicFloatBI) dataCol).getDataFloat(), Store.NO));
+			doc.add(new FloatField(COLUMN_FIELD_DATA, ((DynamicSememeFloatBI) dataCol).getDataFloat(), Store.NO));
+			doc.add(new FloatField(COLUMN_FIELD_DATA + "_" + colNumber, ((DynamicSememeFloatBI) dataCol).getDataFloat(), Store.NO));
 		}
-		else if (dataCol instanceof RefexDynamicIntegerBI)
+		else if (dataCol instanceof DynamicSememeIntegerBI)
 		{
-			doc.add(new IntField(COLUMN_FIELD_DATA, ((RefexDynamicIntegerBI) dataCol).getDataInteger(), Store.NO));
-			doc.add(new IntField(COLUMN_FIELD_DATA + "_" + colNumber, ((RefexDynamicIntegerBI) dataCol).getDataInteger(), Store.NO));
+			doc.add(new IntField(COLUMN_FIELD_DATA, ((DynamicSememeIntegerBI) dataCol).getDataInteger(), Store.NO));
+			doc.add(new IntField(COLUMN_FIELD_DATA + "_" + colNumber, ((DynamicSememeIntegerBI) dataCol).getDataInteger(), Store.NO));
 		}
-		else if (dataCol instanceof RefexDynamicLongBI)
+		else if (dataCol instanceof DynamicSememeLongBI)
 		{
-			doc.add(new LongField(COLUMN_FIELD_DATA, ((RefexDynamicLongBI) dataCol).getDataLong(), Store.NO));
-			doc.add(new LongField(COLUMN_FIELD_DATA + "_" + colNumber, ((RefexDynamicLongBI) dataCol).getDataLong(), Store.NO));
+			doc.add(new LongField(COLUMN_FIELD_DATA, ((DynamicSememeLongBI) dataCol).getDataLong(), Store.NO));
+			doc.add(new LongField(COLUMN_FIELD_DATA + "_" + colNumber, ((DynamicSememeLongBI) dataCol).getDataLong(), Store.NO));
 		}
-		else if (dataCol instanceof RefexDynamicNidBI)
+		else if (dataCol instanceof DynamicSememeNidBI)
 		{
 			//No need for ranges on a nid
-			doc.add(new StringField(COLUMN_FIELD_DATA, ((RefexDynamicNidBI) dataCol).getDataNid() + "", Store.NO));
-			doc.add(new StringField(COLUMN_FIELD_DATA + "_" + colNumber, ((RefexDynamicNidBI) dataCol).getDataNid() + "", Store.NO));
+			doc.add(new StringField(COLUMN_FIELD_DATA, ((DynamicSememeNidBI) dataCol).getDataNid() + "", Store.NO));
+			doc.add(new StringField(COLUMN_FIELD_DATA + "_" + colNumber, ((DynamicSememeNidBI) dataCol).getDataNid() + "", Store.NO));
 		}
-		else if (dataCol instanceof RefexDynamicPolymorphicBI)
+		else if (dataCol instanceof DynamicSememePolymorphicBI)
 		{
 			logger.log(Level.SEVERE, "This should have been impossible (polymorphic?)");
 		}
-		else if (dataCol instanceof RefexDynamicStringBI)
+		else if (dataCol instanceof DynamicSememeStringBI)
 		{
-			doc.add(new TextField(COLUMN_FIELD_DATA, ((RefexDynamicStringBI) dataCol).getDataString(), Store.NO));
-			doc.add(new TextField(COLUMN_FIELD_DATA + "_" + colNumber, ((RefexDynamicStringBI) dataCol).getDataString(), Store.NO));
+			doc.add(new TextField(COLUMN_FIELD_DATA, ((DynamicSememeStringBI) dataCol).getDataString(), Store.NO));
+			doc.add(new TextField(COLUMN_FIELD_DATA + "_" + colNumber, ((DynamicSememeStringBI) dataCol).getDataString(), Store.NO));
 			//yes, indexed 4 different times - twice with the standard analyzer, twice with the whitespace analyzer.
-			doc.add(new TextField(COLUMN_FIELD_DATA + PerFieldAnalyzer.WHITE_SPACE_FIELD_MARKER, ((RefexDynamicStringBI) dataCol).getDataString(), Store.NO));
+			doc.add(new TextField(COLUMN_FIELD_DATA + PerFieldAnalyzer.WHITE_SPACE_FIELD_MARKER, ((DynamicSememeStringBI) dataCol).getDataString(), Store.NO));
 			doc.add(new TextField(COLUMN_FIELD_DATA + "_" + colNumber + PerFieldAnalyzer.WHITE_SPACE_FIELD_MARKER, 
-					((RefexDynamicStringBI) dataCol).getDataString(), Store.NO));
+					((DynamicSememeStringBI) dataCol).getDataString(), Store.NO));
 		}
-		else if (dataCol instanceof RefexDynamicUUIDBI)
+		else if (dataCol instanceof DynamicSememeUUIDBI)
 		{
 			//Use the whitespace analyzer on UUIDs
-			doc.add(new StringField(COLUMN_FIELD_DATA + PerFieldAnalyzer.WHITE_SPACE_FIELD_MARKER, ((RefexDynamicUUIDBI) dataCol).getDataUUID().toString(), Store.NO));
+			doc.add(new StringField(COLUMN_FIELD_DATA + PerFieldAnalyzer.WHITE_SPACE_FIELD_MARKER, ((DynamicSememeUUIDBI) dataCol).getDataUUID().toString(), Store.NO));
 			doc.add(new StringField(COLUMN_FIELD_DATA + "_" + colNumber + PerFieldAnalyzer.WHITE_SPACE_FIELD_MARKER, 
-					((RefexDynamicUUIDBI) dataCol).getDataUUID().toString(), Store.NO));
+					((DynamicSememeUUIDBI) dataCol).getDataUUID().toString(), Store.NO));
 		}
-		else if (dataCol instanceof RefexDynamicArrayBI<?>)
+		else if (dataCol instanceof DynamicSememeArrayBI<?>)
 		{
-			for (RefexDynamicDataBI nestedData : ((RefexDynamicArrayBI<?>)dataCol).getDataArray())
+			for (DynamicSememeDataBI nestedData : ((DynamicSememeArrayBI<?>)dataCol).getDataArray())
 			{
 				handleType(doc, nestedData, colNumber, rdv);
 			}
@@ -248,8 +244,8 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
      * @throws java.io.IOException 
      * @throws org.apache.lucene.queryparser.classic.ParseException 
 	 */
-	public final List<SearchResult> queryNumericRange(final RefexDynamicDataBI queryDataLower, final boolean queryDataLowerInclusive, 
-			final RefexDynamicDataBI queryDataUpper, final boolean queryDataUpperInclusive, Integer assemblageNid, Integer[] searchColumns, 
+	public final List<SearchResult> queryNumericRange(final DynamicSememeDataBI queryDataLower, final boolean queryDataLowerInclusive, 
+			final DynamicSememeDataBI queryDataUpper, final boolean queryDataUpperInclusive, Integer assemblageNid, Integer[] searchColumns, 
 			int sizeLimit, Long targetGeneration) throws IOException, ParseException
 	{
 		BooleanQuery bq = new BooleanQuery();
@@ -274,12 +270,12 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 	/**
 	 * A convenience method.
 	 * 
-	 * Search RefexDynamicData columns, treating them as text - and handling the search in the same mechanism as if this were a
+	 * Search DynamicSememeData columns, treating them as text - and handling the search in the same mechanism as if this were a
 	 * call to the method {@link LuceneIndexer#query(String, boolean, ComponentProperty, int, long)} using a ComponentProperty type
 	 * of {@link ComponentProperty#DESCRIPTION_TEXT}
 	 * 
-	 * Calls the method {@link #query(RefexDynamicDataBI, Integer, boolean, Integer[], int, long) with a null parameter for
-	 * the searchColumns, and wraps the queryString into a RefexDynamicString.
+	 * Calls the method {@link #query(DynamicSememeDataBI, Integer, boolean, Integer[], int, long) with a null parameter for
+	 * the searchColumns, and wraps the queryString into a DynamicSememeString.
      * @param queryString
      * @param assemblageNid
      * @param prefixSearch
@@ -294,7 +290,7 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 	{
 		try
 		{
-			return query(new RefexDynamicString(queryString), assemblageNid, prefixSearch, null, sizeLimit, targetGeneration);
+			return query(new DynamicSememeString(queryString), assemblageNid, prefixSearch, null, sizeLimit, targetGeneration);
 		}
 		catch (PropertyVetoException e)
 		{
@@ -314,7 +310,7 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
      * @throws java.io.IOException 
      * @throws org.apache.lucene.queryparser.classic.ParseException 
 	 */
-	public final List<SearchResult> query(final RefexDynamicDataBI queryData, Integer assemblageNid, final boolean prefixSearch, Integer[] searchColumns, int sizeLimit,
+	public final List<SearchResult> query(final DynamicSememeDataBI queryData, Integer assemblageNid, final boolean prefixSearch, Integer[] searchColumns, int sizeLimit,
 			Long targetGeneration) throws IOException, ParseException
 	{
 		BooleanQuery bq = new BooleanQuery();
@@ -323,7 +319,7 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 			bq.add(new TermQuery(new Term(COLUMN_FIELD_ASSEMBLAGE, assemblageNid + "")), Occur.MUST);
 		}
 
-		if (queryData instanceof RefexDynamicStringBI)
+		if (queryData instanceof DynamicSememeStringBI)
 		{
 			bq.add(new QueryWrapperForColumnHandling()
 			{
@@ -331,7 +327,7 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 				Query buildQuery(String columnName) throws ParseException, IOException
 				{
 					//This is the only query type that needs tokenizing, etc.
-					String queryString = ((RefexDynamicStringBI) queryData).getDataString();
+					String queryString = ((DynamicSememeStringBI) queryData).getDataString();
 					//'-' signs are operators to lucene... but we want to allow nid lookups.  So escape any leading hyphens
 					//and any hyphens that are preceeded by spaces.  This way, we don't mess up UUID handling.
 					//(lucene handles UUIDs ok, because the - sign is only treated special at the beginning, or when preceeded by a space)
@@ -348,7 +344,7 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 		}
 		else
 		{
-			if (queryData instanceof RefexDynamicBooleanBI || queryData instanceof RefexDynamicNidBI || queryData instanceof RefexDynamicUUIDBI)
+			if (queryData instanceof DynamicSememeBooleanBI || queryData instanceof DynamicSememeNidBI || queryData instanceof DynamicSememeUUIDBI)
 			{
 				bq.add(new QueryWrapperForColumnHandling()
 				{
@@ -359,8 +355,8 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 					}
 				}.buildColumnHandlingQuery(searchColumns), Occur.MUST);
 			}
-			else if (queryData instanceof RefexDynamicDoubleBI || queryData instanceof RefexDynamicFloatBI || queryData instanceof RefexDynamicIntegerBI
-					|| queryData instanceof RefexDynamicLongBI)
+			else if (queryData instanceof DynamicSememeDoubleBI || queryData instanceof DynamicSememeFloatBI || queryData instanceof DynamicSememeIntegerBI
+					|| queryData instanceof DynamicSememeLongBI)
 			{
 				bq.add(new QueryWrapperForColumnHandling()
 				{
@@ -369,8 +365,8 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 					{
 						Query temp = buildNumericQuery(queryData, true, queryData, true, columnName);
 						
-						if ((queryData instanceof RefexDynamicLongBI && ((RefexDynamicLongBI)queryData).getDataLong() < 0) ||
-								(queryData instanceof RefexDynamicIntegerBI && ((RefexDynamicIntegerBI)queryData).getDataInteger() < 0))
+						if ((queryData instanceof DynamicSememeLongBI && ((DynamicSememeLongBI)queryData).getDataLong() < 0) ||
+								(queryData instanceof DynamicSememeIntegerBI && ((DynamicSememeIntegerBI)queryData).getDataInteger() < 0))
 						{
 							//Looks like a nid... wrap in an or clause that would do a match on the exact term if it was indexed as a nid, rather than a numeric
 							BooleanQuery wrapper = new BooleanQuery();
@@ -382,11 +378,11 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 					}
 				}.buildColumnHandlingQuery(searchColumns), Occur.MUST);
 			}
-			else if (queryData instanceof RefexDynamicByteArrayBI)
+			else if (queryData instanceof DynamicSememeByteArrayBI)
 			{
-				throw new ParseException("RefexDynamicByteArray isn't indexed");
+				throw new ParseException("DynamicSememeByteArray isn't indexed");
 			}
-			else if (queryData instanceof RefexDynamicPolymorphicBI)
+			else if (queryData instanceof DynamicSememePolymorphicBI)
 			{
 				throw new ParseException("This should have been impossible (polymorphic?)");
 			}
@@ -416,7 +412,7 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 		return query(assemblageNid + "", false, ComponentProperty.ASSEMBLAGE_ID, sizeLimit, targetGeneration);
 	}
 
-	private Query buildNumericQuery(RefexDynamicDataBI queryDataLower, boolean queryDataLowerInclusive, RefexDynamicDataBI queryDataUpper, boolean queryDataUpperInclusive,
+	private Query buildNumericQuery(DynamicSememeDataBI queryDataLower, boolean queryDataLowerInclusive, DynamicSememeDataBI queryDataUpper, boolean queryDataUpperInclusive,
 			String columnName) throws ParseException
 	{
 		//Convert both to the same type (if they differ) - go largest data type to smallest, so we don't lose precision
@@ -427,11 +423,11 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 			BooleanQuery bq = new BooleanQuery();
 			boolean fitsInFloat = false;
 			boolean fitsInInt = false;
-			if (queryDataLower instanceof RefexDynamicDoubleBI || queryDataUpper instanceof RefexDynamicDoubleBI)
+			if (queryDataLower instanceof DynamicSememeDoubleBI || queryDataUpper instanceof DynamicSememeDoubleBI)
 			{
-				Double upperVal = (queryDataUpper == null ? null : (queryDataUpper instanceof RefexDynamicDoubleBI ? ((RefexDynamicDoubleBI)queryDataUpper).getDataDouble() :
+				Double upperVal = (queryDataUpper == null ? null : (queryDataUpper instanceof DynamicSememeDoubleBI ? ((DynamicSememeDoubleBI)queryDataUpper).getDataDouble() :
 					((Number)queryDataUpper.getDataObject()).doubleValue()));
-				Double lowerVal = (queryDataLower == null ? null : (queryDataLower instanceof RefexDynamicDoubleBI ? ((RefexDynamicDoubleBI)queryDataLower).getDataDouble() :
+				Double lowerVal = (queryDataLower == null ? null : (queryDataLower instanceof DynamicSememeDoubleBI ? ((DynamicSememeDoubleBI)queryDataLower).getDataDouble() :
 					((Number)queryDataLower.getDataObject()).doubleValue()));
 				bq.add(NumericRangeQuery.newDoubleRange(columnName, lowerVal, upperVal, queryDataLowerInclusive, queryDataUpperInclusive), Occur.SHOULD);
 				
@@ -442,24 +438,24 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 				}
 			}
 			
-			if (fitsInFloat || queryDataLower instanceof RefexDynamicFloatBI || queryDataUpper instanceof RefexDynamicFloatBI)
+			if (fitsInFloat || queryDataLower instanceof DynamicSememeFloatBI || queryDataUpper instanceof DynamicSememeFloatBI)
 			{
 				Float upperVal = (queryDataUpper == null ? null : 
-					(queryDataUpper == null ? null : (queryDataUpper instanceof RefexDynamicFloatBI ? ((RefexDynamicFloatBI)queryDataUpper).getDataFloat() :
+					(queryDataUpper == null ? null : (queryDataUpper instanceof DynamicSememeFloatBI ? ((DynamicSememeFloatBI)queryDataUpper).getDataFloat() :
 						(fitsInFloat && ((Number)queryDataUpper.getDataObject()).doubleValue() > Float.MAX_VALUE ? Float.MAX_VALUE : 
 							((Number)queryDataUpper.getDataObject()).floatValue()))));
 				Float lowerVal = (queryDataLower == null ? null : 
-					(queryDataLower instanceof RefexDynamicFloatBI ? ((RefexDynamicFloatBI)queryDataLower).getDataFloat() :
+					(queryDataLower instanceof DynamicSememeFloatBI ? ((DynamicSememeFloatBI)queryDataLower).getDataFloat() :
 						(fitsInFloat && ((Number)queryDataLower.getDataObject()).doubleValue() < Float.MIN_VALUE ? Float.MIN_VALUE :
 							((Number)queryDataLower.getDataObject()).floatValue())));
 				bq.add(NumericRangeQuery.newFloatRange(columnName, lowerVal, upperVal, queryDataLowerInclusive, queryDataUpperInclusive), Occur.SHOULD);
 			}
 			
-			if (queryDataLower instanceof RefexDynamicLongBI || queryDataUpper instanceof RefexDynamicLongBI)
+			if (queryDataLower instanceof DynamicSememeLongBI || queryDataUpper instanceof DynamicSememeLongBI)
 			{
-				Long upperVal = (queryDataUpper == null ? null : (queryDataUpper instanceof RefexDynamicLongBI ? ((RefexDynamicLongBI)queryDataUpper).getDataLong() :
+				Long upperVal = (queryDataUpper == null ? null : (queryDataUpper instanceof DynamicSememeLongBI ? ((DynamicSememeLongBI)queryDataUpper).getDataLong() :
 					((Number)queryDataUpper.getDataObject()).longValue()));
-				Long lowerVal = (queryDataLower == null ? null : (queryDataLower instanceof RefexDynamicLongBI ? ((RefexDynamicLongBI)queryDataLower).getDataLong() :
+				Long lowerVal = (queryDataLower == null ? null : (queryDataLower instanceof DynamicSememeLongBI ? ((DynamicSememeLongBI)queryDataLower).getDataLong() :
 					((Number)queryDataLower.getDataObject()).longValue()));
 				bq.add(NumericRangeQuery.newLongRange(columnName, lowerVal, upperVal, queryDataLowerInclusive, queryDataUpperInclusive), Occur.SHOULD);
 				if ((upperVal != null && upperVal <= Integer.MAX_VALUE && upperVal >= Integer.MIN_VALUE) 
@@ -469,14 +465,14 @@ public class LuceneDynamicRefexIndexer extends LuceneIndexer
 				}
 			}
 			
-			if (fitsInInt || queryDataLower instanceof RefexDynamicIntegerBI || queryDataUpper instanceof RefexDynamicIntegerBI)
+			if (fitsInInt || queryDataLower instanceof DynamicSememeIntegerBI || queryDataUpper instanceof DynamicSememeIntegerBI)
 			{
 				Integer upperVal = (queryDataUpper == null ? null : 
-					(queryDataUpper instanceof RefexDynamicIntegerBI ? ((RefexDynamicIntegerBI)queryDataUpper).getDataInteger() :
+					(queryDataUpper instanceof DynamicSememeIntegerBI ? ((DynamicSememeIntegerBI)queryDataUpper).getDataInteger() :
 						(fitsInInt && ((Number)queryDataUpper.getDataObject()).longValue() > Integer.MAX_VALUE ? Integer.MAX_VALUE :
 							((Number)queryDataUpper.getDataObject()).intValue())));
 				Integer lowerVal = (queryDataLower == null ? null : 
-					(queryDataLower instanceof RefexDynamicIntegerBI ? ((RefexDynamicIntegerBI)queryDataLower).getDataInteger() :
+					(queryDataLower instanceof DynamicSememeIntegerBI ? ((DynamicSememeIntegerBI)queryDataLower).getDataInteger() :
 						(fitsInInt && ((Number)queryDataLower.getDataObject()).longValue() < Integer.MIN_VALUE ? Integer.MIN_VALUE :
 							((Number)queryDataLower.getDataObject()).intValue())));
 				bq.add(NumericRangeQuery.newIntRange(columnName, lowerVal, upperVal, queryDataLowerInclusive, queryDataUpperInclusive), Occur.SHOULD);
