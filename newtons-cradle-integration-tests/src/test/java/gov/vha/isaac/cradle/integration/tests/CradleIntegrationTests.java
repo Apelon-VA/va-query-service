@@ -135,12 +135,11 @@ public class CradleIntegrationTests {
     public void testLoad() throws Exception {
 
         Instant instant = Instant.now();
-        
-         log.info(DateTimeFormatter.ISO_DATE.format(instant.atOffset(ZoneOffset.UTC)));           
-         
-         TaxonomyCoordinate tc = Get.coordinateFactory().createDefaultStatedTaxonomyCoordinate().makeAnalog(2002, 01, 31, 0, 0, 0).makeAnalog(PremiseType.STATED);
-        log.info(DateTimeFormatter.ISO_DATE.format(tc.getStampCoordinate().getStampPosition().getTimeAsInstant().atOffset(ZoneOffset.UTC)));           
- 
+
+        log.info(DateTimeFormatter.ISO_DATE.format(instant.atOffset(ZoneOffset.UTC)));
+
+        TaxonomyCoordinate tc = Get.coordinateFactory().createDefaultStatedTaxonomyCoordinate().makeAnalog(2002, 01, 31, 0, 0, 0).makeAnalog(PremiseType.STATED);
+        log.info(DateTimeFormatter.ISO_DATE.format(tc.getStampCoordinate().getStampPosition().getTimeAsInstant().atOffset(ZoneOffset.UTC)));
 
         log.info("  Testing load...");
         ObjectChronicleTaskService tts = LookupService.get().getService(ObjectChronicleTaskService.class);
@@ -164,8 +163,10 @@ public class CradleIntegrationTests {
              */
         }
 
+        testRole();
+
         testDescriptions();
-        
+
         testDifferenceAlgorithm();
         testTaxonomy();
 
@@ -220,44 +221,83 @@ public class CradleIntegrationTests {
 
         cycleTest();
     }
-   
-    private void testDescriptions() throws ValidationException{
+
+    private void testDescriptions() throws ValidationException {
         log.info("Testing descriptions.");
-        
-        ConceptSpec substance = new ConceptSpec("Substance (substance)", 
+
+        ConceptSpec substance = new ConceptSpec("Substance (substance)",
                 UUID.fromString("95f41098-8391-3f5e-9d61-4b019f1de99d"));
         String substanceFSN = "Substance (substance)";
         String substancePT = "Substance";
-        
-        ConceptSpec object = new ConceptSpec("Physical object (physical object)", 
+
+        ConceptSpec object = new ConceptSpec("Physical object (physical object)",
                 UUID.fromString("72765109-6b53-3814-9b05-34ebddd16592"));
         String objectFSN = "Physical object (physical object)";
         String objectPT = "Physical object";
-        
+
         DescriptionSememe<?> fsn = Get.conceptService().getConcept(substance.getLenient().getPrimordialUuid()).getFullySpecifiedDescription(
                 LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate(),
                 StampCoordinates.getDevelopmentLatestActiveOnly()).get().value();
         assertEquals(fsn.getText(), substanceFSN);
-        
-         DescriptionSememe<?> pt = Get.conceptService().getConcept(substance.getLenient().getPrimordialUuid()).getPreferredDescription(
+
+        DescriptionSememe<?> pt = Get.conceptService().getConcept(substance.getLenient().getPrimordialUuid()).getPreferredDescription(
                 LanguageCoordinates.getUsEnglishLanguagePreferredTermCoordinate(),
                 StampCoordinates.getDevelopmentLatestActiveOnly()).get().value();
         assertEquals(pt.getText(), substancePT);
-        
+
         fsn = Get.conceptService().getConcept(object.getLenient().getPrimordialUuid()).getFullySpecifiedDescription(
                 LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate(),
                 StampCoordinates.getDevelopmentLatestActiveOnly()).get().value();
         assertEquals(fsn.getText(), objectFSN);
-        
+
         pt = Get.conceptService().getConcept(object.getLenient().getPrimordialUuid()).getPreferredDescription(
                 LanguageCoordinates.getUsEnglishLanguagePreferredTermCoordinate(),
                 StampCoordinates.getDevelopmentLatestActiveOnly()).get().value();
         assertEquals(pt.getText(), objectPT);
     }
 
+    private void testRole() {
+        ConceptChronology conceptToTest = Get.conceptService().getConcept(IsaacMetadataAuxiliaryBinding.ROLE.getPrimodialUuid());
+        String report = conceptToTest.getLogicalDefinitionChronologyReport(StampCoordinates.getDevelopmentLatest(), PremiseType.STATED, LogicCoordinates.getStandardElProfile());
+        log.info("Testing: " + Get.conceptDescriptionText(conceptToTest.getConceptSequence()) + " UUID: " + conceptToTest.getUuidList());
+        log.info("\n" + report);
+        TaxonomyCoordinate statedTaxonomy = Get.coordinateFactory().createDefaultStatedTaxonomyCoordinate();
+        TaxonomyCoordinate inferredTaxonomy = Get.coordinateFactory().createDefaultStatedTaxonomyCoordinate();
+        Get.taxonomyService().getTaxonomyParentSequences(conceptToTest.getConceptSequence())
+                .forEach((parentSequence) -> {
+                    log.info("parent no vc: " + Get.conceptDescriptionText(parentSequence) + "<" + parentSequence + ">");
+                });
+        Get.taxonomyService().getTaxonomyParentSequences(conceptToTest.getConceptSequence(), statedTaxonomy).forEach((parentSequence) -> log.info("parent stated vc: " + Get.conceptDescriptionText(parentSequence)));
+        Get.taxonomyService().getTaxonomyParentSequences(conceptToTest.getConceptSequence(), inferredTaxonomy).forEach((parentSequence) -> log.info("parent inferred vc: " + Get.conceptDescriptionText(parentSequence)));
+        Get.taxonomyService().getTaxonomyChildSequences(conceptToTest.getConceptSequence())
+                .forEach((parentSequence) -> {
+                    log.info("child no vc: " + Get.conceptDescriptionText(parentSequence) + "<" + parentSequence + ">");
+                });
+        Get.taxonomyService().getTaxonomyChildSequences(conceptToTest.getConceptSequence(), statedTaxonomy)
+                .forEach((parentSequence) -> {
+                    log.info("child stated vc: " + Get.conceptDescriptionText(parentSequence) + "<" + parentSequence + ">");
+                });
+        Get.taxonomyService().getTaxonomyChildSequences(conceptToTest.getConceptSequence(), inferredTaxonomy)
+                .forEach((parentSequence) -> {
+                    log.info("child inferred vc: " + Get.conceptDescriptionText(parentSequence) + "<" + parentSequence + ">");
+                });
 
+        Tree taxonomyTree = Get.taxonomyService().getTaxonomyTree(statedTaxonomy);
+        int[] parentSequences = taxonomyTree.getParentSequences(conceptToTest.getConceptSequence());
+        log.info("Parents from taxonomy tree: " + ConceptSequenceSet.of(parentSequences));
+        
+        Tree ancestorTree = taxonomyTree.createAncestorTree(conceptToTest.getConceptSequence());
+        int[] parentNidsFromAncestorTree = ancestorTree.getChildrenSequences(conceptToTest.getConceptSequence());
+       log.info("Parents from ancestor tree: " + ConceptSequenceSet.of(parentNidsFromAncestorTree));
+        if (parentSequences.length != parentNidsFromAncestorTree.length) {
+            log.warn("For {}, getParentSequences() returning {} nids, ancestorTree.getChildrenSequences() returning {} sequences",
+                    Get.conceptDescriptionText(conceptToTest.getConceptSequence()), parentSequences.length, parentNidsFromAncestorTree.length);
+        }
+    }
 
     private void testDifferenceAlgorithm() {
+        logDifferenceReport(IsaacMetadataAuxiliaryBinding.ROLE.getUuidsAsString()[0]);
+
         logDifferenceReport("0ff6e6b0-5896-33cd-a354-aabb14dc07d3");
         logDifferenceReport("0bab48ac-3030-3568-93d8-aee0f63bf072");
 
@@ -376,7 +416,7 @@ public class CradleIntegrationTests {
             checkForCircularRels(Get.coordinateFactory().createDefaultStatedTaxonomyCoordinate());
             log.info("Inferred circular rels, latest: \n");
             checkForCircularRels(Get.coordinateFactory().createDefaultInferredTaxonomyCoordinate());
-            
+
             //createCircularRelsMetrics();
             testTaxonomy(ViewCoordinates.getDevelopmentInferredLatest());
             testTaxonomy(ViewCoordinates.getDevelopmentStatedLatest());
@@ -390,7 +430,7 @@ public class CradleIntegrationTests {
         Map<PremiseType, Map<String, Map<Instant, Integer>>> data = new HashMap<>();
         PremiseType[] premiseTypes = new PremiseType[]{PremiseType.STATED, PremiseType.INFERRED};
         Set<Instant> timeSet = new TreeSet<>();
-       Set<String> roleSet = new TreeSet<>();
+        Set<String> roleSet = new TreeSet<>();
         int[] years = new int[]{2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015};
         //int[] years = new int[]{2003};
         int[] months = new int[]{01, 07};
@@ -420,8 +460,7 @@ public class CradleIntegrationTests {
                 }
             }
         }
-        
-                
+
         StringBuilder statedResults = assembleResults(data, PremiseType.STATED, timeSet, roleSet);
         StringBuilder inferredResults = assembleResults(data, PremiseType.INFERRED, timeSet, roleSet);
         log.info("Stated results\n" + statedResults.toString());
@@ -429,16 +468,16 @@ public class CradleIntegrationTests {
     }
 
     private StringBuilder assembleResults(Map<PremiseType, Map<String, Map<Instant, Integer>>> data, PremiseType premiseType, Set<Instant> timeSet, Set<String> roleSet) {
-        DateTimeFormatter formatter =DateTimeFormatter.ISO_LOCAL_DATE.withZone(ZoneId.of("Z"));
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE.withZone(ZoneId.of("Z"));
         Map<String, Map<Instant, Integer>> roleTimeCountMap = data.get(premiseType);
         StringBuilder builder = new StringBuilder();
         builder.append("role\t");
         timeSet.forEach((time) -> {
             builder.append(formatter.format(time)).append('\t');
         });
-        builder.deleteCharAt(builder.length()-1);
+        builder.deleteCharAt(builder.length() - 1);
         builder.append('\n');
-        
+
         roleSet.forEach((roleText) -> {
             builder.append(roleText).append('\t');
             Map<Instant, Integer> timeCountMap = roleTimeCountMap.get(roleText);
@@ -449,7 +488,7 @@ public class CradleIntegrationTests {
                     builder.append(timeCountMap.getOrDefault(time, 0)).append('\t');
                 }
             });
-            builder.deleteCharAt(builder.length()-1);
+            builder.deleteCharAt(builder.length() - 1);
             builder.append('\n');
         });
         return builder;
