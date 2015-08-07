@@ -2,7 +2,7 @@ package gov.vha.isaac.cradle;
 
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
-import gov.vha.isaac.ochre.collections.SequenceSet;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -17,6 +17,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.IntStream;
+
 import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
 
@@ -28,7 +29,7 @@ public class ConcurrentSequenceIntMap {
     private static final int SEGMENT_SIZE = 128000;
     ReentrantLock lock = new ReentrantLock();
     
-    CopyOnWriteArrayList<int[]> sequenceIntList = new CopyOnWriteArrayList();
+    CopyOnWriteArrayList<int[]> sequenceIntList = new CopyOnWriteArrayList<>();
     AtomicInteger size = new AtomicInteger(0);
     
     public ConcurrentSequenceIntMap() {
@@ -46,7 +47,7 @@ public class ConcurrentSequenceIntMap {
                 int segmentSize = in.readInt();
                 segments = in.readInt();
                 if (sequenceIntList == null) {
-                    sequenceIntList = new CopyOnWriteArrayList();
+                    sequenceIntList = new CopyOnWriteArrayList<>();
                 }
                 int[] segmentArray = new int[segmentSize];
                 Arrays.fill(segmentArray, -1);

@@ -40,7 +40,7 @@ public class SememeSerializer implements WaitFreeMergeSerializer<SememeChronolog
 
     @Override
     public SememeChronologyImpl<?> deserialize(DataBuffer db) {
-       return new SememeChronologyImpl(db);
+       return new SememeChronologyImpl<>(db);
     }
     
 }
