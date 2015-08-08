@@ -16,9 +16,9 @@ package org.ihtsdo.otf.query.integration.tests;
  * limitations under the License.
  */
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
+import gov.vha.isaac.ochre.api.Get;
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
 import org.ihtsdo.otf.query.implementation.ForSetSpecification;
@@ -54,8 +54,11 @@ public class ChangedFromPreviousVersionTest extends QueryClauseTest {
 
             @Override
             public void Let() {
-                SetViewCoordinate setViewCoordinate = new SetViewCoordinate(2010, 1, 31, 0, 0);
-                let("v2", setViewCoordinate.getViewCoordinate());
+                TaxonomyCoordinate tc = Get.coordinateFactory().createInferredTaxonomyCoordinate(
+                        Get.coordinateFactory().createDevelopmentLatestActiveOnlyStampCoordinate().makeAnalog(2002, 1, 31, 0, 0, 0),
+                        Get.coordinateFactory().getUsEnglishLanguageFullySpecifiedNameCoordinate(),
+                        Get.coordinateFactory().createStandardElProfileLogicCoordinate());
+                let("v2", tc);
             }
 
             @Override

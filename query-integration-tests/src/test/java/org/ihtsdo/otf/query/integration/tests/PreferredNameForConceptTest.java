@@ -16,6 +16,7 @@
 package org.ihtsdo.otf.query.integration.tests;
 
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
+import gov.vha.isaac.ochre.api.Get;
 import java.io.IOException;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
@@ -33,8 +34,7 @@ import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 public class PreferredNameForConceptTest extends QueryClauseTest {
 
     public PreferredNameForConceptTest() throws IOException {
-        final SetViewCoordinate setViewCoordinate = new SetViewCoordinate(2002, 1, 31, 0, 0);
-        this.q = new Query(ViewCoordinates.getDevelopmentInferredLatestActiveOnly()) {
+        this.q = new Query(Get.coordinateFactory().createDefaultInferredTaxonomyCoordinate()) {
             @Override
             protected ForSetSpecification ForSetSpecification() {
                 return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);

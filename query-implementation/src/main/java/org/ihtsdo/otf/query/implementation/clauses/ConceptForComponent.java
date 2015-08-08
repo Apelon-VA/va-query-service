@@ -15,6 +15,7 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.EnumSet;
@@ -46,12 +47,12 @@ public class ConceptForComponent extends ParentClause {
     }
     @Override
     public NidSet computePossibleComponents(NidSet incomingPossibleConceptNids) {
-        NidSet incomingPossibleComponentNids = identifierService.getComponentNidsForConceptNids(ConceptSequenceSet.of(incomingPossibleConceptNids));
+        NidSet incomingPossibleComponentNids = Get.identifierService().getComponentNidsForConceptNids(ConceptSequenceSet.of(incomingPossibleConceptNids));
 
         NidSet outgoingPossibleConceptNids = new NidSet();
         for (Clause childClause : getChildren()) {
             NidSet childPossibleComponentNids = childClause.computePossibleComponents(incomingPossibleComponentNids);
-            ConceptSequenceSet conceptSet = identifierService.getConceptSequenceSetForComponentNidSet(childPossibleComponentNids);
+            ConceptSequenceSet conceptSet = Get.identifierService().getConceptSequenceSetForComponentNidSet(childPossibleComponentNids);
             outgoingPossibleConceptNids.or(NidSet.of(conceptSet));
         }
         return outgoingPossibleConceptNids;
@@ -74,11 +75,11 @@ public class ConceptForComponent extends ParentClause {
 
     @Override
     public NidSet computeComponents(NidSet incomingComponents) {
-        NidSet incomingPossibleComponentNids = identifierService.getComponentNidsForConceptNids(ConceptSequenceSet.of(incomingComponents));
+        NidSet incomingPossibleComponentNids = Get.identifierService().getComponentNidsForConceptNids(ConceptSequenceSet.of(incomingComponents));
         NidSet outgoingPossibleConceptNids = new NidSet();
         for (Clause childClause : getChildren()) {
             NidSet childPossibleComponentNids = childClause.computeComponents(incomingPossibleComponentNids);
-            outgoingPossibleConceptNids.or(NidSet.of(identifierService.getConceptSequenceSetForComponentNidSet(childPossibleComponentNids)));
+            outgoingPossibleConceptNids.or(NidSet.of(Get.identifierService().getConceptSequenceSetForComponentNidSet(childPossibleComponentNids)));
         }
         return outgoingPossibleConceptNids;
     }

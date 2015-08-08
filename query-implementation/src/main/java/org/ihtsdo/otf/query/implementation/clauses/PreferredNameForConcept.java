@@ -15,6 +15,7 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
 import gov.vha.isaac.ochre.api.coordinate.LanguageCoordinate;
@@ -75,9 +76,9 @@ public class PreferredNameForConcept extends ParentClause {
         StampCoordinate stampCoordinate = getEnclosingQuery().getStampCoordinate();
         NidSet outgoingPreferredNids = new NidSet();
         getChildren().stream().map((childClause) -> childClause.computePossibleComponents(incomingConcepts)).map((childPossibleComponentNids) -> ConceptSequenceSet.of(childPossibleComponentNids)).forEach((conceptSequenceSet) -> {
-            conceptService.getConceptChronologyStream(conceptSequenceSet)
+            Get.conceptService().getConceptChronologyStream(conceptSequenceSet)
                     .forEach((conceptChronology) -> {
-                        Optional<LatestVersion<DescriptionSememe>> desc = 
+                        Optional<LatestVersion<DescriptionSememe<?>>> desc = 
                                 conceptChronology.getPreferredDescription(languageCoordinate, stampCoordinate);
                         if (desc.isPresent()) {
                             outgoingPreferredNids.add(desc.get().value().getNid());

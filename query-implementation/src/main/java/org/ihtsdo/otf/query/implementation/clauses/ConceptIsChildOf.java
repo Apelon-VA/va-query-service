@@ -15,6 +15,7 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
@@ -66,7 +67,7 @@ public class ConceptIsChildOf extends LeafClause {
             ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
             ConceptSpec childOfSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(childOfSpecKey);
             int parentNid = childOfSpec.getNid(viewCoordinate);
-            ConceptSequenceSet childrenOfSequenceSet = taxonomyService.getChildOfSequenceSet(parentNid, viewCoordinate);
+            ConceptSequenceSet childrenOfSequenceSet = Get.taxonomyService().getChildOfSequenceSet(parentNid, viewCoordinate);
             getResultsCache().or(NidSet.of(childrenOfSequenceSet));
             return getResultsCache();
         } catch (IOException ex) {

@@ -15,6 +15,7 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
@@ -108,15 +109,15 @@ public class RelRestriction extends LeafClause {
         }
 
         relTypeSet = new ConceptSequenceSet();
-        relTypeSet.add(relType.getSequence());
+        relTypeSet.add(relType.getConceptSequence());
         if (relTypeSubsumption) {
-            relTypeSet.or(taxonomyService.getKindOfSequenceSet(relType.getSequence(), viewCoordinate));
+            relTypeSet.or(Get.taxonomyService().getKindOfSequenceSet(relType.getConceptSequence(), viewCoordinate));
         }
 
         destinationSet = new ConceptSequenceSet();
-        destinationSet.add(destinationSpec.getSequence());
+        destinationSet.add(destinationSpec.getConceptSequence());
         if (destinationSubsumption) {
-            destinationSet.or(taxonomyService.getKindOfSequenceSet(destinationSpec.getSequence(), viewCoordinate));
+            destinationSet.or(Get.taxonomyService().getKindOfSequenceSet(destinationSpec.getConceptSequence(), viewCoordinate));
         }
 
         return incomingPossibleComponents;
@@ -125,7 +126,7 @@ public class RelRestriction extends LeafClause {
     @Override
     public void getQueryMatches(ConceptVersion conceptVersion) {
         ViewCoordinate viewCoordinate = (ViewCoordinate) enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
-        taxonomyService.getAllRelationshipDestinationSequencesOfType(
+        Get.taxonomyService().getAllRelationshipDestinationSequencesOfType(
                 conceptVersion.getChronology().getConceptSequence(), relTypeSet, viewCoordinate)
                 .forEach((destinationSequence) -> {
                     if (destinationSet.contains(destinationSequence)) {

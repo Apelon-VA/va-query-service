@@ -16,11 +16,6 @@
  */
 package org.ihtsdo.otf.query.implementation;
 
-import gov.vha.isaac.ochre.api.IdentifiedObjectService;
-import gov.vha.isaac.ochre.api.IdentifierService;
-import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.TaxonomyService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.EnumSet;
@@ -41,13 +36,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "CLAUSE")
 @XmlAccessorType(value = XmlAccessType.NONE)
 public abstract class Clause {
-    
-    protected static final  ConceptService conceptService = LookupService.getService(ConceptService.class);
-    protected static final  IdentifierService identifierService = LookupService.getService(IdentifierService.class);
-    protected static final TaxonomyService taxonomyService = LookupService.getService(TaxonomyService.class);
-    protected static final IdentifiedObjectService identifiedObjectService = LookupService.getService(IdentifiedObjectService.class);
-    
-    
 
     /**
      * The instance of

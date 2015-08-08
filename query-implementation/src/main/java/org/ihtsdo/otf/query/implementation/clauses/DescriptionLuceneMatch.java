@@ -15,6 +15,7 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
@@ -90,7 +91,7 @@ public class DescriptionLuceneMatch extends LeafClause {
         //Filter the results, based upon the input ViewCoordinate
         nids.stream().forEach((nid) -> {
             Optional<? extends ObjectChronology<? extends StampedVersion>> chronology = 
-                    identifiedObjectService.getIdentifiedObjectChronology(nid);
+                    Get.identifiedObjectService().getIdentifiedObjectChronology(nid);
             if (chronology.isPresent()) {
                 if (!chronology.get().isLatestVersionActive(viewCoordinate)) {
                     getResultsCache().remove(nid);

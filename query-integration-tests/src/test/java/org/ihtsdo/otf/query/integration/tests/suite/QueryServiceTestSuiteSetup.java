@@ -20,6 +20,7 @@ import static gov.vha.isaac.ochre.api.constants.Constants.SEARCH_ROOT_LOCATION_P
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.ConceptModel;
 import gov.vha.isaac.ochre.api.ConfigurationService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
@@ -67,7 +68,7 @@ public class QueryServiceTestSuiteSetup {
         HeapUseTicker.start(10);
         
         ObjectChronicleTaskService tts = LookupService.getService(ObjectChronicleTaskService.class);
-        ConceptService store = LookupService.getService(ConceptService.class);
+        ConceptService store = Get.conceptService();
  
         if (!dbExists) {
             loadDatabase(tts);
@@ -117,7 +118,7 @@ public class QueryServiceTestSuiteSetup {
         Path logicMetadataFile = Paths.get("target/test-resources/isaac/metadata/econ/IsaacMetadataAuxiliary.econ");
         Instant start = Instant.now();
 
-        Task<Integer> loadTask = tts.startLoadTask(IsaacMetadataAuxiliaryBinding.DEVELOPMENT,
+        Task<Integer> loadTask = tts.startLoadTask(ConceptModel.OCHRE_CONCEPT_MODEL, IsaacMetadataAuxiliaryBinding.DEVELOPMENT,
                 snomedDataFile, logicMetadataFile);
         int conceptCount = loadTask.get();
         Instant finish = Instant.now();

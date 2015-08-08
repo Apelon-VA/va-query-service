@@ -1,8 +1,7 @@
 package org.ihtsdo.otf.query.lucene;
 
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
-import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.TaxonomyService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeType;
@@ -65,18 +64,6 @@ public class LuceneDescriptionIndexer extends LuceneIndexer implements IndexerBI
 
     private static final Semaphore setupNidsSemaphore = new Semaphore(1);
     private static final AtomicBoolean nidsSetup = new AtomicBoolean(false);
-
-    private static TaxonomyService taxonomyService = null;
-
-    /**
-     * @return the taxonomyService
-     */
-    public static TaxonomyService getTaxonomyService() {
-        if (taxonomyService == null) {
-            taxonomyService = LookupService.getService(TaxonomyService.class);
-        }
-        return taxonomyService;
-    }
 
     private final HashMap<Integer, String> nidTypeMap = new HashMap<>();
     private int descSourceTypeNid;
@@ -147,7 +134,7 @@ public class LuceneDescriptionIndexer extends LuceneIndexer implements IndexerBI
             String lastValue = null;
             for (RefexDynamicChronicleBI<?> rdc : desc.getRefexDynamicAnnotations()) {
                 for (RefexDynamicVersionBI<?> rdv : rdc.getVersionList()) {
-                    if (getTaxonomyService().wasEverKindOf(rdv.getAssemblageNid(), descSourceTypeNid)) {
+                    if (Get.taxonomyService().wasEverKindOf(rdv.getAssemblageNid(), descSourceTypeNid)) {
                         //this is a UUID, but we want to treat it as a string anyway
                         String extendedDescType = rdv.getData()[0].getDataObject().toString();
                         String value = null;
@@ -302,12 +289,12 @@ public class LuceneDescriptionIndexer extends LuceneIndexer implements IndexerBI
             try {
                 if (!nidsSetup.get()) {
                     nidTypeMap.put(IsaacMetadataAuxiliaryBinding.FULLY_SPECIFIED_NAME.getNid(), LuceneDescriptionType.FSN.name());
-                    nidTypeMap.put(IsaacMetadataAuxiliaryBinding.DEFINITION.getNid(), LuceneDescriptionType.DEFINITION.name());
+                    nidTypeMap.put(IsaacMetadataAuxiliaryBinding.DEFINITION_DESCRIPTION_TYPE.getNid(), LuceneDescriptionType.DEFINITION.name());
                     nidTypeMap.put(IsaacMetadataAuxiliaryBinding.SYNONYM.getNid(), LuceneDescriptionType.SYNONYM.name());
                     // add sequences also. 
-                    nidTypeMap.put(IsaacMetadataAuxiliaryBinding.FULLY_SPECIFIED_NAME.getSequence(), LuceneDescriptionType.FSN.name());
-                    nidTypeMap.put(IsaacMetadataAuxiliaryBinding.DEFINITION.getSequence(), LuceneDescriptionType.DEFINITION.name());
-                    nidTypeMap.put(IsaacMetadataAuxiliaryBinding.SYNONYM.getSequence(), LuceneDescriptionType.SYNONYM.name());
+                    nidTypeMap.put(IsaacMetadataAuxiliaryBinding.FULLY_SPECIFIED_NAME.getConceptSequence(), LuceneDescriptionType.FSN.name());
+                    nidTypeMap.put(IsaacMetadataAuxiliaryBinding.DEFINITION_DESCRIPTION_TYPE.getConceptSequence(), LuceneDescriptionType.DEFINITION.name());
+                    nidTypeMap.put(IsaacMetadataAuxiliaryBinding.SYNONYM.getConceptSequence(), LuceneDescriptionType.SYNONYM.name());
                     descSourceTypeNid = IsaacMetadataAuxiliaryBinding.DESCRIPTION_SOURCE_TYPE_REFERENCE_SETS.getNid();
                 }
                 nidsSetup.set(true);
@@ -359,7 +346,7 @@ public class LuceneDescriptionIndexer extends LuceneIndexer implements IndexerBI
             if (sememeChronicle.getSememeType() == SememeType.DYNAMIC) {
                 SememeChronology<DynamicSememe> sememeDynamicChronicle = (SememeChronology<DynamicSememe>) sememeChronicle;
                 for (DynamicSememe sememeDynamic : sememeDynamicChronicle.getVersionList()) {
-                    if (getTaxonomyService().wasEverKindOf(sememeDynamic.getAssemblageSequence(), descSourceTypeNid)) {
+                    if (Get.taxonomyService().wasEverKindOf(sememeDynamic.getAssemblageSequence(), descSourceTypeNid)) {
                         //this is a UUID, but we want to treat it as a string anyway
                         String extendedDescType = sememeDynamic.getData()[0].getDataObject().toString();
                         String value = null;
