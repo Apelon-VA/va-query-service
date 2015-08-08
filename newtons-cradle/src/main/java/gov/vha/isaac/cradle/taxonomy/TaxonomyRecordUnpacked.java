@@ -78,7 +78,7 @@ public class TaxonomyRecordUnpacked {
         return false;
     }
 
-    public boolean conceptSatisfiesStamp(int conceptSequence, StampCoordinate<?> stampCoordinate) {
+    public boolean conceptSatisfiesStamp(int conceptSequence, StampCoordinate<? extends StampCoordinate<?>> stampCoordinate) {
         RelativePositionCalculator computer = RelativePositionCalculator.getCalculator(stampCoordinate);
         if (conceptSequenceRecordMap.containsKey(conceptSequence)) {
             return conceptSequenceRecordMap.get(conceptSequence).

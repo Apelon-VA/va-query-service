@@ -163,7 +163,7 @@ public class SememeProvider implements SememeService {
     }
 
     @Override
-    public <V extends SememeVersion> SememeSnapshotService<V> getSnapshot(Class<V> versionType, StampCoordinate<?> stampCoordinate) {
+    public <V extends SememeVersion> SememeSnapshotService<V> getSnapshot(Class<V> versionType, StampCoordinate<? extends StampCoordinate<?>> stampCoordinate) {
         return new SememeSnapshotProvider<>(versionType, stampCoordinate, this);
     }
 

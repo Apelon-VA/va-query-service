@@ -56,7 +56,7 @@ public class TaxonomyRecordPrimitive implements WaitFreeComparable {
     
     public static boolean isConceptActive(int conceptSequence, 
              CasSequenceObjectMap<TaxonomyRecordPrimitive> taxonomyMap, 
-            StampCoordinate<?> sc) {
+            StampCoordinate<? extends StampCoordinate<?>> sc) {
         Optional<TaxonomyRecordPrimitive> optionalRecord = taxonomyMap.get(conceptSequence);
         if (optionalRecord.isPresent()) {
             TaxonomyRecordPrimitive record = optionalRecord.get();
@@ -200,11 +200,11 @@ public class TaxonomyRecordPrimitive implements WaitFreeComparable {
         return getTaxonomyRecordUnpacked().containsConceptSequenceViaType(conceptSequence, typeSequenceSet, tc, flags);
     }
     
-    public boolean isConceptActive(int conceptSequence, StampCoordinate<?> stampCoordinate) {
+    public boolean isConceptActive(int conceptSequence, StampCoordinate<? extends StampCoordinate<?>> stampCoordinate) {
         return getTaxonomyRecordUnpacked().conceptSatisfiesStamp(conceptSequence, stampCoordinate);
     }
 
-    public boolean conceptSatisfiesStamp(int conceptSequence, StampCoordinate<?> stampCoordinate) {
+    public boolean conceptSatisfiesStamp(int conceptSequence, StampCoordinate<? extends StampCoordinate<?>> stampCoordinate) {
         return getTaxonomyRecordUnpacked().conceptSatisfiesStamp(conceptSequence, stampCoordinate);
     }
 
