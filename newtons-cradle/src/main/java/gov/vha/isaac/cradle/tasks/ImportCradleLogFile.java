@@ -9,6 +9,7 @@ import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.cradle.log.CradleCommitRecord;
 import gov.vha.isaac.cradle.log.LogEntry;
 import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.task.TimedTask;
 import gov.vha.isaac.ochre.util.WorkExecutors;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
@@ -18,11 +19,8 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
 import javafx.application.Platform;
-import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
@@ -34,7 +32,7 @@ import org.ihtsdo.otf.tcc.model.cc.termstore.Termstore;
  *
  * @author kec
  */
-public class ImportCradleLogFile extends Task<Integer> {
+public class ImportCradleLogFile extends TimedTask<Integer> {
 
     private static final Logger log = LogManager.getLogger();
 

@@ -5,16 +5,14 @@
  */
 package gov.vha.isaac.cradle.tasks;
 
-import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
-import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
-import gov.vha.isaac.ochre.api.component.sememe.SememeService;
+import gov.vha.isaac.ochre.api.task.TimedTask;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
@@ -27,11 +25,8 @@ import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
  *
  * @author kec
  */
-public class GenerateIndexes extends Task<Void> {
-    private final static IdentifierService idProvider = LookupService.getService(IdentifierService.class);
+public class GenerateIndexes extends TimedTask<Void> {
     private final static RefexService refexProvider = LookupService.getService(RefexService.class);
-    private final static SememeService sememeProvider = LookupService.getService(SememeService.class);
-    private final static ConceptService conceptService = LookupService.getService(ConceptService.class);
 
     private static final Logger log = LogManager.getLogger();
 
@@ -83,15 +78,15 @@ public class GenerateIndexes extends Task<Void> {
         LookupService.get().getService(ActiveTaskSet.class).get().add(this);
         try {
             //TODO performance problem... all of these count methods are incredibly slow
-            int conceptCount = conceptService.getConceptCount();
+            int conceptCount = Get.conceptService().getConceptCount();
             log.info("Concepts to index: " + conceptCount);
-            long refexCount = (int) idProvider.getRefexSequenceStream().count();
+            long refexCount = (int) Get.identifierService().getRefexSequenceStream().count();
             log.info("Refexes to index: " + refexCount);
-            long sememeCount = (int) idProvider.getSememeSequenceStream().count();
+            long sememeCount = (int) Get.identifierService().getSememeSequenceStream().count();
             log.info("Sememes to index: " + sememeCount);
             componentCount = conceptCount + refexCount + sememeCount;
             log.info("Total components to index: " + componentCount);
-            conceptService.getParallelConceptChronologyStream().forEach((ConceptChronology<?> conceptChronology) -> {
+            Get.conceptService().getParallelConceptChronologyStream().forEach((ConceptChronology<?> conceptChronology) -> {
                     indexers.stream().forEach((i) -> {
                         //Currently, our indexers expect descriptions, not concepts... though we might want to re-evaluate this...
                         //I assume that in the future - we will have a description service, rather than embedded descriptions, so leaving as is, for now.
@@ -121,7 +116,7 @@ public class GenerateIndexes extends Task<Void> {
             });
             
             //TODO Keith - why isn't this returning dynamic sememes?
-            sememeProvider.getParallelSememeStream().forEach((SememeChronology sememe) -> {
+            Get.sememeService().getParallelSememeStream().forEach((SememeChronology sememe) -> {
                 if (sememe != null)  //TODO Keith -  this IF should not be necessary, but is at the moment, to deal with another bug in sememe provider
                 {
                     indexers.stream().forEach((i) -> {

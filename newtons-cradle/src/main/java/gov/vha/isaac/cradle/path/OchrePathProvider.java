@@ -16,11 +16,8 @@
 package gov.vha.isaac.cradle.path;
 
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
-import gov.vha.isaac.ochre.api.IdentifierService;
-import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.PathService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptService;
-import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.api.component.sememe.version.LongSememe;
 import gov.vha.isaac.ochre.api.coordinate.StampPath;
 import gov.vha.isaac.ochre.api.coordinate.StampPosition;
@@ -42,36 +39,11 @@ import org.apache.logging.log4j.Logger;
  * @author kec
  */
 public class OchrePathProvider implements PathService {
-
+    
     private static final Logger log = LogManager.getLogger();
-
+    
     private static final Lock lock = new ReentrantLock();
-    private static IdentifierService identifierService;
 
-    private static IdentifierService getIdentifierService() {
-        if (identifierService == null) {
-            identifierService = LookupService.getService(IdentifierService.class);
-        }
-        return identifierService;
-    }
-
-    private static SememeService sememeService = null;
-
-    private static SememeService getSememeService() {
-        if (sememeService == null) {
-            sememeService = LookupService.getService(SememeService.class);
-        }
-        return sememeService;
-    }
-
-    private static ConceptService conceptService = null;
-
-    private static ConceptService getConceptService() {
-        if (conceptService == null) {
-            conceptService = LookupService.getService(ConceptService.class);
-        }
-        return conceptService;
-    }
     //~--- fields --------------------------------------------------------------
     ConcurrentHashMap<Integer, StampPath> pathMap;
 
@@ -85,7 +57,7 @@ public class OchrePathProvider implements PathService {
     public boolean exists(int pathConceptId) {
         setupPathMap();
         if (pathConceptId < 0) {
-            pathConceptId = getIdentifierService().getConceptSequence(pathConceptId);
+            pathConceptId = Get.identifierService().getConceptSequence(pathConceptId);
         }
         if (pathMap.containsKey(pathConceptId)) {
             return true;
@@ -93,15 +65,15 @@ public class OchrePathProvider implements PathService {
         Optional<StampPath> stampPath = getFromDisk(pathConceptId);
         return stampPath.isPresent();
     }
-
+    
     private void setupPathMap() {
         if (pathMap == null) {
             lock.lock();
             try {
                 pathMap = new ConcurrentHashMap<>();
-                getSememeService().getSememesFromAssemblage(
-                        IsaacMetadataAuxiliaryBinding.PATHS_ASSEMBLAGE.getSequence()).forEach((pathSememe) -> {
-                            int pathSequence = getIdentifierService().getConceptSequence(pathSememe.getReferencedComponentNid());
+                Get.sememeService().getSememesFromAssemblage(
+                        IsaacMetadataAuxiliaryBinding.PATHS_ASSEMBLAGE.getConceptSequence()).forEach((pathSememe) -> {
+                            int pathSequence = Get.identifierService().getConceptSequence(pathSememe.getReferencedComponentNid());
                             pathMap.put(pathSequence,
                                     new StampPathImpl(pathSequence));
                         });
@@ -110,44 +82,44 @@ public class OchrePathProvider implements PathService {
             }
         }
     }
-
+    
     private Optional<StampPath> getFromDisk(int stampPathSequence) {
-        return getSememeService().getSememesForComponentFromAssemblage(stampPathSequence,
-                IsaacMetadataAuxiliaryBinding.PATHS_ASSEMBLAGE.getSequence()).map((sememeChronicle) -> {
+        return Get.sememeService().getSememesForComponentFromAssemblage(stampPathSequence,
+                IsaacMetadataAuxiliaryBinding.PATHS_ASSEMBLAGE.getConceptSequence()).map((sememeChronicle) -> {
                     
                     int pathId = sememeChronicle.getReferencedComponentNid();
-                    pathId = getIdentifierService().getConceptSequence(pathId);
-                    assert pathId == stampPathSequence: "pathId: " + pathId + " stampPathSequence: " + stampPathSequence;
+                    pathId = Get.identifierService().getConceptSequence(pathId);
+                    assert pathId == stampPathSequence : "pathId: " + pathId + " stampPathSequence: " + stampPathSequence;
                     StampPath stampPath = new StampPathImpl(stampPathSequence);
                     pathMap.put(stampPathSequence, stampPath);
                     return stampPath;
                 }).findFirst();
     }
-
+    
     @Override
     public Collection<? extends StampPosition> getOrigins(int stampPathSequence) {
         setupPathMap();
         if (stampPathSequence < 0) {
-            stampPathSequence = getIdentifierService().getConceptSequence(stampPathSequence);
+            stampPathSequence = Get.identifierService().getConceptSequence(stampPathSequence);
         }
         return getPathOriginsFromDb(stampPathSequence);
     }
-
+    
     private List<StampPosition> getPathOriginsFromDb(int nid) {
-        return getSememeService().getSememesForComponentFromAssemblage(nid,
-                IsaacMetadataAuxiliaryBinding.PATH_ORIGINS_ASSEMBLAGE.getSequence())
+        return Get.sememeService().getSememesForComponentFromAssemblage(nid,
+                IsaacMetadataAuxiliaryBinding.PATH_ORIGINS_ASSEMBLAGE.getConceptSequence())
                 .map((pathOrigin) -> {
                     long time = ((LongSememe) pathOrigin.getVersionList().get(0)).getLongValue();
-                    return new StampPositionImpl(time, identifierService.getConceptSequence(nid));
+                    return new StampPositionImpl(time, Get.identifierService().getConceptSequence(nid));
                 })
                 .collect(Collectors.toList());
     }
-
+    
     @Override
     public StampPath getStampPath(int stampPathSequence) {
         setupPathMap();
         if (stampPathSequence < 0) {
-            stampPathSequence = getIdentifierService().getConceptSequence(stampPathSequence);
+            stampPathSequence = Get.identifierService().getConceptSequence(stampPathSequence);
         }
         if (exists(stampPathSequence)) {
             return pathMap.get(stampPathSequence);
@@ -156,7 +128,19 @@ public class OchrePathProvider implements PathService {
         if (stampPath.isPresent()) {
             return stampPath.get();
         }
-        throw new IllegalStateException("No path for: " + stampPathSequence + 
-                " " + getConceptService().getConcept(stampPathSequence).toString());
+        throw new IllegalStateException("No path for: " + stampPathSequence
+                + " " + Get.conceptService().getConcept(stampPathSequence).toString());
     }
+    
+    @Override
+    public Collection<? extends StampPath> getPaths() {
+        return Get.sememeService().getSememesFromAssemblage(
+                IsaacMetadataAuxiliaryBinding.PATHS_ASSEMBLAGE.getConceptSequence()).map((sememeChronicle) -> {
+                    int pathId = sememeChronicle.getReferencedComponentNid();
+                    pathId = Get.identifierService().getConceptSequence(pathId);
+                    StampPath stampPath = new StampPathImpl(pathId);
+                    return stampPath;
+                }).collect(Collectors.toList());
+    }
+    
 }

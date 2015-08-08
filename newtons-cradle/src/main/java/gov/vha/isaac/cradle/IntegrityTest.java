@@ -19,10 +19,11 @@ import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.cradle.identifier.IdentifierProvider;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.collections.NidSet;
-import java.io.IOException;
+
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.tcc.model.cc.component.ConceptComponent;

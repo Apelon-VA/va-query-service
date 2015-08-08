@@ -7,6 +7,7 @@ package gov.vha.isaac.cradle.log;
 
 import gov.vha.isaac.cradle.version.StampUniversal;
 import gov.vha.isaac.ochre.api.commit.CommitRecord;
+import gov.vha.isaac.ochre.collections.StampSequenceSet;
 import java.io.DataInput;
 import java.io.IOException;
 import java.time.Instant;
@@ -22,7 +23,9 @@ public class CradleCommitRecord extends CommitRecord {
 
     public CradleCommitRecord(Instant commitTime, OpenIntHashSet stampsInCommit, 
             OpenIntIntHashMap stampAliases, String commitComment) {
-        super(commitTime, stampsInCommit, stampAliases, commitComment);
+        throw new UnsupportedOperationException(commitComment);
+                
+        //super(commitTime, stampsInCommit, stampAliases, commitComment);
     }
 
     public CradleCommitRecord(DataInput in, Termstore store) throws IOException {
@@ -36,10 +39,11 @@ public class CradleCommitRecord extends CommitRecord {
             stampAliases.put(store.getStamp(stampAlias), store.getStamp(primordialStamp));
         }
         int stampsInCommitCount = in.readInt();
-        this.stampsInCommit = new OpenIntHashSet(stampsInCommitCount);
+        this.stampsInCommit = new StampSequenceSet();
         for (int i = 0; i < stampsInCommitCount; i++) {
             StampUniversal stamp = new StampUniversal(in);
             stampsInCommit.add(store.getStamp(stamp));
         }
+        throw new UnsupportedOperationException(commitComment);
     }
 }

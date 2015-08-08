@@ -17,7 +17,7 @@ public class TaxonomyWalkAccumulator {
     public int maxConnections = 0;
     public int minConnections = 0;
     public int parentConnections = 0;
-    ConceptChronology watchConcept = null;
+    ConceptChronology<?> watchConcept = null;
 
     void combine(TaxonomyWalkAccumulator u) {
         this.conceptsProcessed += u.conceptsProcessed;

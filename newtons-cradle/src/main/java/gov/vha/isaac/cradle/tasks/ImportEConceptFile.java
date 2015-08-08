@@ -1,14 +1,17 @@
 package gov.vha.isaac.cradle.tasks;
 
 import gov.vha.isaac.cradle.CradleExtensions;
+import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.ConceptModel;
 import gov.vha.isaac.ochre.api.ConceptProxy;
 import gov.vha.isaac.ochre.api.ConfigurationService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.component.sememe.SememeBuilderService;
+import gov.vha.isaac.ochre.api.logic.LogicalExpressionBuilderService;
+import gov.vha.isaac.ochre.api.task.TimedTask;
+import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.util.WorkExecutors;
-import javafx.concurrent.Task;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
@@ -19,31 +22,50 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import javafx.application.Platform;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
+import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 
 /**
  * Created by kec on 7/22/14.
  */
-public class ImportEConceptFile extends Task<Integer> {
+public class ImportEConceptFile extends TimedTask<Integer> {
 
-    private static final Logger log = LogManager.getLogger();
+    // Below fields are to cache expensive operations once, so no need to repeat for
+    // each import task, and not put in static to prevent data cache issues. 
+    final CradleExtensions cradle = LookupService.getService(CradleExtensions.class);
+    final SememeBuilderService sememeBuilderService = LookupService.getService(SememeBuilderService.class);
+    final LogicalExpressionBuilderService expressionBuilderService
+            = LookupService.getService(LogicalExpressionBuilderService.class);
+
+    final int isaSequence;
+
+    final ConceptSequenceSet neverRoleGroupConceptSequences = new ConceptSequenceSet();
+
+    {
+        isaSequence = Get.identifierService().getConceptSequenceForUuids(IsaacMetadataAuxiliaryBinding.IS_A.getUuids());
+        neverRoleGroupConceptSequences.add(Get.identifierService().getConceptSequenceForUuids(Snomed.PART_OF.getUuids()));
+        neverRoleGroupConceptSequences.add(Get.identifierService().getConceptSequenceForUuids(Snomed.LATERALITY.getUuids()));
+        neverRoleGroupConceptSequences.add(Get.identifierService().getConceptSequenceForUuids(Snomed.HAS_ACTIVE_INGREDIENT.getUuids()));
+        neverRoleGroupConceptSequences.add(Get.identifierService().getConceptSequenceForUuids(Snomed.HAS_DOSE_FORM.getUuids()));
+    }
+    // above fields are to cache expensive operations once for use by delegate tasks. 
     
     Semaphore importPermits = new Semaphore(100);
     
+
     Path[] paths;
     CradleExtensions termService;
     ConceptProxy stampPath = null;
     UUID stampPathUuid = null;
     ConceptModel conceptModel;
+    
+    AtomicInteger maxDefinitionNodeCount = new AtomicInteger();
+    AtomicInteger maxDefinitionVersionCount = new AtomicInteger();
 
     private ImportEConceptFile(Path[] paths, CradleExtensions termService) {
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
@@ -61,12 +83,13 @@ public class ImportEConceptFile extends Task<Integer> {
             this.stampPathUuid = this.stampPath.getUuids()[0];
         }
     }
-    
+
     public static ImportEConceptFile create(Path[] paths, CradleExtensions termService) {
         ImportEConceptFile importEConceptFile = new ImportEConceptFile(paths, termService);
         LookupService.getService(ActiveTaskSet.class).get().add(importEConceptFile);
         return importEConceptFile;
     }
+
     public static ImportEConceptFile create(Path[] paths, CradleExtensions termService, ConceptProxy stampPath) {
         ImportEConceptFile importEConceptFile = new ImportEConceptFile(paths, termService, stampPath);
         LookupService.getService(ActiveTaskSet.class).get().add(importEConceptFile);
@@ -119,10 +142,15 @@ public class ImportEConceptFile extends Task<Integer> {
      concepts in map: 402253
 
      */
+
+    // http://stackoverflow.com/questions/26144594/reseting-classloader-of-a-maven-plugin
+
+    // http://www.mograblog.com/2010/01/setting-classloader-in-maven-plugin.html
     @Override
     protected Integer call() throws Exception {
         try {
             Instant start = Instant.now();
+
             ExecutorCompletionService conversionService = new ExecutorCompletionService(LookupService.getService(WorkExecutors.class).getPotentiallyBlockingExecutor());
 
             AtomicLong bytesToProcessForLoad = new AtomicLong();
@@ -135,26 +163,26 @@ public class ImportEConceptFile extends Task<Integer> {
 
             AtomicInteger conceptCount = new AtomicInteger();
             AtomicInteger completionCount = new AtomicInteger();
-            
+
             switch (conceptModel) {
                 case OCHRE_CONCEPT_MODEL:
                     doImport(conceptCount, bytesProcessedForLoad, bytesToProcessForLoad, completionCount, conversionService,
                             "loaded",
-                        (TtkConceptChronicle eConcept) -> new ImportEConceptOchreModel(eConcept, stampPathUuid));
+                            (TtkConceptChronicle eConcept) -> new ImportEConceptOchreModel(eConcept, stampPathUuid));
                     doImport(conceptCount, bytesProcessedForLoad, bytesToProcessForLoad, completionCount, conversionService,
                             "converted",
-                        (TtkConceptChronicle eConcept) -> new ConvertOtfToOchreModel(eConcept, stampPathUuid));
+                            (TtkConceptChronicle eConcept) -> new ConvertOtfToOchreModel(eConcept, stampPathUuid, this));
                     break;
                 case OTF_CONCEPT_MODEL:
                     doImport(conceptCount, bytesProcessedForLoad, bytesToProcessForLoad, completionCount, conversionService,
                             "loaded",
-                        (TtkConceptChronicle eConcept) -> new ImportEConceptOtfModel(eConcept, stampPathUuid));
+                            (TtkConceptChronicle eConcept) -> new ImportEConceptOtfModel(eConcept, stampPathUuid));
                     doImport(conceptCount, bytesProcessedForLoad, bytesToProcessForLoad, completionCount, conversionService,
                             "converted",
-                        (TtkConceptChronicle eConcept) -> new ConvertOtfToOchreModel(eConcept, stampPathUuid));
+                            (TtkConceptChronicle eConcept) -> new ConvertOtfToOchreModel(eConcept, stampPathUuid, this));
                     break;
-                    default:
-                        throw new UnsupportedOperationException("Can't handle: " + conceptModel);
+                default:
+                    throw new UnsupportedOperationException("Can't handle: " + conceptModel);
             }
             Instant finish = Instant.now();
             Duration duration = Duration.between(start, finish);
@@ -169,10 +197,10 @@ public class ImportEConceptFile extends Task<Integer> {
         }
     }
 
-    private void doImport(AtomicInteger conceptCount, 
-            AtomicLong bytesProcessedForLoad, 
-            AtomicLong bytesToProcessForLoad, 
-            AtomicInteger completionCount, 
+    private void doImport(AtomicInteger conceptCount,
+            AtomicLong bytesProcessedForLoad,
+            AtomicLong bytesToProcessForLoad,
+            AtomicInteger completionCount,
             ExecutorCompletionService conversionService,
             String actionForMessage,
             Function<TtkConceptChronicle, Callable> taskFunction) throws InterruptedException, IOException, ExecutionException, ClassNotFoundException, UnsupportedOperationException {
@@ -180,43 +208,48 @@ public class ImportEConceptFile extends Task<Integer> {
             long bytesForPath = p.toFile().length();
             try (DataInputStream dis = new DataInputStream(new BufferedInputStream(Files.newInputStream(p)))) {
                 updateMessage("Importing file: " + p.toFile().getName());
+                setProgressMessageGenerator((task) -> {
+                    updateMessage(String.format("Importing file: " + p.toFile().getName()
+                            + " " + actionForMessage + " %,d concepts...", completionCount.get()));
+                    updateValue(completionCount.get());
+                    try {
+                        updateProgress(bytesProcessedForLoad.get() + bytesForPath - dis.available(), bytesToProcessForLoad.get());
+                    } catch (IOException ex) {
+                       updateProgress(bytesProcessedForLoad.get(), bytesToProcessForLoad.get());
+                    }
+                });
                 // allow for task cancellation, while still importing complete concepts.
                 while (!isCancelled()) {
-                    long bytesProcessedForPath = bytesForPath - dis.available();
-                    if (conceptCount.get() % 1000 == 0) {
-                        updateProgress(bytesProcessedForLoad.get() + bytesProcessedForPath, bytesToProcessForLoad.get());
-                        
-                        updateMessage(String.format("Importing file: " + p.toFile().getName() + 
-                                " " + actionForMessage + " %,d concepts...", completionCount.get()));
-                        updateValue(completionCount.get());
-                    }
                     TtkConceptChronicle eConcept = new TtkConceptChronicle(dis);
                     importPermits.acquireUninterruptibly();
                     conversionService.submit(taskFunction.apply(eConcept));
 
-                                      
                     conceptCount.incrementAndGet();
-                    
+
                     for (Future future = conversionService.poll(); future != null; future = conversionService.poll()) {
                         future.get();
                         importPermits.release();
                         completionCount.incrementAndGet();
                     }
                 }
-                
+
             } catch (EOFException eof) {
                 // nothing to do.
             }
-            
+            setProgressMessageGenerator((task) -> {
+                updateProgress(bytesProcessedForLoad.get(), bytesToProcessForLoad.get());
+                updateMessage("Importing of file: " + p.toFile().getName() + " complete, cleaning up converters.");
+                updateValue(completionCount.get());
+            });
+
             bytesProcessedForLoad.addAndGet(bytesForPath);
-            updateMessage("Importing of file: " + p.toFile().getName() + " complete, cleaning up converters.");
             while (completionCount.get() < conceptCount.get()) {
                 Future future = conversionService.take();
                 future.get();
                 importPermits.release();
                 completionCount.incrementAndGet();
             }
-         }
+        }
     }
 
     boolean isFxApplicationThread() {

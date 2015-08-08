@@ -1,20 +1,20 @@
 /**
  * Copyright Notice
- * 
+ *
  * This is a work of the U.S. Government and is not subject to copyright
  * protection in the United States. Foreign copyrights may apply.
- * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
  */
 package gov.vha.isaac.cradle;
 
@@ -22,6 +22,11 @@ import gov.vha.isaac.ochre.api.ConceptModel;
 import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.constants.Constants;
+import gov.vha.isaac.ochre.api.observable.coordinate.ObservableEditCoordinate;
+import gov.vha.isaac.ochre.api.observable.coordinate.ObservableLanguageCoordinate;
+import gov.vha.isaac.ochre.api.observable.coordinate.ObservableLogicCoordinate;
+import gov.vha.isaac.ochre.api.observable.coordinate.ObservableStampCoordinate;
+import gov.vha.isaac.ochre.api.observable.coordinate.ObservableTaxonomyCoordinate;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,134 +40,206 @@ import org.glassfish.hk2.api.Rank;
 import org.jvnet.hk2.annotations.Service;
 
 /**
- * The default implementation of {@link ConfigurationService} which is used to specify where the datastore
- * location is, among other things.
- * 
- * Note that this default implementation has a {@link Rank} of 0. To override this implementation with any
- * other, simply provide another implementation on the classpath with a higher rank.
- * 
+ * The default implementation of {@link ConfigurationService} which is used to
+ * specify where the datastore location is, among other things.
+ *
+ * Note that this default implementation has a {@link Rank} of 0. To override
+ * this implementation with any other, simply provide another implementation on
+ * the classpath with a higher rank.
+ *
  * @author <a href="mailto:daniel.armbrust.list@gmail.com">Dan Armbrust</a>
  */
 @Service(name = "Cradle Default Configuration Service")
 @Rank(value = 0)
 @Singleton
-public class DefaultConfigurationService implements ConfigurationService
-{
-	private Path dataStoreFolderPath_ = null;
-	private ConceptModel conceptModel_ = null;
-	
-	private static final Logger log = LogManager.getLogger();
-	
-	private volatile boolean initComplete_ = false;
+public class DefaultConfigurationService implements ConfigurationService {
 
-	private DefaultConfigurationService()
-	{
-		//only for HK2
-	}
+    private Path dataStoreFolderPath_ = null;
+    private ConceptModel conceptModel_ = null;
+    DefaultCoordinateProvider defaultCoordinateProvider_ = new DefaultCoordinateProvider();
 
-	/**
-	 * @see gov.vha.isaac.ochre.api.ConfigurationService#getDataStoreFolderPath()
-	 */
-	@Override
-	public Optional<Path> getDataStoreFolderPath()
-	{
-		if (dataStoreFolderPath_ == null && !initComplete_)
-		{
-			synchronized (this)
-			{
-				if (dataStoreFolderPath_ == null && !initComplete_)
-				{
-					String dataStoreRootFolder = System.getProperty(Constants.DATA_STORE_ROOT_LOCATION_PROPERTY);
-					if (!StringUtils.isBlank(dataStoreRootFolder))
-					{
-						dataStoreFolderPath_ = Paths.get(dataStoreRootFolder);
-						if (!Files.exists(dataStoreFolderPath_))
-						{
-							try
-							{
-								Files.createDirectories(dataStoreFolderPath_);
-							}
-							catch (IOException e)
-							{
-								throw new RuntimeException("Failure creating dataStoreRootFolder folder: " + dataStoreFolderPath_.toString(), e);
-							}
-						}
+    private static final Logger log = LogManager.getLogger();
 
-						if (!Files.isDirectory(dataStoreFolderPath_))
-						{
-							throw new IllegalStateException("The specified path to the db folder appears to be a file, rather than a folder, as expected.  " + " Found: "
-									+ dataStoreFolderPath_.toAbsolutePath().toString());
-						}
-					}
-					
-					initComplete_ = true;
-				}
-			}
-		}
-		return Optional.ofNullable(dataStoreFolderPath_);
-	}
+    private volatile boolean initComplete_ = false;
 
-	/**
-	 * @see gov.vha.isaac.ochre.api.ConfigurationService#setDataStoreFolderPath(java.nio.file.Path)
-	 */
-	@Override
-	public void setDataStoreFolderPath(Path dataStoreFolderPath) throws IllegalStateException, IllegalArgumentException
-	{
-		log.info("setDataStoreFolderPath called with " + dataStoreFolderPath);
-		if (LookupService.hasIsaacBeenStartedAtLeastOnce())
-		{
-			throw new IllegalStateException("Can only set the dbFolderPath prior to starting Isaac");
-		}
-		
-		if (Files.exists(dataStoreFolderPath) && !Files.isDirectory(dataStoreFolderPath))
-		{
-			throw new IllegalArgumentException("The specified path to the db folder appears to be a file, rather than a folder, as expected.  " + " Found: "
-					+ dataStoreFolderPath_.toAbsolutePath().toString());
-		}
-		try
-		{
-			Files.createDirectories(dataStoreFolderPath);
-		}
-		catch (IOException e)
-		{
-			throw new RuntimeException("Failure creating dataStoreFolderPath folder: " + dataStoreFolderPath.toString(), e);
-		}
+    private DefaultConfigurationService() {
+        //only for HK2
+    }
 
-		dataStoreFolderPath_ = dataStoreFolderPath;
-	}
+    /**
+     * @see
+     * gov.vha.isaac.ochre.api.ConfigurationService#getDataStoreFolderPath()
+     */
+    @Override
+    public Optional<Path> getDataStoreFolderPath() {
+        if (dataStoreFolderPath_ == null && !initComplete_) {
+            synchronized (this) {
+                if (dataStoreFolderPath_ == null && !initComplete_) {
+                    String dataStoreRootFolder = System.getProperty(Constants.DATA_STORE_ROOT_LOCATION_PROPERTY);
+                    if (!StringUtils.isBlank(dataStoreRootFolder)) {
+                        dataStoreFolderPath_ = Paths.get(dataStoreRootFolder);
+                        if (!Files.exists(dataStoreFolderPath_)) {
+                            try {
+                                Files.createDirectories(dataStoreFolderPath_);
+                            } catch (IOException e) {
+                                throw new RuntimeException("Failure creating dataStoreRootFolder folder: " + dataStoreFolderPath_.toString(), e);
+                            }
+                        }
 
-	/**
-	 * Returns the value specified by {@link #setConceptModel(ConceptModel)} - or - if that method hasn't been called, defaults 
-	 * to the behavior provided by: 
-	 * @see gov.vha.isaac.ochre.api.ConfigurationService#getConceptModel()
-	 */
-	@Override
-	public ConceptModel getConceptModel()
-	{
-		if (conceptModel_ == null)
-		{
-			conceptModel_ = ConfigurationService.super.getConceptModel();
-		}
-		return conceptModel_;
-	}
+                        if (!Files.isDirectory(dataStoreFolderPath_)) {
+                            throw new IllegalStateException("The specified path to the db folder appears to be a file, rather than a folder, as expected.  " + " Found: "
+                                    + dataStoreFolderPath_.toAbsolutePath().toString());
+                        }
+                    }
 
-	/**
-	 * Note that this implementation prioritizes the value provided by a call to this method, over the value set as a system 
-	 * property.  if {@link #setConceptModel(ConceptModel)} is called, any value set as a system property will be ignored.
-	 * @see gov.vha.isaac.ochre.api.ConfigurationService#setConceptModel(gov.vha.isaac.ochre.api.ConceptModel)
-	 */
-	@Override
-	public void setConceptModel(ConceptModel conceptModel)
-	{
-		log.info("setConceptModel called with " + conceptModel);
-		if (LookupService.isIsaacStarted())
-		{
-			throw new IllegalStateException("Can only set the concept model prior to starting Isaac");
-		}
-		if (conceptModel == null)
-		{
-			throw new IllegalStateException("Concept model must be specified");
-		}
-		this.conceptModel_ = conceptModel;
-	}
+                    initComplete_ = true;
+                }
+            }
+        }
+        return Optional.ofNullable(dataStoreFolderPath_);
+    }
+
+    /**
+     * @see
+     * gov.vha.isaac.ochre.api.ConfigurationService#setDataStoreFolderPath(java.nio.file.Path)
+     */
+    @Override
+    public void setDataStoreFolderPath(Path dataStoreFolderPath) throws IllegalStateException, IllegalArgumentException {
+        log.info("setDataStoreFolderPath called with " + dataStoreFolderPath);
+        if (LookupService.isIsaacStarted()) {
+            throw new IllegalStateException("Can only set the dbFolderPath prior to starting Isaac. Runlevel: " + LookupService.getCurrentRunLevel());
+        }
+
+        if (Files.exists(dataStoreFolderPath) && !Files.isDirectory(dataStoreFolderPath)) {
+            throw new IllegalArgumentException("The specified path to the db folder appears to be a file, rather than a folder, as expected.  " + " Found: "
+                    + dataStoreFolderPath_.toAbsolutePath().toString());
+        }
+        try {
+            Files.createDirectories(dataStoreFolderPath);
+        } catch (IOException e) {
+            throw new RuntimeException("Failure creating dataStoreFolderPath folder: " + dataStoreFolderPath.toString(), e);
+        }
+
+        dataStoreFolderPath_ = dataStoreFolderPath;
+    }
+
+    /**
+     * Returns the value specified by {@link #setConceptModel(ConceptModel)} -
+     * or - if that method hasn't been called, defaults to the behavior provided
+     * by:
+     *
+     * @see gov.vha.isaac.ochre.api.ConfigurationService#getConceptModel()
+     */
+    @Override
+    public ConceptModel getConceptModel() {
+        if (conceptModel_ == null) {
+            conceptModel_ = ConfigurationService.super.getConceptModel();
+        }
+        return conceptModel_;
+    }
+
+    /**
+     * Note that this implementation prioritizes the value provided by a call to
+     * this method, over the value set as a system property. if
+     * {@link #setConceptModel(ConceptModel)} is called, any value set as a
+     * system property will be ignored.
+     *
+     * @see
+     * gov.vha.isaac.ochre.api.ConfigurationService#setConceptModel(gov.vha.isaac.ochre.api.ConceptModel)
+     */
+    @Override
+    public void setConceptModel(ConceptModel conceptModel) {
+        log.info("setConceptModel called with " + conceptModel);
+        if (this.conceptModel_ != conceptModel) {
+            if (LookupService.isIsaacStarted()) {
+                throw new IllegalStateException("Can only set the concept model prior to starting Isaac. Existing model: "
+                        + this.conceptModel_ + " attempted model: " + conceptModel);
+            }
+            if (conceptModel == null) {
+                throw new IllegalStateException("Concept model must be specified");
+            }
+            this.conceptModel_ = conceptModel;
+        }
+    }
+
+    @Override
+    public void setDefaultUser(int conceptId) {
+        defaultCoordinateProvider_.setDefaultUser(conceptId);
+    }
+
+    @Override
+    public void setDefaultModule(int conceptId) {
+        defaultCoordinateProvider_.setDefaultModule(conceptId);
+    }
+
+    @Override
+    public void setDefaultTime(long timeInMs) {
+        defaultCoordinateProvider_.setDefaultTime(timeInMs);
+    }
+
+    @Override
+    public void setDefaultPath(int conceptId) {
+        defaultCoordinateProvider_.setDefaultPath(conceptId);
+    }
+
+    @Override
+    public void setDefaultLanguage(int conceptId) {
+        defaultCoordinateProvider_.setDefaultLanguage(conceptId);
+    }
+
+    @Override
+    public void setDefaultDialectAssemblagePreferenceList(int[] dialectAssemblagePreferenceList) {
+        defaultCoordinateProvider_.setDefaultDialectAssemblagePreferenceList(dialectAssemblagePreferenceList);
+    }
+
+    @Override
+    public void setDefaultDescriptionTypePreferenceList(int[] descriptionTypePreferenceList) {
+        defaultCoordinateProvider_.setDefaultDescriptionTypePreferenceList(descriptionTypePreferenceList);
+    }
+
+    @Override
+    public void setDefaultStatedAssemblage(int conceptId) {
+        defaultCoordinateProvider_.setDefaultStatedAssemblage(conceptId);
+    }
+
+    @Override
+    public void setDefaultInferredAssemblage(int conceptId) {
+        defaultCoordinateProvider_.setDefaultInferredAssemblage(conceptId);
+    }
+
+    @Override
+    public void setDefaultDescriptionLogicProfile(int conceptId) {
+        defaultCoordinateProvider_.setDefaultDescriptionLogicProfile(conceptId);
+    }
+
+    @Override
+    public void setDefaultClassifier(int conceptId) {
+        defaultCoordinateProvider_.setDefaultClassifier(conceptId);
+    }
+
+    @Override
+    public ObservableEditCoordinate getDefaultEditCoordinate() {
+        return defaultCoordinateProvider_.getDefaultEditCoordinate();
+    }
+
+    @Override
+    public ObservableLanguageCoordinate getDefaultLanguageCoordinate() {
+        return defaultCoordinateProvider_.getDefaultLanguageCoordinate();
+    }
+
+    @Override
+    public ObservableLogicCoordinate getDefaultLogicCoordinate() {
+        return defaultCoordinateProvider_.getDefaultLogicCoordinate();
+    }
+
+    @Override
+    public ObservableStampCoordinate getDefaultStampCoordinate() {
+        return defaultCoordinateProvider_.getDefaultStampCoordinate();
+    }
+
+    @Override
+    public ObservableTaxonomyCoordinate getDefaultTaxonomyCoordinate() {
+        return defaultCoordinateProvider_.getDefaultTaxonomyCoordinate();
+    }
+
 }

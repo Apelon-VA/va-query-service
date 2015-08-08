@@ -15,10 +15,10 @@
  */
 package gov.vha.isaac.cradle.builders;
 
-import static gov.vha.isaac.cradle.builders.ComponentBuilder.getIdentifierService;
 import gov.vha.isaac.metadata.coordinates.LanguageCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.ConceptProxy;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilder;
@@ -45,7 +45,7 @@ public class DescriptionBuilderOchreImpl<T extends SememeChronology<V>, V extend
    private static final int descriptionAssemblageSequence;
 
     static {
-        descriptionAssemblageSequence = getIdentifierService().getConceptSequenceForUuids(
+        descriptionAssemblageSequence = Get.identifierService().getConceptSequenceForUuids(
                 IsaacMetadataAuxiliaryBinding.DESCRIPTION_ASSEMBLAGE.getUuids());
     }
     
@@ -95,15 +95,15 @@ public class DescriptionBuilderOchreImpl<T extends SememeChronology<V>, V extend
     public T build(EditCoordinate editCoordinate, ChangeCheckerMode changeCheckerMode,
             List builtObjects) throws IllegalStateException {
         if (conceptSequence == Integer.MAX_VALUE) {
-            conceptSequence = getIdentifierService().getConceptSequenceForUuids(conceptBuilder.getUuids());
+            conceptSequence = Get.identifierService().getConceptSequenceForUuids(conceptBuilder.getUuids());
         }
         SememeBuilderService sememeBuilder = LookupService.getService(SememeBuilderService.class);
         SememeBuilder<? extends SememeChronology<? extends DescriptionSememe>> descBuilder
                 = sememeBuilder.getDescriptionSememeBuilder(LanguageCoordinates.caseSignificanceToConceptSequence(false),
-                        languageForDescription.getSequence(),
-                        descriptionType.getSequence(),
+                        languageForDescription.getConceptSequence(),
+                        descriptionType.getConceptSequence(),
                         descriptionText,
-                        getIdentifierService().getConceptNid(conceptSequence),
+                        Get.identifierService().getConceptNid(conceptSequence),
                         descriptionAssemblageSequence);
         descBuilder.setPrimordialUuid(this.primordialUuid);
         SememeChronologyImpl<DescriptionSememeImpl> newDescription = (SememeChronologyImpl<DescriptionSememeImpl>)
@@ -113,14 +113,14 @@ public class DescriptionBuilderOchreImpl<T extends SememeChronology<V>, V extend
         preferredInDialectAssemblages.forEach(( assemblageProxy) -> {
             sememeBuilderService.getComponentSememeBuilder(
                     IsaacMetadataAuxiliaryBinding.PREFERRED.getNid(), newDescription.getNid(),
-                    getIdentifierService().getConceptSequenceForProxy(assemblageProxy)).
+                    Get.identifierService().getConceptSequenceForProxy(assemblageProxy)).
                     build(editCoordinate, changeCheckerMode, builtObjects);
         });
         acceptableInDialectAssemblages.forEach(( assemblageProxy) -> {
             sememeBuilderService.getComponentSememeBuilder(
                     IsaacMetadataAuxiliaryBinding.ACCEPTABLE.getNid(), 
                     newDescription.getNid(),
-                    getIdentifierService().getConceptSequenceForProxy(assemblageProxy)).
+                    Get.identifierService().getConceptSequenceForProxy(assemblageProxy)).
                     build(editCoordinate, changeCheckerMode, builtObjects);
         });
         return (T) newDescription;
@@ -129,31 +129,31 @@ public class DescriptionBuilderOchreImpl<T extends SememeChronology<V>, V extend
     @Override
     public T build(int stampSequence, List builtObjects) throws IllegalStateException {
         if (conceptSequence == Integer.MAX_VALUE) {
-            conceptSequence = getIdentifierService().getConceptSequenceForUuids(conceptBuilder.getUuids());
+            conceptSequence = Get.identifierService().getConceptSequenceForUuids(conceptBuilder.getUuids());
         }
         SememeBuilderService sememeBuilder = LookupService.getService(SememeBuilderService.class);
         SememeBuilder<? extends SememeChronology<? extends DescriptionSememe>> descBuilder
                 = sememeBuilder.getDescriptionSememeBuilder(LanguageCoordinates.caseSignificanceToConceptSequence(false),
-                        languageForDescription.getSequence(),
-                        descriptionType.getSequence(),
+                        languageForDescription.getConceptSequence(),
+                        descriptionType.getConceptSequence(),
                         descriptionText,
-                        getIdentifierService().getConceptNid(conceptSequence),
+                        Get.identifierService().getConceptNid(conceptSequence),
                         descriptionAssemblageSequence);
         SememeChronologyImpl<DescriptionSememeImpl> newDescription = (SememeChronologyImpl<DescriptionSememeImpl>)
                 descBuilder.build(stampSequence, builtObjects);
-        getIdentifierService().setConceptSequenceForComponentNid(conceptSequence, newDescription.getNid());
+        Get.identifierService().setConceptSequenceForComponentNid(conceptSequence, newDescription.getNid());
         builtObjects.add(newDescription);
         SememeBuilderService sememeBuilderService = LookupService.getService(SememeBuilderService.class);
         preferredInDialectAssemblages.forEach(( assemblageProxy) -> {
             sememeBuilderService.getComponentSememeBuilder(
                     IsaacMetadataAuxiliaryBinding.PREFERRED.getNid(), this,
-                    getIdentifierService().getConceptSequenceForProxy(assemblageProxy)).
+                    Get.identifierService().getConceptSequenceForProxy(assemblageProxy)).
                     build(stampSequence, builtObjects);
         });
         acceptableInDialectAssemblages.forEach(( assemblageProxy) -> {
             sememeBuilderService.getComponentSememeBuilder(
                     IsaacMetadataAuxiliaryBinding.ACCEPTABLE.getNid(), this,
-                    getIdentifierService().getConceptSequenceForProxy(assemblageProxy)).
+                    Get.identifierService().getConceptSequenceForProxy(assemblageProxy)).
                     build(stampSequence, builtObjects);
         });
         return (T) newDescription;

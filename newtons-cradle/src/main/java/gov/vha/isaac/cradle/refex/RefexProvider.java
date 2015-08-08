@@ -16,10 +16,10 @@
 package gov.vha.isaac.cradle.refex;
 
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexService;
-import gov.vha.isaac.cradle.Cradle;
 import gov.vha.isaac.cradle.collections.ConcurrentSequenceSerializedObjectMap;
+import gov.vha.isaac.ochre.api.ConfigurationService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.collections.RefexSequenceSet;
 import java.io.BufferedInputStream;
@@ -30,9 +30,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.NavigableSet;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -55,18 +57,20 @@ public class RefexProvider implements RefexService {
 
     private static final Logger log = LogManager.getLogger();
 
-    final ConcurrentSequenceSerializedObjectMap<ComponentChronicleBI<?>> refexMap;
-    final ConcurrentSkipListSet<RefexKey> assemblageSequenceRefexSequenceMap = new ConcurrentSkipListSet<>();
-    final ConcurrentSkipListSet<RefexKey> referencedNidRefexSequenceMap = new ConcurrentSkipListSet<>();
-    final ConcurrentSkipListSet<Integer> dynamicMembers = new ConcurrentSkipListSet<>();
-    final IdentifierService sequenceProvider;
+    private final Path folderPath;
+    private final AtomicBoolean loadRequired = new AtomicBoolean();
+    private final ConcurrentSequenceSerializedObjectMap<ComponentChronicleBI<?>> refexMap;
+    private final ConcurrentSkipListSet<RefexKey> assemblageSequenceRefexSequenceMap = new ConcurrentSkipListSet<>();
+    private final ConcurrentSkipListSet<RefexKey> referencedNidRefexSequenceMap = new ConcurrentSkipListSet<>();
+    private final ConcurrentSkipListSet<Integer> dynamicMembers = new ConcurrentSkipListSet<>();
 
     //For HK2 only
     private RefexProvider() throws IOException {
         try {
-            sequenceProvider = LookupService.getService(IdentifierService.class);
-            
-            Path refexMapPath = Cradle.getCradlePath().resolve(REFEX_MAP);
+            folderPath = LookupService.getService(ConfigurationService.class).getChronicleFolderPath().resolve("refex-provider");            
+            Path refexMapPath = folderPath.resolve(REFEX_MAP);
+            loadRequired.set(!Files.exists(refexMapPath));
+            Files.createDirectories(refexMapPath);
             log.info("Starting RefexProvider - using from " + refexMapPath.toAbsolutePath().toString());
             
             refexMap = new ConcurrentSequenceSerializedObjectMap(new RefexSerializer(), refexMapPath, "seg.", ".refex.map");
@@ -84,13 +88,13 @@ public class RefexProvider implements RefexService {
     @PostConstruct
     private void startMe() throws IOException {
         try {
-            if (!Cradle.cradleStartedEmpty()) {
-                log.info("Loading refexMap.");
+            if (!loadRequired.get()) {
+                log.info("Reading existing refexMap.");
                 refexMap.read();
     
-                log.info("Loading RefexKeys.");
+                log.info("Reading existing RefexKeys.");
     
-                try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(Cradle.getCradlePath().toFile(), ASSEMBLAGE_REFEX_KEYS))))) {
+                try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(folderPath.toFile(), ASSEMBLAGE_REFEX_KEYS))))) {
                     int size = in.readInt();
                     for (int i = 0; i < size; i++) {
                         int key1 = in.readInt();
@@ -98,7 +102,7 @@ public class RefexProvider implements RefexService {
                         assemblageSequenceRefexSequenceMap.add(new RefexKey(key1, sequence));
                     }
                 }
-                try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(Cradle.getCradlePath().toFile(), COMPONENT_REFEX_KEYS))))) {
+                try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(folderPath.toFile(), COMPONENT_REFEX_KEYS))))) {
                     int size = in.readInt();
                     for (int i = 0; i < size; i++) {
                         int key1 = in.readInt();
@@ -106,7 +110,7 @@ public class RefexProvider implements RefexService {
                         referencedNidRefexSequenceMap.add(new RefexKey(key1, sequence));
                     }
                 }
-                try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(Cradle.getCradlePath().toFile(), DYNAMIC_REFEX_KEYS))))) {
+                try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(folderPath.toFile(), DYNAMIC_REFEX_KEYS))))) {
                     int size = in.readInt();
                     for (int i = 0; i < size; i++) {
                         int sequence = in.readInt();
@@ -132,21 +136,21 @@ public class RefexProvider implements RefexService {
         refexMap.write();
 
         log.info("writing RefexKeys.");
-        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(Cradle.getCradlePath().toFile(), ASSEMBLAGE_REFEX_KEYS))))) {
+        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(folderPath.toFile(), ASSEMBLAGE_REFEX_KEYS))))) {
             out.writeInt(assemblageSequenceRefexSequenceMap.size());
             for (RefexKey key : assemblageSequenceRefexSequenceMap) {
                 out.writeInt(key.key1);
                 out.writeInt(key.refexSequence);
             }
         }        
-        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(Cradle.getCradlePath().toFile(), COMPONENT_REFEX_KEYS))))) {
+        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(folderPath.toFile(), COMPONENT_REFEX_KEYS))))) {
             out.writeInt(referencedNidRefexSequenceMap.size());
             for (RefexKey key : referencedNidRefexSequenceMap) {
                 out.writeInt(key.key1);
                 out.writeInt(key.refexSequence);
             }
         }
-        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(Cradle.getCradlePath().toFile(), DYNAMIC_REFEX_KEYS))))) {
+        try (DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(new File(folderPath.toFile(), DYNAMIC_REFEX_KEYS))))) {
             out.writeInt(dynamicMembers.size());
             for (int sequence : dynamicMembers) {
                 out.writeInt(sequence);
@@ -157,7 +161,7 @@ public class RefexProvider implements RefexService {
 
     @Override
     public RefexMember<?, ?> getRefex(int refexSequence) {
-        refexSequence = sequenceProvider.getRefexSequence(refexSequence);
+        refexSequence = Get.identifierService().getRefexSequence(refexSequence);
         ComponentChronicleBI<?> cc = refexMap.getQuick(refexSequence);
         if (cc instanceof RefexMember<?, ?>) {
             return (RefexMember<?, ?>) cc;
@@ -168,7 +172,7 @@ public class RefexProvider implements RefexService {
 
     @Override
     public RefexDynamicChronicleBI<?> getRefexDynamic(int refexSequence) {
-        refexSequence = sequenceProvider.getRefexSequence(refexSequence);
+        refexSequence = Get.identifierService().getRefexSequence(refexSequence);
         ComponentChronicleBI<?> cc = refexMap.getQuick(refexSequence);
         if (cc instanceof RefexDynamicChronicleBI<?>) {
             return (RefexDynamicChronicleBI<?>)cc;
@@ -186,7 +190,7 @@ public class RefexProvider implements RefexService {
 
     @Override
     public RefexSequenceSet getRefexSequencesFromAssemblage(int assemblageSequence) {
-        assemblageSequence = sequenceProvider.getRefexSequence(assemblageSequence);
+        assemblageSequence = Get.identifierService().getRefexSequence(assemblageSequence);
         RefexKey rangeStart = new RefexKey(assemblageSequence, Integer.MIN_VALUE); // yes
         RefexKey rangeEnd = new RefexKey(assemblageSequence, Integer.MAX_VALUE); // no
         NavigableSet<RefexKey> assemblageRefexKeys
@@ -231,7 +235,7 @@ public class RefexProvider implements RefexService {
         if (componentNid >= 0) {
             throw new IndexOutOfBoundsException("Component identifiers must be negative. Found: " + componentNid);
         }
-        assemblageSequence = sequenceProvider.getRefexSequence(assemblageSequence);
+        assemblageSequence = Get.identifierService().getRefexSequence(assemblageSequence);
         RefexKey rangeStart = new RefexKey(assemblageSequence, Integer.MIN_VALUE); // yes
         RefexKey rangeEnd = new RefexKey(assemblageSequence, Integer.MAX_VALUE); // no
         NavigableSet<RefexKey> assemblageRefexKeys
@@ -281,8 +285,8 @@ public class RefexProvider implements RefexService {
 
     @Override
     public void forgetXrefPair(int referencedComponentNid, NidPairForRefex nidPairForRefex) {
-        int sequence = sequenceProvider.getSememeSequence(nidPairForRefex.getMemberNid());
-        int assemblageSequence = sequenceProvider.getRefexSequence(nidPairForRefex.getRefexNid());
+        int sequence = Get.identifierService().getSememeSequence(nidPairForRefex.getMemberNid());
+        int assemblageSequence = Get.identifierService().getRefexSequence(nidPairForRefex.getRefexNid());
         assemblageSequenceRefexSequenceMap.remove(new RefexKey(assemblageSequence, sequence));
         referencedNidRefexSequenceMap.remove(new RefexKey(referencedComponentNid, sequence));
     }
@@ -303,8 +307,8 @@ public class RefexProvider implements RefexService {
 
     @Override
     public void writeDynamicRefex(RefexDynamicChronicleBI<?> refex) {
-        int sequence = sequenceProvider.getRefexSequence(refex.getNid());
-        int assemblageSequence = sequenceProvider.getRefexSequence(refex.getAssemblageNid());
+        int sequence = Get.identifierService().getRefexSequence(refex.getNid());
+        int assemblageSequence = Get.identifierService().getRefexSequence(refex.getAssemblageNid());
         if (!refexMap.containsKey(sequence)) {
             assemblageSequenceRefexSequenceMap.add(new RefexKey(assemblageSequence,
                     sequence));
@@ -317,8 +321,8 @@ public class RefexProvider implements RefexService {
     
     @Override
     public void writeRefex(RefexMember<?, ?> refex) {
-        int sequence = sequenceProvider.getRefexSequence(refex.getNid());
-        int assemblageSequence = sequenceProvider.getRefexSequence(refex.assemblageNid);
+        int sequence = Get.identifierService().getRefexSequence(refex.getNid());
+        int assemblageSequence = Get.identifierService().getRefexSequence(refex.assemblageNid);
         if (!refexMap.containsKey(sequence)) {
             assemblageSequenceRefexSequenceMap.add(new RefexKey(assemblageSequence,
                     sequence));

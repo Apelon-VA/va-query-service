@@ -22,6 +22,7 @@ import gov.vha.isaac.ochre.api.component.concept.ConceptBuilder;
 import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
 import gov.vha.isaac.metadata.coordinates.LanguageCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.component.concept.description.DescriptionBuilder;
 import gov.vha.isaac.ochre.api.component.sememe.SememeBuilderService;
@@ -87,21 +88,21 @@ public class DescriptionBuilderOtfImpl<T extends Description, V extends Descript
             List builtObjects) throws IllegalStateException {
         try {
             if (conceptSequence == Integer.MAX_VALUE) {
-                conceptSequence = getIdentifierService().getConceptSequenceForUuids(conceptBuilder.getUuids());
+                conceptSequence = Get.identifierService().getConceptSequenceForUuids(conceptBuilder.getUuids());
             }
             
             Description desc = new Description();
-            desc.setSTAMP(getCommitService().getStampSequence(State.ACTIVE, Long.MAX_VALUE,
+            desc.setSTAMP(Get.commitService().getStampSequence(State.ACTIVE, Long.MAX_VALUE,
                     editCoordinate.getAuthorSequence(), editCoordinate.getModuleSequence(),
                     editCoordinate.getPathSequence()));
             desc.setPrimordialUuid(primordialUuid);
-            desc.setNid(getIdentifierService().getNidForUuids(this.getUuids()));
-            getIdentifierService().setConceptSequenceForComponentNid(conceptSequence, desc.nid);
-            desc.enclosingConceptNid = getIdentifierService().getConceptNid(conceptSequence);
+            desc.setNid(Get.identifierService().getNidForUuids(this.getUuids()));
+            Get.identifierService().setConceptSequenceForComponentNid(conceptSequence, desc.nid);
+            desc.enclosingConceptNid = Get.identifierService().getConceptNid(conceptSequence);
             desc.setText(descriptionText);
-            desc.setTypeNid(getIdentifierService().getNidForProxy(descriptionType));
+            desc.setTypeNid(Get.identifierService().getNidForProxy(descriptionType));
             desc.setInitialCaseSignificant(false);
-            desc.setLang(LanguageCoordinates.conceptNidToIso639(getIdentifierService().getNidForProxy(languageForDescription)));
+            desc.setLang(LanguageCoordinates.conceptNidToIso639(Get.identifierService().getNidForProxy(languageForDescription)));
             desc.setAdditionalUuids(additionalUuids);
 
             SememeBuilderService sememeBuilderService = LookupService.getService(SememeBuilderService.class);
@@ -109,13 +110,13 @@ public class DescriptionBuilderOtfImpl<T extends Description, V extends Descript
             preferredInDialectAssemblages.forEach(( assemblageProxy) -> {
                 sememeBuilderService.getComponentSememeBuilder(
                         IsaacMetadataAuxiliaryBinding.PREFERRED.getNid(), this, 
-                        getIdentifierService().getConceptSequenceForProxy(assemblageProxy)).
+                        Get.identifierService().getConceptSequenceForProxy(assemblageProxy)).
                         build(editCoordinate, changeCheckerMode, builtObjects);
             });
             acceptableInDialectAssemblages.forEach(( assemblageProxy) -> {
                 sememeBuilderService.getComponentSememeBuilder(
                         IsaacMetadataAuxiliaryBinding.ACCEPTABLE.getNid(), this, 
-                        getIdentifierService().getConceptSequenceForProxy(assemblageProxy)).
+                        Get.identifierService().getConceptSequenceForProxy(assemblageProxy)).
                         build(editCoordinate, changeCheckerMode, builtObjects);
             });
             builtObjects.add(desc);
@@ -129,18 +130,18 @@ public class DescriptionBuilderOtfImpl<T extends Description, V extends Descript
     public T build(int stampSequence, List builtObjects) throws IllegalStateException {
         try {
             if (conceptSequence == Integer.MAX_VALUE) {
-                conceptSequence = getIdentifierService().getConceptSequenceForUuids(conceptBuilder.getUuids());
+                conceptSequence = Get.identifierService().getConceptSequenceForUuids(conceptBuilder.getUuids());
             }
             
             Description desc = new Description();
             desc.setPrimordialUuid(primordialUuid);
-            desc.setNid(getIdentifierService().getNidForUuids(this.getUuids()));
-            getIdentifierService().setConceptSequenceForComponentNid(conceptSequence, desc.nid);
-            desc.enclosingConceptNid = getIdentifierService().getConceptNid(conceptSequence);
+            desc.setNid(Get.identifierService().getNidForUuids(this.getUuids()));
+            Get.identifierService().setConceptSequenceForComponentNid(conceptSequence, desc.nid);
+            desc.enclosingConceptNid = Get.identifierService().getConceptNid(conceptSequence);
             desc.setText(descriptionText);
-            desc.setTypeNid(getIdentifierService().getNidForProxy(descriptionType));
+            desc.setTypeNid(Get.identifierService().getNidForProxy(descriptionType));
             desc.setInitialCaseSignificant(false);
-            desc.setLang(LanguageCoordinates.conceptNidToIso639(getIdentifierService().getNidForProxy(languageForDescription)));
+            desc.setLang(LanguageCoordinates.conceptNidToIso639(Get.identifierService().getNidForProxy(languageForDescription)));
             desc.setAdditionalUuids(additionalUuids);
 
             SememeBuilderService sememeBuilderService = LookupService.getService(SememeBuilderService.class);
@@ -148,13 +149,13 @@ public class DescriptionBuilderOtfImpl<T extends Description, V extends Descript
             preferredInDialectAssemblages.forEach(( assemblageProxy) -> {
                 sememeBuilderService.getComponentSememeBuilder(
                         IsaacMetadataAuxiliaryBinding.PREFERRED.getNid(), this, 
-                        getIdentifierService().getConceptSequenceForProxy(assemblageProxy)).
+                        Get.identifierService().getConceptSequenceForProxy(assemblageProxy)).
                         build(stampSequence, builtObjects);
             });
             acceptableInDialectAssemblages.forEach(( assemblageProxy) -> {
                 sememeBuilderService.getComponentSememeBuilder(
                         IsaacMetadataAuxiliaryBinding.ACCEPTABLE.getNid(), this, 
-                        getIdentifierService().getConceptSequenceForProxy(assemblageProxy)).
+                        Get.identifierService().getConceptSequenceForProxy(assemblageProxy)).
                         build(stampSequence, builtObjects);
             });
             builtObjects.add(desc);

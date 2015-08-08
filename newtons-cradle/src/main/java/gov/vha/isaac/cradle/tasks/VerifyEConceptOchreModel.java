@@ -16,26 +16,17 @@
 package gov.vha.isaac.cradle.tasks;
 
 import gov.vha.isaac.cradle.CradleExtensions;
-import gov.vha.isaac.ochre.api.ConceptModel;
 import gov.vha.isaac.ochre.api.ConceptProxy;
-import gov.vha.isaac.ochre.api.ConfigurationService;
-import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.model.concept.ConceptChronologyImpl;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author kec
  */
 public class VerifyEConceptOchreModel implements Callable<Boolean> {
-
-    private static final AtomicInteger failureCount = new AtomicInteger();
-
-    private static final ConceptService conceptService = LookupService.getService(ConceptService.class);
-    private static final ConceptModel conceptModel = LookupService.getService(ConfigurationService.class).getConceptModel();
 
     CradleExtensions termService;
     TtkConceptChronicle eConcept;
@@ -64,7 +55,7 @@ public class VerifyEConceptOchreModel implements Callable<Boolean> {
             eConcept.processComponentRevisions(r -> r.setPathUuid(newPathUuid));
         }
         int conceptNid = termService.getNidForUuids(eConcept.getPrimordialUuid());
-        ConceptChronologyImpl ochreConcept = (ConceptChronologyImpl) conceptService.getConcept(conceptNid);
+        ConceptChronologyImpl ochreConcept = (ConceptChronologyImpl) Get.conceptService().getConcept(conceptNid);
         return ochreConcept.getUuidList().equals(eConcept.getUuidList());
 
 //        TtkConceptChronicle remadeEConceptFromOchre = new TtkConceptChronicle(ochreConcept);

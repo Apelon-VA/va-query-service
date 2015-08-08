@@ -3,7 +3,6 @@ package gov.vha.isaac.cradle.concept;
 import gov.vha.isaac.cradle.waitfree.WaitFreeMergeSerializer;
 import gov.vha.isaac.ochre.model.DataBuffer;
 import gov.vha.isaac.ochre.model.concept.ConceptChronologyImpl;
-import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
 
 /**
  * Created by kec on 5/15/15.

@@ -22,29 +22,33 @@ import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import gov.vha.isaac.metadata.coordinates.LanguageCoordinates;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
-import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.commit.CommitService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import gov.vha.isaac.ochre.api.component.sememe.SememeBuilder;
 import gov.vha.isaac.ochre.api.component.sememe.SememeBuilderService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
-import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.MutableComponentNidSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.MutableSememeVersion;
 import gov.vha.isaac.ochre.model.concept.ConceptChronologyImpl;
 import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
 import gov.vha.isaac.ochre.model.sememe.version.DescriptionSememeImpl;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Stream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ihtsdo.otf.tcc.api.id.UuidIdBI;
+import org.ihtsdo.otf.tcc.ddo.concept.component.identifier.IDENTIFIER_PART_TYPES;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
+import org.ihtsdo.otf.tcc.dto.TtkConceptLock;
 import org.ihtsdo.otf.tcc.dto.component.TtkRevision;
 import org.ihtsdo.otf.tcc.dto.component.attribute.TtkConceptAttributesChronicle;
 import org.ihtsdo.otf.tcc.dto.component.attribute.TtkConceptAttributesRevision;
@@ -64,28 +68,22 @@ public class ImportEConceptOchreModel implements Callable<Void> {
 
     private static final Logger log = LogManager.getLogger();
 
-    private static final CommitService commitService = LookupService.getService(CommitService.class);
-    private static final SememeService sememeService = LookupService.getService(SememeService.class);
-    private static final IdentifierService identifierService = LookupService.getService(IdentifierService.class);
-    private static final ConceptService conceptService = LookupService.getService(ConceptService.class);
     private static final CradleExtensions cradle = LookupService.getService(CradleExtensions.class);
     private static final SememeBuilderService sememeBuilderService = LookupService.getService(SememeBuilderService.class);
 
-    private static final int descriptionAssemblageSequence;
-    public static CasSequenceObjectMap<TaxonomyRecordPrimitive> originDestinationTaxonomyRecords;
-    public static ConcurrentSkipListSet<DestinationOriginRecord> destinationOriginRecordSet;
+    private final int descriptionAssemblageSequence;
+    public CasSequenceObjectMap<TaxonomyRecordPrimitive> originDestinationTaxonomyRecords;
+    public ConcurrentSkipListSet<DestinationOriginRecord> destinationOriginRecordSet;
 
-    static {
+     {
         originDestinationTaxonomyRecords = cradle.getOriginDestinationTaxonomyMap();
         destinationOriginRecordSet = cradle.getDestinationOriginRecordSet();
-        descriptionAssemblageSequence = identifierService.getConceptSequenceForUuids(
+        descriptionAssemblageSequence = Get.identifierService().getConceptSequenceForUuids(
                 IsaacMetadataAuxiliaryBinding.DESCRIPTION_ASSEMBLAGE.getUuids());
     }
 
-    TtkConceptChronicle eConcept;
-    UUID newPathUuid = null;
-    int lastRelCharacteristic = Integer.MAX_VALUE;
-    int recordFlags = Integer.MAX_VALUE;
+    private TtkConceptChronicle eConcept;
+    private UUID newPathUuid = null;
 
     public ImportEConceptOchreModel(TtkConceptChronicle eConcept, UUID newPathUuid) {
         this(eConcept);
@@ -99,13 +97,14 @@ public class ImportEConceptOchreModel implements Callable<Void> {
     @Override
     public Void call() throws Exception {
 
+        TtkConceptLock.getLock(eConcept.getUuidList()).lock();
         try {
             if (this.newPathUuid != null) {
                 eConcept.processComponentRevisions(r -> r.setPathUuid(newPathUuid));
             }
 
             ConceptChronologyImpl conceptChronology
-                    =  (ConceptChronologyImpl) conceptService.getConcept(eConcept.getUuidList().toArray(new UUID[0]));
+                    =  (ConceptChronologyImpl) Get.conceptService().getConcept(eConcept.getUuidList().toArray(new UUID[0]));
             int conceptSequence = conceptChronology.getConceptSequence();
 
             TtkConceptAttributesChronicle attributes = eConcept.getConceptAttributes();
@@ -116,11 +115,11 @@ public class ImportEConceptOchreModel implements Callable<Void> {
                 } else {
                     parentTaxonomyRecord = new TaxonomyRecordPrimitive();
                 }
-                int versionStampSequence = commitService.getStampSequence(attributes.status.getState(),
+                int versionStampSequence = Get.commitService().getStampSequence(attributes.status.getState(),
                         attributes.time,
-                        identifierService.getConceptSequenceForUuids(attributes.authorUuid),
-                        identifierService.getConceptSequenceForUuids(attributes.moduleUuid),
-                        identifierService.getConceptSequenceForUuids(attributes.pathUuid));
+                        Get.identifierService().getConceptSequenceForUuids(attributes.authorUuid),
+                        Get.identifierService().getConceptSequenceForUuids(attributes.moduleUuid),
+                        Get.identifierService().getConceptSequenceForUuids(attributes.pathUuid));
                 conceptChronology.createMutableVersion(versionStampSequence);
                 parentTaxonomyRecord.getTaxonomyRecordUnpacked().addStampRecord(conceptSequence, 
                         conceptSequence, versionStampSequence, TaxonomyFlags.CONCEPT_STATUS.bits);
@@ -136,12 +135,25 @@ public class ImportEConceptOchreModel implements Callable<Void> {
 
             }
 
-            conceptService.writeConcept(conceptChronology);
+            Get.conceptService().writeConcept(conceptChronology);
 
             for (TtkDescriptionChronicle desc : eConcept.getDescriptions()) {
                 int caseSignificanceConceptSequence = LanguageCoordinates.caseSignificanceToConceptSequence(desc.initialCaseSignificant);
                 int languageConceptSequence = LanguageCoordinates.iso639toConceptSequence(desc.getLang());
-                int descriptionTypeConceptSequence = identifierService.getConceptSequenceForUuids(desc.getTypeUuid());
+                assert languageConceptSequence == IsaacMetadataAuxiliaryBinding.ENGLISH.getConceptSequence(): "Converting:  " + desc.getLang() + " " + desc;
+                int descriptionTypeConceptSequence = Get.identifierService().getConceptSequenceForUuids(desc.getTypeUuid());
+                if (descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.PREFERRED.getConceptSequence() ||
+                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.ACCEPTABLE.getConceptSequence()) {
+                    log.error("Found incorrect descripiton type: " + desc);
+                }
+                assert descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.FULLY_SPECIFIED_NAME.getConceptSequence() ||
+                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.PREFERRED.getConceptSequence() ||
+                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.ACCEPTABLE.getConceptSequence() ||
+                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.SYNONYM.getConceptSequence() ||
+                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.DEFINITION_DESCRIPTION_TYPE.getConceptSequence(): "Converting: " + desc.getTypeUuid()
+                        + " " + desc;
+                
+                
                 SememeBuilder<? extends SememeChronology<? extends DescriptionSememe>> descBuilder
                         = sememeBuilderService.getDescriptionSememeBuilder(caseSignificanceConceptSequence,
                                 languageConceptSequence,
@@ -149,20 +161,27 @@ public class ImportEConceptOchreModel implements Callable<Void> {
                                 desc.text,
                                 conceptChronology.getNid(),
                                 descriptionAssemblageSequence);
+                descBuilder.setPrimordialUuid(desc.getPrimordialUuid());
+                desc.getAdditionalIdComponents().forEach((additionalId) -> {
+                    if (additionalId.getIdType() == IDENTIFIER_PART_TYPES.UUID) {
+                        descBuilder.addUuids(((UuidIdBI)additionalId).getDenotation());
+                    }
+                });
+                
                 int stampSequence = getStampSequence(desc);
                 List createdComponents = new ArrayList();
-                SememeChronologyImpl<DescriptionSememeImpl> newDescription = (SememeChronologyImpl<DescriptionSememeImpl>) descBuilder.build(stampSequence, createdComponents);
+                SememeChronologyImpl newDescription = (SememeChronologyImpl) descBuilder.build(stampSequence, createdComponents);
                 if (desc.revisions != null) {
                     for (TtkDescriptionRevision revision : desc.revisions) {
                         stampSequence = getStampSequence(revision);
                         DescriptionSememeImpl version = (DescriptionSememeImpl) newDescription.createMutableVersion(DescriptionSememeImpl.class, stampSequence);
                         version.setCaseSignificanceConceptSequence(LanguageCoordinates.caseSignificanceToConceptSequence(revision.initialCaseSignificant));
-                        version.setDescriptionTypeConceptSequence(identifierService.getConceptSequenceForUuids(revision.getTypeUuid()));
+                        version.setDescriptionTypeConceptSequence(Get.identifierService().getConceptSequenceForUuids(revision.getTypeUuid()));
                         version.setLanguageConceptSequence(LanguageCoordinates.iso639toConceptSequence(revision.lang));
                         version.setText(revision.text);
                     }
                 }
-                sememeService.writeSememe(newDescription);
+                Get.sememeService().writeSememe(newDescription);
             }
             
             eConcept.getRefsetMembers().stream().forEach((TtkRefexAbstractMemberChronicle member) -> {
@@ -172,6 +191,8 @@ public class ImportEConceptOchreModel implements Callable<Void> {
         } catch (Exception e) {
             System.err.println("Failure importing " + eConcept.toString());
             throw e;
+        } finally {
+            TtkConceptLock.getLock(eConcept.getUuidList()).unlock();
         }
     }
     
@@ -184,37 +205,37 @@ public class ImportEConceptOchreModel implements Callable<Void> {
     }
 
     private void makeSememe(TtkRefexAbstractMemberChronicle member) throws UnsupportedOperationException, IllegalStateException {
-        int referencedComponentNid = identifierService.getNidForUuids(member.referencedComponentUuid);
-        int assemblageSequence = identifierService.getConceptSequenceForUuids(member.assemblageUuid);
+        int referencedComponentNid = Get.identifierService().getNidForUuids(member.referencedComponentUuid);
+        int assemblageSequence = Get.identifierService().getConceptSequenceForUuids(member.assemblageUuid);
         int stampSequence = getStampSequence(member);
         switch (member.getType()) {
             case CID:
                 TtkRefexUuidMemberChronicle cidMember = (TtkRefexUuidMemberChronicle) member;
-                SememeBuilder<SememeChronology<MutableComponentNidSememe>> cidBuilder =
-                        sememeBuilderService.getComponentSememeBuilder(identifierService.getNidForUuids(cidMember.uuid1),
+                SememeBuilder<SememeChronology<MutableComponentNidSememe<?>>> cidBuilder =
+                        sememeBuilderService.getComponentSememeBuilder(Get.identifierService().getNidForUuids(cidMember.uuid1),
                                 referencedComponentNid,
                                 assemblageSequence);
-                SememeChronology<MutableComponentNidSememe> cidSememe = cidBuilder.build(stampSequence, new ArrayList());
+                SememeChronology<MutableComponentNidSememe<?>> cidSememe = cidBuilder.build(stampSequence, new ArrayList());
                 stream(cidMember.revisions).forEach((TtkRefexUuidRevision r) -> {
                         int revisionStampSequence = getStampSequence(r);
                         MutableComponentNidSememe mutable = cidSememe.createMutableVersion(MutableComponentNidSememe.class, revisionStampSequence);
-                        mutable.setComponentNid(identifierService.getNidForUuids(r.uuid1));
+                        mutable.setComponentNid(Get.identifierService().getNidForUuids(r.uuid1));
                     });
-                sememeService.writeSememe(cidSememe);
+                Get.sememeService().writeSememe(cidSememe);
                 break;
                 
             case MEMBER:
                 TtkRefexMemberChronicle memberMember = (TtkRefexMemberChronicle) member;
-                SememeBuilder<SememeChronology<MutableSememeVersion>> mb =
+                SememeBuilder<SememeChronology<MutableSememeVersion<?>>> mb =
                         sememeBuilderService.getMembershipSememeBuilder(referencedComponentNid,
                                 assemblageSequence);
-                SememeChronology<MutableSememeVersion> memberSememe = mb.build(stampSequence, new ArrayList());
+                SememeChronology<MutableSememeVersion<?>> memberSememe = mb.build(stampSequence, new ArrayList());
                 
                 stream(memberMember.revisions).forEach((TtkRefexRevision r) -> {
                         int revisionStampSequence = getStampSequence(r);
                         memberSememe.createMutableVersion(MutableSememeVersion.class, revisionStampSequence);
                     });
-                sememeService.writeSememe(memberSememe);
+                Get.sememeService().writeSememe(memberSememe);
                 break;
                 
             case ARRAY_BYTEARRAY:
@@ -242,11 +263,11 @@ public class ImportEConceptOchreModel implements Callable<Void> {
 
     private int getStampSequence(TtkRevision revision) {
         int versionStampSequence;
-        versionStampSequence = commitService.getStampSequence(revision.status.getState(),
+        versionStampSequence = Get.commitService().getStampSequence(revision.status.getState(),
                 revision.time,
-                identifierService.getConceptSequenceForUuids(revision.authorUuid),
-                identifierService.getConceptSequenceForUuids(revision.moduleUuid),
-                identifierService.getConceptSequenceForUuids(revision.pathUuid));
+                Get.identifierService().getConceptSequenceForUuids(revision.authorUuid),
+                Get.identifierService().getConceptSequenceForUuids(revision.moduleUuid),
+                Get.identifierService().getConceptSequenceForUuids(revision.pathUuid));
         return versionStampSequence;
     }
 

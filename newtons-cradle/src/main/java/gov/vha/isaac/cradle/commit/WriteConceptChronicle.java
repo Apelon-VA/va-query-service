@@ -16,16 +16,16 @@
 package gov.vha.isaac.cradle.commit;
 
 import gov.vha.isaac.cradle.CradleExtensions;
-import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Semaphore;
 import javafx.concurrent.Task;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
-import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 
 /**
  *
@@ -35,17 +35,17 @@ public class WriteConceptChronicle extends Task<Void>  implements Callable<Void>
     
     private static final CradleExtensions cradle = LookupService.getService(CradleExtensions.class);
     
-    private final ConceptChronicle cc;
+    private final ConceptChronology cc;
     private final Semaphore writeSemaphore;
     private final ConcurrentSkipListSet<WeakReference<ChronologyChangeListener>> changeListeners;
 
-    public WriteConceptChronicle(ConceptChronicle cc, Semaphore writeSemaphore,
+    public WriteConceptChronicle(ConceptChronology cc, Semaphore writeSemaphore,
             ConcurrentSkipListSet<WeakReference<ChronologyChangeListener>> changeListeners) {
         this.cc = cc;
         this.writeSemaphore = writeSemaphore;
         this.changeListeners = changeListeners;
         updateTitle("Write concept");
-        updateMessage(cc.toUserString());
+        updateMessage(Get.conceptDescriptionText(cc.getConceptSequence()));
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         LookupService.getService(ActiveTaskSet.class).get().add(this);
     }
@@ -53,9 +53,9 @@ public class WriteConceptChronicle extends Task<Void>  implements Callable<Void>
     @Override
     public Void call() throws Exception {
         try {
-            cradle.writeConceptData((ConceptChronicleDataEager) cc.getData());
+            Get.conceptService().writeConcept(cc);
             updateProgress(1, 2); 
-            updateMessage("notifying: " + cc.toUserString());
+            updateMessage("notifying: " + Get.conceptDescriptionText(cc.getConceptSequence()));
 
              changeListeners.forEach((listenerRef) -> {
                 ChronologyChangeListener listener = listenerRef.get();
@@ -67,7 +67,7 @@ public class WriteConceptChronicle extends Task<Void>  implements Callable<Void>
              });
 
             updateProgress(2, 2); 
-            updateMessage("complete: " + cc.toUserString());
+            updateMessage("complete: " + Get.conceptDescriptionText(cc.getConceptSequence()));
              
              return null;
         } finally {

@@ -17,6 +17,7 @@ package gov.vha.isaac.cradle.builders;
 
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.ConceptProxy;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.commit.ChangeCheckerMode;
@@ -37,7 +38,7 @@ import java.util.List;
  *
  * @author kec
  */
-public class ConceptBuilderOchreImpl extends ComponentBuilder<ConceptChronology> implements ConceptBuilder {
+public class ConceptBuilderOchreImpl extends ComponentBuilder<ConceptChronology<?>> implements ConceptBuilder {
 
     private final String conceptName;
     private final String semanticTag;
@@ -104,7 +105,7 @@ public class ConceptBuilderOchreImpl extends ComponentBuilder<ConceptChronology>
             List builtObjects) throws IllegalStateException {
 
         ConceptChronologyImpl conceptChronology
-                = (ConceptChronologyImpl) getConceptService().getConcept(getUuids());
+                = (ConceptChronologyImpl) Get.conceptService().getConcept(getUuids());
         conceptChronology.createMutableVersion(State.ACTIVE, editCoordinate);
         builtObjects.add(conceptChronology);
         descriptionBuilders.add(getFullySpecifiedDescriptionBuilder());
@@ -124,7 +125,7 @@ public class ConceptBuilderOchreImpl extends ComponentBuilder<ConceptChronology>
             List builtObjects) throws IllegalStateException {
 
         ConceptChronologyImpl conceptChronology
-                = (ConceptChronologyImpl) getConceptService().getConcept(getUuids());
+                = (ConceptChronologyImpl) Get.conceptService().getConcept(getUuids());
         conceptChronology.createMutableVersion(stampCoordinate);
         builtObjects.add(conceptChronology);
         descriptionBuilders.add(getFullySpecifiedDescriptionBuilder());

@@ -7,6 +7,7 @@ package gov.vha.isaac.cradle.tasks;
 
 import gov.vha.isaac.cradle.CradleExtensions;
 import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.task.TimedTask;
 import gov.vha.isaac.ochre.util.WorkExecutors;
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
@@ -16,7 +17,6 @@ import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
@@ -27,7 +27,7 @@ import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
  *
  * @author kec
  */
-public class ExportEConceptFile extends Task<Integer>{
+public class ExportEConceptFile extends TimedTask<Integer>{
     Path paths;
     CradleExtensions termService;
 

@@ -42,7 +42,6 @@ public class PathProvider implements PathService {
     private static final Logger log = LogManager.getLogger();
 
     PathService provider;
-
     public PathProvider() {
         switch (LookupService.getService(ConfigurationService.class).getConceptModel()) {
             case OCHRE_CONCEPT_MODEL:
@@ -81,5 +80,11 @@ public class PathProvider implements PathService {
     public Collection<? extends StampPosition> getOrigins(int stampPathSequence) {
         return provider.getOrigins(stampPathSequence);
     }
+
+    @Override
+    public Collection<? extends StampPath> getPaths() {
+        return provider.getPaths();
+    }
+
 
 }

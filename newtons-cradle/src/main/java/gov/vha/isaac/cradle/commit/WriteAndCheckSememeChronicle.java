@@ -15,6 +15,7 @@
  */
 package gov.vha.isaac.cradle.commit;
 
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.commit.Alert;
 import gov.vha.isaac.ochre.api.commit.ChangeChecker;
@@ -22,7 +23,6 @@ import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
 import gov.vha.isaac.ochre.api.commit.CheckPhase;
 import gov.vha.isaac.ochre.api.commit.CommitStates;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
-import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -35,8 +35,6 @@ import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
  * @author kec
  */
 public class WriteAndCheckSememeChronicle extends Task<Void> implements Callable<Void> {
-
-    private static final SememeService sememeService = LookupService.getService(SememeService.class);
 
     private final SememeChronology sc;
     private final ConcurrentSkipListSet<ChangeChecker> checkers;
@@ -54,7 +52,7 @@ public class WriteAndCheckSememeChronicle extends Task<Void> implements Callable
         this.writeSemaphore = writeSemaphore;
         this.changeListeners = changeListeners;
         updateTitle("Write, check, and notify for sememe change");
-        updateMessage("write: " + sc.toUserString());
+        updateMessage("write: " + sc.getSememeType() + " " + sc.getSememeSequence());
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         LookupService.getService(ActiveTaskSet.class).get().add(this);
     }
@@ -62,9 +60,9 @@ public class WriteAndCheckSememeChronicle extends Task<Void> implements Callable
     @Override
     public Void call() throws Exception {
         try {
-            sememeService.writeSememe(sc);
+            Get.sememeService().writeSememe(sc);
             updateProgress(1, 3);
-            updateMessage("checking: " + sc.toUserString());
+            updateMessage("checking: " + sc.getSememeType() + " " + sc.getSememeSequence());
             if (sc.getCommitState() == CommitStates.UNCOMMITTED) {
                 checkers.stream().forEach((check) -> {
                     check.check(sc, alertCollection, CheckPhase.ADD_UNCOMMITTED);
@@ -72,7 +70,7 @@ public class WriteAndCheckSememeChronicle extends Task<Void> implements Callable
             }
 
             updateProgress(2, 3);
-            updateMessage("notifying: " + sc.toUserString());
+            updateMessage("notifying: " + sc.getSememeType() + " " + sc.getSememeSequence());
              
              changeListeners.forEach((listenerRef) -> {
                 ChronologyChangeListener listener = listenerRef.get();
@@ -84,7 +82,7 @@ public class WriteAndCheckSememeChronicle extends Task<Void> implements Callable
              });
              
             updateProgress(3, 3);
-            updateMessage("completed change: " + sc.toUserString());
+            updateMessage("completed change: " + sc.getSememeType() + " " + sc.getSememeSequence());
             return null;
         } finally {
             writeSemaphore.release();

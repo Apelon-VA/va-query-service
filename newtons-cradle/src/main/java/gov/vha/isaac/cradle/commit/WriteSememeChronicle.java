@@ -15,10 +15,10 @@
  */
 package gov.vha.isaac.cradle.commit;
 
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
-import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -32,8 +32,6 @@ import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
  */
 public class WriteSememeChronicle extends Task<Void>  implements Callable<Void>{
     
-    private static final SememeService sememeService = LookupService.getService(SememeService.class);
-    
     private final SememeChronology sc;
     private final Semaphore writeSemaphore;
     private final ConcurrentSkipListSet<WeakReference<ChronologyChangeListener>> changeListeners;
@@ -44,7 +42,7 @@ public class WriteSememeChronicle extends Task<Void>  implements Callable<Void>{
         this.writeSemaphore = writeSemaphore;
         this.changeListeners = changeListeners;
         updateTitle("Write and notify sememe change");
-        updateMessage(sc.toUserString());
+        updateMessage("write: " + sc.getSememeType() + " " + sc.getSememeSequence());
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         LookupService.getService(ActiveTaskSet.class).get().add(this);
     }
@@ -52,9 +50,9 @@ public class WriteSememeChronicle extends Task<Void>  implements Callable<Void>{
     @Override
     public Void call() throws Exception {
         try {
-            sememeService.writeSememe(sc);
+            Get.sememeService().writeSememe(sc);
             updateProgress(1, 2); 
-            updateMessage("notifying: " + sc.toUserString());
+            updateMessage("notifying: " + sc.getAssemblageSequence());
              
              changeListeners.forEach((listenerRef) -> {
                 ChronologyChangeListener listener = listenerRef.get();
@@ -65,7 +63,7 @@ public class WriteSememeChronicle extends Task<Void>  implements Callable<Void>{
                 }
              });
             updateProgress(2, 2); 
-            updateMessage("complete: " + sc.toUserString());
+            updateMessage("complete: " + sc.getSememeType() + " " + sc.getSememeSequence());
 
             return null;
         } finally {

@@ -29,7 +29,7 @@ import java.util.stream.Stream;
  * @author kec
  * @param <V>
  */
-public class SememeTypeProvider<V extends SememeVersion> implements SememeServiceTyped<V> {
+public class SememeTypeProvider<V extends SememeVersion<?>> implements SememeServiceTyped<V> {
     Class<V> type;
     SememeService sememeProvider;
 
@@ -100,7 +100,7 @@ public class SememeTypeProvider<V extends SememeVersion> implements SememeServic
     }
 
     @Override
-    public void writeSememe(SememeChronology sememeChronicle) {
+    public void writeSememe(SememeChronology<?> sememeChronicle) {
         //TODO
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }

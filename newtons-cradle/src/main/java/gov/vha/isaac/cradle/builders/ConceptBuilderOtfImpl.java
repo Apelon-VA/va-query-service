@@ -15,9 +15,9 @@
  */
 package gov.vha.isaac.cradle.builders;
 
-import static gov.vha.isaac.cradle.builders.ComponentBuilder.getCommitService;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.ConceptProxy;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
@@ -42,7 +42,7 @@ import org.ihtsdo.otf.tcc.model.cc.description.Description;
  *
  * @author kec
  */
-public class ConceptBuilderOtfImpl extends ComponentBuilder<ConceptChronology> implements ConceptBuilder {
+public class ConceptBuilderOtfImpl extends ComponentBuilder<ConceptChronology<?>> implements ConceptBuilder {
     private final String conceptName;
     private final String semanticTag;
     private final ConceptProxy defaultLanguageForDescriptions;
@@ -110,10 +110,10 @@ public class ConceptBuilderOtfImpl extends ComponentBuilder<ConceptChronology> i
         
         try {
             ConceptChronicle cc = new ConceptChronicle(this.getNid());
-            int conceptSequence = getIdentifierService().getConceptSequence(cc.getNid());
-            getIdentifierService().setConceptSequenceForComponentNid(conceptSequence, cc.getNid());
+            int conceptSequence = Get.identifierService().getConceptSequence(cc.getNid());
+            Get.identifierService().setConceptSequenceForComponentNid(conceptSequence, cc.getNid());
             ConceptAttributes ca = new ConceptAttributes();
-            ca.setSTAMP(getCommitService().getStampSequence(State.ACTIVE, Long.MAX_VALUE,
+            ca.setSTAMP(Get.commitService().getStampSequence(State.ACTIVE, Long.MAX_VALUE,
                     editCoordinate.getAuthorSequence(), editCoordinate.getModuleSequence(),
                     editCoordinate.getPathSequence()));
             ca.setPrimordialUuid(primordialUuid);
@@ -134,7 +134,7 @@ public class ConceptBuilderOtfImpl extends ComponentBuilder<ConceptChronology> i
             descriptionBuilders.forEach((builder) -> {
                 cc.getDescriptions().add((Description) builder.build(editCoordinate, changeCheckerMode, builtObjects));
             });
-            getCommitService().addUncommitted(cc);
+            Get.commitService().addUncommitted(cc);
             
             SememeBuilderService builderService = LookupService.getService(SememeBuilderService.class);        
             logicalConceptDefinitionBuilders.add(builderService.
@@ -154,8 +154,8 @@ public class ConceptBuilderOtfImpl extends ComponentBuilder<ConceptChronology> i
         
         try {
             ConceptChronicle cc = new ConceptChronicle(this.getNid());
-            int conceptSequence = getIdentifierService().getConceptSequence(cc.getNid());
-            getIdentifierService().setConceptSequenceForComponentNid(conceptSequence, cc.getNid());
+            int conceptSequence = Get.identifierService().getConceptSequence(cc.getNid());
+            Get.identifierService().setConceptSequenceForComponentNid(conceptSequence, cc.getNid());
             ConceptAttributes ca = new ConceptAttributes();
             ca.setSTAMP(stampCoordinate);
             ca.setPrimordialUuid(primordialUuid);
@@ -176,7 +176,7 @@ public class ConceptBuilderOtfImpl extends ComponentBuilder<ConceptChronology> i
             descriptionBuilders.forEach((builder) -> {
                 cc.getDescriptions().add((Description) builder.build(stampCoordinate, builtObjects));
             });
-            getCommitService().addUncommitted(cc);
+            Get.commitService().addUncommitted(cc);
             
             SememeBuilderService builderService = LookupService.getService(SememeBuilderService.class);        
             logicalConceptDefinitionBuilders.add(builderService.

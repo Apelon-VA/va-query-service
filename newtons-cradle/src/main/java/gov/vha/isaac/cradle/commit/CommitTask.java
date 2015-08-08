@@ -15,43 +15,75 @@
  */
 package gov.vha.isaac.cradle.commit;
 
-import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.commit.Alert;
 import gov.vha.isaac.ochre.api.commit.AlertType;
 import gov.vha.isaac.ochre.api.commit.ChangeChecker;
 import gov.vha.isaac.ochre.api.commit.CheckPhase;
+import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
 import gov.vha.isaac.ochre.api.commit.CommitRecord;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
-import gov.vha.isaac.ochre.api.component.sememe.SememeService;
+import gov.vha.isaac.ochre.api.task.TimedTask;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
-import gov.vha.isaac.ochre.collections.SequenceSet;
-import java.io.IOException;
+import gov.vha.isaac.ochre.collections.StampSequenceSet;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentSkipListSet;
-import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.mahout.math.map.OpenIntIntHashMap;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
 import org.ihtsdo.otf.tcc.api.coordinate.Status;
-import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 import org.ihtsdo.otf.tcc.model.version.Stamp;
 
 /**
  *
  * @author kec
  */
-public class CommitTask extends Task<Optional<CommitRecord>> {
+public class CommitTask extends TimedTask<Optional<CommitRecord>> {
+
+    /**
+     *
+     * @param commitComment
+     * @param uncommittedConceptsWithChecksSequenceSet
+     * @param uncommittedConceptsNoChecksSequenceSet
+     * @param uncommittedSememesWithChecksSequenceSet
+     * @param uncommittedSememesNoChecksSequenceSet
+     * @param lastCommit
+     * @param checkers
+     * @param alertCollection
+     * @param pendingStampsForCommit
+     * @param commitProvider
+     * @return a {@code CommitTask} after it has been given to an executor, and
+     * added to the activeTasks service.
+     */
+    public static CommitTask get(String commitComment,
+            ConceptSequenceSet uncommittedConceptsWithChecksSequenceSet,
+            ConceptSequenceSet uncommittedConceptsNoChecksSequenceSet,
+            SememeSequenceSet uncommittedSememesWithChecksSequenceSet,
+            SememeSequenceSet uncommittedSememesNoChecksSequenceSet,
+            long lastCommit,
+            ConcurrentSkipListSet<ChangeChecker> checkers,
+            ConcurrentSkipListSet<Alert> alertCollection,
+            Map<UncommittedStamp, Integer> pendingStampsForCommit,
+            CommitProvider commitProvider) {
+        CommitTask task = new CommitTask(commitComment,
+                uncommittedConceptsWithChecksSequenceSet,
+                uncommittedConceptsNoChecksSequenceSet,
+                uncommittedSememesWithChecksSequenceSet,
+                uncommittedSememesNoChecksSequenceSet,
+                lastCommit, checkers, alertCollection,
+                pendingStampsForCommit, commitProvider);
+        Get.activeTasks().add(task);
+        Get.workExecutors().getExecutor().execute(task);
+        return task;
+    }
 
     private static final Logger log = LogManager.getLogger();
-    private static final SememeService sememeService
-            = LookupService.getService(SememeService.class);
-    private static final IdentifierService identifierProvider
-            = LookupService.getService(IdentifierService.class);
 
     final String commitComment;
     final ConceptSequenceSet conceptsToCommit = new ConceptSequenceSet();
@@ -64,7 +96,7 @@ public class CommitTask extends Task<Optional<CommitRecord>> {
     private final Map<UncommittedStamp, Integer> pendingStampsForCommit;
     private final CommitProvider commitProvider;
 
-    public CommitTask(String commitComment,
+    private CommitTask(String commitComment,
             ConceptSequenceSet uncommittedConceptsWithChecksSequenceSet,
             ConceptSequenceSet uncommittedConceptsNoChecksSequenceSet,
             SememeSequenceSet uncommittedSememesWithChecksSequenceSet,
@@ -91,7 +123,9 @@ public class CommitTask extends Task<Optional<CommitRecord>> {
         this.alertCollection = alertCollection;
         this.pendingStampsForCommit = pendingStampsForCommit;
         this.commitProvider = commitProvider;
-        
+        updateTitle("Commit");
+        updateMessage(commitComment);
+
     }
 
     @Override
@@ -104,21 +138,16 @@ public class CommitTask extends Task<Optional<CommitRecord>> {
 //                return;
 //            }
             conceptsToCommit.stream().forEach((conceptSequence) -> {
-                try {
-                    ConceptChronicle c = ConceptChronicle.get(
-                            identifierProvider.getConceptNid(conceptSequence));
-                    c.modified(c.getConceptAttributes(), lastCommit);
-                    if (conceptsToCheck.contains(conceptSequence)) {
-                        checkers.stream().forEach((check) -> {
-                            check.check(c, alertCollection, CheckPhase.COMMIT);
-                        });
-                    }
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
+                ConceptChronology c = Get.conceptService().getConcept(
+                        Get.identifierService().getConceptNid(conceptSequence));
+                if (conceptsToCheck.contains(conceptSequence)) {
+                    checkers.stream().forEach((check) -> {
+                        check.check(c, alertCollection, CheckPhase.COMMIT);
+                    });
                 }
             });
             sememesToCommit.stream().forEach((sememeSequence) -> {
-                SememeChronology sc = sememeService.getSememe(sememeSequence);
+                SememeChronology sc = Get.sememeService().getSememe(sememeSequence);
                 if (sememesToCheck.contains(sememeSequence)) {
                     checkers.stream().forEach((check) -> {
                         check.check(sc, alertCollection, CheckPhase.COMMIT);
@@ -127,43 +156,54 @@ public class CommitTask extends Task<Optional<CommitRecord>> {
             });
             if (alertCollection.stream().anyMatch((alert)
                     -> (alert.getAlertType() == AlertType.ERROR))) {
-                commitProvider.revertCommit(conceptsToCommit, 
-                        conceptsToCheck, 
-                        sememesToCommit, 
+                commitProvider.revertCommit(conceptsToCommit,
+                        conceptsToCheck,
+                        sememesToCommit,
                         sememesToCheck,
                         pendingStampsForCommit);
                 return Optional.empty();
             }
             long commitTime = System.currentTimeMillis();
-            SequenceSet stampSequenceSet = new SequenceSet();
+            StampSequenceSet stampSequenceSet = new StampSequenceSet();
             pendingStampsForCommit.entrySet().stream().forEach((entry) -> {
                 int stampSequence = entry.getValue();
                 stampSequenceSet.add(stampSequence);
                 UncommittedStamp uncommittedStamp = entry.getKey();
                 Stamp stamp = new Stamp(Status.getStatusFromState(entry.getKey().status),
                         commitTime,
-                        identifierProvider.getConceptNid(uncommittedStamp.authorSequence),
-                        identifierProvider.getConceptNid(uncommittedStamp.moduleSequence),
-                        identifierProvider.getConceptNid(uncommittedStamp.pathSequence));
+                        Get.identifierService().getConceptNid(uncommittedStamp.authorSequence),
+                        Get.identifierService().getConceptNid(uncommittedStamp.moduleSequence),
+                        Get.identifierService().getConceptNid(uncommittedStamp.pathSequence));
                 commitProvider.addStamp(stamp, stampSequence);
             });
             if (commitComment != null) {
                 stampSequenceSet.stream().forEach((stamp)
                         -> commitProvider.addComment(stamp, commitComment));
             }
-            CommitRecord commitRecord = null;
             if (!stampSequenceSet.isEmpty()) {
-                commitRecord = new CommitRecord(Instant.ofEpochMilli(commitTime),
-                        stampSequenceSet.asOpenIntHashSet(),
+                CommitRecord commitRecord = new CommitRecord(Instant.ofEpochMilli(commitTime),
+                        stampSequenceSet,
                         new OpenIntIntHashMap(),
+                        ConceptSequenceSet.of(conceptsToCheck).or(conceptsToCommit),
+                        SememeSequenceSet.of(sememesToCheck).or(sememesToCommit),
                         commitComment);
-
+                commitProvider.changeListeners.forEach((listenerRef) -> {
+                    ChronologyChangeListener listener = listenerRef.get();
+                    if (listener == null) {
+                        commitProvider.changeListeners.remove(listenerRef);
+                    } else {
+                        listener.handleCommit(commitRecord);
+                    }
+                });
+// TODO change set writers need to be change listeners...
 //                ChangeSetWriterHandler handler
 //                        = new ChangeSetWriterHandler(conceptsToCommit, commitTime,
 //                                stampSequenceSet, ChangeSetPolicy.INCREMENTAL.convert(),
 //                                ChangeSetWriterThreading.SINGLE_THREAD);
 //                changeSetWriterService.execute(handler);
+                return Optional.of(commitRecord);
             }
+// TODO Indexers need to be change listeners
             //            notifyCommit();
             //            if (indexers != null) {
 //                for (IndexerBI i : indexers) {
@@ -171,11 +211,11 @@ public class CommitTask extends Task<Optional<CommitRecord>> {
 //                }
 //            }
 //            GlobalPropertyChange.firePropertyChange(TerminologyStoreDI.CONCEPT_EVENT.POST_COMMIT, null, conceptsToCommit);
-            return Optional.ofNullable(commitRecord);
+            return Optional.empty();
         } catch (Exception e1) {
             throw new RuntimeException(e1);
         } finally {
-           LookupService.getService(ActiveTaskSet.class).get().remove(this);
+            Get.activeTasks().remove(this);
         }
     }
 

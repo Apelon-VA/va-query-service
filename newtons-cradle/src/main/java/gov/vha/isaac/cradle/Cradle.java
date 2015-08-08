@@ -45,7 +45,6 @@ import org.ihtsdo.otf.tcc.model.cc.NidPairForRefex;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 import org.ihtsdo.otf.tcc.model.cc.refex.RefexMember;
 import org.ihtsdo.otf.tcc.model.cc.relationship.Relationship;
-import org.ihtsdo.otf.tcc.model.cc.termstore.TerminologySnapshot;
 import org.ihtsdo.otf.tcc.model.cc.termstore.Termstore;
 import org.jvnet.hk2.annotations.Service;
 import javax.annotation.PostConstruct;
@@ -56,28 +55,21 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import gov.vha.isaac.ochre.api.ConfigurationService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
-import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.StandardPaths;
 import gov.vha.isaac.ochre.api.SystemStatusService;
-import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
 import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
-import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
-import gov.vha.isaac.ochre.api.component.concept.ConceptService;
-import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
 import gov.vha.isaac.ochre.util.WorkExecutors;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.ihtsdo.otf.tcc.api.concept.ConceptFetcherBI;
 import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
@@ -98,51 +90,13 @@ public class Cradle
 
     transient HashMap<UUID, ViewCoordinate> viewCoordinates = new HashMap<>();
 
-    private static final AtomicReference<Boolean> cradleStartedEmpty = new AtomicReference<>();
-    private static final AtomicReference<Path> cradlePath_ = new AtomicReference<>();
-
-    ConceptService conceptProvider;
-    IdentifierService identifierProvider;
-    TaxonomyService taxonomyProvider;
-    CommitService commitService;
-    SememeService sememeProvider;
     RefexService refexProvider;
-    ConceptModel conceptModel;
 
-    public static Path getCradlePath() {
-        cradlePath_.compareAndSet(null, new Supplier<Path>() {
-            @Override
-            public Path get() {
-                ConfigurationService configurationService = LookupService.getService(ConfigurationService.class);
-                Path cradlePath = configurationService.getChronicleFolderPath().resolve(DEFAULT_CRADLE_FOLDER);
-
-                if (cradleStartedEmpty.compareAndSet(null, !Files.exists(cradlePath))) {
-                    if (cradleStartedEmpty.get()) {
-                        try {
-                            Files.createDirectories(cradlePath);
-                        } catch (IOException ex) {
-                            throw new RuntimeException(ex);
-                        }
-                    }
-                }
-                return cradlePath;
-            }
-        }.get());
-        return cradlePath_.get();
-    }
-
-    public static boolean cradleStartedEmpty() {
-        if (cradleStartedEmpty.get() == null) {
-            //populated as a side effect
-            getCradlePath();
-        }
-        return cradleStartedEmpty.get();
-    }
 
     //For HK2
     private Cradle() throws IOException, NumberFormatException, ParseException {
         try {
-            log.info("Setting up cradle at " + getCradlePath().toAbsolutePath().toString());
+            log.info("Cradle constructed.");
         } catch (Exception e) {
             LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("ChRonicled Assertion Database of Logical Expressions", e);
             throw e;
@@ -153,13 +107,7 @@ public class Cradle
     private void startMe() throws IOException {
         try {
             log.info("Starting Cradle post-construct");
-            conceptProvider = LookupService.getService(ConceptService.class);
-            commitService = LookupService.getService(CommitService.class);
-            identifierProvider = LookupService.getService(IdentifierService.class);
-            sememeProvider = LookupService.getService(SememeService.class);
             refexProvider = LookupService.getService(RefexService.class);
-            taxonomyProvider = LookupService.getService(TaxonomyService.class);
-            conceptModel = LookupService.getService(ConfigurationService.class).getConceptModel();
             MemoryUtil.startListener();
         } catch (Exception e) {
             LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("ChRonicled Assertion Database of Logical Expressions", e);
@@ -172,14 +120,12 @@ public class Cradle
     private void stopMe() throws IOException {
         log.info("Stopping Cradle pre-destroy. ");
         //integrityTest();
-
-        cradleStartedEmpty.set(null);  //In case someone wants stop, then restart the service, we need to repopulate the vars about reading the DB.
         log.info("Finished pre-destroy.");
     }
 
     public void integrityTest() {
         log.info("NidCnid integrity test. ");
-        IntegrityTest.perform(this, identifierProvider);
+        IntegrityTest.perform(this, Get.identifierService());
     }
 
     @Override
@@ -199,34 +145,34 @@ public class Cradle
 
     @Override
     public Stream<ConceptChronicleDataEager> getConceptDataEagerStream() {
-        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getConceptDataEagerStream();
+        return ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).getConceptDataEagerStream();
     }
 
     @Override
     public Stream<ConceptChronicleDataEager> getConceptDataEagerStream(ConceptSequenceSet conceptSequences) {
-        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getConceptDataEagerStream(conceptSequences);
+        return ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).getConceptDataEagerStream(conceptSequences);
     }
 
     @Override
     public Stream<ConceptChronicleDataEager> getParallelConceptDataEagerStream(ConceptSequenceSet conceptSequences) {
-        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getParallelConceptDataEagerStream(conceptSequences);
+        return ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).getParallelConceptDataEagerStream(conceptSequences);
     }
 
     @Override
     public Stream<ConceptChronicleDataEager> getParallelConceptDataEagerStream() {
-        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getParallelConceptDataEagerStream();
+        return ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).getParallelConceptDataEagerStream();
     }
 
     @Override
     public CharSequence informAboutObject(int nid) {
         if (nid > -1) {
-            nid = identifierProvider.getConceptNid(nid);
+            nid = Get.identifierService().getConceptNid(nid);
         }
         StringBuilder sb = new StringBuilder();
 
-        int conceptSequence = identifierProvider.getConceptSequenceForComponentNid(nid);
+        int conceptSequence = Get.identifierService().getConceptSequenceForComponentNid(nid);
         if (conceptSequence == nid) {
-            ConceptChronology<? extends StampedVersion> cc = conceptProvider.getConcept(conceptSequence);
+            ConceptChronology<? extends StampedVersion> cc = Get.conceptService().getConcept(conceptSequence);
 
             sb.append("'");
             sb.append(cc.toUserString());
@@ -240,9 +186,9 @@ public class Cradle
             sb.append("comp: '");
 
             if (component.isPresent()) {
-                sb.append(component.get().toUserString());
+                sb.append(component.get().getClass().getSimpleName());
             } else {
-                sb.append("null");
+                sb.append("null - ").append(nid);
             }
 
             sb.append("' ");
@@ -264,27 +210,27 @@ public class Cradle
 
     @Override
     public Stream<ConceptChronicle> getConceptStream() {
-        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getConceptStream();
+        return ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).getConceptStream();
     }
 
     @Override
     public Stream<ConceptChronicle> getParallelConceptStream() {
-        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getParallelConceptStream();
+        return ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).getParallelConceptStream();
     }
 
     @Override
     public Stream<? extends ConceptChronicleBI> getConceptStream(ConceptSequenceSet conceptSequences) throws IOException {
-        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getConceptStream(conceptSequences);
+        return ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).getConceptStream(conceptSequences);
     }
 
     @Override
     public Stream<? extends ConceptChronicleBI> getParallelConceptStream(ConceptSequenceSet conceptSequences) throws IOException {
-        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getConceptStream(conceptSequences).parallel();
+        return ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).getConceptStream(conceptSequences).parallel();
     }
 
     @Override
     public int getNidForUuids(UUID... uuids) {
-        return identifierProvider.getNidForUuids(uuids);
+        return Get.identifierService().getNidForUuids(uuids);
 
     }
 
@@ -302,12 +248,6 @@ public class Cradle
         ImportCradleLogFile importCradleLogFile = new ImportCradleLogFile(paths, this);
         LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(importCradleLogFile);
         return importCradleLogFile;
-    }
-
-    @Override
-    public Task<Integer> startLoadTask(java.nio.file.Path... paths) {
-        ImportEConceptFile loaderTask = ImportEConceptFile.create(paths, this);
-        return loaderTask;
     }
 
     @Override
@@ -330,12 +270,12 @@ public class Cradle
 
     @Override
     public ConceptChronicleDataEager getConceptData(int i) throws IOException {
-        return ((ConceptProviderOtfModel) conceptProvider.getDelegate()).getConceptData(i);
+        return ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).getConceptData(i);
     }
 
     @Override
     public void addUncommitted(ConceptChronicleBI conceptChronicleBI) throws IOException {
-        commitService.addUncommitted(conceptChronicleBI);
+        Get.commitService().addUncommitted(conceptChronicleBI);
     }
 
     /**
@@ -345,7 +285,7 @@ public class Cradle
      */
     @Override
     public void addUncommittedNoChecks(ConceptChronicleBI conceptChronicleBI) throws IOException {
-        commitService.addUncommittedNoChecks(conceptChronicleBI);
+        Get.commitService().addUncommittedNoChecks(conceptChronicleBI);
     }
 
     // TODO getUncommittedConcepts() is unsupported.  Should be implemented or removed.
@@ -363,18 +303,18 @@ public class Cradle
 
     @Override
     public void cancel(ConceptChronicleBI conceptChronicleBI) throws IOException {
-        commitService.cancel(conceptChronicleBI);
+        Get.commitService().cancel(conceptChronicleBI);
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void commit(ConceptChronicleBI cc) throws IOException {
-        commitService.commit(cc, null);
+        Get.commitService().commit(cc, null);
     }
 
     @Override
     public void commit(ConceptVersionBI conceptVersionBI) throws IOException {
-        commitService.commit(conceptVersionBI, null);
+        Get.commitService().commit(conceptVersionBI, null);
     }
 
     @Override
@@ -384,9 +324,9 @@ public class Cradle
 
     @Override
     public NativeIdSetBI isChildOfSet(int parent, ViewCoordinate viewCoordinate) {
-        IntStream childrenSequences = taxonomyProvider.getTaxonomyChildSequences(identifierProvider.getConceptSequence(parent), viewCoordinate);
+        IntStream childrenSequences = Get.taxonomyService().getTaxonomyChildSequences(Get.identifierService().getConceptSequence(parent), viewCoordinate);
         NativeIdSetBI childNidSet = new IntSet();
-        childrenSequences.forEach((sequence) -> childNidSet.add(identifierProvider.getConceptNid(sequence)));
+        childrenSequences.forEach((sequence) -> childNidSet.add(Get.identifierService().getConceptNid(sequence)));
         return childNidSet;
     }
 
@@ -412,7 +352,7 @@ public class Cradle
 
     @Override
     public UUID getUuidPrimordialForNid(int nid) throws IOException {
-        Optional<UUID> optionalUuid = identifierProvider.getUuidPrimordialForNid(nid);
+        Optional<UUID> optionalUuid = Get.identifierService().getUuidPrimordialForNid(nid);
         if (optionalUuid.isPresent()) {
             return optionalUuid.get();
         }
@@ -421,7 +361,7 @@ public class Cradle
 
     @Override
     public List<UUID> getUuidsForNid(int nid) throws IOException {
-        return identifierProvider.getUuidsForNid(nid);
+        return Get.identifierService().getUuidsForNid(nid);
     }
 
     @Override
@@ -436,22 +376,22 @@ public class Cradle
 
     @Override
     public boolean hasUuid(UUID uuid) {
-        return identifierProvider.hasUuid(uuid);
+        return Get.identifierService().hasUuid(uuid);
     }
 
     @Override
     public boolean hasUuid(List<UUID> uuids) {
-        return identifierProvider.hasUuid(uuids);
+        return Get.identifierService().hasUuid(uuids);
     }
 
     @Override
     public long getSequence() {
-        return commitService.getCommitManagerSequence();
+        return Get.commitService().getCommitManagerSequence();
     }
 
     @Override
     public int getConceptCount() throws IOException {
-        return conceptProvider.getConceptCount();
+        return Get.conceptService().getConceptCount();
     }
 
     @Override
@@ -471,12 +411,12 @@ public class Cradle
 
     @Override
     public boolean isKindOf(int childNid, int parentNid, ViewCoordinate viewCoordinate) throws IOException, ContradictionException {
-        return taxonomyProvider.isKindOf(childNid, parentNid, viewCoordinate);
+        return Get.taxonomyService().isKindOf(childNid, parentNid, viewCoordinate);
     }
 
     @Override
     public boolean isChildOf(int childNid, int parentNid, ViewCoordinate viewCoordinate) throws IOException, ContradictionException {
-        return taxonomyProvider.isChildOf(childNid, parentNid, viewCoordinate);
+        return Get.taxonomyService().isChildOf(childNid, parentNid, viewCoordinate);
     }
 
     @Override
@@ -484,9 +424,9 @@ public class Cradle
         try {
             ConcurrentBitSet bitSet = new ConcurrentBitSet(getConceptCount());
             ConceptSequenceSet sequenceSet
-                    = taxonomyProvider.getKindOfSequenceSet(identifierProvider.getConceptSequence(kindOfId), viewCoordinate);
+                    = Get.taxonomyService().getKindOfSequenceSet(Get.identifierService().getConceptSequence(kindOfId), viewCoordinate);
             sequenceSet.stream().forEach((int sequence) -> {
-                bitSet.set(identifierProvider.getConceptNid(sequence));
+                bitSet.set(Get.identifierService().getConceptNid(sequence));
             });
             return bitSet;
         } catch (IOException ex) {
@@ -516,7 +456,7 @@ public class Cradle
 
     @Override
     public boolean hasConcept(int i) {
-        return identifierProvider.getUuidPrimordialForNid(i).isPresent();
+        return Get.identifierService().getUuidPrimordialForNid(i).isPresent();
     }
 
     @Override
@@ -531,7 +471,7 @@ public class Cradle
 
     @Override
     public long incrementAndGetSequence() {
-        return commitService.incrementAndGetSequence();
+        return Get.commitService().incrementAndGetSequence();
     }
 
     @Override
@@ -605,12 +545,12 @@ public class Cradle
 
     @Override
     public void setConceptNidForNid(int cNid, int nid) {
-        identifierProvider.setConceptSequenceForComponentNid(cNid, nid);
+        Get.identifierService().setConceptSequenceForComponentNid(cNid, nid);
     }
 
     @Override
     public void resetConceptNidForNid(int cNid, int nid) {
-        identifierProvider.resetConceptSequenceForComponentNid(cNid, nid);
+        Get.identifierService().resetConceptSequenceForComponentNid(cNid, nid);
     }
 
     @Override
@@ -620,7 +560,7 @@ public class Cradle
 
     @Override
     public void put(UUID uuid, int i) {
-        identifierProvider.addUuidForNid(uuid, i);
+        Get.identifierService().addUuidForNid(uuid, i);
     }
 
     /**
@@ -697,7 +637,7 @@ public class Cradle
 
     @Override
     public void commit() throws IOException {
-        commitService.commit(null);
+        Get.commitService().commit(null);
     }
 
     @Override
@@ -727,28 +667,27 @@ public class Cradle
 
     @Override
     public Optional<? extends ObjectChronology<? extends StampedVersion>> getIdentifiedObjectChronology(int nid) {
-        switch (identifierProvider.getChronologyTypeForNid(nid)) {
+        switch (Get.identifierService().getChronologyTypeForNid(nid)) {
             case CONCEPT:
-                return Optional.ofNullable(conceptProvider.getConcept(identifierProvider.getConceptSequence(nid)));
+                return Get.conceptService().getOptionalConcept(nid);
             case SEMEME:
-                return Optional.ofNullable(sememeProvider.getSememe(identifierProvider.getSememeSequence(nid)));
-            case REFEX:
-                return Optional.ofNullable(refexProvider.getRefex(identifierProvider.getRefexSequence(nid)));
+                return Get.sememeService().getOptionalSememe(Get.identifierService().getSememeSequence(nid));
+             case REFEX:
+                return Optional.ofNullable(refexProvider.getRefex(Get.identifierService().getRefexSequence(nid)));
         }
-        //The above code doesn't identify descriptions - try to find them...
-        //if (conceptModel == ConceptModel.OCHRE_CONCEPT_MODEL) {  //TODO Keith - not sure if this was a mistake... (you intended OTF_CONCEPT_MODEL)
-        //or if it is just needed for both...
-        try {
-            int conNid = identifierProvider.getConceptSequenceForComponentNid(nid);
-            if (conNid != Integer.MAX_VALUE)
-            {
-                ConceptChronicle concept = (ConceptChronicle)conceptProvider.getConcept(conNid);
-                return Optional.ofNullable(concept.getComponent(nid));
+        //If the above code doesn't identify descriptions (SEMEMEs in OCHRE) - try to find them in OTF concepts...
+        if (Get.conceptModel() == ConceptModel.OTF_CONCEPT_MODEL) {
+            try {
+                int conNid = Get.identifierService().getConceptSequenceForComponentNid(nid);
+                if (conNid != Integer.MAX_VALUE) {
+                    ConceptChronicle concept = ConceptChronicle.class.cast(Get.conceptService().getConcept(conNid));
+                    return Optional.ofNullable(concept.getComponent(nid));
+                }
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
             }
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
         }
-        //}
+        // otherwise return empty. 
         return Optional.empty();
     }
 
@@ -802,8 +741,8 @@ public class Cradle
     @Override
     public NativeIdSetBI getAllConceptNids() throws IOException {
         ConcurrentBitSet bitSet = new ConcurrentBitSet(getConceptCount());
-        identifierProvider.getConceptSequenceStream().forEach((int sequence) -> {
-            bitSet.set(identifierProvider.getConceptNid(sequence));
+        Get.identifierService().getConceptSequenceStream().forEach((int sequence) -> {
+            bitSet.set(Get.identifierService().getConceptNid(sequence));
         });
         return bitSet;
     }
@@ -811,20 +750,20 @@ public class Cradle
     @Override
     public NativeIdSetBI getAllConceptNidsFromCache() throws IOException {
         ConcurrentBitSet bitSet = new ConcurrentBitSet(getConceptCount());
-        identifierProvider.getConceptSequenceStream().forEach((int sequence) -> {
-            bitSet.set(identifierProvider.getConceptNid(sequence));
+        Get.identifierService().getConceptSequenceStream().forEach((int sequence) -> {
+            bitSet.set(Get.identifierService().getConceptNid(sequence));
         });
         return bitSet;
     }
 
     @Override
     public NativeIdSetBI getAllComponentNids() throws IOException {
-        return new IntSet(identifierProvider.getComponentNidStream().toArray());
+        return new IntSet(Get.identifierService().getComponentNidStream().toArray());
     }
 
     @Override
     public NativeIdSetBI getComponentNidsForConceptNids(NativeIdSetBI conceptNidSet) throws IOException {
-        NidSet results = identifierProvider.getComponentNidsForConceptNids(conceptNidSet.toConceptSequenceSet());
+        NidSet results = Get.identifierService().getComponentNidsForConceptNids(conceptNidSet.toConceptSequenceSet());
         return new IntSet(results.stream().toArray());
     }
 
@@ -842,7 +781,7 @@ public class Cradle
 
     @Override
     public int getAuthorNidForStamp(int stamp) {
-        return identifierProvider.getConceptNid(commitService.getAuthorSequenceForStamp(stamp));
+        return Get.identifierService().getConceptNid(Get.commitService().getAuthorSequenceForStamp(stamp));
     }
 
     @Override
@@ -852,22 +791,22 @@ public class Cradle
 
     @Override
     public int getModuleNidForStamp(int stamp) {
-        return identifierProvider.getConceptNid(commitService.getModuleSequenceForStamp(stamp));
+        return Get.identifierService().getConceptNid(Get.commitService().getModuleSequenceForStamp(stamp));
     }
 
     @Override
     public int getPathNidForStamp(int stamp) {
-        return identifierProvider.getConceptNid(commitService.getPathSequenceForStamp(stamp));
+        return Get.identifierService().getConceptNid(Get.commitService().getPathSequenceForStamp(stamp));
     }
 
     @Override
     public Status getStatusForStamp(int stamp) {
-        return Status.getStatusFromState(commitService.getStatusForStamp(stamp));
+        return Status.getStatusFromState(Get.commitService().getStatusForStamp(stamp));
     }
 
     @Override
     public long getTimeForStamp(int stamp) {
-        return commitService.getTimeForStamp(stamp);
+        return Get.commitService().getTimeForStamp(stamp);
     }
 
     @Override
@@ -880,27 +819,25 @@ public class Cradle
      */
     @Override
     public int getConceptNidForNid(int nid) {
-        return identifierProvider.getConceptNid(identifierProvider.getConceptSequenceForComponentNid(nid));
+        return Get.identifierService().getConceptNid(Get.identifierService().getConceptSequenceForComponentNid(nid));
     }
 
     @Override
     public void writeConceptData(ConceptChronicleDataEager conceptData) {
-        ((ConceptProviderOtfModel) conceptProvider.getDelegate()).writeConceptData(conceptData);
+        ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).writeConceptData(conceptData);
     }
 
     @Override
     public RefexMember<?, ?> getRefex(int refexId) {
         return refexProvider.getRefex(refexId);
     }
-    
 
     @Override
-    public RefexDynamicChronicleBI<?> getDynamicRefex(int refexId)
-    {
+    public RefexDynamicChronicleBI<?> getDynamicRefex(int refexId) {
         return refexProvider.getRefexDynamic(refexId);
     }
 
-	@Override
+    @Override
     public Collection<RefexMember<?, ?>> getRefexesForAssemblage(int assemblageNid) {
         return refexProvider.getRefexesFromAssemblage(assemblageNid).collect(Collectors.toList());
     }
@@ -912,22 +849,22 @@ public class Cradle
 
     @Override
     public int getStamp(Status status, long time, int authorNid, int moduleNid, int pathNid) {
-        return commitService.getStampSequence(status.getState(),
+        return Get.commitService().getStampSequence(status.getState(),
                 time,
-                identifierProvider.getConceptSequence(authorNid),
-                identifierProvider.getConceptSequence(moduleNid),
-                identifierProvider.getConceptSequence(pathNid));
+                Get.identifierService().getConceptSequence(authorNid),
+                Get.identifierService().getConceptSequence(moduleNid),
+                Get.identifierService().getConceptSequence(pathNid));
 
     }
 
     @Override
     public ConcurrentSkipListSet<DestinationOriginRecord> getDestinationOriginRecordSet() {
-        return ((CradleTaxonomyProvider) taxonomyProvider).getDestinationOriginRecordSet();
+        return ((CradleTaxonomyProvider) Get.taxonomyService()).getDestinationOriginRecordSet();
     }
 
     @Override
     public CasSequenceObjectMap<TaxonomyRecordPrimitive> getOriginDestinationTaxonomyMap() {
-        return ((CradleTaxonomyProvider) taxonomyProvider).getOriginDestinationTaxonomyRecords();
+        return ((CradleTaxonomyProvider) Get.taxonomyService()).getOriginDestinationTaxonomyRecords();
     }
 
     @Override
@@ -940,13 +877,13 @@ public class Cradle
     @Override
     public ConceptChronicle getConcept(int cNid) {
         if (cNid >= 0) {
-            return super.getConcept(identifierProvider.getConceptNid(cNid));
+            return super.getConcept(Get.identifierService().getConceptNid(cNid));
         }
         return super.getConcept(cNid);
     }
 
     @Override
-    public Task<?> index(Class<?> ... indexersToReindex) {
+    public Task<?> index(Class<?>... indexersToReindex) {
         return startIndexTask(indexersToReindex);
     }
 
@@ -958,13 +895,6 @@ public class Cradle
         GenerateIndexes indexingTask = new GenerateIndexes(indexersToReindex);
         LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(indexingTask);
         return indexingTask;
-    }
-
-    @Override
-    public Task<Integer> startLoadTask(ConceptProxy stampPath, Path... filePaths) {
-        ImportEConceptFile loaderTask = ImportEConceptFile.create(filePaths, this, stampPath);
-        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(loaderTask);
-        return loaderTask;
     }
 
     @Override
@@ -1010,15 +940,31 @@ public class Cradle
     }
 
     @Override
-    public Task<Integer> startLoadTask(StandardPaths stampPath, Path... filePaths) {
+    public Task<Integer> startLoadTask(ConceptModel conceptModel, StandardPaths stampPath, Path... filePaths) {
+        LookupService.getService(ConfigurationService.class).setConceptModel(conceptModel);
         switch (stampPath) {
             case DEVELOPMENT:
-                return startLoadTask(IsaacMetadataAuxiliaryBinding.DEVELOPMENT, filePaths);
+                return startLoadTask(conceptModel, IsaacMetadataAuxiliaryBinding.DEVELOPMENT, filePaths);
             case MASTER:
-                return startLoadTask(IsaacMetadataAuxiliaryBinding.MASTER, filePaths);
+                return startLoadTask(conceptModel, IsaacMetadataAuxiliaryBinding.MASTER, filePaths);
             default:
                 throw new UnsupportedOperationException("Can't handle: " + stampPath);
         }
+    }
+
+    @Override
+    public Task<Integer> startLoadTask(ConceptModel conceptModel, java.nio.file.Path... paths) {
+        LookupService.getService(ConfigurationService.class).setConceptModel(conceptModel);
+        ImportEConceptFile loaderTask = ImportEConceptFile.create(paths, this);
+        return loaderTask;
+    }
+
+    @Override
+    public Task<Integer> startLoadTask(ConceptModel conceptModel, ConceptProxy stampPath, Path... filePaths) {
+        LookupService.getService(ConfigurationService.class).setConceptModel(conceptModel);
+        ImportEConceptFile loaderTask = ImportEConceptFile.create(filePaths, this, stampPath);
+        LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(loaderTask);
+        return loaderTask;
     }
 
     @Override

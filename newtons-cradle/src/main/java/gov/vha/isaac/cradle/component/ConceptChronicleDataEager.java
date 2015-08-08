@@ -1,8 +1,8 @@
 package gov.vha.isaac.cradle.component;
 
 import gov.vha.isaac.cradle.CradleExtensions;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import org.ihtsdo.otf.tcc.api.chronicle.ComponentChronicleBI;
 import org.ihtsdo.otf.tcc.api.nid.NidListBI;
@@ -41,7 +41,6 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
         return refexService;
     }
 
-    private final static TaxonomyService taxonomyProvider = Hk2Looker.getService(TaxonomyService.class);
     private static CradleExtensions cradle;
 
     private static CradleExtensions getCradle() {
@@ -257,7 +256,7 @@ public class ConceptChronicleDataEager implements I_ManageConceptData {
     @Override
     public List<Relationship> getDestRels() {
         ConceptSequenceSet relOriginConceptSequences
-                = ConceptSequenceSet.of(taxonomyProvider.getAllRelationshipOriginSequences(this.getNid()));
+                = ConceptSequenceSet.of(Get.taxonomyService().getAllRelationshipOriginSequences(this.getNid()));
 
         return getCradle().getConceptDataEagerStream(relOriginConceptSequences)
                 .map(ConceptChronicleDataEager::getSourceRels)

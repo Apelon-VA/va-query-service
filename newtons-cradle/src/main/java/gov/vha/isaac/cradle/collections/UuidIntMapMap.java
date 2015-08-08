@@ -39,8 +39,8 @@ public class UuidIntMapMap implements UuidToIntMap {
 
     private static final ConcurrentUuidIntMapSerializer serializer = new ConcurrentUuidIntMapSerializer();
 
-    MemoryManagedReference<ConcurrentUuidToIntHashMap>[] maps = new MemoryManagedReference[NUMBER_OF_MAPS];
-    File folder;
+    private final MemoryManagedReference<ConcurrentUuidToIntHashMap>[] maps = new MemoryManagedReference[NUMBER_OF_MAPS];
+    private final File folder;
 
     private UuidIntMapMap(File folder) {
         folder.mkdirs();
@@ -51,6 +51,7 @@ public class UuidIntMapMap implements UuidToIntMap {
                     new File(folder, i + "-uuid-nid.map"), serializer);
             WriteToDiskCache.addToCache(maps[i]);
         }
+        log.debug("Created UuidIntMapMap: " + this);
     }
     
     public static UuidIntMapMap create(File folder) {
@@ -81,7 +82,7 @@ public class UuidIntMapMap implements UuidToIntMap {
                         maps[i] = new MemoryManagedReference<>(serializer.deserialize(in),
                                 mapFile, serializer);
                         WriteToDiskCache.addToCache(maps[i]);
-                        log.debug("UuidIntMapMap restored: " + i);
+                        log.debug("UuidIntMapMap restored: " + i + " from: " + this + " file: " + mapFile.getAbsolutePath());
                     } finally {
                         DiskSemaphore.release();
                     }

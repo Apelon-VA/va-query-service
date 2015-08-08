@@ -15,8 +15,7 @@
  */
 package gov.vha.isaac.cradle.commit;
 
-import gov.vha.isaac.ochre.api.IdentifierService;
-import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.State;
 import org.ihtsdo.otf.tcc.api.hash.Hashcode;
 import org.ihtsdo.otf.tcc.api.store.Ts;
@@ -26,7 +25,6 @@ import org.ihtsdo.otf.tcc.api.store.Ts;
  * @author kec
  */
 public class UncommittedStamp {
-   private static final IdentifierService identifierService = LookupService.getService(IdentifierService.class);
    public int hashCode = Integer.MAX_VALUE;
    public int authorSequence;
    public int pathSequence;
@@ -38,9 +36,9 @@ public class UncommittedStamp {
    public UncommittedStamp(State status, int authorSequence, int moduleSequence, int pathSequence) {
       super();
       this.status = status;
-      this.authorSequence = identifierService.getConceptSequence(authorSequence);
-      this.pathSequence   = identifierService.getConceptSequence(pathSequence);
-      this.moduleSequence = identifierService.getConceptSequence(moduleSequence);
+      this.authorSequence = Get.identifierService().getConceptSequence(authorSequence);
+      this.pathSequence   = Get.identifierService().getConceptSequence(pathSequence);
+      this.moduleSequence = Get.identifierService().getConceptSequence(moduleSequence);
    }
 
    //~--- methods -------------------------------------------------------------
@@ -71,19 +69,19 @@ public class UncommittedStamp {
     public String toString() {
         if (Ts.get() != null) {
             StringBuilder sb = new StringBuilder();
-            sb.append("Stamp{s:");
+            sb.append("UncommittedStamp{s:");
              sb.append(status);
              sb.append(", a:");
-             sb.append(Ts.get().informAboutNid(identifierService.getConceptNid(authorSequence)));
+             sb.append(Ts.get().informAboutNid(Get.identifierService().getConceptNid(authorSequence)));
              sb.append(", m:");
-             sb.append(Ts.get().informAboutNid(identifierService.getConceptNid(moduleSequence)));
+             sb.append(Ts.get().informAboutNid(Get.identifierService().getConceptNid(moduleSequence)));
              sb.append(", p: ");
-             sb.append(Ts.get().informAboutNid(identifierService.getConceptNid(pathSequence)));
+             sb.append(Ts.get().informAboutNid(Get.identifierService().getConceptNid(pathSequence)));
              sb.append('}');
              return sb.toString();
         }
         
-        return "Stamp{s:" + status + ", a:" + authorSequence + 
+        return "UncommittedStamp{s:" + status + ", a:" + authorSequence + 
                 ", m:" + moduleSequence + ", p: " + pathSequence +'}';
     }
     

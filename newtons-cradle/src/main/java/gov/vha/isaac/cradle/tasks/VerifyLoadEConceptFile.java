@@ -10,6 +10,7 @@ import gov.vha.isaac.ochre.api.ConceptModel;
 import gov.vha.isaac.ochre.api.ConceptProxy;
 import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.task.TimedTask;
 import gov.vha.isaac.ochre.util.WorkExecutors;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -35,7 +36,7 @@ import java.util.concurrent.*;
  * @author kec
  */
 public class VerifyLoadEConceptFile
-        extends Task<Boolean> {
+        extends TimedTask<Boolean> {
 
     private static final Logger log = LogManager.getLogger();
     private static final Set<UUID> watchSet = new HashSet<>();

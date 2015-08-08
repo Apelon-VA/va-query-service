@@ -6,13 +6,14 @@
 package gov.vha.isaac.cradle.commit;
 
 import gov.vha.isaac.cradle.ConcurrentObjectIntMap;
-import gov.vha.isaac.cradle.Cradle;
+import gov.vha.isaac.cradle.ConcurrentSequenceIntMap;
 import gov.vha.isaac.cradle.collections.ConcurrentSequenceSerializedObjectMap;
 import gov.vha.isaac.cradle.collections.StampAliasMap;
 import gov.vha.isaac.cradle.collections.StampCommentMap;
 import gov.vha.isaac.cradle.collections.UuidIntMapMap;
 import gov.vha.isaac.cradle.component.StampSerializer;
-import gov.vha.isaac.ochre.api.IdentifierService;
+import gov.vha.isaac.ochre.api.ConfigurationService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.SystemStatusService;
@@ -23,7 +24,6 @@ import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
 import gov.vha.isaac.ochre.api.commit.CommitRecord;
 import gov.vha.isaac.ochre.api.commit.CommitService;
 import gov.vha.isaac.ochre.api.commit.CommitStates;
-import gov.vha.isaac.ochre.api.component.concept.ConceptService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
@@ -37,7 +37,6 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -51,6 +50,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -64,7 +64,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.runlevel.RunLevel;
 import org.ihtsdo.otf.tcc.api.coordinate.Status;
-import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
 import org.ihtsdo.otf.tcc.model.version.Stamp;
 import org.jvnet.hk2.annotations.Service;
 
@@ -98,7 +97,6 @@ public class CommitProvider implements CommitService {
     private final AtomicInteger nextStampSequence = new AtomicInteger(1);
     private final ReentrantLock stampLock = new ReentrantLock();
     private final AtomicLong databaseSequence = new AtomicLong();
-    private final IdentifierService sequenceProvider;
     private final ConcurrentSkipListSet<ChangeChecker> checkers = new ConcurrentSkipListSet<>();
     private final ConcurrentSkipListSet<Alert> alertCollection = new ConcurrentSkipListSet<>();
 
@@ -117,22 +115,21 @@ public class CommitProvider implements CommitService {
         return new Thread(r, "writeSememeCompletionService");
     });
 
-    private final ExecutorService commitExecutorPool = Executors.newSingleThreadExecutor((Runnable r) -> {
-        return new Thread(r, "commit executor");
-    });
-    
     ConcurrentSkipListSet<WeakReference<ChronologyChangeListener>> changeListeners = new ConcurrentSkipListSet<>();
 
     private long lastCommit = Long.MIN_VALUE;
+    private AtomicBoolean loadRequired = new AtomicBoolean();
 
     private CommitProvider() throws IOException {
         try {
-            dbFolderPath = Cradle.getCradlePath();
+            dbFolderPath = LookupService.getService(ConfigurationService.class).getChronicleFolderPath().resolve("commit-provider");
+            loadRequired.set(!Files.exists(dbFolderPath));
+            Files.createDirectories(dbFolderPath);
             inverseStampMap = new ConcurrentSequenceSerializedObjectMap<>(new StampSerializer(),
                     dbFolderPath, null, null);
-            sequenceProvider = LookupService.getService(IdentifierService.class);
-            commitManagerFolder = Paths.get(dbFolderPath.toString(), DEFAULT_CRADLE_COMMIT_MANAGER_FOLDER);
-        } catch (Exception e) {
+            commitManagerFolder = dbFolderPath.resolve(DEFAULT_CRADLE_COMMIT_MANAGER_FOLDER);
+             Files.createDirectories(commitManagerFolder);
+       } catch (Exception e) {
             LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Cradle Commit Provider", e);
             throw e;
         }
@@ -144,9 +141,9 @@ public class CommitProvider implements CommitService {
             log.info("Starting CradleCommitManager post-construct");
             writeConceptCompletionServicePool.submit(writeConceptCompletionService);
             writeSememeCompletionServicePool.submit(writeSememeCompletionService);
-            if (!Cradle.cradleStartedEmpty()) {
-                log.info("Loading existing commit manager data. ");
-                log.info("Loading " + COMMIT_MANAGER_DATA_FILENAME);
+            if (!loadRequired.get()) {
+                log.info("Reading existing commit manager data. ");
+                log.info("Reading " + COMMIT_MANAGER_DATA_FILENAME);
                 try (DataInputStream in = new DataInputStream(new FileInputStream(new File(commitManagerFolder.toFile(), COMMIT_MANAGER_DATA_FILENAME)))) {
                     nextStampSequence.set(in.readInt());
                     databaseSequence.set(in.readLong());
@@ -159,15 +156,10 @@ public class CommitProvider implements CommitService {
                         inverseStampMap.put(stampSequence, stamp);
                     }
                 }
-            }
-
-            if (Files.exists(commitManagerFolder)) {
-                log.info("Loading: " + STAMP_ALIAS_MAP_FILENAME);
+                log.info("Reading: " + STAMP_ALIAS_MAP_FILENAME);
                 stampAliasMap.read(new File(commitManagerFolder.toFile(), STAMP_ALIAS_MAP_FILENAME));
-                log.info("Loading: " + STAMP_COMMENT_MAP_FILENAME);
+                log.info("Reading: " + STAMP_COMMENT_MAP_FILENAME);
                 stampCommentMap.read(new File(commitManagerFolder.toFile(), STAMP_COMMENT_MAP_FILENAME));
-            } else {
-                Files.createDirectories(commitManagerFolder);
             }
         } catch (Exception e) {
             LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Cradle Commit Provider", e);
@@ -240,7 +232,7 @@ public class CommitProvider implements CommitService {
     public int getAuthorSequenceForStamp(int stamp) {
         Optional<Stamp> s = inverseStampMap.get(stamp);
         if (s.isPresent()) {
-            return sequenceProvider.getConceptSequence(
+            return Get.identifierService().getConceptSequence(
                     s.get().getAuthorNid());
         }
         throw new NoSuchElementException("No stampSequence found: " + stamp);
@@ -258,7 +250,7 @@ public class CommitProvider implements CommitService {
     public int getModuleSequenceForStamp(int stamp) {
         Optional<Stamp> s = inverseStampMap.get(stamp);
         if (s.isPresent()) {
-            return sequenceProvider.getConceptSequence(
+            return Get.identifierService().getConceptSequence(
                     s.get().getModuleNid());
         }
         throw new NoSuchElementException("No stampSequence found: " + stamp);
@@ -272,12 +264,17 @@ public class CommitProvider implements CommitService {
         throw new NoSuchElementException("No stampSequence found: " + stamp);
     }
 
+    ConcurrentHashMap<Integer, Integer> stampSequencePathSequenceMap = new ConcurrentHashMap();
     @Override
     public int getPathSequenceForStamp(int stampSequence) {
+        if (stampSequencePathSequenceMap.containsKey(stampSequence)) {
+            return stampSequencePathSequenceMap.get(stampSequence);
+        }
         Optional<Stamp> s = inverseStampMap.get(stampSequence);
         if (s.isPresent()) {
-            return sequenceProvider.getConceptSequence(
-                    s.get().getPathNid());
+            stampSequencePathSequenceMap.put(stampSequence, Get.identifierService().getConceptSequence(
+                    s.get().getPathNid()));
+            return stampSequencePathSequenceMap.get(stampSequence);
         }
         throw new NoSuchElementException("No stampSequence found: " + stampSequence);
     }
@@ -308,11 +305,20 @@ public class CommitProvider implements CommitService {
     }
 
     @Override
+    public int getRetiredStampSequence(int stampSequence) {
+        return getStampSequence(State.INACTIVE, 
+                getTimeForStamp(stampSequence), 
+                getAuthorSequenceForStamp(stampSequence), 
+                getModuleSequenceForStamp(stampSequence), 
+                getPathSequenceForStamp(stampSequence));
+    }
+
+    @Override
     public int getStampSequence(State status, long time, int authorSequence, int moduleSequence, int pathSequence) {
         Stamp stampKey = new Stamp(Status.getStatusFromState(status), time,
-                sequenceProvider.getConceptNid(authorSequence),
-                sequenceProvider.getConceptNid(moduleSequence),
-                sequenceProvider.getConceptNid(pathSequence));
+                Get.identifierService().getConceptNid(authorSequence),
+                Get.identifierService().getConceptNid(moduleSequence),
+                Get.identifierService().getConceptNid(pathSequence));
 
         if (time == Long.MAX_VALUE) {
             UncommittedStamp usp = new UncommittedStamp(status, authorSequence,
@@ -374,6 +380,12 @@ public class CommitProvider implements CommitService {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
+    /**
+     * Perform a global commit. The caller may chose to block on the returned
+     * task if synchronous operation is desired. 
+     * @param commitComment
+     * @return a task that is already submitted to an executor. 
+     */
     @Override
     public synchronized Task<Optional<CommitRecord>> commit(String commitComment) {
         Semaphore pendingWrites = writePermitReference.getAndSet(new Semaphore(WRITE_POOL_SIZE));
@@ -384,7 +396,7 @@ public class CommitProvider implements CommitService {
         Map<UncommittedStamp, Integer> pendingStampsForCommit = new HashMap<>(uncomittedStampEntries);
         uncomittedStampEntries.clear();
         
-        CommitTask task = new CommitTask(commitComment,
+        CommitTask task = CommitTask.get(commitComment,
             uncommittedConceptsWithChecksSequenceSet,
             uncommittedConceptsNoChecksSequenceSet,
             uncommittedSememesWithChecksSequenceSet,
@@ -394,7 +406,6 @@ public class CommitProvider implements CommitService {
             alertCollection,
             pendingStampsForCommit,
             this);
-        commitExecutorPool.execute(task);
         return task;
     }
     
@@ -461,36 +472,35 @@ public class CommitProvider implements CommitService {
     @Override
     public String describeStampSequence(int stampSequence) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Stamp{s:");
+        sb.append("⦙");
+        sb.append(stampSequence);
+        sb.append("::");
         sb.append(getStatusForStamp(stampSequence));
-        sb.append(", t:");
-        sb.append(Instant.ofEpochMilli(getTimeForStamp(stampSequence)));
-        sb.append(", a:");
-        sb.append(nameForConcept(getAuthorSequenceForStamp(stampSequence)));
+        sb.append(" ");
+        long time = getTimeForStamp(stampSequence);
+        if (time == Long.MAX_VALUE) {
+            sb.append("UNCOMMITTED:");
+        } else if (time == Long.MIN_VALUE) {
+            sb.append("CANCELED:");
+        } else {
+            sb.append(Instant.ofEpochMilli(time));
+        }
+        sb.append(" a:");
+        sb.append(Get.conceptDescriptionText(getAuthorSequenceForStamp(stampSequence)));
         sb.append(" <");
         sb.append(getAuthorSequenceForStamp(stampSequence));
         sb.append(">");
-        sb.append(", m:");
-        sb.append(nameForConcept(getModuleSequenceForStamp(stampSequence)));
+        sb.append(" m:");
+        sb.append(Get.conceptDescriptionText(getModuleSequenceForStamp(stampSequence)));
         sb.append(" <");
         sb.append(getModuleSequenceForStamp(stampSequence));
         sb.append(">");
-        sb.append(", p: ");
-        sb.append(nameForConcept(getPathSequenceForStamp(stampSequence)));
+        sb.append(" p: ");
+        sb.append(Get.conceptDescriptionText(getPathSequenceForStamp(stampSequence)));
         sb.append(" <");
         sb.append(getPathSequenceForStamp(stampSequence));
-        sb.append(">");
-        sb.append('}');
+        sb.append(">⦙");
         return sb.toString();
-    }
-    
-    private String nameForConcept(int conceptSequence) {
-        ConceptService conceptService = LookupService.getService(ConceptService.class);
-        ConceptChronology<?> concept = conceptService.getConcept(conceptSequence);
-        if (concept != null) {
-            return concept.toUserString();
-        }
-        return "no concept with sequence: " + conceptSequence;
     }
 
     @Override
@@ -515,17 +525,15 @@ public class CommitProvider implements CommitService {
 
     @Override
     public Task<Void> addUncommitted(ConceptChronology cc) {
-        ConceptChronicle concept = (ConceptChronicle) cc;
-        handleUncommittedSequenceSet(concept, uncommittedConceptsWithChecksSequenceSet);
-        return writeConceptCompletionService.checkAndWrite(concept, checkers, alertCollection,
+        handleUncommittedSequenceSet(cc, uncommittedConceptsWithChecksSequenceSet);
+        return writeConceptCompletionService.checkAndWrite(cc, checkers, alertCollection,
                 writePermitReference.get(), changeListeners);
     }
 
     @Override
     public Task<Void> addUncommittedNoChecks(ConceptChronology cc) {
-        ConceptChronicle concept = (ConceptChronicle) cc;
-        handleUncommittedSequenceSet(concept, uncommittedConceptsNoChecksSequenceSet);
-        return writeConceptCompletionService.write(concept,
+        handleUncommittedSequenceSet(cc, uncommittedConceptsNoChecksSequenceSet);
+        return writeConceptCompletionService.write(cc,
                 writePermitReference.get(), changeListeners);
     }
 
@@ -533,32 +541,32 @@ public class CommitProvider implements CommitService {
         if (sememeChronicle.getCommitState() == CommitStates.UNCOMMITTED) {
             uncommittedSequenceLock.lock();
             try {
-                set.add(sequenceProvider.getSememeSequence(sememeChronicle.getNid()));
+                set.add(Get.identifierService().getSememeSequence(sememeChronicle.getNid()));
             } finally {
                 uncommittedSequenceLock.unlock();
             }
         } else {
             uncommittedSequenceLock.lock();
             try {
-                set.remove(sequenceProvider.getSememeSequence(sememeChronicle.getNid()));
+                set.remove(Get.identifierService().getSememeSequence(sememeChronicle.getNid()));
             } finally {
                 uncommittedSequenceLock.unlock();
             }
         }
     }
 
-    private void handleUncommittedSequenceSet(ConceptChronicle concept, ConceptSequenceSet set) {
+    private void handleUncommittedSequenceSet(ConceptChronology concept, ConceptSequenceSet set) {
         if (concept.isUncommitted()) {
             uncommittedSequenceLock.lock();
             try {
-                set.add(sequenceProvider.getConceptSequence(concept.getNid()));
+                set.add(Get.identifierService().getConceptSequence(concept.getNid()));
             } finally {
                 uncommittedSequenceLock.unlock();
             }
         } else {
             uncommittedSequenceLock.lock();
             try {
-                set.remove(sequenceProvider.getConceptSequence(concept.getNid()));
+                set.remove(Get.identifierService().getConceptSequence(concept.getNid()));
             } finally {
                 uncommittedSequenceLock.unlock();
             }
