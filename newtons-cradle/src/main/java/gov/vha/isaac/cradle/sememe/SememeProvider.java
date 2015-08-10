@@ -33,6 +33,7 @@ import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
 import gov.vha.isaac.ochre.collections.NidSet;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
 import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -48,9 +49,12 @@ import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.IntFunction;
 import java.util.stream.Stream;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.runlevel.RunLevel;
@@ -81,7 +85,7 @@ public class SememeProvider implements SememeService {
             Files.createDirectories(sememePath);
             log.info("Setting up sememe provider at " + sememePath.toAbsolutePath().toString());
 
-            sememeMap = new CasSequenceObjectMap(new SememeSerializer(), sememePath, "seg.", ".sememe.map");
+            sememeMap = new CasSequenceObjectMap<>(new SememeSerializer(), sememePath, "seg.", ".sememe.map");
         } catch (Exception e) {
             LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Cradle Commit Manager", e);
             throw e;
@@ -159,14 +163,14 @@ public class SememeProvider implements SememeService {
     }
 
     @Override
-    public <V extends SememeVersion> SememeSnapshotService<V> getSnapshot(Class<V> versionType, StampCoordinate stampCoordinate) {
+    public <V extends SememeVersion> SememeSnapshotService<V> getSnapshot(Class<V> versionType, StampCoordinate<? extends StampCoordinate<?>> stampCoordinate) {
         return new SememeSnapshotProvider<>(versionType, stampCoordinate, this);
     }
 
     @Override
-    public SememeChronology getSememe(int sememeSequence) {
-        sememeSequence = Get.identifierService().getSememeSequence(sememeSequence);
-        return sememeMap.getQuick(sememeSequence);
+    public SememeChronology<? extends SememeVersion<?>> getSememe(int sememeId) {
+        sememeId = Get.identifierService().getSememeSequence(sememeId);
+        return sememeMap.getQuick(sememeId);
     }
 
     @Override
@@ -261,7 +265,7 @@ public class SememeProvider implements SememeService {
     }
 
     @Override
-    public void writeSememe(SememeChronology sememeChronicle, SememeConstraints... constraints) {
+    public void writeSememe(SememeChronology<?> sememeChronicle, SememeConstraints... constraints) {
         Arrays.stream(constraints).forEach((constraint) -> {
             switch (constraint) {
                 case ONE_SEMEME_PER_COMPONENT:
@@ -334,7 +338,14 @@ public class SememeProvider implements SememeService {
             descriptionAssemblageSequence = Get.identifierService().getConceptSequenceForUuids(IsaacMetadataAuxiliaryBinding.DESCRIPTION_ASSEMBLAGE.getUuids());
         }
         SememeSequenceSet sequences = getSememeSequencesForComponentFromAssemblage(componentNid, descriptionAssemblageSequence);
-        return sequences.stream().mapToObj((int sememeSequence) -> getSememe(sememeSequence));
+        IntFunction<SememeChronology<DescriptionSememe<?>>> mapper = new IntFunction<SememeChronology<DescriptionSememe<?>>>() {
+			@Override
+			public SememeChronology<DescriptionSememe<?>> apply(int sememeSequence) {
+				// TODO Auto-generated method stub
+				return (SememeChronology<DescriptionSememe<?>>)getSememe(sememeSequence);
+			}
+        };
+        return sequences.stream().mapToObj(mapper);
     }
 
     @Override

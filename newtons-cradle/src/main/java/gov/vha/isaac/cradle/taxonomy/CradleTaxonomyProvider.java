@@ -109,7 +109,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
         loadRequired.set(!Files.exists(taxonomyProviderFolder));
         Files.createDirectories(taxonomyProviderFolder);
         originDestinationTaxonomyRecordMap
-                = new CasSequenceObjectMap(new TaxonomyRecordSerializer(),
+                = new CasSequenceObjectMap<>(new TaxonomyRecordSerializer(),
                         taxonomyProviderFolder, "seg.", ".taxonomy.map");
         log.info("CradleTaxonomyProvider constructed");
     }
@@ -170,7 +170,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     }
 
     @Override
-    public Tree getTaxonomyTree(TaxonomyCoordinate tc) {
+    public Tree getTaxonomyTree(TaxonomyCoordinate<?> tc) {
         long stamp = stampedLock.tryOptimisticRead();
         IntStream conceptSequenceStream = Get.identifierService().getParallelConceptSequenceStream();
         GraphCollector collector = new GraphCollector(originDestinationTaxonomyRecordMap, tc);
@@ -198,7 +198,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     }
 
     @Override
-    public boolean isChildOf(int childId, int parentId, TaxonomyCoordinate tc) {
+    public boolean isChildOf(int childId, int parentId, TaxonomyCoordinate<?> tc) {
         childId = Get.identifierService().getConceptSequence(childId);
         parentId = Get.identifierService().getConceptSequence(parentId);
 
@@ -291,7 +291,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     }
 
     @Override
-    public boolean isKindOf(int childId, int parentId, TaxonomyCoordinate tc) {
+    public boolean isKindOf(int childId, int parentId, TaxonomyCoordinate<?> tc) {
 
         childId = Get.identifierService().getConceptSequence(childId);
         parentId = Get.identifierService().getConceptSequence(parentId);
@@ -312,7 +312,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     }
 
     private boolean recursiveFindAncestor(int childSequence, int parentSequence,
-            TaxonomyCoordinate tc) {
+            TaxonomyCoordinate<?> tc) {
         // currently unpacking from array to object.
         // TODO operate directly on array if unpacking is a performance bottleneck.
 
@@ -334,7 +334,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     }
 
     @Override
-    public ConceptSequenceSet getKindOfSequenceSet(int rootId, TaxonomyCoordinate tc) {
+    public ConceptSequenceSet getKindOfSequenceSet(int rootId, TaxonomyCoordinate<?> tc) {
         rootId = Get.identifierService().getConceptSequence(rootId);
         long stamp = stampedLock.tryOptimisticRead();
         // TODO Look at performance of getTaxonomyTree...
@@ -360,7 +360,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     }
 
     @Override
-    public boolean isConceptActive(int conceptSequence, StampCoordinate stampCoordinate) {
+    public boolean isConceptActive(int conceptSequence, StampCoordinate<? extends StampCoordinate<?>> stampCoordinate) {
         long stamp = stampedLock.tryOptimisticRead();
         Optional<TaxonomyRecordPrimitive> taxonomyRecordOptional
                 = originDestinationTaxonomyRecordMap.get(conceptSequence);
@@ -399,26 +399,30 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
         });
     }
 
-    private IntStream filterOriginSequences(IntStream origins, int parentSequence, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc) {
+    private IntStream filterOriginSequences(IntStream origins, int parentSequence, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate<?> tc) {
         return origins.filter((originSequence) -> {
             Optional<TaxonomyRecordPrimitive> taxonomyRecordOptional = originDestinationTaxonomyRecordMap.get(originSequence);
             if (taxonomyRecordOptional.isPresent()) {
                 TaxonomyRecordPrimitive taxonomyRecord = taxonomyRecordOptional.get();
-                return taxonomyRecord.containsSequenceViaType(parentSequence, typeSequenceSet, tc, TaxonomyFlags.ALL_RELS);
+                if (taxonomyRecord.conceptSatisfiesStamp(originSequence, tc.getStampCoordinate())) {
+                    return taxonomyRecord.containsSequenceViaType(parentSequence, typeSequenceSet, tc, TaxonomyFlags.ALL_RELS);
+                }
             }
             return false;
         });
     }
 
-    private IntStream filterOriginSequences(IntStream origins, int parentSequence, int typeSequence, TaxonomyCoordinate tc, AllowedRelTypes allowedRelTypes) {
+    private IntStream filterOriginSequences(IntStream origins, int parentSequence, int typeSequence, TaxonomyCoordinate<?> tc, AllowedRelTypes allowedRelTypes) {
         return origins.filter((originSequence) -> {
             Optional<TaxonomyRecordPrimitive> taxonomyRecordOptional = originDestinationTaxonomyRecordMap.get(originSequence);
             if (taxonomyRecordOptional.isPresent()) {
                 TaxonomyRecordPrimitive taxonomyRecord = taxonomyRecordOptional.get();
-                if (allowedRelTypes == AllowedRelTypes.ALL_RELS) {
-                    return taxonomyRecord.containsSequenceViaType(parentSequence, typeSequence, tc, TaxonomyFlags.ALL_RELS);
+                if (taxonomyRecord.conceptSatisfiesStamp(originSequence, tc.getStampCoordinate())) {
+                    if (allowedRelTypes == AllowedRelTypes.ALL_RELS) {
+                        return taxonomyRecord.containsSequenceViaType(parentSequence, typeSequence, tc, TaxonomyFlags.ALL_RELS);
+                    }
+                    return taxonomyRecord.containsSequenceViaType(parentSequence, typeSequence, tc);
                 }
-                return taxonomyRecord.containsSequenceViaType(parentSequence, typeSequence, tc);
             }
             return false;
         });
@@ -431,6 +435,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
                 TaxonomyRecordPrimitive taxonomyRecord = taxonomyRecordOptional.get();
                 return taxonomyRecord.containsSequenceViaTypeWithFlags(parentSequence, typeSequence, flags);
             }
+
             return false;
         });
     }
@@ -458,7 +463,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     }
 
     @Override
-    public IntStream getTaxonomyParentSequences(int childId, TaxonomyCoordinate tc) {
+    public IntStream getTaxonomyParentSequences(int childId, TaxonomyCoordinate<?> tc) {
         childId = Get.identifierService().getConceptSequence(childId);
         long stamp = stampedLock.tryOptimisticRead();
         Optional<TaxonomyRecordPrimitive> taxonomyRecordOptional = originDestinationTaxonomyRecordMap.get(childId);
@@ -508,7 +513,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     }
 
     @Override
-    public IntStream getRoots(TaxonomyCoordinate tc) {
+    public IntStream getRoots(TaxonomyCoordinate<?> tc) {
         long stamp = stampedLock.tryOptimisticRead();
         Tree tree = getTaxonomyTree(tc);
         if (!stampedLock.validate(stamp)) {
@@ -523,7 +528,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     }
 
     @Override
-    public IntStream getTaxonomyChildSequences(int parentId, TaxonomyCoordinate tc) {
+    public IntStream getTaxonomyChildSequences(int parentId, TaxonomyCoordinate<?> tc) {
         // Set of all concept sequences that point to the parent. 
         // lock handled by getOriginSequenceStream
         IntStream origins = getOriginSequenceStream(parentId);
@@ -541,7 +546,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     }
 
     @Override
-    public IntStream getAllRelationshipOriginSequences(int destination, TaxonomyCoordinate tc) {
+    public IntStream getAllRelationshipOriginSequences(int destination, TaxonomyCoordinate<?> tc) {
         // Set of all concept sequences that point to the parent. 
         // lock handled by getOriginSequenceStream
         IntStream origins = getOriginSequenceStream(destination);
@@ -556,7 +561,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     }
 
     @Override
-    public ConceptSequenceSet getChildOfSequenceSet(int parentId, TaxonomyCoordinate tc) {
+    public ConceptSequenceSet getChildOfSequenceSet(int parentId, TaxonomyCoordinate<?> tc) {
         // Set of all concept sequences that point to the parent. 
         // lock handled by getOriginSequenceStream
         IntStream origins = getOriginSequenceStream(parentId);
@@ -565,7 +570,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     }
 
     @Override
-    public IntStream getAllRelationshipDestinationSequences(int originId, TaxonomyCoordinate tc) {
+    public IntStream getAllRelationshipDestinationSequences(int originId, TaxonomyCoordinate<?> tc) {
         // lock handled by called method
         return getAllRelationshipDestinationSequencesOfType(originId, new ConceptSequenceSet(), tc);
     }
@@ -594,7 +599,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     }
 
     @Override
-    public IntStream getAllRelationshipDestinationSequencesOfType(int originId, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc) {
+    public IntStream getAllRelationshipDestinationSequencesOfType(int originId, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate<?> tc) {
         originId = Get.identifierService().getConceptSequence(originId);
         long stamp = stampedLock.tryOptimisticRead();
         Optional<TaxonomyRecordPrimitive> taxonomyRecordOptional = originDestinationTaxonomyRecordMap.get(originId);
@@ -640,7 +645,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     }
 
     @Override
-    public IntStream getAllRelationshipOriginSequencesOfType(int destinationId, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc) {
+    public IntStream getAllRelationshipOriginSequencesOfType(int destinationId, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate<?> tc) {
         destinationId = Get.identifierService().getConceptSequence(destinationId);
         long stamp = stampedLock.tryOptimisticRead();
         // Set of all concept sequences that point to the parent. 
@@ -680,7 +685,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     }
 
     @Override
-    public TaxonomySnapshotService getSnapshot(TaxonomyCoordinate tc) {
+    public TaxonomySnapshotService getSnapshot(TaxonomyCoordinate<?> tc) {
         return new TaxonomySnapshotProvider(tc);
     }
 
@@ -823,9 +828,9 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
 
     private class TaxonomySnapshotProvider implements TaxonomySnapshotService {
 
-        TaxonomyCoordinate tc;
+        TaxonomyCoordinate<?> tc;
 
-        public TaxonomySnapshotProvider(TaxonomyCoordinate tc) {
+        public TaxonomySnapshotProvider(TaxonomyCoordinate<?> tc) {
             this.tc = tc;
         }
 
@@ -886,9 +891,9 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     }
 
     @Override
-    public IntStream getAllCircularRelationshipOriginSequences(TaxonomyCoordinate tc) {
+    public IntStream getAllCircularRelationshipOriginSequences(TaxonomyCoordinate<?> tc) {
         ConceptService conceptService = Get.conceptService();
-        StampCoordinate stampCoordinate = tc.getStampCoordinate();
+        StampCoordinate<? extends StampCoordinate<?>> stampCoordinate = tc.getStampCoordinate();
         return Get.identifierService().getParallelConceptSequenceStream().filter((conceptSequence) -> {
             if (conceptService.isConceptActive(conceptSequence, stampCoordinate)) {
                 if (getAllCircularRelationshipTypeSequences(conceptSequence, tc).anyMatch(((typeSequence) -> true))) {
@@ -899,9 +904,8 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
         });
     }
 
-
     private void recursiveFindAncestors(int childSequence, ConceptSequenceSet ancestors,
-            TaxonomyCoordinate tc) {
+            TaxonomyCoordinate<?> tc) {
         // currently unpacking from array to object.
         // TODO operate directly on array if unpacking is a performance bottleneck.
 
@@ -920,16 +924,16 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
             });
         }
     }
-    
+
     @Override
-    public ConceptSequenceSet getAncestorOfSequenceSet(int childId, TaxonomyCoordinate tc) {
+    public ConceptSequenceSet getAncestorOfSequenceSet(int childId, TaxonomyCoordinate<?> tc) {
         ConceptSequenceSet ancestors = new ConceptSequenceSet();
         recursiveFindAncestors(Get.identifierService().getConceptSequence(childId), ancestors, tc);
         return ancestors;
     }
 
     @Override
-    public IntStream getAllRelationshipDestinationSequencesNotOfType(int originId, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc) {
+    public IntStream getAllRelationshipDestinationSequencesNotOfType(int originId, ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate<?> tc) {
         originId = Get.identifierService().getConceptSequence(originId);
         long stamp = stampedLock.tryOptimisticRead();
         Optional<TaxonomyRecordPrimitive> taxonomyRecordOptional = originDestinationTaxonomyRecordMap.get(originId);
@@ -952,28 +956,28 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     }
 
     @Override
-    public IntStream getAllCircularRelationshipTypeSequences(int originId, TaxonomyCoordinate tc) {
-        int originSequence= Get.identifierService().getConceptSequence(originId);
+    public IntStream getAllCircularRelationshipTypeSequences(int originId, TaxonomyCoordinate<?> tc) {
+        int originSequence = Get.identifierService().getConceptSequence(originId);
         ConceptSequenceSet ancestors = getAncestorOfSequenceSet(originId, tc);
         if (tc.getTaxonomyType() != PremiseType.INFERRED) {
             ancestors.or(getAncestorOfSequenceSet(originId, tc.makeAnalog(PremiseType.INFERRED)));
-         }
+        }
         ConceptSequenceSet excludedTypes = ConceptSequenceSet.of(IsaacMetadataAuxiliaryBinding.IS_A.getConceptSequence());
-        
+
         IntStream.Builder typeSequenceBuilder = IntStream.builder();
-        
+
         getAllRelationshipDestinationSequencesNotOfType(originId, excludedTypes, tc)
                 .filter((destinationSequence) -> ancestors.contains(destinationSequence)).forEach((destinationSequence) -> {
                     getAllTypesForRelationship(originSequence, destinationSequence, tc)
-                            .forEach((typeSequence) -> typeSequenceBuilder.accept(typeSequence));
+                    .forEach((typeSequence) -> typeSequenceBuilder.accept(typeSequence));
                 });
-        
+
         return typeSequenceBuilder.build();
     }
 
     @Override
-    public IntStream getAllTypesForRelationship(int originId, int destinationId, TaxonomyCoordinate tc) {
-       originId = Get.identifierService().getConceptSequence(originId);
+    public IntStream getAllTypesForRelationship(int originId, int destinationId, TaxonomyCoordinate<?> tc) {
+        originId = Get.identifierService().getConceptSequence(originId);
         long stamp = stampedLock.tryOptimisticRead();
         Optional<TaxonomyRecordPrimitive> taxonomyRecordOptional = originDestinationTaxonomyRecordMap.get(originId);
         if (stampedLock.validate(stamp)) {
@@ -993,6 +997,5 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
         }
         return IntStream.empty();
     }
-    
-    
+
 }

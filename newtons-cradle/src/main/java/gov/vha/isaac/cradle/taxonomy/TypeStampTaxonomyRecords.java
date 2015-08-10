@@ -7,19 +7,15 @@ package gov.vha.isaac.cradle.taxonomy;
 
 import gov.vha.isaac.cradle.version.StampedObject;
 import gov.vha.isaac.ochre.api.Get;
-import gov.vha.isaac.ochre.api.State;
-import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePositionCalculator;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.StampSequenceSet;
-import java.time.Instant;
 import java.util.EnumSet;
 import java.util.stream.IntStream;
 import java.util.stream.IntStream.Builder;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
-import javax.swing.text.Document;
 import org.apache.mahout.math.function.LongProcedure;
 import org.apache.mahout.math.set.OpenLongHashSet;
 
@@ -69,11 +65,15 @@ public class TypeStampTaxonomyRecords {
     public boolean containsStampOfTypeWithFlags(int typeSequence, int flags) {
         boolean found = !typeStampFlagsSet.forEachKey((long record) -> {
             if (typeSequence == Integer.MAX_VALUE) { // wildcard
-                if (((record >>> 32) & TaxonomyRecordPrimitive.FLAGS_BIT_MASK) == flags) {
+                if (flags == 0) { // taxonomy flag wildcard--inferred, stated, non-defining, ...
+                     return false; // finish search
+                } else if (((record >>> 32) & TaxonomyRecordPrimitive.FLAGS_BIT_MASK) == flags) {
                     return false; // finish search. 
                 }
             } else if ((record & TaxonomyRecordPrimitive.SEQUENCE_BIT_MASK) == typeSequence) {
-                if (((record >>> 32) & TaxonomyRecordPrimitive.FLAGS_BIT_MASK) == flags) {
+                if (flags == 0) { // taxonomy flag wildcard--inferred, stated, non-defining, ...
+                     return false; // finish search
+                } else if (((record >>> 32) & TaxonomyRecordPrimitive.FLAGS_BIT_MASK) == flags) {
                     return false; // finish search. 
                 }
             }
@@ -140,12 +140,12 @@ public class TypeStampTaxonomyRecords {
         return intStreamBuilder.build();
     }
 
-    public boolean containsConceptSequenceViaType(int typeSequence, TaxonomyCoordinate tc, RelativePositionCalculator computer) {
+    public boolean containsConceptSequenceViaType(int typeSequence, TaxonomyCoordinate<?> tc, RelativePositionCalculator computer) {
         int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
         return containsConceptSequenceViaType(typeSequence, flags, computer);
     }
 
-    public boolean containsConceptSequenceViaType(ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc, RelativePositionCalculator computer) {
+    public boolean containsConceptSequenceViaType(ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate<?> tc, RelativePositionCalculator computer) {
         int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
         return containsConceptSequenceViaType(typeSequenceSet, flags, computer);
     }

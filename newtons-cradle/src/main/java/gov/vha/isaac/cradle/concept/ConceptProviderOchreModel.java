@@ -101,7 +101,7 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
 
             Path ochreConceptPath = folderPath.resolve("ochre");
 
-            conceptMap = new CasSequenceObjectMap(new OchreConceptSerializer(),
+            conceptMap = new CasSequenceObjectMap<>(new OchreConceptSerializer(),
                     ochreConceptPath, "seg.", ".ochre-concepts.map");
         } catch (Exception e) {
             LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("ChRonicled Assertion Database of Logical Expressions (OCHRE)", e);
@@ -131,12 +131,12 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
     }
 
     @Override
-    public boolean isConceptActive(int conceptSequence, StampCoordinate stampCoordinate) {
+    public boolean isConceptActive(int conceptSequence, StampCoordinate<? extends StampCoordinate<?>> stampCoordinate) {
         return conceptActiveService.isConceptActive(conceptSequence, stampCoordinate);
     }
 
     @Override
-    public ConceptSnapshotService getSnapshot(StampCoordinate stampCoordinate, LanguageCoordinate languageCoordinate) {
+    public ConceptSnapshotService getSnapshot(StampCoordinate<? extends StampCoordinate<?>> stampCoordinate, LanguageCoordinate languageCoordinate) {
         return new ConceptSnapshotProvider(stampCoordinate, languageCoordinate);
     }
 
@@ -180,10 +180,10 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
 
     public class ConceptSnapshotProvider implements ConceptSnapshotService {
 
-        StampCoordinate stampCoordinate;
+        StampCoordinate<? extends StampCoordinate<?>> stampCoordinate;
         LanguageCoordinate languageCoordinate;
 
-        public ConceptSnapshotProvider(StampCoordinate stampCoordinate, LanguageCoordinate languageCoordinate) {
+        public ConceptSnapshotProvider(StampCoordinate<? extends StampCoordinate<?>> stampCoordinate, LanguageCoordinate languageCoordinate) {
             this.stampCoordinate = stampCoordinate;
             this.languageCoordinate = languageCoordinate;
         }
@@ -209,28 +209,32 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
         }
 
         @Override
-        public Optional<LatestVersion<DescriptionSememe<?>>> getFullySpecifiedDescription(int conceptId) {
-            return languageCoordinate.getFullySpecifiedDescription(getDescriptionList(conceptId), stampCoordinate);
+        public <T extends DescriptionSememe<T>> Optional<LatestVersion<T>> getFullySpecifiedDescription(int conceptId) {
+            List<?> list = getDescriptionList(conceptId);
+            return languageCoordinate.getFullySpecifiedDescription((List<SememeChronology<T>>)list, stampCoordinate);
         }
 
         @Override
-        public Optional<LatestVersion<DescriptionSememe<?>>> getPreferredDescription(int conceptId) {
-            return languageCoordinate.getPreferredDescription(getDescriptionList(conceptId), stampCoordinate);
+        public <T extends DescriptionSememe<T>> Optional<LatestVersion<T>> getPreferredDescription(int conceptId) {
+            List<?> list = getDescriptionList(conceptId);
+            return languageCoordinate.getPreferredDescription((List<SememeChronology<T>>)list, stampCoordinate);
         }
 
-        private List<SememeChronology<DescriptionSememe<?>>> getDescriptionList(int conceptId) {
+        private <T extends DescriptionSememe<T>> List<SememeChronology<T>> getDescriptionList(int conceptId) {
             conceptId = Get.identifierService().getConceptNid(conceptId);
-            return Get.sememeService().getDescriptionsForComponent(conceptId).collect(Collectors.toList());
+            List<?> list = Get.sememeService().getDescriptionsForComponent(conceptId).collect(Collectors.toList());
+            return (List<SememeChronology<T>>)list;
         }
 
         @Override
-        public Optional<LatestVersion<DescriptionSememe<?>>> getDescriptionOptional(int conceptId) {
-            return languageCoordinate.getDescription(getDescriptionList(conceptId), stampCoordinate);
+        public <T extends DescriptionSememe<T>> Optional<LatestVersion<T>> getDescriptionOptional(int conceptId) {
+        	List<?> list = getDescriptionList(conceptId);
+            return languageCoordinate.getDescription((List<SememeChronology<T>>)list, stampCoordinate);
         }
 
         @Override
         public String conceptDescriptionText(int conceptId) {
-            Optional<LatestVersion<DescriptionSememe<?>>> descriptionOptional
+            Optional<LatestVersion<DescriptionSememe>> descriptionOptional
                     = getDescriptionOptional(conceptId);
             if (descriptionOptional.isPresent()) {
                 return descriptionOptional.get().value().getText();

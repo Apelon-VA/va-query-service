@@ -25,7 +25,7 @@ public class TaxonomyWalkCollector implements
 
     private static final int MAX_PRINT_COUNT = 10;
 
-    final TaxonomyCoordinate taxonomyCoordinate;
+    final TaxonomyCoordinate<?> taxonomyCoordinate;
     final int taxonomyFlags;
     final OpenIntHashSet watchSequences = new OpenIntHashSet();
     int errorCount = 0;
@@ -51,7 +51,7 @@ public class TaxonomyWalkCollector implements
             IntStream parentSequences = Get.taxonomyService().getTaxonomyParentSequences(conceptSequence, taxonomyCoordinate);
             int parentCount = (int) parentSequences.count();
             if (parentCount == 0) {
-                ConceptChronology c = Get.conceptService().getConcept(conceptSequence);               
+                ConceptChronology<?> c = Get.conceptService().getConcept(conceptSequence);               
                 if (printCount < MAX_PRINT_COUNT) {
                     printCount++;
                     System.out.println("No parents for: " + c.toUserString());

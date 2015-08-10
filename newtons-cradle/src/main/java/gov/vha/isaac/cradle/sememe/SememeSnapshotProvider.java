@@ -36,7 +36,7 @@ import java.util.stream.Stream;
  * @author kec
  * @param <V>
  */
-public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSnapshotService<V> {
+public class SememeSnapshotProvider<V extends SememeVersion<?>> implements SememeSnapshotService<V> {
 
     private static int descriptionAssemblageSequence = -1;
 
@@ -48,11 +48,11 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
     }
 
     Class<V> versionType;
-    StampCoordinate stampCoordinate;
+    StampCoordinate<? extends StampCoordinate<?>> stampCoordinate;
     SememeService sememeProvider;
     RelativePositionCalculator calculator;
 
-    public SememeSnapshotProvider(Class<V> versionType, StampCoordinate stampCoordinate, SememeService sememeProvider) {
+    public SememeSnapshotProvider(Class<V> versionType, StampCoordinate<? extends StampCoordinate<?>> stampCoordinate, SememeService sememeProvider) {
         this.versionType = versionType;
         this.stampCoordinate = stampCoordinate;
         this.sememeProvider = sememeProvider;
@@ -61,7 +61,7 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
 
     @Override
     public Optional<LatestVersion<V>> getLatestSememeVersion(int sememeSequence) {
-        SememeChronologyImpl sc = (SememeChronologyImpl) sememeProvider.getSememe(sememeSequence);
+        SememeChronologyImpl<?> sc = (SememeChronologyImpl<?>) sememeProvider.getSememe(sememeSequence);
         IntStream stampSequences = sc.getVersionStampSequences();
         StampSequenceSet latestSequences = calculator.getLatestStampSequencesAsSet(stampSequences);
         if (latestSequences.isEmpty()) {
@@ -87,7 +87,7 @@ public class SememeSnapshotProvider<V extends SememeVersion> implements SememeSn
         return sememeSequenceSet.parallelStream()
                 .mapToObj((int sememeSequence) -> {
                     try {
-                        SememeChronologyImpl sc = (SememeChronologyImpl) sememeProvider.getSememe(sememeSequence);
+                        SememeChronologyImpl<?> sc = (SememeChronologyImpl<?>) sememeProvider.getSememe(sememeSequence);
                         IntStream stampSequences = sc.getVersionStampSequences();
                         StampSequenceSet latestStampSequences = calculator.getLatestStampSequencesAsSet(stampSequences);
                         if (latestStampSequences.isEmpty()) {
