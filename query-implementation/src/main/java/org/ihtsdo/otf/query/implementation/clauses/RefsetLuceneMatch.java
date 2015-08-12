@@ -15,11 +15,13 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
 import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.api.component.sememe.version.LongSememe;
 import java.util.EnumSet;
 import java.util.List;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
@@ -28,8 +30,8 @@ import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.LeafClause;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.WhereClause;
-import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
-import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
+import org.ihtsdo.otf.query.lucene.indexers.SememeIndexer;
+import gov.vha.isaac.ochre.api.index.IndexServiceBI;
 import gov.vha.isaac.ochre.api.index.SearchResult;
 import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.Optional;
@@ -77,32 +79,26 @@ public class RefsetLuceneMatch extends LeafClause {
 
     @Override
     public NidSet computePossibleComponents(NidSet incomingPossibleComponents) {
-        throw new UnsupportedOperationException();
-        //TODO FIX BACK UP
-//        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
-//        String luceneMatch = (String) enclosingQuery.getLetDeclarations().get(luceneMatchKey);
-//
-//        NidSet nids = new NidSet();
-//        List<IndexerBI> lookers = LookupService.get().getAllServices(IndexerBI.class);
-//        IndexerBI refexIndexer = null;
-//        for (IndexerBI li : lookers) {
-//            if (li.getIndexerName().equals("refex")) {
-//                refexIndexer = li;
-//            }
-//        }
-//        if (refexIndexer == null) {
-//            throw new IllegalStateException("RefexIndexer is null");
-//        }
-//        List<SearchResult> queryResults = refexIndexer.query(luceneMatch, ComponentProperty.LONG_EXTENSION_1, 1000);
-//        queryResults.stream().forEach((s) -> {
-//            nids.add(s.nid);
-//        });
+        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+        String luceneMatch = (String) enclosingQuery.getLetDeclarations().get(luceneMatchKey);
+
+        NidSet nids = new NidSet();
+
+        SememeIndexer si = LookupService.get().getService(SememeIndexer.class);
+        if (si == null) {
+            throw new IllegalStateException("sememeIndexer is null");
+        }
+        List<SearchResult> queryResults = si.query(Long.parseLong(luceneMatch), 1000);
+        queryResults.stream().forEach((s) -> {
+            nids.add(s.nid);
+        });
+      //TODO FIX BACK UP
 //        nids.stream().forEach((nid) -> {
 //            Optional<? extends ObjectChronology<? extends StampedVersion>> optionalObject
-//                    = identifiedObjectService.getIdentifiedObjectChronology(nid);
+//                    = Get.identifiedObjectService().getIdentifiedObjectChronology(nid);
 //            if (optionalObject.isPresent()) {
 //                Optional<? extends LatestVersion<? extends StampedVersion>> optionalVersion = 
-//                        optionalObject.get().getLatestActiveVersion(viewCoordinate);
+//                        optionalObject.get().getLatestVersion(StampedVersion.class, viewCoordinate);
 //                if (!optionalVersion.isPresent()) {
 //                    nids.remove(nid);
 //                }
@@ -110,9 +106,9 @@ public class RefsetLuceneMatch extends LeafClause {
 //                nids.remove(nid);
 //            }
 //        });
-//        //Filter the results, based upon the input ViewCoordinate
-//        getResultsCache().or(nids);
-//        return nids;
+        //Filter the results, based upon the input ViewCoordinate
+        getResultsCache().or(nids);
+        return nids;
     }
 
     @Override

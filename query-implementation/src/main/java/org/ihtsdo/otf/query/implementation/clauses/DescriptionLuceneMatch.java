@@ -17,7 +17,6 @@ package org.ihtsdo.otf.query.implementation.clauses;
 
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
 import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
@@ -29,8 +28,7 @@ import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.LeafClause;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.WhereClause;
-import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
-import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
+import gov.vha.isaac.ochre.api.index.IndexServiceBI;
 import gov.vha.isaac.ochre.api.index.SearchResult;
 import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.Optional;
@@ -74,9 +72,9 @@ public class DescriptionLuceneMatch extends LeafClause {
 
 
         NidSet nids = new NidSet();
-        List<IndexerBI> indexers = LookupService.get().getAllServices(IndexerBI.class);
-        IndexerBI descriptionIndexer = null;
-        for (IndexerBI li : indexers) {
+        List<IndexServiceBI> indexers = LookupService.get().getAllServices(IndexServiceBI.class);
+        IndexServiceBI descriptionIndexer = null;
+        for (IndexServiceBI li : indexers) {
             if (li.getIndexerName().equals("descriptions")) {
                 descriptionIndexer = li;
             }
@@ -84,7 +82,7 @@ public class DescriptionLuceneMatch extends LeafClause {
         if (descriptionIndexer == null) {
             throw new IllegalStateException("No description indexer found in: " + indexers);
         }
-        List<SearchResult> queryResults = descriptionIndexer.query(luceneMatch, ComponentProperty.DESCRIPTION_TEXT, 1000);
+        List<SearchResult> queryResults = descriptionIndexer.query(luceneMatch, 1000);
         queryResults.stream().forEach((s) -> {
             nids.add(s.nid);
         });
