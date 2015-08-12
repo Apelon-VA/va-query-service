@@ -15,10 +15,6 @@
  */
 package gov.vha.isaac.cradle.commit;
 
-import gov.vha.isaac.ochre.api.commit.Alert;
-import gov.vha.isaac.ochre.api.commit.ChangeChecker;
-import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
-import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutionException;
@@ -28,9 +24,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import gov.vha.isaac.ochre.api.commit.Alert;
+import gov.vha.isaac.ochre.api.commit.ChangeChecker;
+import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.util.NamedThreadFactory;
+import javafx.concurrent.Task;
 
 /**
  *
@@ -38,7 +39,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class WriteSememeCompletionService implements Runnable {
     private static final Logger log = LogManager.getLogger();
-    private final ExecutorService writeSememePool = Executors.newFixedThreadPool(2);
+    private final ExecutorService writeSememePool = Executors.newFixedThreadPool(2, new NamedThreadFactory("WriteSememePool", false));
     private boolean run = true;
 
     ExecutorCompletionService<Void> conversionService = new ExecutorCompletionService(writeSememePool);

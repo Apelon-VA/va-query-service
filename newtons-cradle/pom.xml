@@ -32,5 +32,9 @@
             <groupId>gov.vha.isaac.isaac-metadata.modules</groupId>
             <artifactId>isaac-metadata-coordinates</artifactId>
         </dependency>
+        <dependency>
+            <groupId>gov.vha.isaac.isaac-metadata.modules</groupId>
+            <artifactId>isaac-ochre-impl</artifactId>
+        </dependency>
     </dependencies>
 </project>

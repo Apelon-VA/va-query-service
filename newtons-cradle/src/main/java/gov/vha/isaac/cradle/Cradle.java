@@ -64,6 +64,7 @@ import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
 import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.index.IndexServiceBI;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
 import gov.vha.isaac.ochre.util.WorkExecutors;
@@ -871,16 +872,11 @@ public class Cradle
         return super.getConcept(cNid);
     }
 
-    @Override
-    public Task<?> index(Class<?>... indexersToReindex) {
-        return startIndexTask(indexersToReindex);
-    }
-
     /**
      * @see ObjectChronicleTaskService#startIndexTask(Class...)
      */
     @Override
-    public GenerateIndexes startIndexTask(Class<?>... indexersToReindex) {
+    public GenerateIndexes startIndexTask(Class<? extends IndexServiceBI>... indexersToReindex) {
         GenerateIndexes indexingTask = new GenerateIndexes(indexersToReindex);
         LookupService.getService(WorkExecutors.class).getForkJoinPoolExecutor().execute(indexingTask);
         return indexingTask;

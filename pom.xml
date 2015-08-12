@@ -36,6 +36,11 @@
                 <artifactId>isaac-metadata-coordinates</artifactId>
                 <version>${isaac-metadata.version}</version>
             </dependency>
+            <dependency>
+                <groupId>gov.vha.isaac.isaac-metadata.modules</groupId>
+                <artifactId>isaac-ochre-impl</artifactId>
+                <version>${isaac-metadata.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

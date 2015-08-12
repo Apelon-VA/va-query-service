@@ -206,7 +206,7 @@ public class CommitTask extends TimedTask<Optional<CommitRecord>> {
 // TODO Indexers need to be change listeners
             //            notifyCommit();
             //            if (indexers != null) {
-//                for (IndexerBI i : indexers) {
+//                for (IndexService i : indexers) {
 //                    i.commitWriter();
 //                }
 //            }
