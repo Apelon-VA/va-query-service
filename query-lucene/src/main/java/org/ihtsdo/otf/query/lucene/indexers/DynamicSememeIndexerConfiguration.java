@@ -48,12 +48,12 @@ import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeType;
 import gov.vha.isaac.ochre.api.component.sememe.version.DynamicSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
-import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.DynamicSememeConstants;
 import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.DynamicSememeDataBI;
 import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.DynamicSememeDataType;
 import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.dataTypes.DynamicSememeArrayBI;
 import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.dataTypes.DynamicSememeIntegerBI;
 import gov.vha.isaac.ochre.api.index.IndexStatusListenerBI;
+import gov.vha.isaac.ochre.model.constants.IsaacMetadataConstants;
 import gov.vha.isaac.ochre.model.sememe.dataTypes.DynamicSememeData;
 import gov.vha.isaac.ochre.model.sememe.dataTypes.DynamicSememeString;
 
@@ -101,7 +101,7 @@ public class DynamicSememeIndexerConfiguration
 					{
 						HashMap<Integer, Integer[]> updatedWhatToIndex = new HashMap<>();
 						Stream<SememeChronology<? extends SememeVersion<?>>> sememeCs = 
-								Get.sememeService().getSememesFromAssemblage(DynamicSememeConstants.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getSequence());
+								Get.sememeService().getSememesFromAssemblage(IsaacMetadataConstants.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getSequence());
 						
 						sememeCs.forEach(sememeC ->
 						{
@@ -187,16 +187,7 @@ public class DynamicSememeIndexerConfiguration
 
 			if (buf.length() > 0)
 			{
-				data = new DynamicSememeData[1];
-
-				try
-				{
-					data[0] = new DynamicSememeString(buf.toString());
-				}
-				catch (PropertyVetoException e)
-				{
-					throw new RuntimeException("Shoudn't be possible");
-				}
+				data = new DynamicSememeData[] {new DynamicSememeString(buf.toString())};
 			}
 		}
 		else if ((columnsToIndex == null || columnsToIndex.length == 0))
@@ -206,7 +197,7 @@ public class DynamicSememeIndexerConfiguration
 		
 		SememeBuilder<? extends SememeChronology<? extends DynamicSememe<?>>> sb = 
 				Get.sememeBuilderService().getDyanmicSememeBuilder(assemblageNidOrSequence,
-						DynamicSememeConstants.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getSequence(), data);
+						IsaacMetadataConstants.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getSequence(), data);
 		
 		sb.build(EditCoordinates.getDefaultUserMetadata(), ChangeCheckerMode.ACTIVE);
 		Get.commitService().commit("Index Config Change");
@@ -224,9 +215,9 @@ public class DynamicSememeIndexerConfiguration
 	 * Returns an integer array of the column positions of the refex that are indexed, if any.
 	 * 
 	 */
-	public static Integer[] readIndexInfo(int assemblageNid) throws RuntimeException
+	public static Integer[] readIndexInfo(int assemblageSequence) throws RuntimeException
 	{
-		return LookupService.get().getService(DynamicSememeIndexerConfiguration.class).whatColumnsToIndex(assemblageNid);
+		return LookupService.get().getService(DynamicSememeIndexerConfiguration.class).whatColumnsToIndex(assemblageSequence);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -236,7 +227,7 @@ public class DynamicSememeIndexerConfiguration
 		SememeSnapshotService<DynamicSememe> sss = Get.sememeService().getSnapshot(DynamicSememe.class, StampCoordinates.getDevelopmentLatestActiveOnly());
 		@SuppressWarnings("rawtypes")
 		Stream<LatestVersion<DynamicSememe>> sememes = sss.getLatestSememeVersionsForComponentFromAssemblage(assemblageNidOrSequence, 
-				DynamicSememeConstants.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getSequence());
+				IsaacMetadataConstants.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getSequence());
 
 		@SuppressWarnings("rawtypes")
 		Optional<LatestVersion<DynamicSememe>> ds = sememes.findAny();
@@ -276,7 +267,7 @@ public class DynamicSememeIndexerConfiguration
 			
 			SememeBuilder<? extends SememeChronology<? extends DynamicSememe<?>>> sb = 
 					Get.sememeBuilderService().getDyanmicSememeBuilder(assemblageConceptSequence,
-							DynamicSememeConstants.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getSequence());
+							IsaacMetadataConstants.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getSequence());
 			
 			sb.build(Get.commitService().getRetiredStampSequence(rdv.getStampSequence()), new ArrayList<>());
 			

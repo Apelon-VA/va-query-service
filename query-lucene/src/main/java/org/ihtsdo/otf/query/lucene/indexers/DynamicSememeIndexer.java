@@ -19,7 +19,6 @@
 
 package org.ihtsdo.otf.query.lucene.indexers;
 
-import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.util.List;
 import javax.inject.Inject;
@@ -285,14 +284,7 @@ public class DynamicSememeIndexer extends LuceneIndexer
 	public final List<SearchResult> query(String queryString, Integer sememeConceptSequence, boolean prefixSearch, int sizeLimit, Long targetGeneration)
 			throws IOException, ParseException
 	{
-		try
-		{
-			return query(new DynamicSememeString(queryString), sememeConceptSequence, prefixSearch, null, sizeLimit, targetGeneration);
-		}
-		catch (PropertyVetoException e)
-		{
-			throw new ParseException(e.getMessage());
-		}
+		return query(new DynamicSememeString(queryString), sememeConceptSequence, prefixSearch, null, sizeLimit, targetGeneration);
 	}
 
 	/**
