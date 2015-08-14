@@ -122,6 +122,7 @@ public class SememeBuilderImpl<C extends SememeChronology<? extends SememeVersio
                 if (parameters != null) {
                     dsi.setData((DynamicSememeDataBI[])parameters[0]);
                 }
+                //TODO DAN this needs to fire the validator!
                 break;
             }	
             default:
@@ -190,6 +191,7 @@ public class SememeBuilderImpl<C extends SememeChronology<? extends SememeVersio
                 if (parameters != null) {
                     dsi.setData((DynamicSememeDataBI[])parameters[0]);
                 }
+                //TODO Dan this needs to fire the validator!
                 break;
             }	
             default:
