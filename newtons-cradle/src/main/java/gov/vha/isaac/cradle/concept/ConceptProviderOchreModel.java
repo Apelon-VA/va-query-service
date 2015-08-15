@@ -150,7 +150,13 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
 
     @Override
     public Optional<? extends ConceptChronology<? extends ConceptVersion<?>>> getOptionalConcept(UUID... conceptUuids) {
-        return getOptionalConcept(Get.identifierService().getConceptSequenceForUuids(conceptUuids));
+        //check hasUuid first, because getOptionalConcept adds the UUID to the index if it doesn't exist...
+        if (Get.identifierService().hasUuid(conceptUuids)) {
+            return getOptionalConcept(Get.identifierService().getConceptSequenceForUuids(conceptUuids));
+        }
+        else {
+            return Optional.empty();
+        }
     }
 
     @Override

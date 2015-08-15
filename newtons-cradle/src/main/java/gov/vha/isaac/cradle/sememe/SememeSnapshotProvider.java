@@ -60,8 +60,8 @@ public class SememeSnapshotProvider<V extends SememeVersion<?>> implements Semem
     }
 
     @Override
-    public Optional<LatestVersion<V>> getLatestSememeVersion(int sememeSequence) {
-        SememeChronologyImpl<?> sc = (SememeChronologyImpl<?>) sememeProvider.getSememe(sememeSequence);
+    public Optional<LatestVersion<V>> getLatestSememeVersion(int sememeSequenceOrNid) {
+        SememeChronologyImpl<?> sc = (SememeChronologyImpl<?>) sememeProvider.getSememe(sememeSequenceOrNid);
         IntStream stampSequences = sc.getVersionStampSequences();
         StampSequenceSet latestSequences = calculator.getLatestStampSequencesAsSet(stampSequences);
         if (latestSequences.isEmpty()) {
