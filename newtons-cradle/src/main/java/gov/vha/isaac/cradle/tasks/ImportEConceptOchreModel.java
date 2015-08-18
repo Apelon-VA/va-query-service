@@ -31,18 +31,19 @@ import gov.vha.isaac.ochre.api.component.sememe.SememeBuilderService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.MutableComponentNidSememe;
+import gov.vha.isaac.ochre.api.component.sememe.version.MutableLongSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.MutableSememeVersion;
+import gov.vha.isaac.ochre.api.component.sememe.version.MutableStringSememe;
 import gov.vha.isaac.ochre.model.concept.ConceptChronologyImpl;
+import gov.vha.isaac.ochre.model.concept.ConceptVersionImpl;
 import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
 import gov.vha.isaac.ochre.model.sememe.version.DescriptionSememeImpl;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Stream;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.tcc.api.id.UuidIdBI;
@@ -54,6 +55,7 @@ import org.ihtsdo.otf.tcc.dto.component.attribute.TtkConceptAttributesChronicle;
 import org.ihtsdo.otf.tcc.dto.component.attribute.TtkConceptAttributesRevision;
 import org.ihtsdo.otf.tcc.dto.component.description.TtkDescriptionChronicle;
 import org.ihtsdo.otf.tcc.dto.component.description.TtkDescriptionRevision;
+import org.ihtsdo.otf.tcc.dto.component.identifier.TtkIdentifier;
 import org.ihtsdo.otf.tcc.dto.component.refex.TtkRefexAbstractMemberChronicle;
 import org.ihtsdo.otf.tcc.dto.component.refex.type_member.TtkRefexMemberChronicle;
 import org.ihtsdo.otf.tcc.dto.component.refex.type_member.TtkRefexRevision;
@@ -132,7 +134,40 @@ public class ImportEConceptOchreModel implements Callable<Void> {
                     }
                 }
                 originDestinationTaxonomyRecords.put(conceptSequence, parentTaxonomyRecord);
-
+                
+                for (TtkIdentifier id : attributes.getAdditionalIdComponents()) {
+                    
+                    switch (id.getIdType()) {
+                        case LONG:
+                            SememeBuilder<SememeChronology<MutableLongSememe<?>>> longIdBuilder =  
+                                sememeBuilderService.getLongSememeBuilder((Long)id.getDenotation(), 
+                                        conceptChronology.getNid(), 
+                                        Get.identifierService().getConceptSequenceForUuids(id.getAuthorityUuid()));
+                            
+                            SememeChronology<MutableLongSememe<?>> idSememe = longIdBuilder.build(getStampSequence(id), new ArrayList());
+                            Get.sememeService().writeSememe(idSememe);
+                            break;
+                        case STRING:
+                            SememeBuilder<SememeChronology<MutableStringSememe<?>>> stringIdBuilder =  
+                                sememeBuilderService.getStringSememeBuilder((String)id.getDenotation(), 
+                                    conceptChronology.getNid(), 
+                                    Get.identifierService().getConceptSequenceForUuids(id.getAuthorityUuid()));
+                        
+                            SememeChronology<MutableStringSememe<?>> stringSememe = stringIdBuilder.build(getStampSequence(id), new ArrayList());
+                            Get.sememeService().writeSememe(stringSememe);
+                            break;
+                        case UUID:
+                            //TODO Keith - is this the right thing to do?
+                            if (id.getAuthorityUuid().equals(IsaacMetadataAuxiliaryBinding.GENERATED_UUID.getPrimodialUuid()))
+                            {
+                                conceptChronology.addAdditionalUuids((UUID)id.getDenotation());
+                                break;
+                            }
+                            
+                        default :
+                            throw new UnsupportedOperationException("Unhandled case - id attribute " + id.toString() + " on concept " + conceptChronology.toExternalString());
+                    }
+                }
             }
 
             Get.conceptService().writeConcept(conceptChronology);
