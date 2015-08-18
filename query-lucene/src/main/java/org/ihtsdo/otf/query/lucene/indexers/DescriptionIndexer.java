@@ -10,8 +10,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.glassfish.hk2.runlevel.RunLevel;
@@ -180,7 +178,7 @@ public class DescriptionIndexer extends LuceneIndexer implements IndexServiceBI 
     }
 
     private void indexDescription(Document doc, SememeChronology<DescriptionSememe<? extends DescriptionSememe<?>>> sememeChronology) {
-    	doc.add(new TextField(FIELD_SEMEME_ASSEMBLAGE_SEQUENCE, sememeChronology.getAssemblageSequence() + "", Field.Store.NO));
+        doc.add(new TextField(FIELD_SEMEME_ASSEMBLAGE_SEQUENCE, sememeChronology.getAssemblageSequence() + "", Field.Store.NO));
         String lastDescText = null;
         String lastDescType = null;
 
