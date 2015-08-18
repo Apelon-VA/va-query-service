@@ -126,9 +126,6 @@ public class VerifyLoadEConceptFile
                                 case OCHRE_CONCEPT_MODEL:
                                     conversionService.submit(new VerifyEConceptOchreModel(termService, eConcept, stampPath));
                                     break;
-                                case OTF_CONCEPT_MODEL:
-                                    conversionService.submit(new VerifyEConceptOtfModel(termService, eConcept, stampPath));
-                                    break;
                                 default:
                                     throw new UnsupportedOperationException("Can't handle: " + conceptModel);
                             }

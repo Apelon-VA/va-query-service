@@ -27,7 +27,6 @@ import javax.annotation.PreDestroy;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.runlevel.RunLevel;
-import org.ihtsdo.otf.tcc.model.path.PathManager;
 import org.jvnet.hk2.annotations.Service;
 
 /**
@@ -46,10 +45,6 @@ public class PathProvider implements PathService {
         switch (LookupService.getService(ConfigurationService.class).getConceptModel()) {
             case OCHRE_CONCEPT_MODEL:
                 provider = new OchrePathProvider(); 
-                break;
-
-            case OTF_CONCEPT_MODEL:
-                provider = new PathManager();
                 break;
 
             default:

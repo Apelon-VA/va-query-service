@@ -59,7 +59,6 @@ public class IdentifierProvider implements IdentifierService {
     private final UuidIntMapMap uuidIntMapMap;
     private final SequenceMap conceptSequenceMap;
     private final SequenceMap sememeSequenceMap;
-    private final SequenceMap refexSequenceMap;
     private final ConcurrentSequenceIntMap nidCnidMap;
     private final AtomicBoolean loadRequired = new AtomicBoolean();
 
@@ -72,7 +71,6 @@ public class IdentifierProvider implements IdentifierService {
         uuidIntMapMap = UuidIntMapMap.create(new File(folderPath.toAbsolutePath().toFile(), "uuid-nid-map"));
         conceptSequenceMap = new SequenceMap(450000);
         sememeSequenceMap = new SequenceMap(3000000);
-        refexSequenceMap = new SequenceMap(3000000);
         nidCnidMap = new ConcurrentSequenceIntMap();
     }
 
@@ -88,10 +86,6 @@ public class IdentifierProvider implements IdentifierService {
                 final String sememeSequenceMapBaseName = "sememe-sequence.map";
                 log.info("Loading {} from dir {}.", sememeSequenceMapBaseName, folderPath.toAbsolutePath().normalize().toString());
                 sememeSequenceMap.read(new File(folderPath.toFile(), sememeSequenceMapBaseName));
-                
-                final String refexSequenceMapBaseName = "refex-sequence.map";
-                log.info("Loading {} from dir {}.", refexSequenceMapBaseName, folderPath.toAbsolutePath().normalize().toString());
-                refexSequenceMap.read(new File(folderPath.toFile(), refexSequenceMapBaseName));
                 
                 // uuid-nid-map can do dynamic load, no need to read all at the beginning.
                 // log.info("Loading uuid-nid-map.");
@@ -114,8 +108,6 @@ public class IdentifierProvider implements IdentifierService {
         conceptSequenceMap.write(new File(folderPath.toFile(), "concept-sequence.map"));
         log.info("writing sememe-sequence.map.");
         sememeSequenceMap.write(new File(folderPath.toFile(), "sememe-sequence.map"));
-        log.info("writing refex-sequence.map.");
-        refexSequenceMap.write(new File(folderPath.toFile(), "refex-sequence.map"));
         log.info("writing uuid-nid-map.");
         uuidIntMapMap.write();
         log.info("writing sequence-cnid-map.");
@@ -130,10 +122,7 @@ public class IdentifierProvider implements IdentifierService {
         if (conceptSequenceMap.containsNid(nid)) {
             return ObjectChronologyType.CONCEPT;
         }
-        if (refexSequenceMap.containsNid(nid)) {
-            return ObjectChronologyType.REFEX;
-        }
-        return ObjectChronologyType.OTHER;
+        return ObjectChronologyType.UNKNOWN_NID;
     }
 
     @Override
@@ -221,46 +210,6 @@ public class IdentifierProvider implements IdentifierService {
         return sememSequences.map((sequence) -> {
             return getSememeNid(sequence);
         });
-    }
-
-    @Override
-    public int getRefexSequence(int nid) {
-        if (nid >= 0) {
-            return nid;
-        }
-        return refexSequenceMap.addNidIfMissing(nid);
-    }
-
-    @Override
-    public int getRefexNid(int refexSequence) {
-        if (refexSequence < 0) {
-            return refexSequence;
-        }
-        return sememeSequenceMap.getNidFast(refexSequence);
-    }
-
-    @Override
-    public IntStream getRefexSequenceStream() {
-        return refexSequenceMap.getSequenceStream();
-    }
-
-    @Override
-    public IntStream getParallelRefexSequenceStream() {
-        return refexSequenceMap.getSequenceStream().parallel();
-    }
-
-    @Override
-    public IntStream getRefexNidsForSequences(IntStream refexSequences) {
-        return refexSequences.map((sequence) -> {
-            return getRefexNid(sequence);
-        });
-    }
-
-    @Override
-    public RefexSequenceSet getRefexSequencesForNids(int[] refexNidArray) {
-        RefexSequenceSet sequences = new RefexSequenceSet();
-        IntStream.of(refexNidArray).forEach((nid) -> sequences.add(refexSequenceMap.getSequenceFast(nid)));
-        return sequences;
     }
 
     @Override

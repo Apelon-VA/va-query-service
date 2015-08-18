@@ -22,22 +22,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.ihtsdo.otf.tcc.api.store.Ts;
 import org.ihtsdo.otf.tcc.model.cc.concept.ConceptChronicle;
-import org.ihtsdo.otf.tcc.model.cc.refex.RefexService;
 
 /**
  * Created by kec on 7/19/14.
  */
 public class ConceptChronicleDataEager implements I_ManageConceptData {
-
-
-    private static RefexService refexService;
-
-    protected static RefexService getRefexService() {
-        if (refexService == null) {
-            refexService = LookupService.getService(RefexService.class);
-        }
-        return refexService;
-    }
 
     private static CradleExtensions cradle;
 

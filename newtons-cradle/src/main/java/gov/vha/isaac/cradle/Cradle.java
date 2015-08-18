@@ -1,12 +1,10 @@
 package gov.vha.isaac.cradle;
 
-import gov.vha.isaac.cradle.concept.ConceptProviderOtfModel;
 import gov.vha.isaac.cradle.tasks.*;
 import gov.vha.isaac.cradle.taxonomy.TaxonomyRecordPrimitive;
 import gov.vha.isaac.cradle.waitfree.CasSequenceObjectMap;
 import gov.vha.isaac.cradle.component.ConceptChronicleDataEager;
 import gov.vha.isaac.ochre.api.memory.MemoryUtil;
-import org.ihtsdo.otf.tcc.model.cc.refex.RefexService;
 import gov.vha.isaac.cradle.taxonomy.DestinationOriginRecord;
 import gov.vha.isaac.cradle.taxonomy.CradleTaxonomyProvider;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
@@ -90,9 +88,6 @@ public class Cradle
 
     transient HashMap<UUID, ViewCoordinate> viewCoordinates = new HashMap<>();
 
-    RefexService refexProvider;
-
-
     //For HK2
     private Cradle() throws IOException, NumberFormatException, ParseException {
         try {
@@ -107,7 +102,6 @@ public class Cradle
     private void startMe() throws IOException {
         try {
             log.info("Starting Cradle post-construct");
-            refexProvider = LookupService.getService(RefexService.class);
             MemoryUtil.startListener();
         } catch (Exception e) {
             LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("ChRonicled Assertion Database of Logical Expressions", e);
@@ -130,37 +124,37 @@ public class Cradle
 
     @Override
     public void writeRefex(RefexMember<?, ?> refex) {
-        refexProvider.writeRefex(refex);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Stream<RefexMember<?, ?>> getRefexStream() {
-        return refexProvider.getRefexStream();
+    	throw new UnsupportedOperationException();
     }
 
     @Override
     public Stream<RefexMember<?, ?>> getParallelRefexStream() {
-        return refexProvider.getParallelRefexStream();
+    	throw new UnsupportedOperationException();
     }
 
     @Override
     public Stream<ConceptChronicleDataEager> getConceptDataEagerStream() {
-        return ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).getConceptDataEagerStream();
+    	throw new UnsupportedOperationException();
     }
 
     @Override
     public Stream<ConceptChronicleDataEager> getConceptDataEagerStream(ConceptSequenceSet conceptSequences) {
-        return ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).getConceptDataEagerStream(conceptSequences);
+    	throw new UnsupportedOperationException();
     }
 
     @Override
     public Stream<ConceptChronicleDataEager> getParallelConceptDataEagerStream(ConceptSequenceSet conceptSequences) {
-        return ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).getParallelConceptDataEagerStream(conceptSequences);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Stream<ConceptChronicleDataEager> getParallelConceptDataEagerStream() {
-        return ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).getParallelConceptDataEagerStream();
+    	throw new UnsupportedOperationException();
     }
 
     @Override
@@ -210,22 +204,22 @@ public class Cradle
 
     @Override
     public Stream<ConceptChronicle> getConceptStream() {
-        return ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).getConceptStream();
+    	throw new UnsupportedOperationException();
     }
 
     @Override
     public Stream<ConceptChronicle> getParallelConceptStream() {
-        return ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).getParallelConceptStream();
+    	throw new UnsupportedOperationException();
     }
 
     @Override
     public Stream<? extends ConceptChronicleBI> getConceptStream(ConceptSequenceSet conceptSequences) throws IOException {
-        return ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).getConceptStream(conceptSequences);
+    	throw new UnsupportedOperationException();
     }
 
     @Override
     public Stream<? extends ConceptChronicleBI> getParallelConceptStream(ConceptSequenceSet conceptSequences) throws IOException {
-        return ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).getConceptStream(conceptSequences).parallel();
+    	throw new UnsupportedOperationException();
     }
 
     @Override
@@ -265,12 +259,12 @@ public class Cradle
 
     @Override
     public int loadEconFiles(java.nio.file.Path... paths) throws Exception {
-        return startLoadTask(paths).get();
+        return startLoadTask(ConceptModel.OCHRE_CONCEPT_MODEL, paths).get();
     }
-
+    
     @Override
     public ConceptChronicleDataEager getConceptData(int i) throws IOException {
-        return ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).getConceptData(i);
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -511,7 +505,7 @@ public class Cradle
 
     @Override
     public void forgetXrefPair(int referencedComponentNid, NidPairForRefex nidPairForRefex) throws IOException {
-        refexProvider.forgetXrefPair(referencedComponentNid, nidPairForRefex);
+    	throw new UnsupportedOperationException();
     }
 
     @Override
@@ -667,20 +661,6 @@ public class Cradle
                 return Get.conceptService().getOptionalConcept(nid);
             case SEMEME:
                 return Get.sememeService().getOptionalSememe(Get.identifierService().getSememeSequence(nid));
-             case REFEX:
-                return Optional.ofNullable(refexProvider.getRefex(Get.identifierService().getRefexSequence(nid)));
-        }
-        //If the above code doesn't identify descriptions (SEMEMEs in OCHRE) - try to find them in OTF concepts...
-        if (Get.conceptModel() == ConceptModel.OTF_CONCEPT_MODEL) {
-            try {
-                int conNid = Get.identifierService().getConceptSequenceForComponentNid(nid);
-                if (conNid != Integer.MAX_VALUE) {
-                    ConceptChronicle concept = ConceptChronicle.class.cast(Get.conceptService().getConcept(conNid));
-                    return Optional.ofNullable(concept.getComponent(nid));
-                }
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
         }
         // otherwise return empty. 
         return Optional.empty();
@@ -819,22 +799,22 @@ public class Cradle
 
     @Override
     public void writeConceptData(ConceptChronicleDataEager conceptData) {
-        ((ConceptProviderOtfModel) Get.conceptService().getDelegate()).writeConceptData(conceptData);
+    	throw new UnsupportedOperationException();
     }
 
     @Override
     public RefexMember<?, ?> getRefex(int refexId) {
-        return refexProvider.getRefex(refexId);
+    	throw new UnsupportedOperationException();
     }
 
     @Override
     public Collection<RefexMember<?, ?>> getRefexesForAssemblage(int assemblageNid) {
-        return refexProvider.getRefexesFromAssemblage(assemblageNid).collect(Collectors.toList());
+    	throw new UnsupportedOperationException();
     }
 
     @Override
     public Collection<RefexMember<?, ?>> getRefexesForComponent(int componentNid) {
-        return refexProvider.getRefexesForComponent(componentNid).collect(Collectors.toList());
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -844,7 +824,6 @@ public class Cradle
                 Get.identifierService().getConceptSequence(authorNid),
                 Get.identifierService().getConceptSequence(moduleNid),
                 Get.identifierService().getConceptSequence(pathNid));
-
     }
 
     @Override
@@ -987,5 +966,7 @@ public class Cradle
                 throw new UnsupportedOperationException("Can't handle: " + stampPath);
         }
     }
+    
+    
 
 }
