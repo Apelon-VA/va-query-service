@@ -32,6 +32,7 @@ import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.MutableComponentNidSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.MutableSememeVersion;
+import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
 import gov.vha.isaac.ochre.model.concept.ConceptChronologyImpl;
 import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
 import gov.vha.isaac.ochre.model.sememe.version.DescriptionSememeImpl;
@@ -75,7 +76,7 @@ public class ImportEConceptOchreModel implements Callable<Void> {
     public CasSequenceObjectMap<TaxonomyRecordPrimitive> originDestinationTaxonomyRecords;
     public ConcurrentSkipListSet<DestinationOriginRecord> destinationOriginRecordSet;
 
-     {
+    {
         originDestinationTaxonomyRecords = cradle.getOriginDestinationTaxonomyMap();
         destinationOriginRecordSet = cradle.getDestinationOriginRecordSet();
         descriptionAssemblageSequence = Get.identifierService().getConceptSequenceForUuids(
@@ -104,12 +105,29 @@ public class ImportEConceptOchreModel implements Callable<Void> {
             }
 
             ConceptChronologyImpl conceptChronology
-                    =  (ConceptChronologyImpl) Get.conceptService().getConcept(eConcept.getUuidList().toArray(new UUID[0]));
+                    = (ConceptChronologyImpl) Get.conceptService().getConcept(eConcept.getUuidList().toArray(new UUID[0]));
             int conceptSequence = conceptChronology.getConceptSequence();
 
             TtkConceptAttributesChronicle attributes = eConcept.getConceptAttributes();
             if (attributes != null) {
-            TaxonomyRecordPrimitive parentTaxonomyRecord;
+                List<?> builtObjects = new ArrayList<>();
+                attributes.getAdditionalIdComponents().forEach((additionalId) -> {
+                    int assemblageConceptSequence = Get.identifierService().getConceptSequenceForUuids(additionalId.getAuthorityUuid());
+                    int idStampSequence = additionalId.getStampSequence();
+                    switch (additionalId.getIdType()) {
+                        case LONG:
+                        case STRING:
+                            SememeBuilder<? extends SememeChronology<? extends SememeVersion<?>>> builder = 
+                                    Get.sememeBuilderService().getStringSememeBuilder(additionalId.getDenotation().toString(), conceptChronology.getNid(), assemblageConceptSequence);
+                            builder.build(idStampSequence, builtObjects);
+                            break;
+                    }
+
+                });
+                builtObjects.forEach((idSememe) -> {
+                    Get.sememeService().writeSememe((SememeChronology<?>) idSememe);
+                });
+                TaxonomyRecordPrimitive parentTaxonomyRecord;
                 if (originDestinationTaxonomyRecords.containsKey(conceptSequence)) {
                     parentTaxonomyRecord = originDestinationTaxonomyRecords.get(conceptSequence).get();
                 } else {
@@ -121,14 +139,14 @@ public class ImportEConceptOchreModel implements Callable<Void> {
                         Get.identifierService().getConceptSequenceForUuids(attributes.moduleUuid),
                         Get.identifierService().getConceptSequenceForUuids(attributes.pathUuid));
                 conceptChronology.createMutableVersion(versionStampSequence);
-                parentTaxonomyRecord.getTaxonomyRecordUnpacked().addStampRecord(conceptSequence, 
+                parentTaxonomyRecord.getTaxonomyRecordUnpacked().addStampRecord(conceptSequence,
                         conceptSequence, versionStampSequence, TaxonomyFlags.CONCEPT_STATUS.bits);
                 if (attributes.revisions != null) {
                     for (TtkConceptAttributesRevision revision : attributes.revisions) {
                         versionStampSequence = getStampSequence(revision);
                         conceptChronology.createMutableVersion(versionStampSequence);
-                        parentTaxonomyRecord.getTaxonomyRecordUnpacked().addStampRecord(conceptSequence, 
-                            conceptSequence, versionStampSequence, TaxonomyFlags.CONCEPT_STATUS.bits);
+                        parentTaxonomyRecord.getTaxonomyRecordUnpacked().addStampRecord(conceptSequence,
+                                conceptSequence, versionStampSequence, TaxonomyFlags.CONCEPT_STATUS.bits);
                     }
                 }
                 originDestinationTaxonomyRecords.put(conceptSequence, parentTaxonomyRecord);
@@ -140,20 +158,19 @@ public class ImportEConceptOchreModel implements Callable<Void> {
             for (TtkDescriptionChronicle desc : eConcept.getDescriptions()) {
                 int caseSignificanceConceptSequence = LanguageCoordinates.caseSignificanceToConceptSequence(desc.initialCaseSignificant);
                 int languageConceptSequence = LanguageCoordinates.iso639toConceptSequence(desc.getLang());
-                assert languageConceptSequence == IsaacMetadataAuxiliaryBinding.ENGLISH.getConceptSequence(): "Converting:  " + desc.getLang() + " " + desc;
+                assert languageConceptSequence == IsaacMetadataAuxiliaryBinding.ENGLISH.getConceptSequence() : "Converting:  " + desc.getLang() + " " + desc;
                 int descriptionTypeConceptSequence = Get.identifierService().getConceptSequenceForUuids(desc.getTypeUuid());
-                if (descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.PREFERRED.getConceptSequence() ||
-                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.ACCEPTABLE.getConceptSequence()) {
+                if (descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.PREFERRED.getConceptSequence()
+                        || descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.ACCEPTABLE.getConceptSequence()) {
                     log.error("Found incorrect descripiton type: " + desc);
                 }
-                assert descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.FULLY_SPECIFIED_NAME.getConceptSequence() ||
-                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.PREFERRED.getConceptSequence() ||
-                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.ACCEPTABLE.getConceptSequence() ||
-                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.SYNONYM.getConceptSequence() ||
-                        descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.DEFINITION_DESCRIPTION_TYPE.getConceptSequence(): "Converting: " + desc.getTypeUuid()
+                assert descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.FULLY_SPECIFIED_NAME.getConceptSequence()
+                        || descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.PREFERRED.getConceptSequence()
+                        || descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.ACCEPTABLE.getConceptSequence()
+                        || descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.SYNONYM.getConceptSequence()
+                        || descriptionTypeConceptSequence == IsaacMetadataAuxiliaryBinding.DEFINITION_DESCRIPTION_TYPE.getConceptSequence() : "Converting: " + desc.getTypeUuid()
                         + " " + desc;
-                
-                
+
                 SememeBuilder<? extends SememeChronology<? extends DescriptionSememe>> descBuilder
                         = sememeBuilderService.getDescriptionSememeBuilder(caseSignificanceConceptSequence,
                                 languageConceptSequence,
@@ -162,12 +179,38 @@ public class ImportEConceptOchreModel implements Callable<Void> {
                                 conceptChronology.getNid(),
                                 descriptionAssemblageSequence);
                 descBuilder.setPrimordialUuid(desc.getPrimordialUuid());
+
                 desc.getAdditionalIdComponents().forEach((additionalId) -> {
-                    if (additionalId.getIdType() == IDENTIFIER_PART_TYPES.UUID) {
-                        descBuilder.addUuids(((UuidIdBI)additionalId).getDenotation());
+                    switch (additionalId.getIdType()) {
+                        case UUID:
+                            descBuilder.addUuids(((UuidIdBI) additionalId).getDenotation());
+                            break;
+                         
                     }
+
                 });
-                
+                 desc.getAdditionalIdComponents().forEach((additionalId) -> {
+                    switch (additionalId.getIdType()) {
+                        case STRING:
+                        case LONG:
+                            int assemblageConceptSequence = Get.identifierService().getConceptSequenceForUuids(additionalId.getAuthorityUuid());
+                            int idStampSequence = additionalId.getStampSequence();
+                            SememeBuilder<? extends SememeChronology<? extends SememeVersion<?>>> builder = 
+                                    Get.sememeBuilderService().getStringSememeBuilder(additionalId.getDenotation().toString(), 
+                                            descBuilder, 
+                                            assemblageConceptSequence);
+                            
+                      List<?> builtObjects = new ArrayList<>();
+                            
+                            builder.build(idStampSequence, builtObjects);
+                            builtObjects.forEach((idSememe) -> {
+                                Get.sememeService().writeSememe((SememeChronology<?>) idSememe);
+                            });
+                           
+                    }
+
+                });
+
                 int stampSequence = getStampSequence(desc);
                 List createdComponents = new ArrayList();
                 SememeChronologyImpl newDescription = (SememeChronologyImpl) descBuilder.build(stampSequence, createdComponents);
@@ -183,7 +226,7 @@ public class ImportEConceptOchreModel implements Callable<Void> {
                 }
                 Get.sememeService().writeSememe(newDescription);
             }
-            
+
             eConcept.getRefsetMembers().stream().forEach((TtkRefexAbstractMemberChronicle member) -> {
                 makeSememe(member);
             });
@@ -195,8 +238,7 @@ public class ImportEConceptOchreModel implements Callable<Void> {
             TtkConceptLock.getLock(eConcept.getUuidList()).unlock();
         }
     }
-    
-    
+
     private static <E extends TtkRevision> Stream<E> stream(List<E> collection) {
         if (collection == null) {
             return Stream.empty();
@@ -211,33 +253,33 @@ public class ImportEConceptOchreModel implements Callable<Void> {
         switch (member.getType()) {
             case CID:
                 TtkRefexUuidMemberChronicle cidMember = (TtkRefexUuidMemberChronicle) member;
-                SememeBuilder<SememeChronology<MutableComponentNidSememe<?>>> cidBuilder =
-                        sememeBuilderService.getComponentSememeBuilder(Get.identifierService().getNidForUuids(cidMember.uuid1),
+                SememeBuilder<SememeChronology<MutableComponentNidSememe<?>>> cidBuilder
+                        = sememeBuilderService.getComponentSememeBuilder(Get.identifierService().getNidForUuids(cidMember.uuid1),
                                 referencedComponentNid,
                                 assemblageSequence);
                 SememeChronology<MutableComponentNidSememe<?>> cidSememe = cidBuilder.build(stampSequence, new ArrayList());
                 stream(cidMember.revisions).forEach((TtkRefexUuidRevision r) -> {
-                        int revisionStampSequence = getStampSequence(r);
-                        MutableComponentNidSememe mutable = cidSememe.createMutableVersion(MutableComponentNidSememe.class, revisionStampSequence);
-                        mutable.setComponentNid(Get.identifierService().getNidForUuids(r.uuid1));
-                    });
+                    int revisionStampSequence = getStampSequence(r);
+                    MutableComponentNidSememe mutable = cidSememe.createMutableVersion(MutableComponentNidSememe.class, revisionStampSequence);
+                    mutable.setComponentNid(Get.identifierService().getNidForUuids(r.uuid1));
+                });
                 Get.sememeService().writeSememe(cidSememe);
                 break;
-                
+
             case MEMBER:
                 TtkRefexMemberChronicle memberMember = (TtkRefexMemberChronicle) member;
-                SememeBuilder<SememeChronology<MutableSememeVersion<?>>> mb =
-                        sememeBuilderService.getMembershipSememeBuilder(referencedComponentNid,
+                SememeBuilder<SememeChronology<MutableSememeVersion<?>>> mb
+                        = sememeBuilderService.getMembershipSememeBuilder(referencedComponentNid,
                                 assemblageSequence);
                 SememeChronology<MutableSememeVersion<?>> memberSememe = mb.build(stampSequence, new ArrayList());
-                
+
                 stream(memberMember.revisions).forEach((TtkRefexRevision r) -> {
-                        int revisionStampSequence = getStampSequence(r);
-                        memberSememe.createMutableVersion(MutableSememeVersion.class, revisionStampSequence);
-                    });
+                    int revisionStampSequence = getStampSequence(r);
+                    memberSememe.createMutableVersion(MutableSememeVersion.class, revisionStampSequence);
+                });
                 Get.sememeService().writeSememe(memberSememe);
                 break;
-                
+
             case ARRAY_BYTEARRAY:
             case BOOLEAN:
             case CID_BOOLEAN:
@@ -257,7 +299,8 @@ public class ImportEConceptOchreModel implements Callable<Void> {
             case LONG:
             case STR:
             case UNKNOWN:
-            default: throw new UnsupportedOperationException("can't handle: " + member.getType());
+            default:
+                throw new UnsupportedOperationException("can't handle: " + member.getType());
         }
     }
 

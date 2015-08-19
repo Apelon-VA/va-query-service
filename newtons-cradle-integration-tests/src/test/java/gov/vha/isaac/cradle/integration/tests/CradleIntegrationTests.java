@@ -21,7 +21,11 @@ import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
 import gov.vha.isaac.ochre.api.TaxonomyService;
+import gov.vha.isaac.ochre.api.TaxonomySnapshotService;
+import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshot;
+import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshotService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
@@ -35,7 +39,13 @@ import gov.vha.isaac.ochre.api.tree.Tree;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeWithBitSets;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -45,6 +55,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -162,6 +173,8 @@ public class CradleIntegrationTests {
              Assert.assertTrue(differences);
              */
         }
+        //roleReport(new ConceptSpec("Has definitional manifestation (attribute)",
+        //        UUID.fromString("545df979-75ea-3f82-939a-565d032bcdad")));
 
         testRole();
 
@@ -220,6 +233,133 @@ public class CradleIntegrationTests {
         //
 
         cycleTest();
+
+    }
+
+    private void roleReport(ConceptSpec roleToReportSpec) throws IOException {
+        TaxonomyCoordinate statedTaxonomyCoordinate = Get.coordinateFactory().createDefaultStatedTaxonomyCoordinate();
+        TaxonomyCoordinate inferredTaxonomyCoordinate = Get.coordinateFactory().createDefaultInferredTaxonomyCoordinate();
+        TaxonomyService taxonomyService = Get.taxonomyService();
+        TaxonomySnapshotService statedSnapshot = taxonomyService.getSnapshot(statedTaxonomyCoordinate);
+        TaxonomySnapshotService inferredSnapshot = taxonomyService.getSnapshot(inferredTaxonomyCoordinate);
+        ConceptSequenceSet typeSequenceSet = ConceptSequenceSet.of(roleToReportSpec.getConceptSequence());
+
+        ConceptSnapshotService statedConceptSnapshot = Get.conceptService().getSnapshot(statedTaxonomyCoordinate.getStampCoordinate(), statedTaxonomyCoordinate.getLanguageCoordinate());
+        ConceptSnapshotService inferredConceptSnapshot = Get.conceptService().getSnapshot(inferredTaxonomyCoordinate.getStampCoordinate(), inferredTaxonomyCoordinate.getLanguageCoordinate());
+
+        StringBuilder statedListBuilder = new StringBuilder();
+        StringBuilder statedRelReport = new StringBuilder();
+        StringBuilder concordanceReport = new StringBuilder();
+        String roleSpecLabel = roleToReportSpec.getConceptDescriptionText().replace(" (attribute)", "");
+        statedRelReport.append("SCTID/Action\t");
+        statedRelReport.append("Axiom\n");
+        long statedCount;
+        statedCount = Get.identifierService().getConceptSequenceStream().filter((conceptSequence) -> {
+            return (statedConceptSnapshot.isConceptActive(conceptSequence)
+                    && statedSnapshot.getAllRelationshipDestinationSequencesOfType(conceptSequence, typeSequenceSet).count() > 0);
+        }).mapToObj((conceptSequence -> conceptSequence)).sorted((Integer o1, Integer o2) -> Get.conceptDescriptionText(o1)
+                .compareTo(Get.conceptDescriptionText(o2)))
+                .filter((conceptSequence) -> {
+                    String conceptDescriptionText = Get.conceptDescriptionText(conceptSequence);
+                    statedListBuilder.append(Get.identifierService().getUuidPrimordialFromConceptSequence(conceptSequence).get().toString());
+                    statedListBuilder.append("\t");
+                    statedListBuilder.append(conceptDescriptionText);
+                    statedListBuilder.append("\n");
+
+                    statedSnapshot.getAllRelationshipDestinationSequencesOfType(conceptSequence, typeSequenceSet).forEach((destinationSequence) -> {
+                        statedRelReport.append(Get.identifierService().getConceptIdentifierForAuthority(conceptSequence,
+                                IsaacMetadataAuxiliaryBinding.SNOMED_INTEGER_ID.getPrimodialUuid(),
+                                statedTaxonomyCoordinate.getStampCoordinate()).get().value());
+                        statedRelReport.append("\t[");
+                        statedRelReport.append(conceptDescriptionText);
+                        statedRelReport.append("]➞(");
+                        statedRelReport.append(roleSpecLabel);
+                        statedRelReport.append(")➞[");
+                        statedRelReport.append(Get.conceptDescriptionText(destinationSequence));
+                        statedRelReport.append("]\n");
+                        
+//                        statedRelReport.append("\t");
+//                        statedRelReport.append(Get.identifierService().getUuidPrimordialFromConceptSequence(conceptSequence).get());
+//                        statedRelReport.append("\t");
+//                        statedRelReport.append("\t");
+//                        statedRelReport.append(Get.identifierService().getUuidPrimordialFromConceptSequence(destinationSequence).get());
+//                        statedRelReport.append("\t");
+//                        statedRelReport.append(Get.identifierService().getConceptIdentifierForAuthority(destinationSequence,
+//                                IsaacMetadataAuxiliaryBinding.SNOMED_INTEGER_ID.getPrimodialUuid(),
+//                                statedTaxonomyCoordinate.getStampCoordinate()).get().value());
+//                        statedRelReport.append("\n");
+                        statedRelReport.append("stated:\t");
+                        
+                        Optional<? extends SememeChronology> statedDefinition = Get.statedDefinitionChronology(conceptSequence);
+                        if (statedDefinition.isPresent()) {
+                            SememeChronology chronology = statedDefinition.get();
+                            Optional<LatestVersion<LogicGraphSememe>>  optionalGraph = chronology.getLatestVersion(LogicGraphSememe.class, statedTaxonomyCoordinate.getStampCoordinate());
+                            if (optionalGraph.isPresent()) {
+                                statedRelReport.append(simplifyString(optionalGraph.get().value().toString()));
+                            }
+                        }
+                        statedRelReport.append("\n");
+                        statedRelReport.append("inferred:\t");
+                        
+                        Optional<? extends SememeChronology> inferredDefinition = Get.inferredDefinitionChronology(conceptSequence);
+                        if (inferredDefinition.isPresent()) {
+                            SememeChronology chronology = inferredDefinition.get();
+                            Optional<LatestVersion<LogicGraphSememe>>  optionalGraph = chronology.getLatestVersion(LogicGraphSememe.class, statedTaxonomyCoordinate.getStampCoordinate());
+                            if (optionalGraph.isPresent()) {
+                                statedRelReport.append(simplifyString(optionalGraph.get().value().toString())); 
+                            }
+                        }
+                        statedRelReport.append("\n");
+                        
+                        statedRelReport.append("recommendation:\t\n");
+                        statedRelReport.append("review:\t\n");
+                        
+                        String conceptDescriptionTextShort = conceptDescriptionText.replace(" (disorder)", "");
+                        String relRestrictionTextShort = Get.conceptDescriptionText(destinationSequence).replace(" (finding)", "").replace(" (disorder)", "");
+                        concordanceReport.append(conceptDescriptionTextShort);
+                        concordanceReport.append("\t");
+                        concordanceReport.append(conceptDescriptionTextShort);
+                        concordanceReport.append("\n");
+                        concordanceReport.append(conceptDescriptionTextShort);
+                        concordanceReport.append("\t");
+                        concordanceReport.append(relRestrictionTextShort);
+                        concordanceReport.append(":");
+                        concordanceReport.append(conceptDescriptionTextShort);
+                        concordanceReport.append("\n");
+                    });
+                    return true;
+                }
+                ).count();
+
+        
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(roleToReportSpec.getConceptDescriptionText() + "-stated.txt"),
+                Charset.forName("UTF-8")))) {
+            writer.append(statedListBuilder);
+        }
+
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(roleToReportSpec.getConceptDescriptionText() + "-stated-usage.txt"),
+                Charset.forName("UTF-8")))){
+            writer.append(statedRelReport);
+        }
+
+       try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(roleToReportSpec.getConceptDescriptionText() + "-concordance.txt"),
+                Charset.forName("UTF-8")))){
+            writer.append(concordanceReport);
+        }
+
+        long inferredCount = Get.identifierService().getParallelConceptSequenceStream().filter((conceptSequence) -> {
+            if (inferredConceptSnapshot.isConceptActive(conceptSequence) && inferredSnapshot.getAllRelationshipDestinationSequencesOfType(conceptSequence, typeSequenceSet).count() > 0) {
+                return true;
+            }
+            return false;
+        }).count();
+
+        log.info(roleToReportSpec.getConceptDescriptionText() + " stated usage: " + statedCount + " inferred usage: " + inferredCount);
+
+    }
+    
+    private String simplifyString(String input) {
+        return input.replace("\n", "•").replace(" (core metadata concept) ", "").replace(" (ISAAC) ", "").replace(" (attribute) ", "").replace("    ", "  ").replaceAll("<[0-9]+>", "");
     }
 
     private void testDescriptions() throws ValidationException {
@@ -285,10 +425,10 @@ public class CradleIntegrationTests {
         Tree taxonomyTree = Get.taxonomyService().getTaxonomyTree(statedTaxonomy);
         int[] parentSequences = taxonomyTree.getParentSequences(conceptToTest.getConceptSequence());
         log.info("Parents from taxonomy tree: " + ConceptSequenceSet.of(parentSequences));
-        
+
         Tree ancestorTree = taxonomyTree.createAncestorTree(conceptToTest.getConceptSequence());
         int[] parentNidsFromAncestorTree = ancestorTree.getChildrenSequences(conceptToTest.getConceptSequence());
-       log.info("Parents from ancestor tree: " + ConceptSequenceSet.of(parentNidsFromAncestorTree));
+        log.info("Parents from ancestor tree: " + ConceptSequenceSet.of(parentNidsFromAncestorTree));
         if (parentSequences.length != parentNidsFromAncestorTree.length) {
             log.warn("For {}, getParentSequences() returning {} nids, ancestorTree.getChildrenSequences() returning {} sequences",
                     Get.conceptDescriptionText(conceptToTest.getConceptSequence()), parentSequences.length, parentNidsFromAncestorTree.length);
@@ -576,7 +716,7 @@ public class CradleIntegrationTests {
         Tree tree = Get.taxonomyService().getTaxonomyTree(taxonomyCoordinate);
 
         ConceptProxy calcinosisProxy = new ConceptProxy("Calcinosis (disorder)", UUID.fromString("779ece66-7e95-323e-a261-214caf48c408"));
-        ConceptSequenceSet calcinosisParents = getParentsSequences(calcinosisProxy.getConceptSequence(), tree, taxonomyCoordinate);
+        ConceptSequenceSet calcinosisParents = getParentSequences(calcinosisProxy.getConceptSequence(), tree, taxonomyCoordinate);
         log.info(calcinosisProxy.getConceptDescriptionText() + " parents: " + calcinosisParents);
 
         Optional<SememeChronology<? extends SememeVersion<?>>> statedDefinition = Get.statedDefinitionChronology(calcinosisProxy.getNid());
@@ -594,11 +734,11 @@ public class CradleIntegrationTests {
 //        
 //        
 //        
-//        ConceptSequenceSet psychoactiveAbuseParents = getParentsSequences(psychoactiveAbuseProxy.getConceptSequence(), tree, taxonomyCoordinate);
+//        ConceptSequenceSet psychoactiveAbuseParents = getParentSequences(psychoactiveAbuseProxy.getConceptSequence(), tree, taxonomyCoordinate);
 //        log.info(psychoactiveAbuseProxy.getConceptDescriptionText() + " parents: " + psychoactiveAbuseParents);
     }
 
-    public static ConceptSequenceSet getParentsSequences(int childSequence,
+    public static ConceptSequenceSet getParentSequences(int childSequence,
             Tree taxonomyTree, TaxonomyCoordinate tc) {
         int[] parentSequences = taxonomyTree.getParentSequences(childSequence);
 

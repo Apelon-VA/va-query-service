@@ -24,10 +24,14 @@ import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.IdentifierService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SystemStatusService;
+import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronologyType;
 import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
+import gov.vha.isaac.ochre.api.component.sememe.version.StringSememe;
+import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
 import gov.vha.isaac.ochre.collections.*;
 
 import java.io.File;
@@ -499,6 +503,32 @@ public class IdentifierProvider implements IdentifierService {
     @Override
     public int getConceptSequenceForDescriptionNid(int nid) {
         return getConceptSequenceForComponentNid(nid);
+    }
+
+    @Override
+    public Optional<LatestVersion<String>> getIdentifierForAuthority(int nid, UUID identifierAuthorityUuid, StampCoordinate stampCoordinate) {
+        if (nid >= 0) {
+            throw new IllegalStateException("Not a nid: " + nid);
+        }
+        int authoritySequence = getConceptSequenceForUuids(identifierAuthorityUuid); 
+        SememeSnapshotService<StringSememe> snapshot = 
+                Get.sememeService().getSnapshot(
+                        StringSememe.class, 
+                                stampCoordinate);
+        return snapshot.getLatestSememeVersionsForComponentFromAssemblage(nid, authoritySequence).findAny().map((LatestVersion<StringSememe> latestSememe) -> {
+            LatestVersion<String> latestString = new LatestVersion<>(latestSememe.value().getString());
+            if (latestSememe.contradictions().isPresent()) {
+                for (StringSememe version: latestSememe.contradictions().get()) {
+                    latestString.addLatest(version.getString());
+                }
+            }
+            return latestString;
+        });
+    }
+    @Override
+    public Optional<LatestVersion<String>> getConceptIdentifierForAuthority(int conceptId, UUID identifierAuthorityUuid, StampCoordinate stampCoordinate) {
+        conceptId = getConceptNid(conceptId);
+        return getIdentifierForAuthority(conceptId, identifierAuthorityUuid, stampCoordinate);
     }
 
 }
