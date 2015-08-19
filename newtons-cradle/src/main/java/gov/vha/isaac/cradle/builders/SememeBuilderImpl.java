@@ -26,10 +26,12 @@ import gov.vha.isaac.ochre.api.component.sememe.SememeBuilder;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeType;
 import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
+import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.DynamicSememeDataBI;
 import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
 import gov.vha.isaac.ochre.model.sememe.version.ComponentNidSememeImpl;
 import gov.vha.isaac.ochre.model.sememe.version.LongSememeImpl;
 import gov.vha.isaac.ochre.model.sememe.version.DescriptionSememeImpl;
+import gov.vha.isaac.ochre.model.sememe.version.DynamicSememeImpl;
 import gov.vha.isaac.ochre.model.sememe.version.LogicGraphSememeImpl;
 import gov.vha.isaac.ochre.model.sememe.version.SememeVersionImpl;
 import gov.vha.isaac.ochre.model.sememe.version.StringSememeImpl;
@@ -106,7 +108,7 @@ public class SememeBuilderImpl<C extends SememeChronology<? extends SememeVersio
                     sememeChronicle.createMutableVersion(StringSememeImpl.class, State.ACTIVE, editCoordinate);
                 ssi.setString((String) parameters[0]);
                 break;
-            case DESCRIPTION:
+            case DESCRIPTION: {
                 DescriptionSememeImpl dsi = (DescriptionSememeImpl)
                     sememeChronicle.createMutableVersion(DescriptionSememeImpl.class, State.ACTIVE, editCoordinate);
                 dsi.setCaseSignificanceConceptSequence((Integer) parameters[0]);
@@ -114,10 +116,17 @@ public class SememeBuilderImpl<C extends SememeChronology<? extends SememeVersio
                 dsi.setLanguageConceptSequence((Integer) parameters[2]);
                 dsi.setText((String) parameters[3]);
                 break;
-            case DYNAMIC:
-                default:
-                    throw new UnsupportedOperationException("Can't handle: " + 
-                            sememeType);
+            }
+            case DYNAMIC: {
+                DynamicSememeImpl dsi = (DynamicSememeImpl)sememeChronicle.createMutableVersion(DynamicSememeImpl.class, State.ACTIVE, editCoordinate);
+                if (parameters != null) {
+                    dsi.setData((DynamicSememeDataBI[])parameters);
+                }
+                //TODO DAN this needs to fire the validator!
+                break;
+            }	
+            default:
+                throw new UnsupportedOperationException("Can't handle: " + sememeType);
         }
         
         if (changeCheckerMode == ChangeCheckerMode.ACTIVE) {
@@ -168,7 +177,7 @@ public class SememeBuilderImpl<C extends SememeChronology<? extends SememeVersio
                     sememeChronicle.createMutableVersion(StringSememeImpl.class, stampSequence);
                 ssi.setString((String) parameters[0]);
                 break;
-            case DESCRIPTION:
+            case DESCRIPTION: {
                 DescriptionSememeImpl dsi = (DescriptionSememeImpl)
                     sememeChronicle.createMutableVersion(DescriptionSememeImpl.class, stampSequence);
                 dsi.setCaseSignificanceConceptSequence((Integer) parameters[0]);
@@ -176,10 +185,17 @@ public class SememeBuilderImpl<C extends SememeChronology<? extends SememeVersio
                 dsi.setLanguageConceptSequence((Integer) parameters[2]);
                 dsi.setText((String) parameters[3]);
                 break;
-            case DYNAMIC:
-                default:
-                    throw new UnsupportedOperationException("Can't handle: " + 
-                            sememeType);
+            }
+            case DYNAMIC: {
+                DynamicSememeImpl dsi = (DynamicSememeImpl)sememeChronicle.createMutableVersion(DynamicSememeImpl.class, stampSequence);
+                if (parameters != null) {
+                    dsi.setData((DynamicSememeDataBI[])parameters[0]);
+                }
+                //TODO Dan this needs to fire the validator!
+                break;
+            }	
+            default:
+                throw new UnsupportedOperationException("Can't handle: " + sememeType);
         }
         builtObjects.add(sememeChronicle);
         return (C) sememeChronicle;    

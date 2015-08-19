@@ -48,11 +48,11 @@ public class SememeSnapshotProvider<V extends SememeVersion<?>> implements Semem
     }
 
     Class<V> versionType;
-    StampCoordinate<?> stampCoordinate;
+    StampCoordinate<? extends StampCoordinate<?>> stampCoordinate;
     SememeService sememeProvider;
     RelativePositionCalculator calculator;
 
-    public SememeSnapshotProvider(Class<V> versionType, StampCoordinate<?> stampCoordinate, SememeService sememeProvider) {
+    public SememeSnapshotProvider(Class<V> versionType, StampCoordinate<? extends StampCoordinate<?>> stampCoordinate, SememeService sememeProvider) {
         this.versionType = versionType;
         this.stampCoordinate = stampCoordinate;
         this.sememeProvider = sememeProvider;
@@ -60,8 +60,8 @@ public class SememeSnapshotProvider<V extends SememeVersion<?>> implements Semem
     }
 
     @Override
-    public Optional<LatestVersion<V>> getLatestSememeVersion(int sememeSequence) {
-        SememeChronologyImpl<?> sc = (SememeChronologyImpl<?>) sememeProvider.getSememe(sememeSequence);
+    public Optional<LatestVersion<V>> getLatestSememeVersion(int sememeSequenceOrNid) {
+        SememeChronologyImpl<?> sc = (SememeChronologyImpl<?>) sememeProvider.getSememe(sememeSequenceOrNid);
         IntStream stampSequences = sc.getVersionStampSequences();
         StampSequenceSet latestSequences = calculator.getLatestStampSequencesAsSet(stampSequences);
         if (latestSequences.isEmpty()) {

@@ -19,15 +19,15 @@
 package gov.vha.isaac.cradle.integration.tests;
 
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
+import gov.vha.isaac.ochre.model.sememe.dataTypes.DynamicSememeNid;
+import gov.vha.isaac.ochre.model.sememe.dataTypes.DynamicSememeUUID;
+
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.util.UUID;
 import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
 import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
-import org.ihtsdo.otf.tcc.api.refexDynamic.data.RefexDynamicValidatorType;
 import org.ihtsdo.otf.tcc.api.store.Ts;
-import org.ihtsdo.otf.tcc.model.cc.refexDynamic.data.dataTypes.RefexDynamicNid;
-import org.ihtsdo.otf.tcc.model.cc.refexDynamic.data.dataTypes.RefexDynamicUUID;
 import org.jvnet.testing.hk2testng.HK2;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;

@@ -22,6 +22,7 @@ import gov.vha.isaac.ochre.api.component.sememe.SememeBuilderService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeType;
 import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
+import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.DynamicSememeDataBI;
 import org.jvnet.hk2.annotations.Service;
 
 /**
@@ -103,5 +104,15 @@ public class SememeBuilderProvider implements SememeBuilderService {
         return new SememeBuilderImpl(referencedComponentNid, assemblageConceptSequence, 
                 SememeType.DESCRIPTION, new Object[] {caseSignificanceConceptSequence, 
                     descriptionTypeConceptSequence, languageConceptSequence, text});
+    }
+
+    @Override
+    public SememeBuilder getDyanmicSememeBuilder(int referencedComponentNid, int assemblageConceptSequence) {
+        return new SememeBuilderImpl(referencedComponentNid, assemblageConceptSequence, SememeType.DYNAMIC);
+    }
+    
+    @Override
+    public SememeBuilder getDyanmicSememeBuilder(int referencedComponentNid, int assemblageConceptSequence, DynamicSememeDataBI[] data) {
+        return new SememeBuilderImpl(referencedComponentNid, assemblageConceptSequence, SememeType.DYNAMIC, data);
     }
 }

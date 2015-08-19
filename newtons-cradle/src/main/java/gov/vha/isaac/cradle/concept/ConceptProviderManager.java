@@ -113,10 +113,6 @@ public class ConceptProviderManager implements ConceptService {
                 delegate = new ConceptProviderOchreModel();
                 break;
 
-            case OTF_CONCEPT_MODEL:
-                delegate = new ConceptProviderOtfModel();
-                break;
-
             default:
                 throw new UnsupportedOperationException("Can't handle: "
                         + LookupService.getService(ConfigurationService.class).getConceptModel());

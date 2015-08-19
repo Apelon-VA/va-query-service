@@ -28,6 +28,7 @@ import gov.vha.isaac.ochre.api.component.sememe.SememeConstraints;
 import gov.vha.isaac.ochre.api.component.sememe.SememeService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeServiceTyped;
 import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
+import gov.vha.isaac.ochre.api.component.sememe.SememeType;
 import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
 import gov.vha.isaac.ochre.collections.NidSet;
@@ -45,6 +46,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -74,6 +78,7 @@ public class SememeProvider implements SememeService {
     final ConcurrentSkipListSet<AssemblageSememeKey> assemblageSequenceSememeSequenceMap = new ConcurrentSkipListSet<>();
     final ConcurrentSkipListSet<ReferencedNidAssemblageSequenceSememeSequenceKey> referencedNidAssemblageSequenceSememeSequenceMap = new ConcurrentSkipListSet<>();
     final Path sememePath;
+    private transient HashSet<Integer> inUseAssemblages = new HashSet<>();
     private AtomicBoolean loadRequired = new AtomicBoolean();
 
     //For HK2
@@ -108,6 +113,7 @@ public class SememeProvider implements SememeService {
                         int assemblageSequence = in.readInt();
                         int sequence = in.readInt();
                         assemblageSequenceSememeSequenceMap.add(new AssemblageSememeKey(assemblageSequence, sequence));
+                        inUseAssemblages.add(assemblageSequence);
                     }
                 }
                 try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(sememePath.toFile(), "component-sememe.keys"))))) {
@@ -163,7 +169,7 @@ public class SememeProvider implements SememeService {
     }
 
     @Override
-    public <V extends SememeVersion> SememeSnapshotService<V> getSnapshot(Class<V> versionType, StampCoordinate<?> stampCoordinate) {
+    public <V extends SememeVersion> SememeSnapshotService<V> getSnapshot(Class<V> versionType, StampCoordinate<? extends StampCoordinate<?>> stampCoordinate) {
         return new SememeSnapshotProvider<>(versionType, stampCoordinate, this);
     }
 
@@ -286,6 +292,7 @@ public class SememeProvider implements SememeService {
         assemblageSequenceSememeSequenceMap.add(
                 new AssemblageSememeKey(sememeChronicle.getAssemblageSequence(),
                         sememeChronicle.getSememeSequence()));
+        inUseAssemblages.add(sememeChronicle.getAssemblageSequence());
         referencedNidAssemblageSequenceSememeSequenceMap.add(
                 new ReferencedNidAssemblageSequenceSememeSequenceKey(sememeChronicle.getReferencedComponentNid(),
                         sememeChronicle.getAssemblageSequence(),
@@ -359,4 +366,9 @@ public class SememeProvider implements SememeService {
         return sememeMap.getOptional(sememeSequence);
     }
 
+	@Override
+	public Stream<Integer> getAssemblageTypes()
+	{
+		return inUseAssemblages.stream();
+	}
 }

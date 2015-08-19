@@ -16,23 +16,20 @@
 package gov.vha.isaac.cradle.integration.tests;
 
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.ihtsdo.otf.tcc.api.blueprint.RefexDynamicCAB;
 import org.ihtsdo.otf.tcc.api.blueprint.TerminologyBuilderBI;
 import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
 import org.ihtsdo.otf.tcc.api.coordinate.EditCoordinate;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.metadata.binding.TermAux;
-import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicChronicleBI;
-import org.ihtsdo.otf.tcc.api.refexDynamic.data.RefexDynamicColumnInfo;
 import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
 import org.ihtsdo.otf.tcc.api.store.Ts;
-import org.ihtsdo.otf.tcc.model.cc.refexDynamic.data.RefexDynamicUsageDescriptionBuilder;
 import org.jvnet.testing.hk2testng.HK2;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;

@@ -360,7 +360,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     }
 
     @Override
-    public boolean isConceptActive(int conceptSequence, StampCoordinate<?> stampCoordinate) {
+    public boolean isConceptActive(int conceptSequence, StampCoordinate<? extends StampCoordinate<?>> stampCoordinate) {
         long stamp = stampedLock.tryOptimisticRead();
         Optional<TaxonomyRecordPrimitive> taxonomyRecordOptional
                 = originDestinationTaxonomyRecordMap.get(conceptSequence);
@@ -893,7 +893,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
     @Override
     public IntStream getAllCircularRelationshipOriginSequences(TaxonomyCoordinate<?> tc) {
         ConceptService conceptService = Get.conceptService();
-        StampCoordinate<?> stampCoordinate = tc.getStampCoordinate();
+        StampCoordinate<? extends StampCoordinate<?>> stampCoordinate = tc.getStampCoordinate();
         return Get.identifierService().getParallelConceptSequenceStream().filter((conceptSequence) -> {
             if (conceptService.isConceptActive(conceptSequence, stampCoordinate)) {
                 if (getAllCircularRelationshipTypeSequences(conceptSequence, tc).anyMatch(((typeSequence) -> true))) {
