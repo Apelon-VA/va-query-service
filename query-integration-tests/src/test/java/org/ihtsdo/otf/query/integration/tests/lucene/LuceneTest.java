@@ -39,12 +39,12 @@ import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.metadata.binding.SnomedMetadataRf2;
 import org.ihtsdo.otf.tcc.api.metadata.binding.TermAux;
 import org.ihtsdo.otf.tcc.lookup.Hk2Looker;
+import gov.vha.isaac.ochre.api.index.IndexServiceBI;
 import gov.vha.isaac.ochre.api.index.IndexedGenerationCallable;
 import gov.vha.isaac.ochre.api.index.SearchResult;
 
 import static org.testng.Assert.*;
 import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
-import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -94,10 +94,10 @@ public class LuceneTest {
                 LanguageCode.EN, testDescription, false, IdDirective.GENERATE_HASH);
         TerminologyBuilderBI builder = PersistentStore.get().getTerminologyBuilder(ec, vc);
         int descNid = descBp.getComponentNid();
-        List<IndexerBI> lookers = Hk2Looker.get().getAllServices(IndexerBI.class);
-        IndexerBI descriptionIndexer = null;
+        List<IndexServiceBI> lookers = Hk2Looker.get().getAllServices(IndexServiceBI.class);
+        IndexServiceBI descriptionIndexer = null;
 
-        for (IndexerBI li : lookers) {
+        for (IndexServiceBI li : lookers) {
             LOGGER.log(Level.INFO, "Found indexer: {0}", li.getIndexerName());
 
             if (li.getIndexerName().equals("descriptions")) {
@@ -137,8 +137,7 @@ public class LuceneTest {
             }
         }
 
-        List<SearchResult> results = descriptionIndexer.query(queryTerm, ComponentProperty.DESCRIPTION_TEXT, 10000,
-                indexGeneration);
+        List<SearchResult> results = descriptionIndexer.query(queryTerm, null, 10000, indexGeneration);
         boolean found = false;
 
         for (SearchResult r : results) {
