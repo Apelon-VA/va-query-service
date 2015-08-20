@@ -54,7 +54,9 @@ import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.dataTypes.
 import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.dataTypes.DynamicSememeIntegerBI;
 import gov.vha.isaac.ochre.api.index.IndexStatusListenerBI;
 import gov.vha.isaac.ochre.model.constants.IsaacMetadataConstants;
+import gov.vha.isaac.ochre.model.sememe.dataTypes.DynamicSememeArray;
 import gov.vha.isaac.ochre.model.sememe.dataTypes.DynamicSememeData;
+import gov.vha.isaac.ochre.model.sememe.dataTypes.DynamicSememeInteger;
 import gov.vha.isaac.ochre.model.sememe.dataTypes.DynamicSememeString;
 
 /**
@@ -171,23 +173,18 @@ public class DynamicSememeIndexerConfiguration
 		
 		log.info("Configuring index for dynamic refex assemblage '" + referencedAssemblageConceptC.toUserString() + "' on columns " + Arrays.deepToString(columnsToIndex));
 
-		StringBuilder buf = new StringBuilder();
 		DynamicSememeData[] data = null;
 		if (columnsToIndex != null)
 		{
-			for (int i : columnsToIndex)
+			DynamicSememeInteger[] cols = new DynamicSememeInteger[columnsToIndex.length];
+			for (int i = 0; i < columnsToIndex.length; i++)
 			{
-				buf.append(i);
-				buf.append(",");
-			}
-			if (buf.length() > 0)
-			{
-				buf.setLength(buf.length() - 1);
+				cols[i] = new DynamicSememeInteger(columnsToIndex[i]);
 			}
 
-			if (buf.length() > 0)
+			if (cols.length > 0)
 			{
-				data = new DynamicSememeData[] {new DynamicSememeString(buf.toString())};
+				data = new DynamicSememeData[] {new DynamicSememeArray<DynamicSememeInteger>(cols)};
 			}
 		}
 		else if ((columnsToIndex == null || columnsToIndex.length == 0))
@@ -220,7 +217,6 @@ public class DynamicSememeIndexerConfiguration
 		return LookupService.get().getService(DynamicSememeIndexerConfiguration.class).whatColumnsToIndex(assemblageSequence);
 	}
 	
-	@SuppressWarnings("unchecked")
 	private static DynamicSememe<? extends DynamicSememe<?>> findCurrentIndexConfigRefex(int assemblageNidOrSequence) throws RuntimeException
 	{
 		@SuppressWarnings("rawtypes")
