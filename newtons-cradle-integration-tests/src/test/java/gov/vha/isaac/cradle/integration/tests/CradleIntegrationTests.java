@@ -8,6 +8,7 @@ package gov.vha.isaac.cradle.integration.tests;
 import static gov.vha.isaac.ochre.api.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
 import gov.vha.isaac.cradle.taxonomy.walk.TaxonomyWalkAccumulator;
 import gov.vha.isaac.cradle.taxonomy.walk.TaxonomyWalkCollector;
+import gov.vha.isaac.metadata.coordinates.EditCoordinates;
 import gov.vha.isaac.metadata.coordinates.LanguageCoordinates;
 import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
 import gov.vha.isaac.metadata.coordinates.StampCoordinates;
@@ -20,12 +21,14 @@ import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.ObjectChronicleTaskService;
+import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.TaxonomySnapshotService;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
+import gov.vha.isaac.ochre.api.commit.CommitRecord;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
-import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshot;
 import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshotService;
+import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
@@ -41,7 +44,6 @@ import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeWithBitSets;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
@@ -55,7 +57,6 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +67,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 import java.util.stream.IntStream;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
@@ -175,6 +177,8 @@ public class CradleIntegrationTests {
         }
         //roleReport(new ConceptSpec("Has definitional manifestation (attribute)",
         //        UUID.fromString("545df979-75ea-3f82-939a-565d032bcdad")));
+		  
+	testConceptStatusChange();
 
         testRole();
 
@@ -765,4 +769,30 @@ public class CradleIntegrationTests {
 
         return parentSequenceSet;
     }
+	 
+	 private void testConceptStatusChange() {
+		 try {
+			 log.info("testConceptStatusChange: " );
+			 ConceptProxy proxy = new ConceptProxy("Iodine 37% injection", UUID.fromString("3380c993-a328-3af0-9144-cf89603e80e2"));
+			 ConceptChronology conceptToReactivate = Get.conceptService().getConcept(proxy.getUuids());
+			 log.info("concept to reactivate: " + conceptToReactivate);
+			 ConceptVersion version = conceptToReactivate.createMutableVersion(State.ACTIVE, EditCoordinates.getDefaultUserSolorOverlay());
+			 log.info("concept to reactivate with new version: " + conceptToReactivate);
+			 Get.commitService().addUncommitted(conceptToReactivate);
+			 log.info("after uncommitted: " + conceptToReactivate);
+			 
+			 Task<Optional<CommitRecord>> commitTask = Get.commitService().commit("Test reactivate");
+			 Optional<CommitRecord> optionalCommitRecord = commitTask.get();
+			 log.info("after commit: " + conceptToReactivate);
+			 log.info("after retrieval: " +  Get.conceptService().getConcept(proxy.getUuids()));
+			 if (optionalCommitRecord.isPresent()) {
+				 log.info("commit record: " + optionalCommitRecord.get());
+			 } else {
+				 log.info("No commit record");
+			 }
+		 } catch (InterruptedException | ExecutionException ex) {
+			 log.error(ex.getLocalizedMessage(), ex);
+		 }
+		 
+	 }
 }
