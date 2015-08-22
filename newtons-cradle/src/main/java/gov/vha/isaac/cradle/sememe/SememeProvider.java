@@ -345,14 +345,8 @@ public class SememeProvider implements SememeService {
             descriptionAssemblageSequence = Get.identifierService().getConceptSequenceForUuids(IsaacMetadataAuxiliaryBinding.DESCRIPTION_ASSEMBLAGE.getUuids());
         }
         SememeSequenceSet sequences = getSememeSequencesForComponentFromAssemblage(componentNid, descriptionAssemblageSequence);
-        IntFunction<SememeChronology<DescriptionSememe<?>>> mapper = new IntFunction<SememeChronology<DescriptionSememe<?>>>() {
-			@Override
-			public SememeChronology<DescriptionSememe<?>> apply(int sememeSequence) {
-				// TODO Auto-generated method stub
-				return (SememeChronology<DescriptionSememe<?>>)getSememe(sememeSequence);
-			}
-        };
-        return sequences.stream().mapToObj(mapper);
+        IntFunction<SememeChronology<DescriptionSememe<?>>> mapper = (int sememeSequence) -> (SememeChronology<DescriptionSememe<?>>)getSememe(sememeSequence);
+        return sequences.stream().filter((int sememeSequence) -> getOptionalSememe(sememeSequence).isPresent()).mapToObj(mapper);
     }
 
     @Override
