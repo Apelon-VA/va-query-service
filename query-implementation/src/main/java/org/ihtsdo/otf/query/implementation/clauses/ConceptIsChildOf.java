@@ -67,7 +67,7 @@ public class ConceptIsChildOf extends LeafClause {
             ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
             ConceptSpec childOfSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(childOfSpecKey);
             int parentNid = childOfSpec.getNid(viewCoordinate);
-            ConceptSequenceSet childrenOfSequenceSet = Get.taxonomyService().getChildOfSequenceSet(parentNid, viewCoordinate);
+            ConceptSequenceSet childrenOfSequenceSet = Get.taxonomyService().getChildOfSequenceSet(parentNid, viewCoordinate.getTaxonomyCoordinate());
             getResultsCache().or(NidSet.of(childrenOfSequenceSet));
             return getResultsCache();
         } catch (IOException ex) {

@@ -65,7 +65,7 @@ public class ConceptIsKindOf extends LeafClause {
             ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
             ConceptSpec kindOfSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(kindOfSpecKey);
             int parentNid = kindOfSpec.getNid(viewCoordinate);
-            ConceptSequenceSet kindOfSequenceSet = Get.taxonomyService().getKindOfSequenceSet(parentNid, viewCoordinate);
+            ConceptSequenceSet kindOfSequenceSet = Get.taxonomyService().getKindOfSequenceSet(parentNid, viewCoordinate.getTaxonomyCoordinate());
             getResultsCache().or(NidSet.of(kindOfSequenceSet));
             return getResultsCache();
         } catch (IOException ex) {

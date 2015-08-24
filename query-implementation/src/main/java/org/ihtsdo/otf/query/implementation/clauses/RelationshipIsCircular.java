@@ -95,7 +95,7 @@ public class RelationshipIsCircular extends LeafClause {
         relTypeSet = new ConceptSequenceSet();
         relTypeSet.add(relType.getConceptSequence());
         if (relTypeSubsumption) {
-            relTypeSet.or(Get.taxonomyService().getKindOfSequenceSet(relType.getConceptSequence(), viewCoordinate));
+            relTypeSet.or(Get.taxonomyService().getKindOfSequenceSet(relType.getConceptSequence(), viewCoordinate.getTaxonomyCoordinate()));
         }
 
         return incomingPossibleComponents;

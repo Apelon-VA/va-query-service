@@ -15,18 +15,18 @@ package org.ihtsdo.otf.query.integration.tests;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import gov.vha.isaac.metadata.coordinates.StampCoordinates;
+import gov.vha.isaac.metadata.coordinates.TaxonomyCoordinates;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
+import gov.vha.isaac.ochre.api.Get;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
 import org.ihtsdo.otf.query.implementation.ForSetSpecification;
+import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.query.implementation.Clause;
-import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.tcc.api.nid.NativeIdSetItrBI;
 import org.ihtsdo.otf.tcc.model.cc.PersistentStore;
 
@@ -41,7 +41,8 @@ public class NotTest extends QueryClauseTest {
 
     public NotTest() throws IOException {
 
-        this.q = new Query(ViewCoordinates.getDevelopmentInferredLatestActiveOnly()) {
+        this.q = new Query(TaxonomyCoordinates.getInferredTaxonomyCoordinate(StampCoordinates.getDevelopmentLatestActiveOnly(), 
+                Get.configurationService().getDefaultLanguageCoordinate())) {
             @Override
             protected ForSetSpecification ForSetSpecification() {
                 try {

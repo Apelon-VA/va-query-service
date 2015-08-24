@@ -67,7 +67,7 @@ public class ConceptIsDescendentOf extends LeafClause {
             ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
             ConceptSpec descendentOfSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(descendentOfSpecKey);
             int parentNid = descendentOfSpec.getNid(viewCoordinate);
-            ConceptSequenceSet descendentOfSequenceSet = Get.taxonomyService().getChildOfSequenceSet(parentNid, viewCoordinate);
+            ConceptSequenceSet descendentOfSequenceSet = Get.taxonomyService().getChildOfSequenceSet(parentNid, viewCoordinate.getTaxonomyCoordinate());
             descendentOfSequenceSet.remove(parentNid);
             getResultsCache().or(NidSet.of(descendentOfSequenceSet));
             return getResultsCache();

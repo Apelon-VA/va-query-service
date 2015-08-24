@@ -15,14 +15,12 @@
  */
 package org.ihtsdo.otf.query.integration.tests;
 
-import java.io.IOException;
-
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
+import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
 import org.ihtsdo.otf.query.implementation.ForSetSpecification;
-import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
-import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
-import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.Query;
+import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 
 /**
  *
@@ -30,8 +28,8 @@ import org.ihtsdo.otf.query.implementation.Query;
  */
 public class ExampleQuery extends Query {
 
-    public ExampleQuery(ViewCoordinate viewCoordinate) {
-        super(viewCoordinate);
+    public ExampleQuery(TaxonomyCoordinate taxonomyCoordinate) {
+        super(taxonomyCoordinate);
     }
     @Override
     protected ForSetSpecification ForSetSpecification() {

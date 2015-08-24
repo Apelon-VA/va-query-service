@@ -111,13 +111,13 @@ public class RelRestriction extends LeafClause {
         relTypeSet = new ConceptSequenceSet();
         relTypeSet.add(relType.getConceptSequence());
         if (relTypeSubsumption) {
-            relTypeSet.or(Get.taxonomyService().getKindOfSequenceSet(relType.getConceptSequence(), viewCoordinate));
+            relTypeSet.or(Get.taxonomyService().getKindOfSequenceSet(relType.getConceptSequence(), viewCoordinate.getTaxonomyCoordinate()));
         }
 
         destinationSet = new ConceptSequenceSet();
         destinationSet.add(destinationSpec.getConceptSequence());
         if (destinationSubsumption) {
-            destinationSet.or(Get.taxonomyService().getKindOfSequenceSet(destinationSpec.getConceptSequence(), viewCoordinate));
+            destinationSet.or(Get.taxonomyService().getKindOfSequenceSet(destinationSpec.getConceptSequence(), viewCoordinate.getTaxonomyCoordinate()));
         }
 
         return incomingPossibleComponents;
@@ -127,7 +127,7 @@ public class RelRestriction extends LeafClause {
     public void getQueryMatches(ConceptVersion conceptVersion) {
         ViewCoordinate viewCoordinate = (ViewCoordinate) enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
         Get.taxonomyService().getAllRelationshipDestinationSequencesOfType(
-                conceptVersion.getChronology().getConceptSequence(), relTypeSet, viewCoordinate)
+                conceptVersion.getChronology().getConceptSequence(), relTypeSet, viewCoordinate.getTaxonomyCoordinate())
                 .forEach((destinationSequence) -> {
                     if (destinationSet.contains(destinationSequence)) {
                         getResultsCache().add(conceptVersion.getChronology().getNid());
