@@ -131,12 +131,12 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
     }
 
     @Override
-    public boolean isConceptActive(int conceptSequence, StampCoordinate<? extends StampCoordinate<?>> stampCoordinate) {
+    public boolean isConceptActive(int conceptSequence, StampCoordinate stampCoordinate) {
         return conceptActiveService.isConceptActive(conceptSequence, stampCoordinate);
     }
 
     @Override
-    public ConceptSnapshotService getSnapshot(StampCoordinate<? extends StampCoordinate<?>> stampCoordinate, LanguageCoordinate languageCoordinate) {
+    public ConceptSnapshotService getSnapshot(StampCoordinate stampCoordinate, LanguageCoordinate languageCoordinate) {
         return new ConceptSnapshotProvider(stampCoordinate, languageCoordinate);
     }
 
@@ -186,10 +186,10 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
 
     public class ConceptSnapshotProvider implements ConceptSnapshotService {
 
-        StampCoordinate<? extends StampCoordinate<?>> stampCoordinate;
+        StampCoordinate stampCoordinate;
         LanguageCoordinate languageCoordinate;
 
-        public ConceptSnapshotProvider(StampCoordinate<? extends StampCoordinate<?>> stampCoordinate, LanguageCoordinate languageCoordinate) {
+        public ConceptSnapshotProvider(StampCoordinate stampCoordinate, LanguageCoordinate languageCoordinate) {
             this.stampCoordinate = stampCoordinate;
             this.languageCoordinate = languageCoordinate;
         }
@@ -215,32 +215,28 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
         }
 
         @Override
-        public <T extends DescriptionSememe<T>> Optional<LatestVersion<T>> getFullySpecifiedDescription(int conceptId) {
-            List<?> list = getDescriptionList(conceptId);
-            return languageCoordinate.getFullySpecifiedDescription((List<SememeChronology<T>>)list, stampCoordinate);
+        public Optional<LatestVersion<DescriptionSememe<?>>> getFullySpecifiedDescription(int conceptId) {
+            return languageCoordinate.getFullySpecifiedDescription(getDescriptionList(conceptId), stampCoordinate);
         }
 
         @Override
-        public <T extends DescriptionSememe<T>> Optional<LatestVersion<T>> getPreferredDescription(int conceptId) {
-            List<?> list = getDescriptionList(conceptId);
-            return languageCoordinate.getPreferredDescription((List<SememeChronology<T>>)list, stampCoordinate);
+        public Optional<LatestVersion<DescriptionSememe<?>>> getPreferredDescription(int conceptId) {
+            return languageCoordinate.getPreferredDescription(getDescriptionList(conceptId), stampCoordinate);
         }
 
-        private <T extends DescriptionSememe<T>> List<SememeChronology<T>> getDescriptionList(int conceptId) {
+        private List<SememeChronology<? extends DescriptionSememe<?>>> getDescriptionList(int conceptId) {
             conceptId = Get.identifierService().getConceptNid(conceptId);
-            List<?> list = Get.sememeService().getDescriptionsForComponent(conceptId).collect(Collectors.toList());
-            return (List<SememeChronology<T>>)list;
+            return Get.sememeService().getDescriptionsForComponent(conceptId).collect(Collectors.toList());
         }
 
         @Override
-        public <T extends DescriptionSememe<T>> Optional<LatestVersion<T>> getDescriptionOptional(int conceptId) {
-        	List<?> list = getDescriptionList(conceptId);
-            return languageCoordinate.getDescription((List<SememeChronology<T>>)list, stampCoordinate);
+        public Optional<LatestVersion<DescriptionSememe<?>>> getDescriptionOptional(int conceptId) {
+            return languageCoordinate.getDescription(getDescriptionList(conceptId), stampCoordinate);
         }
 
         @Override
         public String conceptDescriptionText(int conceptId) {
-            Optional<LatestVersion<DescriptionSememe>> descriptionOptional
+            Optional<LatestVersion<DescriptionSememe<?>>> descriptionOptional
                     = getDescriptionOptional(conceptId);
             if (descriptionOptional.isPresent()) {
                 return descriptionOptional.get().value().getText();

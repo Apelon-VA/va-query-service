@@ -47,12 +47,12 @@ public class GraphCollector implements
     }
 
     final CasSequenceObjectMap<TaxonomyRecordPrimitive> taxonomyMap;
-    final TaxonomyCoordinate<?> taxonomyCoordinate;
+    final TaxonomyCoordinate taxonomyCoordinate;
     final int taxonomyFlags;
     int originSequenceBeingProcessed = -1;
     ConceptSequenceSet watchList = new ConceptSequenceSet();
 
-    public GraphCollector(CasSequenceObjectMap<TaxonomyRecordPrimitive> taxonomyMap, TaxonomyCoordinate<?> viewCoordinate) {
+    public GraphCollector(CasSequenceObjectMap<TaxonomyRecordPrimitive> taxonomyMap, TaxonomyCoordinate viewCoordinate) {
         this.taxonomyMap = taxonomyMap;
         this.taxonomyCoordinate = viewCoordinate;
         taxonomyFlags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(viewCoordinate);

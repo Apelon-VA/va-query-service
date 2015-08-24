@@ -318,7 +318,7 @@ public class Cradle
 
     @Override
     public NativeIdSetBI isChildOfSet(int parent, ViewCoordinate viewCoordinate) {
-        IntStream childrenSequences = Get.taxonomyService().getTaxonomyChildSequences(Get.identifierService().getConceptSequence(parent), viewCoordinate);
+        IntStream childrenSequences = Get.taxonomyService().getTaxonomyChildSequences(Get.identifierService().getConceptSequence(parent), viewCoordinate.getTaxonomyCoordinate());
         NativeIdSetBI childNidSet = new IntSet();
         childrenSequences.forEach((sequence) -> childNidSet.add(Get.identifierService().getConceptNid(sequence)));
         return childNidSet;
@@ -405,12 +405,12 @@ public class Cradle
 
     @Override
     public boolean isKindOf(int childNid, int parentNid, ViewCoordinate viewCoordinate) throws IOException, ContradictionException {
-        return Get.taxonomyService().isKindOf(childNid, parentNid, viewCoordinate);
+        return Get.taxonomyService().isKindOf(childNid, parentNid, viewCoordinate.getTaxonomyCoordinate());
     }
 
     @Override
     public boolean isChildOf(int childNid, int parentNid, ViewCoordinate viewCoordinate) throws IOException, ContradictionException {
-        return Get.taxonomyService().isChildOf(childNid, parentNid, viewCoordinate);
+        return Get.taxonomyService().isChildOf(childNid, parentNid, viewCoordinate.getTaxonomyCoordinate());
     }
 
     @Override
@@ -418,7 +418,7 @@ public class Cradle
         try {
             ConcurrentBitSet bitSet = new ConcurrentBitSet(getConceptCount());
             ConceptSequenceSet sequenceSet
-                    = Get.taxonomyService().getKindOfSequenceSet(Get.identifierService().getConceptSequence(kindOfId), viewCoordinate);
+                    = Get.taxonomyService().getKindOfSequenceSet(Get.identifierService().getConceptSequence(kindOfId), viewCoordinate.getTaxonomyCoordinate());
             sequenceSet.stream().forEach((int sequence) -> {
                 bitSet.set(Get.identifierService().getConceptNid(sequence));
             });
@@ -584,7 +584,7 @@ public class Cradle
     @Override
     public ConceptChronicleDdo getFxConcept(UUID uuid, ViewCoordinate viewCoordinate) throws IOException, ContradictionException {
         ConceptChronicleBI chronicle = this.getConcept(uuid);
-        ConceptChronicleDdo c = new ConceptChronicleDdo(viewCoordinate, chronicle, RefexPolicy.REFEX_MEMBERS,
+        ConceptChronicleDdo c = new ConceptChronicleDdo(viewCoordinate.getTaxonomyCoordinate(), chronicle, RefexPolicy.REFEX_MEMBERS,
                 RelationshipPolicy.ORIGINATING_RELATIONSHIPS);
         return c;
     }
@@ -594,7 +594,7 @@ public class Cradle
             RefexPolicy refexPolicy, RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
         int nid = componentReference.getNid();
         ConceptChronicleBI chronicle = this.getConcept(nid);
-        return new ConceptChronicleDdo(this.getViewCoordinate(viewCoordinateUuid), chronicle, refexPolicy, RelationshipPolicy.ORIGINATING_RELATIONSHIPS);
+        return new ConceptChronicleDdo(this.getViewCoordinate(viewCoordinateUuid).getTaxonomyCoordinate(), chronicle, refexPolicy, RelationshipPolicy.ORIGINATING_RELATIONSHIPS);
     }
 
     @Override
@@ -602,21 +602,21 @@ public class Cradle
             RefexPolicy refexPolicy, RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
         int nid = componentReference.getNid();
         ConceptChronicleBI chronicle = this.getConcept(nid);
-        return new ConceptChronicleDdo(viewCoordinate, chronicle, refexPolicy, relationshipPolicy);
+        return new ConceptChronicleDdo(viewCoordinate.getTaxonomyCoordinate(), chronicle, refexPolicy, relationshipPolicy);
     }
 
     @Override
     public ConceptChronicleDdo getFxConcept(UUID uuid, UUID viewCoordinateUuid, RefexPolicy refexPolicy,
             RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
         ConceptChronicleBI chronicle = this.getConcept(uuid);
-        return new ConceptChronicleDdo(this.getViewCoordinate(viewCoordinateUuid), chronicle, refexPolicy, relationshipPolicy);
+        return new ConceptChronicleDdo(this.getViewCoordinate(viewCoordinateUuid).getTaxonomyCoordinate(), chronicle, refexPolicy, relationshipPolicy);
     }
 
     @Override
     public ConceptChronicleDdo getFxConcept(UUID uuid, ViewCoordinate viewCoordinate,
             RefexPolicy refexPolicy, RelationshipPolicy relationshipPolicy) throws IOException, ContradictionException {
         ConceptChronicleBI chronicle = this.getConcept(uuid);
-        return new ConceptChronicleDdo(viewCoordinate, chronicle, refexPolicy, relationshipPolicy);
+        return new ConceptChronicleDdo(viewCoordinate.getTaxonomyCoordinate(), chronicle, refexPolicy, relationshipPolicy);
     }
 
     @Override
