@@ -56,9 +56,9 @@ public class GraphCollector implements
         this.taxonomyMap = taxonomyMap;
         this.taxonomyCoordinate = viewCoordinate;
         taxonomyFlags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(viewCoordinate);
-        addToWatchList("779ece66-7e95-323e-a261-214caf48c408");
-        addToWatchList("778a75c9-8264-36aa-9ad6-b9c6e5ee9187");
-        addToWatchList("c377a425-6ac0-3574-9110-b17deb9d49ff");
+//        addToWatchList("779ece66-7e95-323e-a261-214caf48c408");
+//        addToWatchList("778a75c9-8264-36aa-9ad6-b9c6e5ee9187");
+//        addToWatchList("c377a425-6ac0-3574-9110-b17deb9d49ff");
     }
 
     public final void addToWatchList(String uuid) throws RuntimeException {
