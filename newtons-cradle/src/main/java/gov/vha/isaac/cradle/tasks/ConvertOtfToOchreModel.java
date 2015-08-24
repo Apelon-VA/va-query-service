@@ -56,6 +56,7 @@ import org.apache.mahout.math.map.OpenIntObjectHashMap;
 import org.ihtsdo.otf.tcc.dto.TtkConceptChronicle;
 import org.ihtsdo.otf.tcc.dto.TtkConceptLock;
 import org.ihtsdo.otf.tcc.dto.component.attribute.TtkConceptAttributesVersion;
+import org.ihtsdo.otf.tcc.dto.component.refexDynamic.TtkRefexDynamicMemberChronicle;
 import org.ihtsdo.otf.tcc.dto.component.relationship.TtkRelationshipVersion;
 
 /**
@@ -261,6 +262,12 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                     = calc.getLatestVersion(relationship);
             if (latestRelVersion.isPresent()) {
                 TtkRelationshipVersion relVersion = latestRelVersion.get().value();
+                
+                //handle dynamic sememes on relationships 
+                for (TtkRefexDynamicMemberChronicle annotation : relationship.getAnnotationsDynamic()) {
+                    ImportEConceptOchreModel.makeSememe(annotation);
+                }
+                
                 if (relVersion.getState() == State.ACTIVE
                         && relVersion.getCharacteristicUuid().equals(characteristicUuid)) {
                     if (relVersion.getGroup() == 0) {

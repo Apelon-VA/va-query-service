@@ -28,14 +28,16 @@ import gov.vha.isaac.ochre.api.component.sememe.SememeBuilder;
 import gov.vha.isaac.ochre.api.component.sememe.SememeBuilderService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
+import gov.vha.isaac.ochre.api.component.sememe.version.DynamicSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.MutableComponentNidSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.MutableLongSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.MutableSememeVersion;
-import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
 import gov.vha.isaac.ochre.api.component.sememe.version.MutableStringSememe;
+import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
 import gov.vha.isaac.ochre.model.concept.ConceptChronologyImpl;
 import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
 import gov.vha.isaac.ochre.model.sememe.version.DescriptionSememeImpl;
+import gov.vha.isaac.ochre.model.sememe.version.DynamicSememeImpl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -58,6 +60,9 @@ import org.ihtsdo.otf.tcc.dto.component.refex.type_member.TtkRefexMemberChronicl
 import org.ihtsdo.otf.tcc.dto.component.refex.type_member.TtkRefexRevision;
 import org.ihtsdo.otf.tcc.dto.component.refex.type_uuid.TtkRefexUuidMemberChronicle;
 import org.ihtsdo.otf.tcc.dto.component.refex.type_uuid.TtkRefexUuidRevision;
+import org.ihtsdo.otf.tcc.dto.component.refexDynamic.TtkRefexDynamicMemberChronicle;
+import org.ihtsdo.otf.tcc.dto.component.refexDynamic.TtkRefexDynamicRevision;
+import org.ihtsdo.otf.tcc.dto.component.refexDynamic.data.TtkRefexDynamicData;
 
 /**
  *
@@ -220,7 +225,7 @@ public class ImportEConceptOchreModel implements Callable<Void> {
                     }
 
                 });
-                 desc.getAdditionalIdComponents().forEach((additionalId) -> {
+                desc.getAdditionalIdComponents().forEach((additionalId) -> {
                     switch (additionalId.getIdType()) {
                         case STRING:
                         case LONG:
@@ -256,13 +261,23 @@ public class ImportEConceptOchreModel implements Callable<Void> {
                     }
                 }
                 Get.sememeService().writeSememe(newDescription);
+                for (TtkRefexAbstractMemberChronicle<?> annotations : desc.getAnnotations()) {
+                    makeSememe(annotations);
+                }
+                for (TtkRefexDynamicMemberChronicle annotations : desc.getAnnotationsDynamic()) {
+                    makeSememe(annotations);
+                }
             }
 
             eConcept.getRefsetMembers().stream().forEach((TtkRefexAbstractMemberChronicle member) -> {
                 makeSememe(member);
             });
+            eConcept.getRefsetMembersDynamic().stream().forEach((TtkRefexDynamicMemberChronicle member) -> {
+                makeSememe(member);
+            });
             return null;
         } catch (Exception e) {
+            e.printStackTrace();
             System.err.println("Failure importing " + eConcept.toString());
             throw e;
         } finally {
@@ -275,6 +290,28 @@ public class ImportEConceptOchreModel implements Callable<Void> {
             return Stream.empty();
         }
         return collection.stream();
+    }
+    
+    public static void makeSememe(TtkRefexDynamicMemberChronicle member) throws UnsupportedOperationException, IllegalStateException {
+        int referencedComponentNid = Get.identifierService().getNidForUuids(member.getComponentUuid());
+        int assemblageSequence = Get.identifierService().getConceptSequenceForUuids(member.getRefexAssemblageUuid());
+        int stampSequence = getStampSequence(member);
+
+        SememeBuilder<SememeChronology<DynamicSememe<?>>> sememeBuilder = sememeBuilderService
+                .getDyanmicSememeBuilder(referencedComponentNid, assemblageSequence, TtkRefexDynamicData.convertFromTTK(member.getData()));
+
+        SememeChronology<DynamicSememe<?>> sememe = sememeBuilder.build(stampSequence, new ArrayList<>());
+        stream(member.revisions).forEach((TtkRefexDynamicRevision r) -> 
+        {
+            int revisionStampSequence = getStampSequence(r);
+            DynamicSememeImpl mutable = (DynamicSememeImpl)sememe.createMutableVersion(DynamicSememe.class, revisionStampSequence);
+            mutable.setData(TtkRefexDynamicData.convertFromTTK(r.getData()));
+        });
+        Get.sememeService().writeSememe(sememe);
+        
+        for (TtkRefexDynamicMemberChronicle nested : member.getAnnotationsDynamic()) {
+            makeSememe(nested);
+        }
     }
 
     private void makeSememe(TtkRefexAbstractMemberChronicle member) throws UnsupportedOperationException, IllegalStateException {
@@ -335,7 +372,7 @@ public class ImportEConceptOchreModel implements Callable<Void> {
         }
     }
 
-    private int getStampSequence(TtkRevision revision) {
+    private static int getStampSequence(TtkRevision revision) {
         int versionStampSequence;
         versionStampSequence = Get.commitService().getStampSequence(revision.status.getState(),
                 revision.time,
