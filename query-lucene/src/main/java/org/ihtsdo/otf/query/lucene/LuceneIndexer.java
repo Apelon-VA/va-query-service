@@ -250,6 +250,11 @@ public abstract class LuceneIndexer implements IndexServiceBI {
      * Note, it is useful to NOT trim the text of the query before it is sent in - if the last word of the query has a 
      * space character following it, that word will be required as a complete term.  If the last word of the query does not 
      * have a space character following it, that word will be required as a prefix match only.
+     * 
+     * For example:
+     * The query "family test" will return results that contain 'Family Testudinidae'
+     * The query "family test " will not match on  'Testudinidae', so that will be excluded.
+     * 
      * @param semeneConceptSequence optional - The concept seqeuence of the sememe that you wish to search within.  If null, 
      * searches all indexed content.  This would be set to the concept sequence of {@link IsaacMetadataAuxiliaryBinding#DESCRIPTION_ASSEMBLAGE}
      * or the concept sequence {@link IsaacMetadataAuxiliaryBinding#SNOMED_INTEGER_ID} for example.
@@ -257,10 +262,6 @@ public abstract class LuceneIndexer implements IndexServiceBI {
      * @param targetGeneration target generation that must be included in the search or Long.MIN_VALUE if there is no need 
      * to wait for a target generation.  Long.MAX_VALUE can be passed in to force this query to wait until any in progress 
      * indexing operations are completed - and then use the latest index.
-     * 
-     * For example:
-     * The query "family test" will return results that contain 'Family Testudinidae'
-     * The query "family test " will not match on  'Testudinidae', so that will be excluded.
      *
      * @return a List of {@link SearchResult} that contains the nid of the component that matched, and the score of that match relative 
      * to other matches.
