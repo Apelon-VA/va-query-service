@@ -142,7 +142,11 @@ public class IdentifierProvider implements IdentifierService {
         if (conceptSequence < 0) {
             return conceptSequence;
         }
-        return conceptSequenceMap.getNidFast(conceptSequence);
+        int conceptNid = conceptSequenceMap.getNidFast(conceptSequence);
+        if (conceptSequence != 0 && conceptNid == 0) {
+        	log.warn("retrieved nid=" + conceptNid + " for sequence=" + conceptSequence);
+        }
+        return conceptNid;
     }
 
     @Override
