@@ -113,23 +113,24 @@ public class ImportEConceptOchreModel implements Callable<Void> {
 
             TtkConceptAttributesChronicle attributes = eConcept.getConceptAttributes();
             if (attributes != null) {
-                List<?> builtObjects = new ArrayList<>();
-                attributes.getAdditionalIdComponents().forEach((additionalId) -> {
-                    int assemblageConceptSequence = Get.identifierService().getConceptSequenceForUuids(additionalId.getAuthorityUuid());
-                    int idStampSequence = additionalId.getStampSequence();
-                    switch (additionalId.getIdType()) {
-                        case LONG:
-                        case STRING:
-                            SememeBuilder<? extends SememeChronology<? extends SememeVersion<?>>> builder = 
-                                    Get.sememeBuilderService().getStringSememeBuilder(additionalId.getDenotation().toString(), conceptChronology.getNid(), assemblageConceptSequence);
-                            builder.build(idStampSequence, builtObjects);
-                            break;
-                    }
-
-                });
-                builtObjects.forEach((idSememe) -> {
-                    Get.sememeService().writeSememe((SememeChronology<?>) idSememe);
-                });
+//TODO Keith - Dan commented out this code - see duplicate below...
+//                List<?> builtObjects = new ArrayList<>();
+//                attributes.getAdditionalIdComponents().forEach((additionalId) -> {
+//                    int assemblageConceptSequence = Get.identifierService().getConceptSequenceForUuids(additionalId.getAuthorityUuid());
+//                    int idStampSequence = additionalId.getStampSequence();
+//                    switch (additionalId.getIdType()) {
+//                        case LONG:
+//                        case STRING:
+//                            SememeBuilder<? extends SememeChronology<? extends SememeVersion<?>>> builder = 
+//                                    Get.sememeBuilderService().getStringSememeBuilder(additionalId.getDenotation().toString(), conceptChronology.getNid(), assemblageConceptSequence);
+//                            builder.build(idStampSequence, builtObjects);
+//                            break;
+//                    }
+//
+//                });
+//                builtObjects.forEach((idSememe) -> {
+//                    Get.sememeService().writeSememe((SememeChronology<?>) idSememe);
+//                });
                 TaxonomyRecordPrimitive parentTaxonomyRecord;
                 if (originDestinationTaxonomyRecords.containsKey(conceptSequence)) {
                     parentTaxonomyRecord = originDestinationTaxonomyRecords.get(conceptSequence).get();
@@ -158,17 +159,10 @@ public class ImportEConceptOchreModel implements Callable<Void> {
                     
                     switch (id.getIdType()) {
                         case LONG:
-                            SememeBuilder<SememeChronology<MutableLongSememe<?>>> longIdBuilder =  
-                                sememeBuilderService.getLongSememeBuilder((Long)id.getDenotation(), 
-                                        conceptChronology.getNid(), 
-                                        Get.identifierService().getConceptSequenceForUuids(id.getAuthorityUuid()));
-                            
-                            SememeChronology<MutableLongSememe<?>> idSememe = longIdBuilder.build(getStampSequence(id), new ArrayList());
-                            Get.sememeService().writeSememe(idSememe);
-                            break;
+                            //Longs are purposefully handled as strings for things we deem "IDs"
                         case STRING:
                             SememeBuilder<SememeChronology<MutableStringSememe<?>>> stringIdBuilder =  
-                                sememeBuilderService.getStringSememeBuilder((String)id.getDenotation(), 
+                                sememeBuilderService.getStringSememeBuilder((String)id.getDenotation().toString(), 
                                     conceptChronology.getNid(), 
                                     Get.identifierService().getConceptSequenceForUuids(id.getAuthorityUuid()));
                         
