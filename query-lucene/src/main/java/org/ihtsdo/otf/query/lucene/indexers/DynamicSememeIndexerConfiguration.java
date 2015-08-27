@@ -18,20 +18,6 @@
  */
 package org.ihtsdo.otf.query.lucene.indexers;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
-import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.jvnet.hk2.annotations.Service;
 import gov.vha.isaac.metadata.coordinates.EditCoordinates;
 import gov.vha.isaac.metadata.coordinates.StampCoordinates;
 import gov.vha.isaac.ochre.api.Get;
@@ -47,6 +33,7 @@ import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.SememeSnapshotService;
 import gov.vha.isaac.ochre.api.component.sememe.SememeType;
 import gov.vha.isaac.ochre.api.component.sememe.version.DynamicSememe;
+import gov.vha.isaac.ochre.api.component.sememe.version.MutableDynamicSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
 import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.DynamicSememeDataBI;
 import gov.vha.isaac.ochre.api.component.sememe.version.dynamicSememe.DynamicSememeDataType;
@@ -57,7 +44,20 @@ import gov.vha.isaac.ochre.model.constants.IsaacMetadataConstants;
 import gov.vha.isaac.ochre.model.sememe.dataTypes.DynamicSememeArray;
 import gov.vha.isaac.ochre.model.sememe.dataTypes.DynamicSememeData;
 import gov.vha.isaac.ochre.model.sememe.dataTypes.DynamicSememeInteger;
-import gov.vha.isaac.ochre.model.sememe.dataTypes.DynamicSememeString;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
+import javax.inject.Singleton;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ihtsdo.otf.tcc.api.blueprint.InvalidCAB;
+import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
+import org.jvnet.hk2.annotations.Service;
 
 /**
  * {@link DynamicSememeIndexerConfiguration} Holds a cache of the configuration for the dynamic refex indexer (which is read from the DB, and may
@@ -110,11 +110,11 @@ public class DynamicSememeIndexerConfiguration
 							if (sememeC.getSememeType() == SememeType.DYNAMIC)
 							{
 								@SuppressWarnings({ "unchecked", "rawtypes" })
-								Optional<LatestVersion<DynamicSememe>> dsv = ((SememeChronology)sememeC).getLatestVersion(DynamicSememe.class, StampCoordinates.getDevelopmentLatestActiveOnly());
+								Optional<LatestVersion<DynamicSememe>> dsv = ((SememeChronology)sememeC).getLatestVersion(DynamicSememe.class, StampCoordinates.getDevelopmentLatest());
 								
 								if (dsv.isPresent() && dsv.get().value().getState() == State.ACTIVE)
 								{
-									int assemblageToIndex = dsv.get().value().getAssemblageSequence();
+									int assemblageToIndex = Get.identifierService().getConceptSequence(dsv.get().value().getReferencedComponentNid());
 									Integer[] finalCols = new Integer[] {};
 									DynamicSememeDataBI[] data = dsv.get().value().getData();
 									if (data != null && data.length > 0)
@@ -220,7 +220,7 @@ public class DynamicSememeIndexerConfiguration
 	private static DynamicSememe<? extends DynamicSememe<?>> findCurrentIndexConfigRefex(int assemblageNidOrSequence) throws RuntimeException
 	{
 		@SuppressWarnings("rawtypes")
-		SememeSnapshotService<DynamicSememe> sss = Get.sememeService().getSnapshot(DynamicSememe.class, StampCoordinates.getDevelopmentLatestActiveOnly());
+		SememeSnapshotService<DynamicSememe> sss = Get.sememeService().getSnapshot(DynamicSememe.class, StampCoordinates.getDevelopmentLatest());
 		@SuppressWarnings("rawtypes")
 		Stream<LatestVersion<DynamicSememe>> sememes = sss.getLatestSememeVersionsForComponentFromAssemblage(assemblageNidOrSequence, 
 				IsaacMetadataConstants.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getSequence());
@@ -261,12 +261,8 @@ public class DynamicSememeIndexerConfiguration
 				isl.indexConfigurationChanged(LookupService.get().getService(DynamicSememeIndexer.class));
 			}
 			
-			SememeBuilder<? extends SememeChronology<? extends DynamicSememe<?>>> sb = 
-					Get.sememeBuilderService().getDyanmicSememeBuilder(assemblageConceptSequence,
-							IsaacMetadataConstants.DYNAMIC_SEMEME_INDEX_CONFIGURATION.getSequence());
-			
-			sb.build(Get.commitService().getRetiredStampSequence(rdv.getStampSequence()), new ArrayList<>());
-			
+			((SememeChronology)rdv.getChronology()).createMutableVersion(MutableDynamicSememe.class, State.INACTIVE, EditCoordinates.getDefaultUserMetadata());
+			Get.commitService().addUncommitted(rdv.getChronology());
 			Get.commitService().commit("Index Config Change");
 			log.info("Index disabled for dynamic sememe assemblage concept '" + assemblageConceptSequence + "'");
 
