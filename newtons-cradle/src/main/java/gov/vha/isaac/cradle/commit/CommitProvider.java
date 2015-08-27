@@ -312,15 +312,6 @@ public class CommitProvider implements CommitService {
                 getModuleSequenceForStamp(stampSequence), 
                 getPathSequenceForStamp(stampSequence));
     }
-    
-    @Override
-    public int getActivatedStampSequence(int stampSequence) {
-        return getStampSequence(State.ACTIVE, 
-                getTimeForStamp(stampSequence), 
-                getAuthorSequenceForStamp(stampSequence), 
-                getModuleSequenceForStamp(stampSequence), 
-                getPathSequenceForStamp(stampSequence));
-    }
 
     @Override
     public int getStampSequence(State status, long time, int authorSequence, int moduleSequence, int pathSequence) {
