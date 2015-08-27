@@ -225,8 +225,8 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
         }
 
         private List<SememeChronology<? extends DescriptionSememe<?>>> getDescriptionList(int conceptId) {
-            conceptId = Get.identifierService().getConceptNid(conceptId);
-            return Get.sememeService().getDescriptionsForComponent(conceptId).collect(Collectors.toList());
+            int conceptNid = Get.identifierService().getConceptNid(conceptId);
+            return Get.sememeService().getDescriptionsForComponent(conceptNid).collect(Collectors.toList());
         }
 
         @Override
