@@ -140,12 +140,12 @@ public class TypeStampTaxonomyRecords {
         return intStreamBuilder.build();
     }
 
-    public boolean containsConceptSequenceViaType(int typeSequence, TaxonomyCoordinate<?> tc, RelativePositionCalculator computer) {
+    public boolean containsConceptSequenceViaType(int typeSequence, TaxonomyCoordinate tc, RelativePositionCalculator computer) {
         int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
         return containsConceptSequenceViaType(typeSequence, flags, computer);
     }
 
-    public boolean containsConceptSequenceViaType(ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate<?> tc, RelativePositionCalculator computer) {
+    public boolean containsConceptSequenceViaType(ConceptSequenceSet typeSequenceSet, TaxonomyCoordinate tc, RelativePositionCalculator computer) {
         int flags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(tc);
         return containsConceptSequenceViaType(typeSequenceSet, flags, computer);
     }

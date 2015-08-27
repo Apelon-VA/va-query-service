@@ -189,7 +189,7 @@ public class SememeBuilderImpl<C extends SememeChronology<? extends SememeVersio
             case DYNAMIC: {
                 DynamicSememeImpl dsi = (DynamicSememeImpl)sememeChronicle.createMutableVersion(DynamicSememeImpl.class, stampSequence);
                 if (parameters != null) {
-                    dsi.setData((DynamicSememeDataBI[])parameters[0]);
+                    dsi.setData((DynamicSememeDataBI[])parameters);
                 }
                 //TODO Dan this needs to fire the validator!
                 break;

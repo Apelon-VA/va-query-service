@@ -465,7 +465,7 @@ public class CradleIntegrationTests {
                                     vc)).limit(10);
             TaxonomyService taxonomyService = Get.taxonomyService();
             conceptSequenceStream.forEach((int conceptSequence) -> {
-                walkToRoot(conceptSequence, taxonomyService, vc, 0, new BitSet());
+                walkToRoot(conceptSequence, taxonomyService, vc.getTaxonomyCoordinate(), 0, new BitSet());
                 System.out.println("\n\n");
             });
             log.info("Walking 10 concepts to root stated.");
@@ -474,7 +474,7 @@ public class CradleIntegrationTests {
                                     vc)).limit(10);
             ViewCoordinate vc2 = ViewCoordinates.getDevelopmentStatedLatestActiveOnly();
             conceptSequenceStream.forEach((int conceptSequence) -> {
-                walkToRoot(conceptSequence, taxonomyService, vc2, 0, new BitSet());
+                walkToRoot(conceptSequence, taxonomyService, vc2.getTaxonomyCoordinate(), 0, new BitSet());
                 System.out.println("\n\n");
             });
         } catch (IOException ex) {
@@ -562,8 +562,8 @@ public class CradleIntegrationTests {
             checkForCircularRels(Get.coordinateFactory().createDefaultInferredTaxonomyCoordinate());
 
             //createCircularRelsMetrics();
-            testTaxonomy(ViewCoordinates.getDevelopmentInferredLatest());
-            testTaxonomy(ViewCoordinates.getDevelopmentStatedLatest());
+            testTaxonomy(ViewCoordinates.getDevelopmentInferredLatest().getTaxonomyCoordinate());
+            testTaxonomy(ViewCoordinates.getDevelopmentStatedLatest().getTaxonomyCoordinate());
         } catch (IOException | ContradictionException ex) {
             log.error(ex.getLocalizedMessage(), ex);
         }
@@ -662,7 +662,7 @@ public class CradleIntegrationTests {
         });
     }
 
-    private void testTaxonomy(TaxonomyCoordinate<?> vc) throws IOException, ContradictionException {
+    private void testTaxonomy(TaxonomyCoordinate vc) throws IOException, ContradictionException {
         int disorderOfCorneaNid = Snomed.DISORDER_OF_CORNEA.getNid();
         int disorderOfEyeNid = Snomed.DISORDER_OF_EYE.getNid();
         TaxonomyService taxonomyService = Get.taxonomyService();
@@ -694,7 +694,7 @@ public class CradleIntegrationTests {
         log.info("  Start to make taxonomy snapshot graph.");
         Instant collectStart = Instant.now();
         TaxonomyService taxonomyService = Get.taxonomyService();
-        Tree taxonomyTree = taxonomyService.getTaxonomyTree(ViewCoordinates.getDevelopmentInferredLatestActiveOnly());
+        Tree taxonomyTree = taxonomyService.getTaxonomyTree(ViewCoordinates.getDevelopmentInferredLatestActiveOnly().getTaxonomyCoordinate());
         Instant collectEnd = Instant.now();
         Duration collectDuration = Duration.between(collectStart, collectEnd);
         log.info("  Finished making graph: " + taxonomyTree);

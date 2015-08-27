@@ -48,11 +48,11 @@ public class SememeSnapshotProvider<V extends SememeVersion<?>> implements Semem
     }
 
     Class<V> versionType;
-    StampCoordinate<? extends StampCoordinate<?>> stampCoordinate;
+    StampCoordinate stampCoordinate;
     SememeService sememeProvider;
     RelativePositionCalculator calculator;
 
-    public SememeSnapshotProvider(Class<V> versionType, StampCoordinate<? extends StampCoordinate<?>> stampCoordinate, SememeService sememeProvider) {
+    public SememeSnapshotProvider(Class<V> versionType, StampCoordinate stampCoordinate, SememeService sememeProvider) {
         this.versionType = versionType;
         this.stampCoordinate = stampCoordinate;
         this.sememeProvider = sememeProvider;
