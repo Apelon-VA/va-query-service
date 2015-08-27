@@ -318,7 +318,9 @@ public class CommitProvider implements CommitService {
 		if (s.isPresent()) {
 			return s.get().getTime();
 		}
-		throw new NoSuchElementException("No stampSequence found: " + stampSequence);
+		throw new NoSuchElementException("No stampSequence found: " + stampSequence
+				  + " map size: " + stampMap.size()
+				  + " inverse map size: " + inverseStampMap.getSize());
 	}
 
 	@Override
@@ -576,7 +578,26 @@ public class CommitProvider implements CommitService {
 	 */
 	@Override
 	public synchronized Task<Optional<CommitRecord>> commit(String commitComment) {
-		return commit(Get.configurationService().getDefaultEditCoordinate(), commitComment);
+//		return commit(Get.configurationService().getDefaultEditCoordinate(), commitComment);
+		Semaphore pendingWrites = writePermitReference.getAndSet(new Semaphore(WRITE_POOL_SIZE));
+		pendingWrites.acquireUninterruptibly(WRITE_POOL_SIZE);
+		alertCollection.clear();
+		lastCommit = databaseSequence.incrementAndGet();
+
+		Map<UncommittedStamp, Integer> pendingStampsForCommit = new HashMap<>(UNCOMMITTED_STAMP_TO_STAMP_SEQUENCE_MAP);
+		UNCOMMITTED_STAMP_TO_STAMP_SEQUENCE_MAP.clear();
+
+		CommitTask task = CommitTask.get(commitComment,
+				  uncommittedConceptsWithChecksSequenceSet,
+				  uncommittedConceptsNoChecksSequenceSet,
+				  uncommittedSememesWithChecksSequenceSet,
+				  uncommittedSememesNoChecksSequenceSet,
+				  lastCommit,
+				  checkers,
+				  alertCollection,
+				  pendingStampsForCommit,
+				  this);
+		return task;
 	}
 
 	protected void revertCommit(ConceptSequenceSet conceptsToCommit,
