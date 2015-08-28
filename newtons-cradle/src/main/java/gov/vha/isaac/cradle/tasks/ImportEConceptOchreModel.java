@@ -181,6 +181,13 @@ public class ImportEConceptOchreModel implements Callable<Void> {
                             throw new UnsupportedOperationException("Unhandled case - id attribute " + id.toString() + " on concept " + conceptChronology.toExternalString());
                     }
                 }
+                
+                for (TtkRefexAbstractMemberChronicle<?> annotations : attributes.getAnnotations()) {
+                    makeSememe(annotations);
+                }
+                for (TtkRefexDynamicMemberChronicle annotations : attributes.getAnnotationsDynamic()) {
+                    makeSememe(annotations);
+                }
             }
 
             Get.conceptService().writeConcept(conceptChronology);
