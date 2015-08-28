@@ -130,12 +130,10 @@ public class ConceptProviderManager implements ConceptService {
     private void startMe() throws IOException {
         log.info("Starting ConceptProvider.");
         ((DelegateService)delegate).startDelegateService();
-	log.info(Get.commitService().getTextSummary());
     }
     @PreDestroy
     private void stopMe() throws IOException {
         log.info("Stopping ConceptProvider.");
-	log.info(Get.commitService().getTextSummary());
         ((DelegateService)delegate).stopDelegateService();
     }
 }

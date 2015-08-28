@@ -68,7 +68,6 @@ import gov.vha.isaac.ochre.collections.NidSet;
 import gov.vha.isaac.ochre.util.WorkExecutors;
 import java.nio.file.Path;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.ihtsdo.otf.tcc.api.concept.ConceptFetcherBI;
 import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
 import org.ihtsdo.otf.tcc.api.nid.IntSet;
@@ -103,6 +102,7 @@ public class Cradle
         try {
             log.info("Starting Cradle post-construct");
             MemoryUtil.startListener();
+	     log.info(Get.commitService().getTextSummary());
         } catch (Exception e) {
             LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("ChRonicled Assertion Database of Logical Expressions", e);
             throw e;
@@ -113,6 +113,7 @@ public class Cradle
     @PreDestroy
     private void stopMe() throws IOException {
         log.info("Stopping Cradle pre-destroy. ");
+	 log.info(Get.commitService().getTextSummary());
         //integrityTest();
         log.info("Finished pre-destroy.");
     }
