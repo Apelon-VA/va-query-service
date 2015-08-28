@@ -215,13 +215,11 @@ public class CommitProvider implements CommitService {
 			LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Cradle Commit Provider", e);
 			throw e;
 		}
-		logSummary();
 	}
 
 	@PreDestroy
 	private void stopMe() throws IOException {
 		LOG.info("Stopping CradleCommitManager pre-destroy. ");
-		logSummary();
 		writeConceptCompletionService.cancel();
 		writeSememeCompletionService.cancel();
 		stampAliasMap.write(new File(commitManagerFolder.toFile(), STAMP_ALIAS_MAP_FILENAME));
@@ -257,7 +255,8 @@ public class CommitProvider implements CommitService {
 
 	}
 
-	private void logSummary() {
+	@Override
+	public String getTextSummary() {
 		StringBuilder builder = new StringBuilder("CommitProvider summary: ");
 		builder.append("\nnextStamp: ").append(nextStampSequence);
 		builder.append("\nuncommitted concepts with checks: ").append(uncommittedConceptsWithChecksSequenceSet);
@@ -265,7 +264,7 @@ public class CommitProvider implements CommitService {
 		builder.append("\nuncommitted sememes with checks: ").append(uncommittedSememesWithChecksSequenceSet);
 		builder.append("\nuncommitted sememes no checks: ").append(uncommittedSememesNoChecksSequenceSet);
 		builder.append("\nuncommitted stamps: ").append(UNCOMMITTED_STAMP_TO_STAMP_SEQUENCE_MAP);
-		LOG.info(builder.toString());
+		return builder.toString();
 	}
 
 	@Override

@@ -17,6 +17,7 @@ package gov.vha.isaac.cradle.concept;
 
 import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.DelegateService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
@@ -129,10 +130,12 @@ public class ConceptProviderManager implements ConceptService {
     private void startMe() throws IOException {
         log.info("Starting ConceptProvider.");
         ((DelegateService)delegate).startDelegateService();
+	log.info(Get.commitService().getTextSummary());
     }
     @PreDestroy
     private void stopMe() throws IOException {
         log.info("Stopping ConceptProvider.");
+	log.info(Get.commitService().getTextSummary());
         ((DelegateService)delegate).stopDelegateService();
     }
 }
