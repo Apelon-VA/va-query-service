@@ -87,36 +87,22 @@ import org.jvnet.hk2.annotations.Service;
 @RunLevel(value = 1)
 public class CommitProvider implements CommitService {
 
-	private static final Logger log = LogManager.getLogger();
+	private static final Logger LOG = LogManager.getLogger();
 
 	public static final String DEFAULT_CRADLE_COMMIT_MANAGER_FOLDER = "commit-manager";
 	private static final String COMMIT_MANAGER_DATA_FILENAME = "commit-manager.data";
 	private static final String STAMP_ALIAS_MAP_FILENAME = "stamp-alias.map";
 	private static final String STAMP_COMMENT_MAP_FILENAME = "stamp-comment.map";
+
 	private static final int WRITE_POOL_SIZE = 40;
-	private final AtomicReference<Semaphore> writePermitReference
-			  = new AtomicReference<>(new Semaphore(WRITE_POOL_SIZE));
 
-	private static final Map<UncommittedStamp, Integer> UNCOMMITTED_STAMP_TO_STAMP_SEQUENCE_MAP
-			  = new ConcurrentHashMap<>();
-
-	private final StampAliasMap stampAliasMap = new StampAliasMap();
-	private final StampCommentMap stampCommentMap = new StampCommentMap();
 	private final Path dbFolderPath;
 	private final Path commitManagerFolder;
-	private final ConcurrentObjectIntMap<Stamp> stampMap = new ConcurrentObjectIntMap<>();
-	private final ConcurrentSequenceSerializedObjectMap<Stamp> inverseStampMap;
-	private final AtomicInteger nextStampSequence = new AtomicInteger(1);
 	private final ReentrantLock stampLock = new ReentrantLock();
-	private final AtomicLong databaseSequence = new AtomicLong();
-	private final ConcurrentSkipListSet<ChangeChecker> checkers = new ConcurrentSkipListSet<>();
-	private final ConcurrentSkipListSet<Alert> alertCollection = new ConcurrentSkipListSet<>();
-
 	private final ReentrantLock uncommittedSequenceLock = new ReentrantLock();
-	private final ConceptSequenceSet uncommittedConceptsWithChecksSequenceSet = new ConceptSequenceSet();
-	private final ConceptSequenceSet uncommittedConceptsNoChecksSequenceSet = new ConceptSequenceSet();
-	private final SememeSequenceSet uncommittedSememesWithChecksSequenceSet = new SememeSequenceSet();
-	private final SememeSequenceSet uncommittedSememesNoChecksSequenceSet = new SememeSequenceSet();
+
+	private final AtomicReference<Semaphore> writePermitReference
+			  = new AtomicReference<>(new Semaphore(WRITE_POOL_SIZE));
 
 	private final WriteConceptCompletionService writeConceptCompletionService = new WriteConceptCompletionService();
 	private final WriteSememeCompletionService writeSememeCompletionService = new WriteSememeCompletionService();
@@ -128,14 +114,55 @@ public class CommitProvider implements CommitService {
 	});
 
 	ConcurrentSkipListSet<WeakReference<ChronologyChangeListener>> changeListeners = new ConcurrentSkipListSet<>();
-
+	private final ConcurrentSkipListSet<ChangeChecker> checkers = new ConcurrentSkipListSet<>();
 	private long lastCommit = Long.MIN_VALUE;
 	private AtomicBoolean loadRequired = new AtomicBoolean();
+	/**
+	 * TODO recreate alert collection at restart for uncommitted components.
+	 */
+	private final ConcurrentSkipListSet<Alert> alertCollection = new ConcurrentSkipListSet<>();
+
+	/**
+	 * TODO: persist across restarts.
+	 */
+	private static final Map<UncommittedStamp, Integer> UNCOMMITTED_STAMP_TO_STAMP_SEQUENCE_MAP
+			  = new ConcurrentHashMap<>();
+
+	/**
+	 * Persistent map of a stamp aliases to a sequence
+	 */
+	private final StampAliasMap stampAliasMap = new StampAliasMap();
+	/**
+	 * Persistent map of comments to a stamp.
+	 */
+	private final StampCommentMap stampCommentMap = new StampCommentMap();
+	/**
+	 * Persistent map of stamp sequences to a Stamp object.
+	 */
+	private final ConcurrentObjectIntMap<Stamp> stampMap = new ConcurrentObjectIntMap<>();
+	/**
+	 * Persistent sequence of database commit actions
+	 */
+	private final AtomicLong databaseSequence = new AtomicLong();
+	/**
+	 * Persistent stamp sequence
+	 */
+	private final AtomicInteger nextStampSequence = new AtomicInteger(1);
+
+	/**
+	 * Persistent as a result of reading and writing the stampMap.
+	 */
+	private final ConcurrentSequenceSerializedObjectMap<Stamp> inverseStampMap;
+
+	private final ConceptSequenceSet uncommittedConceptsWithChecksSequenceSet = ConceptSequenceSet.concurrent();
+	private final ConceptSequenceSet uncommittedConceptsNoChecksSequenceSet = ConceptSequenceSet.concurrent();
+	private final SememeSequenceSet uncommittedSememesWithChecksSequenceSet = SememeSequenceSet.concurrent();
+	private final SememeSequenceSet uncommittedSememesNoChecksSequenceSet = SememeSequenceSet.concurrent();
 
 	private CommitProvider() throws IOException {
 		try {
 			dbFolderPath = LookupService.getService(ConfigurationService.class).getChronicleFolderPath().resolve("commit-provider");
-			loadRequired.set(!Files.exists(dbFolderPath));
+			loadRequired.set(Files.exists(dbFolderPath));
 			Files.createDirectories(dbFolderPath);
 			inverseStampMap = new ConcurrentSequenceSerializedObjectMap<>(new StampSerializer(),
 					  dbFolderPath, null, null);
@@ -150,12 +177,12 @@ public class CommitProvider implements CommitService {
 	@PostConstruct
 	private void startMe() throws IOException {
 		try {
-			log.info("Starting CradleCommitManager post-construct");
+			LOG.info("Starting CradleCommitManager post-construct");
 			writeConceptCompletionServicePool.submit(writeConceptCompletionService);
 			writeSememeCompletionServicePool.submit(writeSememeCompletionService);
-			if (!loadRequired.get()) {
-				log.info("Reading existing commit manager data. ");
-				log.info("Reading " + COMMIT_MANAGER_DATA_FILENAME);
+			if (loadRequired.get()) {
+				LOG.info("Reading existing commit manager data. ");
+				LOG.info("Reading " + COMMIT_MANAGER_DATA_FILENAME);
 				try (DataInputStream in = new DataInputStream(new FileInputStream(new File(commitManagerFolder.toFile(), COMMIT_MANAGER_DATA_FILENAME)))) {
 					nextStampSequence.set(in.readInt());
 					databaseSequence.set(in.readLong());
@@ -167,29 +194,38 @@ public class CommitProvider implements CommitService {
 						stampMap.put(stamp, stampSequence);
 						inverseStampMap.put(stampSequence, stamp);
 					}
+					uncommittedConceptsWithChecksSequenceSet.read(in);
+					uncommittedConceptsNoChecksSequenceSet.read(in);
+					uncommittedSememesWithChecksSequenceSet.read(in);
+					uncommittedSememesNoChecksSequenceSet.read(in);
+
+					int uncommittedSize = in.readInt();
+					for (int i = 0; i < uncommittedSize; i++) {
+						UNCOMMITTED_STAMP_TO_STAMP_SEQUENCE_MAP.put(new UncommittedStamp(in), in.readInt());
+					}
 				}
-				log.info("Reading: " + STAMP_ALIAS_MAP_FILENAME);
+
+				LOG.info("Reading: " + STAMP_ALIAS_MAP_FILENAME);
 				stampAliasMap.read(new File(commitManagerFolder.toFile(), STAMP_ALIAS_MAP_FILENAME));
-				log.info("Reading: " + STAMP_COMMENT_MAP_FILENAME);
+				LOG.info("Reading: " + STAMP_COMMENT_MAP_FILENAME);
 				stampCommentMap.read(new File(commitManagerFolder.toFile(), STAMP_COMMENT_MAP_FILENAME));
 			}
+			
 		} catch (Exception e) {
 			LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("Cradle Commit Provider", e);
 			throw e;
 		}
+		logSummary();
 	}
 
 	@PreDestroy
 	private void stopMe() throws IOException {
-		log.info("Stopping CradleCommitManager pre-destroy. ");
-		log.info("nextStamp: {}", nextStampSequence);
+		LOG.info("Stopping CradleCommitManager pre-destroy. ");
+		logSummary();
 		writeConceptCompletionService.cancel();
 		writeSememeCompletionService.cancel();
-		log.info("writing: " + STAMP_ALIAS_MAP_FILENAME);
 		stampAliasMap.write(new File(commitManagerFolder.toFile(), STAMP_ALIAS_MAP_FILENAME));
-		log.info("writing: " + STAMP_COMMENT_MAP_FILENAME);
 		stampCommentMap.write(new File(commitManagerFolder.toFile(), STAMP_COMMENT_MAP_FILENAME));
-		log.info("Writing " + COMMIT_MANAGER_DATA_FILENAME);
 
 		try (DataOutputStream out = new DataOutputStream(new FileOutputStream(new File(commitManagerFolder.toFile(), COMMIT_MANAGER_DATA_FILENAME)))) {
 			out.writeInt(nextStampSequence.get());
@@ -204,7 +240,32 @@ public class CommitProvider implements CommitService {
 					throw new RuntimeException(ex);
 				}
 			});
+
+			uncommittedConceptsWithChecksSequenceSet.write(out);
+			uncommittedConceptsNoChecksSequenceSet.write(out);
+			uncommittedSememesWithChecksSequenceSet.write(out);
+			uncommittedSememesNoChecksSequenceSet.write(out);
+
+			int size = UNCOMMITTED_STAMP_TO_STAMP_SEQUENCE_MAP.size();
+			out.writeInt(size);
+			
+			for (Map.Entry<UncommittedStamp, Integer> entry: UNCOMMITTED_STAMP_TO_STAMP_SEQUENCE_MAP.entrySet()) {
+				entry.getKey().write(out);
+				out.writeInt(entry.getValue());
+			}
 		}
+
+	}
+
+	private void logSummary() {
+		StringBuilder builder = new StringBuilder("CommitProvider summary: ");
+		builder.append("\nnextStamp: ").append(nextStampSequence);
+		builder.append("\nuncommitted concepts with checks: ").append(uncommittedConceptsWithChecksSequenceSet);
+		builder.append("\nuncommitted concepts no checks: ").append(uncommittedConceptsNoChecksSequenceSet);
+		builder.append("\nuncommitted sememes with checks: ").append(uncommittedSememesWithChecksSequenceSet);
+		builder.append("\nuncommitted sememes no checks: ").append(uncommittedSememesNoChecksSequenceSet);
+		builder.append("\nuncommitted stamps: ").append(UNCOMMITTED_STAMP_TO_STAMP_SEQUENCE_MAP);
+		LOG.info(builder.toString());
 	}
 
 	@Override

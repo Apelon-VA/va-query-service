@@ -17,72 +17,85 @@ package gov.vha.isaac.cradle.commit;
 
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.State;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import org.ihtsdo.otf.tcc.api.hash.Hashcode;
-import org.ihtsdo.otf.tcc.api.store.Ts;
 
 /**
  *
  * @author kec
  */
 public class UncommittedStamp {
-   public int hashCode = Integer.MAX_VALUE;
-   public int authorSequence;
-   public int pathSequence;
-   public State status;
-   public int moduleSequence;
+
+	public int hashCode = Integer.MAX_VALUE;
+	public State status;
+	public int authorSequence;
+	public int moduleSequence;
+	public int pathSequence;
 
    //~--- constructors --------------------------------------------------------
-
-   public UncommittedStamp(State status, int authorSequence, int moduleSequence, int pathSequence) {
-      super();
-      this.status = status;
-      this.authorSequence = Get.identifierService().getConceptSequence(authorSequence);
-      this.pathSequence   = Get.identifierService().getConceptSequence(pathSequence);
-      this.moduleSequence = Get.identifierService().getConceptSequence(moduleSequence);
-   }
+	public UncommittedStamp(State status, int authorSequence, int moduleSequence, int pathSequence) {
+		super();
+		this.status = status;
+		this.authorSequence = Get.identifierService().getConceptSequence(authorSequence);
+		this.moduleSequence = Get.identifierService().getConceptSequence(moduleSequence);
+		this.pathSequence = Get.identifierService().getConceptSequence(pathSequence);
+	}
+	
+	public UncommittedStamp(DataInput input) throws IOException {
+		super();
+		if (input.readBoolean()) {
+			this.status = State.ACTIVE;
+		} else {
+			this.status = State.INACTIVE;
+		}
+		this.authorSequence = input.readInt();
+		this.moduleSequence = input.readInt();
+		this.pathSequence = input.readInt();
+	}
+	
+	public void write(DataOutput output) throws IOException {
+		output.writeBoolean(status.isActive());
+		output.writeInt(authorSequence);
+		output.writeInt(moduleSequence);
+		output.writeInt(pathSequence);		
+	}
 
    //~--- methods -------------------------------------------------------------
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof UncommittedStamp) {
+			UncommittedStamp other = (UncommittedStamp) obj;
 
-   @Override
-   public boolean equals(Object obj) {
-      if (obj instanceof UncommittedStamp) {
-         UncommittedStamp other = (UncommittedStamp) obj;
+			if ((status == other.status) && (authorSequence == other.authorSequence)
+					  && (pathSequence == other.pathSequence) && (moduleSequence == other.moduleSequence)) {
+				return true;
+			}
+		}
+		return false;
+	}
 
-         if ((status == other.status) && (authorSequence == other.authorSequence) 
-                 && (pathSequence == other.pathSequence) && (moduleSequence == other.moduleSequence)) {
-            return true;
-         }
-      }
+	@Override
+	public int hashCode() {
+		if (hashCode == Integer.MAX_VALUE) {
+			hashCode = Hashcode.compute(new int[]{status.ordinal(), authorSequence, pathSequence, moduleSequence});
+		}
+		return hashCode;
+	}
 
-      return false;
-   }
-
-   @Override
-   public int hashCode() {
-      if (hashCode == Integer.MAX_VALUE) {
-         hashCode = Hashcode.compute(new int[] { status.ordinal(), authorSequence, pathSequence, moduleSequence });
-      }
-
-      return hashCode;
-   }
-    @Override
-    public String toString() {
-        if (Ts.get() != null) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("UncommittedStamp{s:");
-             sb.append(status);
-             sb.append(", a:");
-             sb.append(Ts.get().informAboutNid(Get.identifierService().getConceptNid(authorSequence)));
-             sb.append(", m:");
-             sb.append(Ts.get().informAboutNid(Get.identifierService().getConceptNid(moduleSequence)));
-             sb.append(", p: ");
-             sb.append(Ts.get().informAboutNid(Get.identifierService().getConceptNid(pathSequence)));
-             sb.append('}');
-             return sb.toString();
-        }
-        
-        return "UncommittedStamp{s:" + status + ", a:" + authorSequence + 
-                ", m:" + moduleSequence + ", p: " + pathSequence +'}';
-    }
-    
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("UncommittedStamp{s:");
+		sb.append(status);
+		sb.append(", a:");
+		sb.append(Get.conceptDescriptionText(authorSequence));
+		sb.append(", m:");
+		sb.append(Get.conceptDescriptionText(moduleSequence));
+		sb.append(", p: ");
+		sb.append(Get.conceptDescriptionText(pathSequence));
+		sb.append('}');
+		return sb.toString();
+	}
 }
