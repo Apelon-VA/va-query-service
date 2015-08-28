@@ -17,22 +17,21 @@ package org.ihtsdo.otf.query.implementation.clauses;
 
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
 import java.io.IOException;
 import java.util.EnumSet;
-import org.ihtsdo.otf.query.implementation.ClauseComputeType;
-import org.ihtsdo.otf.query.implementation.ClauseSemantic;
-import org.ihtsdo.otf.query.implementation.LeafClause;
-import org.ihtsdo.otf.query.implementation.Query;
-import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
-import org.ihtsdo.otf.query.implementation.WhereClause;
-import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
-
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import org.ihtsdo.otf.query.implementation.ClauseComputeType;
+import org.ihtsdo.otf.query.implementation.ClauseSemantic;
+import org.ihtsdo.otf.query.implementation.LeafClause;
+import org.ihtsdo.otf.query.implementation.Query;
+import org.ihtsdo.otf.query.implementation.WhereClause;
+import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
 
 /**
  * Computes the set of concepts that are a child of the input concept. The set
@@ -64,10 +63,10 @@ public class ConceptIsChildOf extends LeafClause {
     @Override
     public NidSet computePossibleComponents(NidSet incomingPossibleComponents) {
         try {
-            ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+            TaxonomyCoordinate taxonomyCoordinate = (TaxonomyCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
             ConceptSpec childOfSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(childOfSpecKey);
-            int parentNid = childOfSpec.getNid(viewCoordinate);
-            ConceptSequenceSet childrenOfSequenceSet = Get.taxonomyService().getChildOfSequenceSet(parentNid, viewCoordinate.getTaxonomyCoordinate());
+            int parentNid = childOfSpec.getNid(taxonomyCoordinate.getStampCoordinate());
+            ConceptSequenceSet childrenOfSequenceSet = Get.taxonomyService().getChildOfSequenceSet(parentNid, taxonomyCoordinate);
             getResultsCache().or(NidSet.of(childrenOfSequenceSet));
             return getResultsCache();
         } catch (IOException ex) {

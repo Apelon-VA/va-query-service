@@ -20,23 +20,22 @@ import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
 import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
+import gov.vha.isaac.ochre.api.index.IndexServiceBI;
+import gov.vha.isaac.ochre.api.index.SearchResult;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.EnumSet;
 import java.util.List;
-import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
+import java.util.Optional;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
 import org.ihtsdo.otf.query.implementation.ClauseComputeType;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.LeafClause;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.WhereClause;
-import gov.vha.isaac.ochre.api.index.IndexServiceBI;
-import gov.vha.isaac.ochre.api.index.SearchResult;
-import gov.vha.isaac.ochre.collections.NidSet;
-import java.util.Optional;
-
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  * Returns descriptions matching the input string using Lucene.
@@ -68,7 +67,7 @@ public class DescriptionLuceneMatch extends LeafClause {
     public final NidSet computePossibleComponents(NidSet incomingPossibleComponents) {
         String luceneMatch = (String) enclosingQuery.getLetDeclarations().get(luceneMatchKey);
 
-        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+        TaxonomyCoordinate taxonomyCoordinate = (TaxonomyCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
 
 
         NidSet nids = new NidSet();
@@ -91,7 +90,7 @@ public class DescriptionLuceneMatch extends LeafClause {
             Optional<? extends ObjectChronology<? extends StampedVersion>> chronology = 
                     Get.identifiedObjectService().getIdentifiedObjectChronology(nid);
             if (chronology.isPresent()) {
-                if (!chronology.get().isLatestVersionActive(viewCoordinate)) {
+                if (!chronology.get().isLatestVersionActive(taxonomyCoordinate.getStampCoordinate())) {
                     getResultsCache().remove(nid);
                 }
             } else {

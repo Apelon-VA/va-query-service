@@ -15,31 +15,23 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
-import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
-import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
-import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
-import gov.vha.isaac.ochre.api.component.sememe.version.LongSememe;
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
+import gov.vha.isaac.ochre.api.index.SearchResult;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.EnumSet;
 import java.util.List;
-import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
 import org.ihtsdo.otf.query.implementation.ClauseComputeType;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.LeafClause;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.WhereClause;
 import org.ihtsdo.otf.query.lucene.indexers.SememeIndexer;
-import gov.vha.isaac.ochre.api.index.IndexServiceBI;
-import gov.vha.isaac.ochre.api.index.SearchResult;
-import gov.vha.isaac.ochre.collections.NidSet;
-import java.util.Optional;
-
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  * Retrieves the refset matching the input SNOMED id.
@@ -79,7 +71,7 @@ public class RefsetLuceneMatch extends LeafClause {
 
     @Override
     public NidSet computePossibleComponents(NidSet incomingPossibleComponents) {
-        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+        TaxonomyCoordinate taxonomyCoordinate = (TaxonomyCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
         String luceneMatch = (String) enclosingQuery.getLetDeclarations().get(luceneMatchKey);
 
         NidSet nids = new NidSet();

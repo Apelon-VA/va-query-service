@@ -17,6 +17,7 @@ package org.ihtsdo.otf.query.implementation.clauses;
 
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.EnumSet;
@@ -27,7 +28,6 @@ import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.WhereClause;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
-
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -94,7 +94,7 @@ public class RelRestriction extends LeafClause {
     @Override
     public NidSet computePossibleComponents(NidSet incomingPossibleComponents) {
         System.out.println("Let declerations: " + enclosingQuery.getLetDeclarations());
-        ViewCoordinate viewCoordinate = (ViewCoordinate) enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+        TaxonomyCoordinate taxonomyCoordinate = (TaxonomyCoordinate) enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
         ConceptSpec destinationSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(destinationSpecKey);
         ConceptSpec relType = (ConceptSpec) enclosingQuery.getLetDeclarations().get(relTypeKey);
         Boolean relTypeSubsumption = (Boolean) enclosingQuery.getLetDeclarations().get(relTypeSubsumptionKey);
@@ -111,13 +111,13 @@ public class RelRestriction extends LeafClause {
         relTypeSet = new ConceptSequenceSet();
         relTypeSet.add(relType.getConceptSequence());
         if (relTypeSubsumption) {
-            relTypeSet.or(Get.taxonomyService().getKindOfSequenceSet(relType.getConceptSequence(), viewCoordinate.getTaxonomyCoordinate()));
+            relTypeSet.or(Get.taxonomyService().getKindOfSequenceSet(relType.getConceptSequence(), taxonomyCoordinate));
         }
 
         destinationSet = new ConceptSequenceSet();
         destinationSet.add(destinationSpec.getConceptSequence());
         if (destinationSubsumption) {
-            destinationSet.or(Get.taxonomyService().getKindOfSequenceSet(destinationSpec.getConceptSequence(), viewCoordinate.getTaxonomyCoordinate()));
+            destinationSet.or(Get.taxonomyService().getKindOfSequenceSet(destinationSpec.getConceptSequence(), taxonomyCoordinate));
         }
 
         return incomingPossibleComponents;
@@ -125,9 +125,9 @@ public class RelRestriction extends LeafClause {
 
     @Override
     public void getQueryMatches(ConceptVersion conceptVersion) {
-        ViewCoordinate viewCoordinate = (ViewCoordinate) enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+        TaxonomyCoordinate taxonomyCoordinate = (TaxonomyCoordinate) enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
         Get.taxonomyService().getAllRelationshipDestinationSequencesOfType(
-                conceptVersion.getChronology().getConceptSequence(), relTypeSet, viewCoordinate.getTaxonomyCoordinate())
+                conceptVersion.getChronology().getConceptSequence(), relTypeSet, taxonomyCoordinate)
                 .forEach((destinationSequence) -> {
                     if (destinationSet.contains(destinationSequence)) {
                         getResultsCache().add(conceptVersion.getChronology().getNid());

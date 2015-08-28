@@ -17,6 +17,7 @@ package org.ihtsdo.otf.query.implementation.clauses;
 
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.EnumSet;
@@ -83,7 +84,7 @@ public class RelationshipIsCircular extends LeafClause {
     @Override
     public NidSet computePossibleComponents(NidSet incomingPossibleComponents) {
         System.out.println("Let declerations: " + enclosingQuery.getLetDeclarations());
-        ViewCoordinate viewCoordinate = (ViewCoordinate) enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+        TaxonomyCoordinate taxonomyCoordinate = (TaxonomyCoordinate) enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
         ConceptSpec relType = (ConceptSpec) enclosingQuery.getLetDeclarations().get(relTypeKey);
         Boolean relTypeSubsumption = (Boolean) enclosingQuery.getLetDeclarations().get(relTypeSubsumptionKey);
 
@@ -95,7 +96,7 @@ public class RelationshipIsCircular extends LeafClause {
         relTypeSet = new ConceptSequenceSet();
         relTypeSet.add(relType.getConceptSequence());
         if (relTypeSubsumption) {
-            relTypeSet.or(Get.taxonomyService().getKindOfSequenceSet(relType.getConceptSequence(), viewCoordinate.getTaxonomyCoordinate()));
+            relTypeSet.or(Get.taxonomyService().getKindOfSequenceSet(relType.getConceptSequence(), taxonomyCoordinate));
         }
 
         return incomingPossibleComponents;
@@ -104,7 +105,7 @@ public class RelationshipIsCircular extends LeafClause {
     @Override
     public void getQueryMatches(ConceptVersion conceptVersion) {
         throw new UnsupportedOperationException();
-        /*ViewCoordinate viewCoordinate = (ViewCoordinate) enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+        /*TaxonomyCoordinate taxonomyCoordinate = (TaxonomyCoordinate) enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
         Get.taxonomyService().getAllRelationshipDestinationSequencesOfType(
                 conceptVersion.getChronology().getConceptSequence(), relTypeSet, viewCoordinate)
                 .forEach((destinationSequence) -> {

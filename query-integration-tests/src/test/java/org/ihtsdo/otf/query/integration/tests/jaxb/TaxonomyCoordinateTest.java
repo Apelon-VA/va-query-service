@@ -15,25 +15,30 @@
  */
 package org.ihtsdo.otf.query.integration.tests.jaxb;
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.fail;
+import gov.vha.isaac.metadata.coordinates.LanguageCoordinates;
+import gov.vha.isaac.metadata.coordinates.StampCoordinates;
+import gov.vha.isaac.metadata.coordinates.TaxonomyCoordinates;
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import java.io.StringReader;
 import java.io.StringWriter;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import org.ihtsdo.otf.query.implementation.JaxbForQuery;
-import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
-import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
-import static org.testng.Assert.*;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 /**
  *
  * @author kec
  */
 
-public class ViewCoordinateTest {
+public class TaxonomyCoordinateTest {
 
 
-    public ViewCoordinateTest() {
+    public TaxonomyCoordinateTest() {
     }
 
 
@@ -51,7 +56,8 @@ public class ViewCoordinateTest {
     public void testJaxb() {
         try {
 
-            ViewCoordinate originalViewCoordinate = ViewCoordinates.getDevelopmentInferredLatestActiveOnly();
+            TaxonomyCoordinate originalViewCoordinate = TaxonomyCoordinates.getInferredTaxonomyCoordinate(
+                    StampCoordinates.getDevelopmentLatest(), LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate());
             JAXBContext ctx = JaxbForQuery.get();
             StringWriter writer = new StringWriter();
 
@@ -60,7 +66,7 @@ public class ViewCoordinateTest {
             String viewCoordinateXml = writer.toString();
             System.out.println("ViewCoordinate: " + viewCoordinateXml);
 
-            ViewCoordinate unmarshalledViewCoordinate = (ViewCoordinate) ctx.createUnmarshaller()
+            TaxonomyCoordinate unmarshalledViewCoordinate = (TaxonomyCoordinate) ctx.createUnmarshaller()
                     .unmarshal(new StringReader(viewCoordinateXml));
 
             assertEquals(originalViewCoordinate, unmarshalledViewCoordinate);
