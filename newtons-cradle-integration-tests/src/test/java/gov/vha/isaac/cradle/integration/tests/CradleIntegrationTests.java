@@ -33,6 +33,7 @@ import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
+import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.PremiseType;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.api.logic.IsomorphicResults;
@@ -42,6 +43,7 @@ import gov.vha.isaac.ochre.api.tree.Tree;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeWithBitSets;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.util.UuidT3Generator;
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -67,7 +69,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 import java.util.stream.IntStream;
 import javafx.concurrent.Task;
 import org.apache.logging.log4j.LogManager;
@@ -177,6 +178,23 @@ public class CradleIntegrationTests {
         }
         //roleReport(new ConceptSpec("Has definitional manifestation (attribute)",
         //        UUID.fromString("545df979-75ea-3f82-939a-565d032bcdad")));
+		  
+      			UUID bleedingSnomedUuid = UuidT3Generator.fromSNOMED(131148009L);
+			EditCoordinate editCoordinate = EditCoordinates.getDefaultUserSolorOverlay();
+					
+			System.out.println("Before: " + Get.commitService().getTextSummary());
+			ConceptChronology bleedingConcept1 = Get.conceptService().getConcept(bleedingSnomedUuid);
+			System.out.println("Concept: " + bleedingConcept1);
+			ConceptVersion version = bleedingConcept1.createMutableVersion(State.INACTIVE, editCoordinate);
+			Get.commitService().addUncommitted(bleedingConcept1);
+			System.out.println("After: " + Get.commitService().getTextSummary());
+			System.out.println("Concept: " + bleedingConcept1);
+
+			Get.commitService().cancel(bleedingConcept1, editCoordinate);
+			
+			System.out.println("After cancel: " + Get.commitService().getTextSummary());
+			System.out.println("Concept: " + bleedingConcept1);
+
 		  
 	testConceptStatusChange();
 

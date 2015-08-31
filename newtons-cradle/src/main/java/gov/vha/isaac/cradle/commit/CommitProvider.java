@@ -11,6 +11,7 @@ import gov.vha.isaac.cradle.collections.StampAliasMap;
 import gov.vha.isaac.cradle.collections.StampCommentMap;
 import gov.vha.isaac.cradle.collections.UuidIntMapMap;
 import gov.vha.isaac.cradle.component.StampSerializer;
+import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
@@ -29,6 +30,7 @@ import gov.vha.isaac.ochre.api.commit.CommitStates;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
 import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
+import gov.vha.isaac.ochre.api.task.SequentialAggregateTask;
 import gov.vha.isaac.ochre.api.task.TimedTask;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
@@ -46,6 +48,8 @@ import java.lang.ref.WeakReference;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -268,26 +272,26 @@ public class CommitProvider implements CommitService {
 	}
 
 	@Override
-	public void addAlias(int stamp, int stampAlias, String aliasCommitComment) {
-		stampAliasMap.addAlias(stamp, stampAlias);
+	public void addAlias(int stampSequence, int stampAlias, String aliasCommitComment) {
+		stampAliasMap.addAlias(stampSequence, stampAlias);
 		if (aliasCommitComment != null) {
 			stampCommentMap.addComment(stampAlias, aliasCommitComment);
 		}
 	}
 
 	@Override
-	public int[] getAliases(int stamp) {
-		return stampAliasMap.getAliases(stamp);
+	public int[] getAliases(int stampSequence) {
+		return stampAliasMap.getAliases(stampSequence);
 	}
 
 	@Override
-	public void setComment(int stamp, String comment) {
-		stampCommentMap.addComment(stamp, comment);
+	public void setComment(int stampSequence, String comment) {
+		stampCommentMap.addComment(stampSequence, comment);
 	}
 
 	@Override
-	public Optional<String> getComment(int stamp) {
-		return stampCommentMap.getComment(stamp);
+	public Optional<String> getComment(int stampSequence) {
+		return stampCommentMap.getComment(stampSequence);
 	}
 
 	@Override
@@ -301,45 +305,60 @@ public class CommitProvider implements CommitService {
 	}
 
 	@Override
-	public int getAuthorSequenceForStamp(int stamp) {
-		Optional<Stamp> s = inverseStampMap.get(stamp);
+	public int getAuthorSequenceForStamp(int stampSequence) {
+		if (stampSequence < 0) {
+			return IsaacMetadataAuxiliaryBinding.USER.getConceptSequence();
+		}
+		Optional<Stamp> s = inverseStampMap.get(stampSequence);
 		if (s.isPresent()) {
 			return Get.identifierService().getConceptSequence(
 					  s.get().getAuthorNid());
 		}
-		throw new NoSuchElementException("No stampSequence found: " + stamp);
+		throw new NoSuchElementException("No stampSequence found: " + stampSequence);
 	}
 
-	public int getAuthorNidForStamp(int stamp) {
-		Optional<Stamp> s = inverseStampMap.get(stamp);
+	public int getAuthorNidForStamp(int stampSequence) {
+		if (stampSequence < 0) {
+			return IsaacMetadataAuxiliaryBinding.USER.getNid();
+		}
+		Optional<Stamp> s = inverseStampMap.get(stampSequence);
 		if (s.isPresent()) {
 			return s.get().getAuthorNid();
 		}
-		throw new NoSuchElementException("No stampSequence found: " + stamp);
+		throw new NoSuchElementException("No stampSequence found: " + stampSequence);
 	}
 
 	@Override
-	public int getModuleSequenceForStamp(int stamp) {
-		Optional<Stamp> s = inverseStampMap.get(stamp);
+	public int getModuleSequenceForStamp(int stampSequence) {
+		if (stampSequence < 0) {
+			return IsaacMetadataAuxiliaryBinding.MODULE.getConceptSequence();
+		}
+		Optional<Stamp> s = inverseStampMap.get(stampSequence);
 		if (s.isPresent()) {
 			return Get.identifierService().getConceptSequence(
 					  s.get().getModuleNid());
 		}
-		throw new NoSuchElementException("No stampSequence found: " + stamp);
+		throw new NoSuchElementException("No stampSequence found: " + stampSequence);
 	}
 
-	private int getModuleNidForStamp(int stamp) {
-		Optional<Stamp> s = inverseStampMap.get(stamp);
+	private int getModuleNidForStamp(int stampSequence) {
+		if (stampSequence < 0) {
+			return IsaacMetadataAuxiliaryBinding.MODULE.getNid();
+		}
+		Optional<Stamp> s = inverseStampMap.get(stampSequence);
 		if (s.isPresent()) {
 			return s.get().getModuleNid();
 		}
-		throw new NoSuchElementException("No stampSequence found: " + stamp);
+		throw new NoSuchElementException("No stampSequence found: " + stampSequence);
 	}
 
 	ConcurrentHashMap<Integer, Integer> stampSequencePathSequenceMap = new ConcurrentHashMap();
 
 	@Override
 	public int getPathSequenceForStamp(int stampSequence) {
+		if (stampSequence < 0) {
+			return IsaacMetadataAuxiliaryBinding.PATH.getConceptSequence();
+		}
 		if (stampSequencePathSequenceMap.containsKey(stampSequence)) {
 			return stampSequencePathSequenceMap.get(stampSequence);
 		}
@@ -353,6 +372,9 @@ public class CommitProvider implements CommitService {
 	}
 
 	private int getPathNidForStamp(int stampSequence) {
+		if (stampSequence < 0) {
+			return IsaacMetadataAuxiliaryBinding.PATH.getNid();
+		}
 		Optional<Stamp> s = inverseStampMap.get(stampSequence);
 		if (s.isPresent()) {
 			return s.get().getPathNid();
@@ -362,6 +384,9 @@ public class CommitProvider implements CommitService {
 
 	@Override
 	public State getStatusForStamp(int stampSequence) {
+		if (stampSequence < 0) {
+			return State.CANCELED;
+		}
 		Optional<Stamp> s = inverseStampMap.get(stampSequence);
 		if (s.isPresent()) {
 			return s.get().getStatus().getState();
@@ -479,14 +504,28 @@ public class CommitProvider implements CommitService {
 				}
 			}
 		}
-		chronicleImpl.setVersions(versionList);
+		chronicleImpl.setVersions(versionList); // see if id is in uncommitted with checks, and without checks...
+		Collection<Task<?>> subTasks = new ArrayList<>();
 		if (chronicle instanceof ConceptChronology) {
-			return addUncommittedNoChecks((ConceptChronology<? extends ConceptVersion<?>>) chronicle);
+			ConceptChronology conceptChronology = (ConceptChronology) chronicle;
+			if (uncommittedConceptsNoChecksSequenceSet.contains(conceptChronology.getConceptSequence())) {
+				subTasks.add(addUncommittedNoChecks(conceptChronology));
+			}
+			if (uncommittedConceptsWithChecksSequenceSet.contains(conceptChronology.getConceptSequence())) {
+				subTasks.add(addUncommitted(conceptChronology));
+			}
 		} else if (chronicle instanceof SememeChronology) {
-			return addUncommittedNoChecks((SememeChronology<?>) chronicle);
+			SememeChronology sememeChronology = (SememeChronology) chronicle;
+			if (uncommittedSememesNoChecksSequenceSet.contains(sememeChronology.getSememeSequence())) {
+				subTasks.add(addUncommittedNoChecks(sememeChronology));
+			}
+			if (uncommittedSememesWithChecksSequenceSet.contains(sememeChronology.getSememeSequence())) {
+				subTasks.add(addUncommitted(sememeChronology));
+			}
 		} else {
 			throw new RuntimeException("Unsupported chronology type: " + chronicle);
 		}
+		return new SequentialAggregateTask<>("Canceling change", subTasks);
 	}
 
 	@Override
@@ -551,6 +590,7 @@ public class CommitProvider implements CommitService {
 					  commitComment);
 		}
 
+		CommitProvider.this.handleCommitNotification(commitRecord);
 		Optional<CommitRecord> optionalRecord = Optional.ofNullable(commitRecord);
 		Task<Optional<CommitRecord>> task = new TimedTask() {
 
@@ -658,6 +698,17 @@ public class CommitProvider implements CommitService {
 				  pendingStampsForCommit,
 				  this);
 		return task;
+	}
+	
+	protected void handleCommitNotification(CommitRecord commitRecord) {
+                changeListeners.forEach((listenerRef) -> {
+                    ChronologyChangeListener listener = listenerRef.get();
+                    if (listener == null) {
+                        changeListeners.remove(listenerRef);
+                    } else {
+                        listener.handleCommit(commitRecord);
+                    }	
+		});
 	}
 
 	protected void revertCommit(ConceptSequenceSet conceptsToCommit,
