@@ -60,7 +60,7 @@ import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
 import org.jvnet.hk2.annotations.Service;
 
 /**
- * {@link DynamicSememeIndexerConfiguration} Holds a cache of the configuration for the dynamic refex indexer (which is read from the DB, and may
+ * {@link DynamicSememeIndexerConfiguration} Holds a cache of the configuration for the dynamic sememe indexer (which is read from the DB, and may
  * be changed at any point
  * the user wishes). Keeps track of which assemblage types need to be indexing, and what attributes should be indexed on them.
  *
@@ -171,7 +171,7 @@ public class DynamicSememeIndexerConfiguration
 
 		ConceptChronology<? extends ConceptVersion<?>> referencedAssemblageConceptC = Get.conceptService().getConcept(assemblageNidOrSequence);
 		
-		log.info("Configuring index for dynamic refex assemblage '" + referencedAssemblageConceptC.toUserString() + "' on columns " + Arrays.deepToString(columnsToIndex));
+		log.info("Configuring index for dynamic sememe assemblage '" + referencedAssemblageConceptC.toUserString() + "' on columns " + Arrays.deepToString(columnsToIndex));
 
 		DynamicSememeData[] data = null;
 		if (columnsToIndex != null)
@@ -206,7 +206,7 @@ public class DynamicSememeIndexerConfiguration
 	}
 	
 	/**
-	 * Read the indexing configuration for the specified dynamic refex.
+	 * Read the indexing configuration for the specified dynamic sememe.
 	 * 
 	 * Returns null, if the assemblage is not indexed at all.  Returns an empty array, if the assemblage is indexed (but no columns are indexed)
 	 * Returns an integer array of the column positions of the refex that are indexed, if any.
@@ -248,7 +248,7 @@ public class DynamicSememeIndexerConfiguration
 	@SuppressWarnings("unchecked")
 	public static void disableIndex(int assemblageConceptSequence) throws RuntimeException
 	{
-		log.info("Disabling index for dynamic refex assemblage concept '" + assemblageConceptSequence + "'");
+		log.info("Disabling index for dynamic sememe assemblage concept '" + assemblageConceptSequence + "'");
 		
 		DynamicSememe<?> rdv = findCurrentIndexConfigRefex(assemblageConceptSequence);
 		
@@ -271,7 +271,7 @@ public class DynamicSememeIndexerConfiguration
 		}
 		else
 		{
-			log.info("No index configuration was found to disable for dynamic refex assemblage concept '" + assemblageConceptSequence + "'");
+			log.info("No index configuration was found to disable for dynamic sememe assemblage concept '" + assemblageConceptSequence + "'");
 		}
 	}
 	
