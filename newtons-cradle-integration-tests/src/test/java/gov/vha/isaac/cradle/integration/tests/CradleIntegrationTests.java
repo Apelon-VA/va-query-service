@@ -182,6 +182,9 @@ public class CradleIntegrationTests {
 
         if (!dbExists) {
             loadDatabase(tts);
+            
+          //testDescriptionOptional(); //Description Optional Test
+            
             boolean differences = testLoad(tts);
 
             /*
@@ -211,8 +214,6 @@ public class CradleIntegrationTests {
         
         System.out.println("After cancel: " + Get.commitService().getTextSummary());
         System.out.println("Concept: " + bleedingConcept1);
-
-        //testDescriptionOptional();
 
         testConceptStatusChange();
 
