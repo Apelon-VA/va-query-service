@@ -551,7 +551,7 @@ public class CradleIntegrationTests {
     }
 
     private void loadDatabase(ObjectChronicleTaskService tts) throws ExecutionException, IOException, MultiException, InterruptedException {
-        Path snomedDataFile = Paths.get("target/data/sctSiEConcepts.jbin");
+        Path snomedDataFile = Paths.get("target/data/SnomedCoreEConcepts.jbin");
         Path isaacMetadataFile = Paths.get("target/data/isaac/metadata/econ/IsaacMetadataAuxiliary.econ");
 
         Instant start = Instant.now();
@@ -574,7 +574,7 @@ public class CradleIntegrationTests {
     }
 
     private boolean testLoad(ObjectChronicleTaskService tts) throws ExecutionException, IOException, MultiException, InterruptedException {
-        Path snomedDataFile = Paths.get("target/data/sctSiEConcepts.jbin");
+        Path snomedDataFile = Paths.get("target/data/SnomedCoreEConcepts.jbin");
         Path isaacMetadataFile = Paths.get("target/data/isaac/metadata/econ/IsaacMetadataAuxiliary.econ");
         Instant start = Instant.now();
 

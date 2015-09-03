@@ -47,10 +47,11 @@
                            <skip>${skipTests}</skip>
                            <artifactItems>
                                 <artifact>
-                                    <groupId>org.ihtsdo.sct.rf2</groupId>
-                                    <artifactId>rf-to-econcept-conversion</artifactId>
-                                    <version>1.3</version>
-                                    <type>zip</type>
+                                    <groupId>gov.vha.isaac.terminology.converters</groupId>
+                                    <artifactId>term-convert-rf2-econcept-sct</artifactId>
+                                    <version>20150731-loader-2.1-S</version>
+                                    <type>jbin.zip</type>
+                                    <classifier>Snapshot</classifier>
                                 </artifact>
                                 <artifact>
                                     <groupId>gov.vha.isaac.isaac-metadata.modules</groupId>
