@@ -6,6 +6,56 @@
 package gov.vha.isaac.cradle.integration.tests;
 
 import static gov.vha.isaac.ochre.api.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.Charset;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.glassfish.hk2.api.MultiException;
+import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
+import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
+import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
+import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
+import org.ihtsdo.otf.tcc.api.spec.ValidationException;
+import org.jvnet.testing.hk2testng.HK2;
+import org.testng.annotations.AfterGroups;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeGroups;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
 import gov.vha.isaac.cradle.taxonomy.walk.TaxonomyWalkAccumulator;
 import gov.vha.isaac.cradle.taxonomy.walk.TaxonomyWalkCollector;
 import gov.vha.isaac.metadata.coordinates.EditCoordinates;
@@ -25,8 +75,10 @@ import gov.vha.isaac.ochre.api.State;
 import gov.vha.isaac.ochre.api.TaxonomyService;
 import gov.vha.isaac.ochre.api.TaxonomySnapshotService;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
+import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.commit.CommitRecord;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshot;
 import gov.vha.isaac.ochre.api.component.concept.ConceptSnapshotService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
 import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
@@ -34,7 +86,11 @@ import gov.vha.isaac.ochre.api.component.sememe.version.DescriptionSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.LogicGraphSememe;
 import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
 import gov.vha.isaac.ochre.api.coordinate.EditCoordinate;
+import gov.vha.isaac.ochre.api.coordinate.LanguageCoordinate;
 import gov.vha.isaac.ochre.api.coordinate.PremiseType;
+import gov.vha.isaac.ochre.api.coordinate.StampCoordinate;
+import gov.vha.isaac.ochre.api.coordinate.StampPosition;
+import gov.vha.isaac.ochre.api.coordinate.StampPrecedence;
 import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.api.logic.IsomorphicResults;
 import gov.vha.isaac.ochre.api.memory.HeapUseTicker;
@@ -43,49 +99,10 @@ import gov.vha.isaac.ochre.api.tree.Tree;
 import gov.vha.isaac.ochre.api.tree.TreeNodeVisitData;
 import gov.vha.isaac.ochre.api.tree.hashtree.HashTreeWithBitSets;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
+import gov.vha.isaac.ochre.model.coordinate.StampCoordinateImpl;
+import gov.vha.isaac.ochre.model.coordinate.StampPositionImpl;
 import gov.vha.isaac.ochre.util.UuidT3Generator;
-import java.io.BufferedWriter;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.Charset;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.IntStream;
 import javafx.concurrent.Task;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.glassfish.hk2.api.MultiException;
-import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
-import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
-import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
-import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
-import org.ihtsdo.otf.tcc.api.spec.ValidationException;
-import org.jvnet.testing.hk2testng.HK2;
-import static org.testng.Assert.assertEquals;
-import org.testng.annotations.AfterGroups;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeGroups;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 
 /**
  *
@@ -195,19 +212,21 @@ public class CradleIntegrationTests {
 			System.out.println("After cancel: " + Get.commitService().getTextSummary());
 			System.out.println("Concept: " + bleedingConcept1);
 
+	//testDescriptionOptional();
 		  
 	testConceptStatusChange();
 
-        testRole();
+	testRole();
+	
+	testDescriptions();
 
-        testDescriptions();
+	testDifferenceAlgorithm();
+	
+	testTaxonomy();
+	
+	walkTaxonomy();
 
-        testDifferenceAlgorithm();
-        testTaxonomy();
-
-        walkTaxonomy();
-
-        findRoots();
+	findRoots();
 
         HashTreeWithBitSets g = makeGraph();
         log.info("    taxonomy graph size:" + g.size());
@@ -690,6 +709,67 @@ public class CradleIntegrationTests {
 
         System.out.println("Cornea is a " + vc.getTaxonomyType() + " child-of disorder of eye: " + isChild);
         System.out.println("Cornea is a " + vc.getTaxonomyType() + " kind-of of disorder of eye: " + isKind);
+    }
+    
+    private void testDescriptionOptional() throws ParseException, ValidationException {
+    	LanguageCoordinate lc = LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate();
+    	
+    	//Release Export Date
+    	DateFormat formatter = new SimpleDateFormat("MM/dd/yy");
+    	Date date = formatter.parse("09/01/02");
+		long previousReleaseTime = date.getTime();
+		
+		try {
+			int isaacDevPathSequence = IsaacMetadataAuxiliaryBinding.DEVELOPMENT.getLenient().getConceptSequence();
+		} catch (ValidationException e) {
+			log.error("Error getting IsaacMetadataAuxBinding, descriptional Test", e);
+		}
+		
+		// ISAAC Dev Path
+		int pathSequence = Get.identifierService().getConceptSequenceForUuids(UUID.fromString("32d7e06d-c8ae-516d-8a33-df5bcc9c9ec7")); 
+		
+		// Sequence - Enterohemorrhagic Escherichia coli, serotype O113:H21 (organism)
+		int sequence = Get.identifierService().getConceptSequenceForUuids(UUID.fromString("47d9be00-7309-3fbf-88a3-4711fcf6be48")); 
+		
+		StampPosition spLatest = new StampPositionImpl(System.currentTimeMillis(), pathSequence);
+		StampPosition spInitial = new StampPositionImpl(previousReleaseTime, pathSequence);
+		
+		StampCoordinate scLatestActive = new StampCoordinateImpl(StampPrecedence.PATH, spLatest, 
+				ConceptSequenceSet.EMPTY, gov.vha.isaac.ochre.api.State.ACTIVE_ONLY_SET);
+		StampCoordinate scInitialActive = new StampCoordinateImpl(StampPrecedence.PATH, spInitial, 
+				ConceptSequenceSet.EMPTY, gov.vha.isaac.ochre.api.State.ACTIVE_ONLY_SET);
+		StampCoordinate scInitialAll = new StampCoordinateImpl(StampPrecedence.PATH, spInitial, 
+				ConceptSequenceSet.EMPTY, gov.vha.isaac.ochre.api.State.ANY_STATE_SET);
+		StampCoordinate scLatestAll = new StampCoordinateImpl(StampPrecedence.PATH, spLatest, 
+				ConceptSequenceSet.EMPTY, gov.vha.isaac.ochre.api.State.ANY_STATE_SET);
+		
+		ConceptSnapshot concept = Get.conceptService().getSnapshot(scLatestAll, lc).getConceptSnapshot(sequence);
+		ConceptChronology<? extends StampedVersion> chronology = concept.getChronology();
+		
+		ArrayList<DescriptionSememe> descriptions = new ArrayList<DescriptionSememe>();
+		for(SememeChronology sc : chronology.getConceptDescriptionList()) { 
+			Optional<? extends LatestVersion<? extends DescriptionSememe>> lvO = sc.getLatestVersion(DescriptionSememe.class, scLatestAll);
+			if(lvO.isPresent()) {
+				LatestVersion<? extends DescriptionSememe> lvd = lvO.get();
+				descriptions.add(lvd.value());
+			}
+		}
+		
+		for(DescriptionSememe d : descriptions) {
+			Optional<LatestVersion<DescriptionSememe<?>>> dsLatest = Get.conceptService().getSnapshot(scLatestActive, lc)
+					.getDescriptionOptional(chronology.getConceptSequence()); 
+			
+			Optional<LatestVersion<DescriptionSememe<?>>> dsInitial = Get.conceptService().getSnapshot(scInitialActive, lc)
+					.getDescriptionOptional(chronology.getConceptSequence()); 
+			
+			if(dsLatest.isPresent()) {
+				System.out.println("This should return true");
+			}
+			
+			if(dsInitial.isPresent()) {
+				assertFalse(dsInitial.isPresent());
+			}
+		}
     }
 
     private void walkTaxonomy() throws IOException {
