@@ -114,7 +114,7 @@ public class QueryServiceTestSuiteSetup {
     
     
     private void loadDatabase(ObjectChronicleTaskService tts) throws InterruptedException, ExecutionException  {
-        Path snomedDataFile = Paths.get("target/test-resources/sctSiEConcepts.jbin");
+        Path snomedDataFile = Paths.get("target/test-resources/SnomedCoreEConcepts.jbin");
         Path logicMetadataFile = Paths.get("target/test-resources/isaac/metadata/econ/IsaacMetadataAuxiliary.econ");
         Instant start = Instant.now();
 
