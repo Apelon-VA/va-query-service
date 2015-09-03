@@ -719,12 +719,6 @@ public class CradleIntegrationTests {
     	Date date = formatter.parse("09/01/02");
 		long previousReleaseTime = date.getTime();
 		
-		try {
-			int isaacDevPathSequence = IsaacMetadataAuxiliaryBinding.DEVELOPMENT.getLenient().getConceptSequence();
-		} catch (ValidationException e) {
-			log.error("Error getting IsaacMetadataAuxBinding, descriptional Test", e);
-		}
-		
 		// ISAAC Dev Path
 		int pathSequence = Get.identifierService().getConceptSequenceForUuids(UUID.fromString("32d7e06d-c8ae-516d-8a33-df5bcc9c9ec7")); 
 		
