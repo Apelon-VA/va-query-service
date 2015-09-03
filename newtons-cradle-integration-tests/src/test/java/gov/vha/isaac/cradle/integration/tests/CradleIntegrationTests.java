@@ -195,38 +195,37 @@ public class CradleIntegrationTests {
         }
         //roleReport(new ConceptSpec("Has definitional manifestation (attribute)",
         //        UUID.fromString("545df979-75ea-3f82-939a-565d032bcdad")));
-		  
-      			UUID bleedingSnomedUuid = UuidT3Generator.fromSNOMED(131148009L);
-			EditCoordinate editCoordinate = EditCoordinates.getDefaultUserSolorOverlay();
-					
-			System.out.println("Before: " + Get.commitService().getTextSummary());
-			ConceptChronology bleedingConcept1 = Get.conceptService().getConcept(bleedingSnomedUuid);
-			System.out.println("Concept: " + bleedingConcept1);
-			ConceptVersion version = bleedingConcept1.createMutableVersion(State.INACTIVE, editCoordinate);
-			Get.commitService().addUncommitted(bleedingConcept1);
-			System.out.println("After: " + Get.commitService().getTextSummary());
-			System.out.println("Concept: " + bleedingConcept1);
+          
+        UUID bleedingSnomedUuid = UuidT3Generator.fromSNOMED(131148009L);
+        EditCoordinate editCoordinate = EditCoordinates.getDefaultUserSolorOverlay();
+                
+        System.out.println("Before: " + Get.commitService().getTextSummary());
+        ConceptChronology bleedingConcept1 = Get.conceptService().getConcept(bleedingSnomedUuid);
+        System.out.println("Concept: " + bleedingConcept1);
+        ConceptVersion version = bleedingConcept1.createMutableVersion(State.INACTIVE, editCoordinate);
+        Get.commitService().addUncommitted(bleedingConcept1);
+        System.out.println("After: " + Get.commitService().getTextSummary());
+        System.out.println("Concept: " + bleedingConcept1);
 
-			Get.commitService().cancel(bleedingConcept1, editCoordinate);
-			
-			System.out.println("After cancel: " + Get.commitService().getTextSummary());
-			System.out.println("Concept: " + bleedingConcept1);
+        Get.commitService().cancel(bleedingConcept1, editCoordinate);
+        
+        System.out.println("After cancel: " + Get.commitService().getTextSummary());
+        System.out.println("Concept: " + bleedingConcept1);
 
-	//testDescriptionOptional();
-		  
-	testConceptStatusChange();
+        //testDescriptionOptional();
 
-	testRole();
-	
-	testDescriptions();
+        testConceptStatusChange();
 
-	testDifferenceAlgorithm();
-	
-	testTaxonomy();
-	
-	walkTaxonomy();
+        testRole();
 
-	findRoots();
+        testDescriptions();
+
+        testDifferenceAlgorithm();
+        testTaxonomy();
+
+        walkTaxonomy();
+
+        findRoots();
 
         HashTreeWithBitSets g = makeGraph();
         log.info("    taxonomy graph size:" + g.size());
@@ -712,58 +711,58 @@ public class CradleIntegrationTests {
     }
     
     private void testDescriptionOptional() throws ParseException, ValidationException {
-    	LanguageCoordinate lc = LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate();
-    	
-    	//Release Export Date
-    	DateFormat formatter = new SimpleDateFormat("MM/dd/yy");
-    	Date date = formatter.parse("09/01/02");
-		long previousReleaseTime = date.getTime();
-		
-		// ISAAC Dev Path
-		int pathSequence = Get.identifierService().getConceptSequenceForUuids(UUID.fromString("32d7e06d-c8ae-516d-8a33-df5bcc9c9ec7")); 
-		
-		// Sequence - Enterohemorrhagic Escherichia coli, serotype O113:H21 (organism)
-		int sequence = Get.identifierService().getConceptSequenceForUuids(UUID.fromString("47d9be00-7309-3fbf-88a3-4711fcf6be48")); 
-		
-		StampPosition spLatest = new StampPositionImpl(System.currentTimeMillis(), pathSequence);
-		StampPosition spInitial = new StampPositionImpl(previousReleaseTime, pathSequence);
-		
-		StampCoordinate scLatestActive = new StampCoordinateImpl(StampPrecedence.PATH, spLatest, 
-				ConceptSequenceSet.EMPTY, gov.vha.isaac.ochre.api.State.ACTIVE_ONLY_SET);
-		StampCoordinate scInitialActive = new StampCoordinateImpl(StampPrecedence.PATH, spInitial, 
-				ConceptSequenceSet.EMPTY, gov.vha.isaac.ochre.api.State.ACTIVE_ONLY_SET);
-		StampCoordinate scInitialAll = new StampCoordinateImpl(StampPrecedence.PATH, spInitial, 
-				ConceptSequenceSet.EMPTY, gov.vha.isaac.ochre.api.State.ANY_STATE_SET);
-		StampCoordinate scLatestAll = new StampCoordinateImpl(StampPrecedence.PATH, spLatest, 
-				ConceptSequenceSet.EMPTY, gov.vha.isaac.ochre.api.State.ANY_STATE_SET);
-		
-		ConceptSnapshot concept = Get.conceptService().getSnapshot(scLatestAll, lc).getConceptSnapshot(sequence);
-		ConceptChronology<? extends StampedVersion> chronology = concept.getChronology();
-		
-		ArrayList<DescriptionSememe> descriptions = new ArrayList<DescriptionSememe>();
-		for(SememeChronology sc : chronology.getConceptDescriptionList()) { 
-			Optional<? extends LatestVersion<? extends DescriptionSememe>> lvO = sc.getLatestVersion(DescriptionSememe.class, scLatestAll);
-			if(lvO.isPresent()) {
-				LatestVersion<? extends DescriptionSememe> lvd = lvO.get();
-				descriptions.add(lvd.value());
-			}
-		}
-		
-		for(DescriptionSememe d : descriptions) {
-			Optional<LatestVersion<DescriptionSememe<?>>> dsLatest = Get.conceptService().getSnapshot(scLatestActive, lc)
-					.getDescriptionOptional(chronology.getConceptSequence()); 
-			
-			Optional<LatestVersion<DescriptionSememe<?>>> dsInitial = Get.conceptService().getSnapshot(scInitialActive, lc)
-					.getDescriptionOptional(chronology.getConceptSequence()); 
-			
-			if(dsLatest.isPresent()) {
-				System.out.println("This should return true");
-			}
-			
-			if(dsInitial.isPresent()) {
-				assertFalse(dsInitial.isPresent());
-			}
-		}
+        LanguageCoordinate lc = LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate();
+        
+        //Release Export Date
+        DateFormat formatter = new SimpleDateFormat("MM/dd/yy");
+        Date date = formatter.parse("09/01/02");
+        long previousReleaseTime = date.getTime();
+        
+        // ISAAC Dev Path
+        int pathSequence = Get.identifierService().getConceptSequenceForUuids(UUID.fromString("32d7e06d-c8ae-516d-8a33-df5bcc9c9ec7")); 
+        
+        // Sequence - Enterohemorrhagic Escherichia coli, serotype O113:H21 (organism)
+        int sequence = Get.identifierService().getConceptSequenceForUuids(UUID.fromString("47d9be00-7309-3fbf-88a3-4711fcf6be48")); 
+        
+        StampPosition spLatest = new StampPositionImpl(System.currentTimeMillis(), pathSequence);
+        StampPosition spInitial = new StampPositionImpl(previousReleaseTime, pathSequence);
+        
+        StampCoordinate scLatestActive = new StampCoordinateImpl(StampPrecedence.PATH, spLatest, 
+                ConceptSequenceSet.EMPTY, gov.vha.isaac.ochre.api.State.ACTIVE_ONLY_SET);
+        StampCoordinate scInitialActive = new StampCoordinateImpl(StampPrecedence.PATH, spInitial, 
+                ConceptSequenceSet.EMPTY, gov.vha.isaac.ochre.api.State.ACTIVE_ONLY_SET);
+        StampCoordinate scInitialAll = new StampCoordinateImpl(StampPrecedence.PATH, spInitial, 
+                ConceptSequenceSet.EMPTY, gov.vha.isaac.ochre.api.State.ANY_STATE_SET);
+        StampCoordinate scLatestAll = new StampCoordinateImpl(StampPrecedence.PATH, spLatest, 
+                ConceptSequenceSet.EMPTY, gov.vha.isaac.ochre.api.State.ANY_STATE_SET);
+        
+        ConceptSnapshot concept = Get.conceptService().getSnapshot(scLatestAll, lc).getConceptSnapshot(sequence);
+        ConceptChronology<? extends StampedVersion> chronology = concept.getChronology();
+        
+        ArrayList<DescriptionSememe> descriptions = new ArrayList<DescriptionSememe>();
+        for(SememeChronology sc : chronology.getConceptDescriptionList()) { 
+            Optional<? extends LatestVersion<? extends DescriptionSememe>> lvO = sc.getLatestVersion(DescriptionSememe.class, scLatestAll);
+            if(lvO.isPresent()) {
+                LatestVersion<? extends DescriptionSememe> lvd = lvO.get();
+                descriptions.add(lvd.value());
+            }
+        }
+        
+        for(DescriptionSememe d : descriptions) {
+            Optional<LatestVersion<DescriptionSememe<?>>> dsLatest = Get.conceptService().getSnapshot(scLatestActive, lc)
+                    .getDescriptionOptional(chronology.getConceptSequence()); 
+            
+            Optional<LatestVersion<DescriptionSememe<?>>> dsInitial = Get.conceptService().getSnapshot(scInitialActive, lc)
+                    .getDescriptionOptional(chronology.getConceptSequence()); 
+            
+            if(dsLatest.isPresent()) {
+                System.out.println("This should return true");
+            }
+            
+            if(dsInitial.isPresent()) {
+                assertFalse(dsInitial.isPresent());
+            }
+        }
     }
 
     private void walkTaxonomy() throws IOException {
@@ -861,30 +860,30 @@ public class CradleIntegrationTests {
 
         return parentSequenceSet;
     }
-	 
-	 private void testConceptStatusChange() {
-		 try {
-			 log.info("testConceptStatusChange: " );
-			 ConceptProxy proxy = new ConceptProxy("Iodine 37% injection", UUID.fromString("3380c993-a328-3af0-9144-cf89603e80e2"));
-			 ConceptChronology conceptToReactivate = Get.conceptService().getConcept(proxy.getUuids());
-			 log.info("concept to reactivate: " + conceptToReactivate);
-			 ConceptVersion version = conceptToReactivate.createMutableVersion(State.ACTIVE, EditCoordinates.getDefaultUserSolorOverlay());
-			 log.info("concept to reactivate with new version: " + conceptToReactivate);
-			 Get.commitService().addUncommitted(conceptToReactivate);
-			 log.info("after uncommitted: " + conceptToReactivate);
-			 
-			 Task<Optional<CommitRecord>> commitTask = Get.commitService().commit("Test reactivate");
-			 Optional<CommitRecord> optionalCommitRecord = commitTask.get();
-			 log.info("after commit: " + conceptToReactivate);
-			 log.info("after retrieval: " +  Get.conceptService().getConcept(proxy.getUuids()));
-			 if (optionalCommitRecord.isPresent()) {
-				 log.info("commit record: " + optionalCommitRecord.get());
-			 } else {
-				 log.info("No commit record");
-			 }
-		 } catch (InterruptedException | ExecutionException ex) {
-			 log.error(ex.getLocalizedMessage(), ex);
-		 }
-		 
-	 }
+     
+     private void testConceptStatusChange() {
+         try {
+             log.info("testConceptStatusChange: " );
+             ConceptProxy proxy = new ConceptProxy("Iodine 37% injection", UUID.fromString("3380c993-a328-3af0-9144-cf89603e80e2"));
+             ConceptChronology conceptToReactivate = Get.conceptService().getConcept(proxy.getUuids());
+             log.info("concept to reactivate: " + conceptToReactivate);
+             ConceptVersion version = conceptToReactivate.createMutableVersion(State.ACTIVE, EditCoordinates.getDefaultUserSolorOverlay());
+             log.info("concept to reactivate with new version: " + conceptToReactivate);
+             Get.commitService().addUncommitted(conceptToReactivate);
+             log.info("after uncommitted: " + conceptToReactivate);
+             
+             Task<Optional<CommitRecord>> commitTask = Get.commitService().commit("Test reactivate");
+             Optional<CommitRecord> optionalCommitRecord = commitTask.get();
+             log.info("after commit: " + conceptToReactivate);
+             log.info("after retrieval: " +  Get.conceptService().getConcept(proxy.getUuids()));
+             if (optionalCommitRecord.isPresent()) {
+                 log.info("commit record: " + optionalCommitRecord.get());
+             } else {
+                 log.info("No commit record");
+             }
+         } catch (InterruptedException | ExecutionException ex) {
+             log.error(ex.getLocalizedMessage(), ex);
+         }
+         
+     }
 }
