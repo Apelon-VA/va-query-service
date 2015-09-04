@@ -8,6 +8,7 @@ package gov.vha.isaac.cradle.integration.tests;
 import static gov.vha.isaac.ochre.api.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
@@ -183,7 +184,7 @@ public class CradleIntegrationTests {
         if (!dbExists) {
             loadDatabase(tts);
             
-          //testDescriptionOptional(); //Description Optional Test
+          testDescriptionOptional(); //Description Optional Test
             
             boolean differences = testLoad(tts);
 
@@ -742,27 +743,12 @@ public class CradleIntegrationTests {
         
         ArrayList<DescriptionSememe> descriptions = new ArrayList<DescriptionSememe>();
         for(SememeChronology sc : chronology.getConceptDescriptionList()) { 
-            Optional<? extends LatestVersion<? extends DescriptionSememe>> lvO = sc.getLatestVersion(DescriptionSememe.class, scLatestAll);
-            if(lvO.isPresent()) {
-                LatestVersion<? extends DescriptionSememe> lvd = lvO.get();
-                descriptions.add(lvd.value());
-            }
-        }
-        
-        for(DescriptionSememe d : descriptions) {
-            Optional<LatestVersion<DescriptionSememe<?>>> dsLatest = Get.conceptService().getSnapshot(scLatestActive, lc)
-                    .getDescriptionOptional(chronology.getConceptSequence()); 
+            Optional<? extends LatestVersion<? extends DescriptionSememe>> dsLatest = sc.getLatestVersion(DescriptionSememe.class, scLatestAll);
+            Optional<? extends LatestVersion<? extends DescriptionSememe>> dsInitial = sc.getLatestVersion(DescriptionSememe.class, scInitialActive);
             
-            Optional<LatestVersion<DescriptionSememe<?>>> dsInitial = Get.conceptService().getSnapshot(scInitialActive, lc)
-                    .getDescriptionOptional(chronology.getConceptSequence()); 
-            
-            if(dsLatest.isPresent()) {
-                System.out.println("This should return true");
-            }
-            
-            if(dsInitial.isPresent()) {
-                assertFalse(dsInitial.isPresent());
-            }
+            //Assert the othe 2 descriptions
+           assertTrue(dsLatest.isPresent());
+           assertFalse(dsInitial.isPresent());
         }
     }
 
