@@ -184,7 +184,7 @@ public class CradleIntegrationTests {
         if (!dbExists) {
             loadDatabase(tts);
             
-          testDescriptionOptional(); //Description Optional Test
+          //testDescriptionOptional(); //Description Optional Test
             
             boolean differences = testLoad(tts);
 
