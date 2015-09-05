@@ -18,8 +18,10 @@ package gov.vha.isaac.cradle.path;
 import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.PathService;
+import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.coordinate.StampPath;
 import gov.vha.isaac.ochre.api.coordinate.StampPosition;
+import gov.vha.isaac.ochre.api.snapshot.calculator.RelativePosition;
 import java.io.IOException;
 import java.util.Collection;
 import javax.annotation.PostConstruct;
@@ -36,50 +38,62 @@ import org.jvnet.hk2.annotations.Service;
 @Service(name = "Path Provider")
 @RunLevel(value = 2)
 
-
 public class PathProvider implements PathService {
-    private static final Logger log = LogManager.getLogger();
 
-    PathService provider;
-    public PathProvider() {
-        switch (LookupService.getService(ConfigurationService.class).getConceptModel()) {
-            case OCHRE_CONCEPT_MODEL:
-                provider = new OchrePathProvider(); 
-                break;
+	private static final Logger log = LogManager.getLogger();
 
-            default:
-                throw new UnsupportedOperationException("Can't handle: "
-                        + LookupService.getService(ConfigurationService.class).getConceptModel());
-        }
-    }
-    @PostConstruct
-    private void startMe() throws IOException {
-        log.info("Starting PathProvider post-construct: " + LookupService.getService(ConfigurationService.class).getConceptModel());
-    }
-    @PreDestroy
-    private void stopMe() throws IOException {
-        log.info("Stopping PathProvider pre-destroy: " + LookupService.getService(ConfigurationService.class).getConceptModel());
-    }
-    
-    @Override
-    public StampPath getStampPath(int stampPathSequence) {
-        return provider.getStampPath(stampPathSequence);
-    }
+	PathService provider;
 
-    @Override
-    public boolean exists(int pathConceptId) {
-        return provider.exists(pathConceptId);
-    }
+	public PathProvider() {
+		switch (LookupService.getService(ConfigurationService.class).getConceptModel()) {
+			case OCHRE_CONCEPT_MODEL:
+				provider = new OchrePathProvider();
+				break;
 
-    @Override
-    public Collection<? extends StampPosition> getOrigins(int stampPathSequence) {
-        return provider.getOrigins(stampPathSequence);
-    }
+			default:
+				throw new UnsupportedOperationException("Can't handle: "
+						  + LookupService.getService(ConfigurationService.class).getConceptModel());
+		}
+	}
 
-    @Override
-    public Collection<? extends StampPath> getPaths() {
-        return provider.getPaths();
-    }
+	@PostConstruct
+	private void startMe() throws IOException {
+		log.info("Starting PathProvider post-construct: " + LookupService.getService(ConfigurationService.class).getConceptModel());
+	}
 
+	@PreDestroy
+	private void stopMe() throws IOException {
+		log.info("Stopping PathProvider pre-destroy: " + LookupService.getService(ConfigurationService.class).getConceptModel());
+	}
+
+	@Override
+	public StampPath getStampPath(int stampPathSequence) {
+		return provider.getStampPath(stampPathSequence);
+	}
+
+	@Override
+	public boolean exists(int pathConceptId) {
+		return provider.exists(pathConceptId);
+	}
+
+	@Override
+	public Collection<? extends StampPosition> getOrigins(int stampPathSequence) {
+		return provider.getOrigins(stampPathSequence);
+	}
+
+	@Override
+	public Collection<? extends StampPath> getPaths() {
+		return provider.getPaths();
+	}
+
+	@Override
+	public RelativePosition getRelativePosition(StampedVersion v1, StampedVersion v2) {
+		return provider.getRelativePosition(v1, v2);
+	}
+
+	@Override
+	public RelativePosition getRelativePosition(int stampSequence1, int stampSequence2) {
+		return provider.getRelativePosition(stampSequence1, stampSequence2);
+	}
 
 }
