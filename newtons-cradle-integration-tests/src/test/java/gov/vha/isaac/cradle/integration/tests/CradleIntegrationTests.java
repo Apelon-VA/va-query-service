@@ -8,6 +8,7 @@ package gov.vha.isaac.cradle.integration.tests;
 import static gov.vha.isaac.ochre.api.constants.Constants.CHRONICLE_COLLECTIONS_ROOT_LOCATION_PROPERTY;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
