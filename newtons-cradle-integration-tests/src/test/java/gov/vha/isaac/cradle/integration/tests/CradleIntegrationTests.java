@@ -103,6 +103,7 @@ import gov.vha.isaac.ochre.model.coordinate.StampCoordinateImpl;
 import gov.vha.isaac.ochre.model.coordinate.StampPositionImpl;
 import gov.vha.isaac.ochre.util.UuidT3Generator;
 import javafx.concurrent.Task;
+import static org.testng.Assert.assertTrue;
 
 /**
  *
@@ -183,7 +184,7 @@ public class CradleIntegrationTests {
         if (!dbExists) {
             loadDatabase(tts);
             
-          //testDescriptionOptional(); //Description Optional Test
+          testDescriptionOptional(); //Description Optional Test
             
             boolean differences = testLoad(tts);
 
@@ -740,7 +741,7 @@ public class CradleIntegrationTests {
         ConceptSnapshot concept = Get.conceptService().getSnapshot(scLatestAll, lc).getConceptSnapshot(sequence);
         ConceptChronology<? extends StampedVersion> chronology = concept.getChronology();
         
-        ArrayList<DescriptionSememe> descriptions = new ArrayList<DescriptionSememe>();
+        ArrayList<DescriptionSememe> descriptions = new ArrayList<>();
         for(SememeChronology sc : chronology.getConceptDescriptionList()) { 
             Optional<? extends LatestVersion<? extends DescriptionSememe>> lvO = sc.getLatestVersion(DescriptionSememe.class, scLatestAll);
             if(lvO.isPresent()) {
@@ -750,21 +751,27 @@ public class CradleIntegrationTests {
         }
         
         for(DescriptionSememe d : descriptions) {
-            Optional<LatestVersion<DescriptionSememe<?>>> dsLatest = Get.conceptService().getSnapshot(scLatestActive, lc)
-                    .getDescriptionOptional(chronology.getConceptSequence()); 
-            
-            Optional<LatestVersion<DescriptionSememe<?>>> dsInitial = Get.conceptService().getSnapshot(scInitialActive, lc)
-                    .getDescriptionOptional(chronology.getConceptSequence()); 
-            
-            if(dsLatest.isPresent()) {
-                System.out.println("This should return true");
-            }
-            
-            if(dsInitial.isPresent()) {
-                assertFalse(dsInitial.isPresent());
-            }
+		findInitialAndLatest(scLatestActive, lc, chronology, scInitialActive);
         }
     }
+
+	private void findInitialAndLatest(StampCoordinate scLatestActive, LanguageCoordinate lc, ConceptChronology<? extends StampedVersion> chronology, StampCoordinate scInitialActive) {
+		Optional<LatestVersion<DescriptionSememe<?>>> dsLatest = Get.conceptService().getSnapshot(scLatestActive, lc)
+				  .getDescriptionOptional(chronology.getConceptSequence());
+		
+		Optional<LatestVersion<DescriptionSememe<?>>> dsInitial = Get.conceptService().getSnapshot(scInitialActive, lc)
+				  .getDescriptionOptional(chronology.getConceptSequence());
+		
+		if(dsLatest.isPresent()) {
+			System.out.println("dsLatest: " + dsLatest);
+		}
+		
+		if(dsInitial.isPresent()) {
+			System.out.println("dsInitial: " + dsInitial);
+		}
+		assertTrue(dsLatest.isPresent());
+		assertFalse(dsInitial.isPresent());
+	}
 
     private void walkTaxonomy() throws IOException {
         log.info("  Start walking taxonomy.");
