@@ -244,6 +244,11 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
             return "No desc for: " + conceptId;
         }
 
+		@Override
+		public String toString() {
+			return "ConceptSnapshotProvider{" + "stampCoordinate=" + stampCoordinate + ", languageCoordinate=" + languageCoordinate + '}';
+		}
+
     }
 
     @Override
