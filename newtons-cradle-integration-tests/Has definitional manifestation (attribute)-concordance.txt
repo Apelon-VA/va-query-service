@@ -1,0 +1,586 @@
+Abdominal migraine	Abdominal migraine
+Abdominal migraine	Abdominal migraine - symptom:Abdominal migraine
+Acute bronchitis with bronchospasm	Acute bronchitis with bronchospasm
+Acute bronchitis with bronchospasm	Bronchospasm:Acute bronchitis with bronchospasm
+Acute febrile neutrophilic dermatosis	Acute febrile neutrophilic dermatosis
+Acute febrile neutrophilic dermatosis	Neutrophilia:Acute febrile neutrophilic dermatosis
+Acute fugue state due to acute stress reaction	Acute fugue state due to acute stress reaction
+Acute fugue state due to acute stress reaction	Fugue:Acute fugue state due to acute stress reaction
+Acute panic state due to acute stress reaction	Acute panic state due to acute stress reaction
+Acute panic state due to acute stress reaction	Panic:Acute panic state due to acute stress reaction
+Acute stupor state due to acute stress reaction	Acute stupor state due to acute stress reaction
+Acute stupor state due to acute stress reaction	Stupor:Acute stupor state due to acute stress reaction
+Adrenal hyperfunction	Adrenal hyperfunction
+Adrenal hyperfunction	Increased hormone production:Adrenal hyperfunction
+Adrenocortical hyperfunction	Adrenocortical hyperfunction
+Adrenocortical hyperfunction	Increased hormone production:Adrenocortical hyperfunction
+Aerodontalgia	Aerodontalgia
+Aerodontalgia	Toothache:Aerodontalgia
+After-cataract	After-cataract
+After-cataract	Lens capsule opacity in pseudophakia:After-cataract
+Alpha heavy chain disease	Alpha heavy chain disease
+Alpha heavy chain disease	Monoclonal alpha heavy chain present:Alpha heavy chain disease
+Amelogenesis imperfecta, hypocalcification type	Amelogenesis imperfecta, hypocalcification type
+Amelogenesis imperfecta, hypocalcification type	Enamel hypomineralization:Amelogenesis imperfecta, hypocalcification type
+Anemia	Anemia
+Anemia	Erythropenia:Anemia
+Anemia due to decreased red cell production	Anemia due to decreased red cell production
+Anemia due to decreased red cell production	Decreased erythrocyte production:Anemia due to decreased red cell production
+Angle-closure glaucoma	Angle-closure glaucoma
+Angle-closure glaucoma	Angle closed:Angle-closure glaucoma
+Anxiety disorder	Anxiety disorder
+Anxiety disorder	Anxiety:Anxiety disorder
+Arthralgia of temporomandibular joint	Arthralgia of temporomandibular joint
+Arthralgia of temporomandibular joint	Temporomandibular joint painful on movement:Arthralgia of temporomandibular joint
+Autoimmune neonatal thrombocytopenia	Autoimmune neonatal thrombocytopenia
+Autoimmune neonatal thrombocytopenia	Platelet count below reference range:Autoimmune neonatal thrombocytopenia
+Autosomal dominant analbuminemia	Autosomal dominant analbuminemia
+Autosomal dominant analbuminemia	Analbuminemia:Autosomal dominant analbuminemia
+Azoospermia	Azoospermia
+Azoospermia	Azoospermia:Azoospermia
+Binge eating disorder	Binge eating disorder
+Binge eating disorder	Binging:Binge eating disorder
+Bipartite ossification of centrum of cervical vertebra	Bipartite ossification of centrum of cervical vertebra
+Bipartite ossification of centrum of cervical vertebra	Bipartite ossification:Bipartite ossification of centrum of cervical vertebra
+Bipartite ossification of centrum of lumbar vertebra	Bipartite ossification of centrum of lumbar vertebra
+Bipartite ossification of centrum of lumbar vertebra	Bipartite ossification:Bipartite ossification of centrum of lumbar vertebra
+Bipartite ossification of centrum of sacral vertebra	Bipartite ossification of centrum of sacral vertebra
+Bipartite ossification of centrum of sacral vertebra	Bipartite ossification:Bipartite ossification of centrum of sacral vertebra
+Bipartite ossification of centrum of thoracic vertebra	Bipartite ossification of centrum of thoracic vertebra
+Bipartite ossification of centrum of thoracic vertebra	Bipartite ossification:Bipartite ossification of centrum of thoracic vertebra
+Bipartite ossification of interparietal bone	Bipartite ossification of interparietal bone
+Bipartite ossification of interparietal bone	Bipartite ossification:Bipartite ossification of interparietal bone
+Bipartite ossification of sternebra	Bipartite ossification of sternebra
+Bipartite ossification of sternebra	Bipartite ossification:Bipartite ossification of sternebra
+Bipartite ossification of supraoccipital bone	Bipartite ossification of supraoccipital bone
+Bipartite ossification of supraoccipital bone	Bipartite ossification:Bipartite ossification of supraoccipital bone
+Bisexual (finding)	Bisexual (finding)
+Bisexual (finding)	Sexually attracted to male and female genders:Bisexual (finding)
+Bradyarrhythmia	Bradyarrhythmia
+Bradyarrhythmia	Bradycardia:Bradyarrhythmia
+Bruxism (teeth grinding)	Bruxism (teeth grinding)
+Bruxism (teeth grinding)	Grinding teeth:Bruxism (teeth grinding)
+Central cyanosis	Central cyanosis
+Central cyanosis	Cyanosis:Central cyanosis
+Cholestasis of parenteral nutrition	Cholestasis of parenteral nutrition
+Cholestasis of parenteral nutrition	Cholestasis:Cholestasis of parenteral nutrition
+Cholestatic jaundice syndrome	Cholestatic jaundice syndrome
+Cholestatic jaundice syndrome	Jaundice:Cholestatic jaundice syndrome
+Chronic hypercapnic respiratory failure	Chronic hypercapnic respiratory failure
+Chronic hypercapnic respiratory failure	Hypercapnia:Chronic hypercapnic respiratory failure
+Chronic pain syndrome	Chronic pain syndrome
+Chronic pain syndrome	Chronic pain:Chronic pain syndrome
+Chronic psychogenic pain	Chronic psychogenic pain
+Chronic psychogenic pain	Pain:Chronic psychogenic pain
+Chronic steatorrhea	Chronic steatorrhea
+Chronic steatorrhea	Fatty stool:Chronic steatorrhea
+Cognitive disorder	Cognitive disorder
+Cognitive disorder	Impaired cognition:Cognitive disorder
+Complex partial status epilepticus	Complex partial status epilepticus
+Complex partial status epilepticus	Seizure:Complex partial status epilepticus
+Congenital leg length discrepancy	Congenital leg length discrepancy
+Congenital leg length discrepancy	Leg length inequality:Congenital leg length discrepancy
+Conjunctival discoloration	Conjunctival discoloration
+Conjunctival discoloration	Abnormal color:Conjunctival discoloration
+Contracted bladder	Contracted bladder
+Contracted bladder	Contraction:Contracted bladder
+Convulsive syncope	Convulsive syncope
+Convulsive syncope	Anoxic seizure:Convulsive syncope
+Cyanotic congenital heart disease	Cyanotic congenital heart disease
+Cyanotic congenital heart disease	Cyanosis:Cyanotic congenital heart disease
+Cytotoxic drug-induced hypospermatogenesis	Cytotoxic drug-induced hypospermatogenesis
+Cytotoxic drug-induced hypospermatogenesis	Oligozoospermia:Cytotoxic drug-induced hypospermatogenesis
+Diarrheal disorder	Diarrheal disorder
+Diarrheal disorder	Diarrhea:Diarrheal disorder
+Diastolic heart failure	Diastolic heart failure
+Diastolic heart failure	Diastolic dysfunction:Diastolic heart failure
+Discontinuous rib	Discontinuous rib
+Discontinuous rib	Interrupted ossification:Discontinuous rib
+Disorder characterized by eosinophilia	Disorder characterized by eosinophilia
+Disorder characterized by eosinophilia	Eosinophil count raised:Disorder characterized by eosinophilia
+Disorder characterized by pain	Disorder characterized by pain
+Disorder characterized by pain	Pain:Disorder characterized by pain
+Disorder of immune function	Disorder of immune function
+Disorder of immune function	Immune system finding:Disorder of immune function
+Disorder of immune reconstitution	Disorder of immune reconstitution
+Disorder of immune reconstitution	Immune reconstitution finding:Disorder of immune reconstitution
+Disorder of increased production of immunoglobulin protein	Disorder of increased production of immunoglobulin protein
+Disorder of increased production of immunoglobulin protein	Increased immunoglobulin:Disorder of increased production of immunoglobulin protein
+Disorder of keratinization	Disorder of keratinization
+Disorder of keratinization	Abnormal keratinization:Disorder of keratinization
+Disorders of excessive somnolence	Disorders of excessive somnolence
+Disorders of excessive somnolence	Excessive somnolence:Disorders of excessive somnolence
+Drug-induced pellagra	Drug-induced pellagra
+Drug-induced pellagra	Photosensitivity:Drug-induced pellagra
+Duane's syndrome	Duane's syndrome
+Duane's syndrome	Retraction:Duane's syndrome
+Dumbbell ossification of centrum of cervical vertebra	Dumbbell ossification of centrum of cervical vertebra
+Dumbbell ossification of centrum of cervical vertebra	Dumbbell ossification:Dumbbell ossification of centrum of cervical vertebra
+Dumbbell ossification of centrum of lumbar vertebra	Dumbbell ossification of centrum of lumbar vertebra
+Dumbbell ossification of centrum of lumbar vertebra	Dumbbell ossification:Dumbbell ossification of centrum of lumbar vertebra
+Dumbbell ossification of centrum of sacral vertebra	Dumbbell ossification of centrum of sacral vertebra
+Dumbbell ossification of centrum of sacral vertebra	Dumbbell ossification:Dumbbell ossification of centrum of sacral vertebra
+Dumbbell ossification of centrum of thoracic vertebra	Dumbbell ossification of centrum of thoracic vertebra
+Dumbbell ossification of centrum of thoracic vertebra	Dumbbell ossification:Dumbbell ossification of centrum of thoracic vertebra
+Eclampsia	Eclampsia
+Eclampsia	Seizure:Eclampsia
+Engraftment syndrome	Engraftment syndrome
+Engraftment syndrome	Engraftment reaction:Engraftment syndrome
+Eosinopenia	Eosinopenia
+Eosinopenia	Decreased blood eosinophil number:Eosinopenia
+Epileptic vertigo	Epileptic vertigo
+Epileptic vertigo	Vertigo:Epileptic vertigo
+Erythrocytosis	Erythrocytosis
+Erythrocytosis	Red blood cell count raised:Erythrocytosis
+Estrogen excess	Estrogen excess
+Estrogen excess	Increased hormone secretion:Estrogen excess
+Extramedullary hematopoiesis of spleen	Extramedullary hematopoiesis of spleen
+Extramedullary hematopoiesis of spleen	Extramedullary hematopoiesis:Extramedullary hematopoiesis of spleen
+Extreme obesity with alveolar hypoventilation	Extreme obesity with alveolar hypoventilation
+Extreme obesity with alveolar hypoventilation	Alveolar hypoventilation:Extreme obesity with alveolar hypoventilation
+Familial febrile convulsions	Familial febrile convulsions
+Familial febrile convulsions	Febrile convulsion:Familial febrile convulsions
+Female homosexual (finding)	Female homosexual (finding)
+Female homosexual (finding)	Sexually attracted to female gender:Female homosexual (finding)
+Female infertility	Female infertility
+Female infertility	Infertile:Female infertility
+Fetishistic transvestism	Fetishistic transvestism
+Fetishistic transvestism	Cross-dressing:Fetishistic transvestism
+Filamentary keratitis	Filamentary keratitis
+Filamentary keratitis	Corneal filament:Filamentary keratitis
+Gamma heavy chain disease	Gamma heavy chain disease
+Gamma heavy chain disease	Monoclonal gamma heavy chain present:Gamma heavy chain disease
+Gammopathy	Gammopathy
+Gammopathy	Serum gamma globulin raised:Gammopathy
+Gardner-Diamond syndrome	Gardner-Diamond syndrome
+Gardner-Diamond syndrome	Autoerythrocyte sensitivity:Gardner-Diamond syndrome
+Gastroesophageal reflux disease with apnea	Gastroesophageal reflux disease with apnea
+Gastroesophageal reflux disease with apnea	Apnea:Gastroesophageal reflux disease with apnea
+Glucocorticoid deficiency with achalasia	Glucocorticoid deficiency with achalasia
+Glucocorticoid deficiency with achalasia	Achalasia:Glucocorticoid deficiency with achalasia
+Gout	Gout
+Gout	Blood urate raised:Gout
+Graft versus host disease of skin	Graft versus host disease of skin
+Graft versus host disease of skin	Graft versus host reaction:Graft versus host disease of skin
+Graft-versus-host disease	Graft-versus-host disease
+Graft-versus-host disease	Graft versus host reaction:Graft-versus-host disease
+Granulocytopenic disorder	Granulocytopenic disorder
+Granulocytopenic disorder	Granulocyte count below reference range:Granulocytopenic disorder
+Headache disorder	Headache disorder
+Headache disorder	Headache:Headache disorder
+Heavy chain disease	Heavy chain disease
+Heavy chain disease	Monoclonal abnormal heavy chain protein devoid of light chains present:Heavy chain disease
+Heerfordt's syndrome	Heerfordt's syndrome
+Heerfordt's syndrome	Parotid swelling:Heerfordt's syndrome
+Hematuria syndrome	Hematuria syndrome
+Hematuria syndrome	Blood in urine:Hematuria syndrome
+Hemoglobinopathy with cyanosis	Hemoglobinopathy with cyanosis
+Hemoglobinopathy with cyanosis	Cyanosis:Hemoglobinopathy with cyanosis
+Hemolytic anemia	Hemolytic anemia
+Hemolytic anemia	Erythropenia:Hemolytic anemia
+Hemolytic anemia	Hemolytic anemia
+Hemolytic anemia	Hemolysis:Hemolytic anemia
+Hemolytic disorder	Hemolytic disorder
+Hemolytic disorder	Hemolysis:Hemolytic disorder
+Hemolytic transfusion reaction	Hemolytic transfusion reaction
+Hemolytic transfusion reaction	Hemolysis:Hemolytic transfusion reaction
+Hereditary angioneurotic edema with normal C1 esterase inhibitor activity	Hereditary angioneurotic edema with normal C1 esterase inhibitor activity
+Hereditary angioneurotic edema with normal C1 esterase inhibitor activity	Immune system finding:Hereditary angioneurotic edema with normal C1 esterase inhibitor activity
+Hereditary racquet nails	Hereditary racquet nails
+Hereditary racquet nails	Brachyonychia:Hereditary racquet nails
+Hypercalcemia	Hypercalcemia
+Hypercalcemia	Raised serum calcium level:Hypercalcemia
+Hypercholesterolemia	Hypercholesterolemia
+Hypercholesterolemia	Serum cholesterol raised:Hypercholesterolemia
+Hyperestrogenism	Hyperestrogenism
+Hyperestrogenism	Increased hormone production:Hyperestrogenism
+Hyperfibrinogenemia	Hyperfibrinogenemia
+Hyperfibrinogenemia	Fibrinogen in blood above reference range:Hyperfibrinogenemia
+Hyperlipidemia	Hyperlipidemia
+Hyperlipidemia	Increased lipid:Hyperlipidemia
+Hyperparathyroidism	Hyperparathyroidism
+Hyperparathyroidism	Increased hormone secretion:Hyperparathyroidism
+Hyperpituitarism	Hyperpituitarism
+Hyperpituitarism	Increased hormone production:Hyperpituitarism
+Hypersecretion of ovarian androgens	Hypersecretion of ovarian androgens
+Hypersecretion of ovarian androgens	Increased hormone secretion:Hypersecretion of ovarian androgens
+Hypersecretion of ovarian progesterone	Hypersecretion of ovarian progesterone
+Hypersecretion of ovarian progesterone	Increased hormone secretion:Hypersecretion of ovarian progesterone
+Hypertensive disorder, systemic arterial	Hypertensive disorder, systemic arterial
+Hypertensive disorder, systemic arterial	Finding of increased blood pressure:Hypertensive disorder, systemic arterial
+Hypertensive lower esophageal sphincter	Hypertensive lower esophageal sphincter
+Hypertensive lower esophageal sphincter	Hypertensive spasm of cardiac sphincter:Hypertensive lower esophageal sphincter
+Hyperviscosity syndrome	Hyperviscosity syndrome
+Hyperviscosity syndrome	Increased blood viscosity:Hyperviscosity syndrome
+Hypogonadism with anosmia	Hypogonadism with anosmia
+Hypogonadism with anosmia	Loss of sense of smell:Hypogonadism with anosmia
+Hypoparathyroidism	Hypoparathyroidism
+Hypoparathyroidism	Decreased hormone secretion:Hypoparathyroidism
+Hypotony of eye	Hypotony of eye
+Hypotony of eye	Decreased intraocular pressure:Hypotony of eye
+Iatrogenic testicular hypofunction	Iatrogenic testicular hypofunction
+Iatrogenic testicular hypofunction	Decreased hormone production:Iatrogenic testicular hypofunction
+Immunoglobulin A monoclonal gammopathy of uncertain significance	Immunoglobulin A monoclonal gammopathy of uncertain significance
+Immunoglobulin A monoclonal gammopathy of uncertain significance	Monoclonal immunoglobulin A present:Immunoglobulin A monoclonal gammopathy of uncertain significance
+Immunoglobulin A myeloma	Immunoglobulin A myeloma
+Immunoglobulin A myeloma	Monoclonal immunoglobulin A present:Immunoglobulin A myeloma
+Immunoglobulin D monoclonal gammopathy of uncertain significance	Immunoglobulin D monoclonal gammopathy of uncertain significance
+Immunoglobulin D monoclonal gammopathy of uncertain significance	Monoclonal immunoglobulin D present:Immunoglobulin D monoclonal gammopathy of uncertain significance
+Immunoglobulin D myeloma	Immunoglobulin D myeloma
+Immunoglobulin D myeloma	Monoclonal immunoglobulin D present:Immunoglobulin D myeloma
+Immunoglobulin G monoclonal gammopathy of uncertain significance	Immunoglobulin G monoclonal gammopathy of uncertain significance
+Immunoglobulin G monoclonal gammopathy of uncertain significance	Monoclonal immunoglobulin G present:Immunoglobulin G monoclonal gammopathy of uncertain significance
+Immunoglobulin G myeloma	Immunoglobulin G myeloma
+Immunoglobulin G myeloma	Monoclonal immunoglobulin G present:Immunoglobulin G myeloma
+Immunoglobulin M monoclonal gammopathy of uncertain significance	Immunoglobulin M monoclonal gammopathy of uncertain significance
+Immunoglobulin M monoclonal gammopathy of uncertain significance	Monoclonal immunoglobulin M present:Immunoglobulin M monoclonal gammopathy of uncertain significance
+Incomplete ossification of alisphenoid bone	Incomplete ossification of alisphenoid bone
+Incomplete ossification of alisphenoid bone	Incomplete ossification:Incomplete ossification of alisphenoid bone
+Incomplete ossification of arch of cervical vertebra	Incomplete ossification of arch of cervical vertebra
+Incomplete ossification of arch of cervical vertebra	Incomplete ossification:Incomplete ossification of arch of cervical vertebra
+Incomplete ossification of arch of lumbar vertebra	Incomplete ossification of arch of lumbar vertebra
+Incomplete ossification of arch of lumbar vertebra	Incomplete ossification:Incomplete ossification of arch of lumbar vertebra
+Incomplete ossification of arch of sacral vertebra	Incomplete ossification of arch of sacral vertebra
+Incomplete ossification of arch of sacral vertebra	Incomplete ossification:Incomplete ossification of arch of sacral vertebra
+Incomplete ossification of arch of thoracic vertebra	Incomplete ossification of arch of thoracic vertebra
+Incomplete ossification of arch of thoracic vertebra	Incomplete ossification:Incomplete ossification of arch of thoracic vertebra
+Incomplete ossification of basioccipital bone	Incomplete ossification of basioccipital bone
+Incomplete ossification of basioccipital bone	Incomplete ossification:Incomplete ossification of basioccipital bone
+Incomplete ossification of basisphenoid bone	Incomplete ossification of basisphenoid bone
+Incomplete ossification of basisphenoid bone	Incomplete ossification:Incomplete ossification of basisphenoid bone
+Incomplete ossification of calcaneus	Incomplete ossification of calcaneus
+Incomplete ossification of calcaneus	Incomplete ossification:Incomplete ossification of calcaneus
+Incomplete ossification of centrum of cervical vertebra	Incomplete ossification of centrum of cervical vertebra
+Incomplete ossification of centrum of cervical vertebra	Incomplete ossification:Incomplete ossification of centrum of cervical vertebra
+Incomplete ossification of centrum of lumbar vertebra	Incomplete ossification of centrum of lumbar vertebra
+Incomplete ossification of centrum of lumbar vertebra	Incomplete ossification:Incomplete ossification of centrum of lumbar vertebra
+Incomplete ossification of centrum of sacral vertebra	Incomplete ossification of centrum of sacral vertebra
+Incomplete ossification of centrum of sacral vertebra	Incomplete ossification:Incomplete ossification of centrum of sacral vertebra
+Incomplete ossification of centrum of thoracic vertebra	Incomplete ossification of centrum of thoracic vertebra
+Incomplete ossification of centrum of thoracic vertebra	Incomplete ossification:Incomplete ossification of centrum of thoracic vertebra
+Incomplete ossification of clavicle	Incomplete ossification of clavicle
+Incomplete ossification of clavicle	Incomplete ossification:Incomplete ossification of clavicle
+Incomplete ossification of exoccipital bone	Incomplete ossification of exoccipital bone
+Incomplete ossification of exoccipital bone	Incomplete ossification:Incomplete ossification of exoccipital bone
+Incomplete ossification of femur	Incomplete ossification of femur
+Incomplete ossification of femur	Incomplete ossification:Incomplete ossification of femur
+Incomplete ossification of fibula	Incomplete ossification of fibula
+Incomplete ossification of fibula	Incomplete ossification:Incomplete ossification of fibula
+Incomplete ossification of frontal bone	Incomplete ossification of frontal bone
+Incomplete ossification of frontal bone	Incomplete ossification:Incomplete ossification of frontal bone
+Incomplete ossification of humerus	Incomplete ossification of humerus
+Incomplete ossification of humerus	Incomplete ossification:Incomplete ossification of humerus
+Incomplete ossification of hyoid bone	Incomplete ossification of hyoid bone
+Incomplete ossification of hyoid bone	Incomplete ossification:Incomplete ossification of hyoid bone
+Incomplete ossification of interparietal bone	Incomplete ossification of interparietal bone
+Incomplete ossification of interparietal bone	Incomplete ossification:Incomplete ossification of interparietal bone
+Incomplete ossification of lacrimal bone	Incomplete ossification of lacrimal bone
+Incomplete ossification of lacrimal bone	Incomplete ossification:Incomplete ossification of lacrimal bone
+Incomplete ossification of mandible	Incomplete ossification of mandible
+Incomplete ossification of mandible	Incomplete ossification:Incomplete ossification of mandible
+Incomplete ossification of maxilla	Incomplete ossification of maxilla
+Incomplete ossification of maxilla	Incomplete ossification:Incomplete ossification of maxilla
+Incomplete ossification of metatarsal bone	Incomplete ossification of metatarsal bone
+Incomplete ossification of metatarsal bone	Incomplete ossification:Incomplete ossification of metatarsal bone
+Incomplete ossification of nasal bone	Incomplete ossification of nasal bone
+Incomplete ossification of nasal bone	Incomplete ossification:Incomplete ossification of nasal bone
+Incomplete ossification of palatine bone	Incomplete ossification of palatine bone
+Incomplete ossification of palatine bone	Incomplete ossification:Incomplete ossification of palatine bone
+Incomplete ossification of parietal bone	Incomplete ossification of parietal bone
+Incomplete ossification of parietal bone	Incomplete ossification:Incomplete ossification of parietal bone
+Incomplete ossification of premaxilla	Incomplete ossification of premaxilla
+Incomplete ossification of premaxilla	Incomplete ossification:Incomplete ossification of premaxilla
+Incomplete ossification of presphenoid bone	Incomplete ossification of presphenoid bone
+Incomplete ossification of presphenoid bone	Incomplete ossification:Incomplete ossification of presphenoid bone
+Incomplete ossification of radius	Incomplete ossification of radius
+Incomplete ossification of radius	Incomplete ossification:Incomplete ossification of radius
+Incomplete ossification of rib	Incomplete ossification of rib
+Incomplete ossification of rib	Incomplete ossification:Incomplete ossification of rib
+Incomplete ossification of scapula	Incomplete ossification of scapula
+Incomplete ossification of scapula	Incomplete ossification:Incomplete ossification of scapula
+Incomplete ossification of squamosal bone	Incomplete ossification of squamosal bone
+Incomplete ossification of squamosal bone	Incomplete ossification:Incomplete ossification of squamosal bone
+Incomplete ossification of sternebra	Incomplete ossification of sternebra
+Incomplete ossification of sternebra	Incomplete ossification:Incomplete ossification of sternebra
+Incomplete ossification of supraoccipital bone	Incomplete ossification of supraoccipital bone
+Incomplete ossification of supraoccipital bone	Incomplete ossification:Incomplete ossification of supraoccipital bone
+Incomplete ossification of talus	Incomplete ossification of talus
+Incomplete ossification of talus	Incomplete ossification:Incomplete ossification of talus
+Incomplete ossification of tarsal bone	Incomplete ossification of tarsal bone
+Incomplete ossification of tarsal bone	Incomplete ossification:Incomplete ossification of tarsal bone
+Incomplete ossification of tibia	Incomplete ossification of tibia
+Incomplete ossification of tibia	Incomplete ossification:Incomplete ossification of tibia
+Incomplete ossification of tympanic anulus	Incomplete ossification of tympanic anulus
+Incomplete ossification of tympanic anulus	Incomplete ossification:Incomplete ossification of tympanic anulus
+Incomplete ossification of ulna	Incomplete ossification of ulna
+Incomplete ossification of ulna	Incomplete ossification:Incomplete ossification of ulna
+Incomplete ossification of vomer	Incomplete ossification of vomer
+Incomplete ossification of vomer	Incomplete ossification:Incomplete ossification of vomer
+Incomplete ossification of zygomatic bone	Incomplete ossification of zygomatic bone
+Incomplete ossification of zygomatic bone	Incomplete ossification:Incomplete ossification of zygomatic bone
+Inherited spastic paresis	Inherited spastic paresis
+Inherited spastic paresis	Muscle weakness:Inherited spastic paresis
+Intermittent claudication	Intermittent claudication
+Intermittent claudication	Claudication:Intermittent claudication
+Irritable bowel syndrome characterized by constipation	Irritable bowel syndrome characterized by constipation
+Irritable bowel syndrome characterized by constipation	Constipation:Irritable bowel syndrome characterized by constipation
+Irritable bowel syndrome variant of childhood with constipation	Irritable bowel syndrome variant of childhood with constipation
+Irritable bowel syndrome variant of childhood with constipation	Constipation:Irritable bowel syndrome variant of childhood with constipation
+Isosexual virilization	Isosexual virilization
+Isosexual virilization	Virilization:Isosexual virilization
+Kappa light chain myeloma	Kappa light chain myeloma
+Kappa light chain myeloma	Monoclonal free kappa light chain present:Kappa light chain myeloma
+Lack of ossification of alisphenoid bone	Lack of ossification of alisphenoid bone
+Lack of ossification of alisphenoid bone	Lack of bone formation:Lack of ossification of alisphenoid bone
+Lack of ossification of arch of cervical vertebra	Lack of ossification of arch of cervical vertebra
+Lack of ossification of arch of cervical vertebra	Lack of bone formation:Lack of ossification of arch of cervical vertebra
+Lack of ossification of arch of lumbar vertebra	Lack of ossification of arch of lumbar vertebra
+Lack of ossification of arch of lumbar vertebra	Lack of bone formation:Lack of ossification of arch of lumbar vertebra
+Lack of ossification of arch of sacral vertebra	Lack of ossification of arch of sacral vertebra
+Lack of ossification of arch of sacral vertebra	Lack of bone formation:Lack of ossification of arch of sacral vertebra
+Lack of ossification of arch of thoracic vertebra	Lack of ossification of arch of thoracic vertebra
+Lack of ossification of arch of thoracic vertebra	Lack of bone formation:Lack of ossification of arch of thoracic vertebra
+Lack of ossification of basioccipital bone	Lack of ossification of basioccipital bone
+Lack of ossification of basioccipital bone	Lack of bone formation:Lack of ossification of basioccipital bone
+Lack of ossification of basisphenoid bone	Lack of ossification of basisphenoid bone
+Lack of ossification of basisphenoid bone	Lack of bone formation:Lack of ossification of basisphenoid bone
+Lack of ossification of calcaneus	Lack of ossification of calcaneus
+Lack of ossification of calcaneus	Lack of bone formation:Lack of ossification of calcaneus
+Lack of ossification of carpal bone	Lack of ossification of carpal bone
+Lack of ossification of carpal bone	Lack of bone formation:Lack of ossification of carpal bone
+Lack of ossification of centrum of cervical vertebra	Lack of ossification of centrum of cervical vertebra
+Lack of ossification of centrum of cervical vertebra	Lack of bone formation:Lack of ossification of centrum of cervical vertebra
+Lack of ossification of centrum of lumbar vertebra	Lack of ossification of centrum of lumbar vertebra
+Lack of ossification of centrum of lumbar vertebra	Lack of bone formation:Lack of ossification of centrum of lumbar vertebra
+Lack of ossification of centrum of sacral vertebra	Lack of ossification of centrum of sacral vertebra
+Lack of ossification of centrum of sacral vertebra	Lack of bone formation:Lack of ossification of centrum of sacral vertebra
+Lack of ossification of centrum of thoracic vertebra	Lack of ossification of centrum of thoracic vertebra
+Lack of ossification of centrum of thoracic vertebra	Lack of bone formation:Lack of ossification of centrum of thoracic vertebra
+Lack of ossification of clavicle	Lack of ossification of clavicle
+Lack of ossification of clavicle	Lack of bone formation:Lack of ossification of clavicle
+Lack of ossification of exoccipital bone	Lack of ossification of exoccipital bone
+Lack of ossification of exoccipital bone	Lack of bone formation:Lack of ossification of exoccipital bone
+Lack of ossification of femur	Lack of ossification of femur
+Lack of ossification of femur	Lack of bone formation:Lack of ossification of femur
+Lack of ossification of fibula	Lack of ossification of fibula
+Lack of ossification of fibula	Lack of bone formation:Lack of ossification of fibula
+Lack of ossification of frontal bone	Lack of ossification of frontal bone
+Lack of ossification of frontal bone	Lack of bone formation:Lack of ossification of frontal bone
+Lack of ossification of humerus	Lack of ossification of humerus
+Lack of ossification of humerus	Lack of bone formation:Lack of ossification of humerus
+Lack of ossification of hyoid bone	Lack of ossification of hyoid bone
+Lack of ossification of hyoid bone	Lack of bone formation:Lack of ossification of hyoid bone
+Lack of ossification of ilium	Lack of ossification of ilium
+Lack of ossification of ilium	Lack of bone formation:Lack of ossification of ilium
+Lack of ossification of interparietal bone	Lack of ossification of interparietal bone
+Lack of ossification of interparietal bone	Lack of bone formation:Lack of ossification of interparietal bone
+Lack of ossification of ischium	Lack of ossification of ischium
+Lack of ossification of ischium	Lack of bone formation:Lack of ossification of ischium
+Lack of ossification of lacrimal bone	Lack of ossification of lacrimal bone
+Lack of ossification of lacrimal bone	Lack of bone formation:Lack of ossification of lacrimal bone
+Lack of ossification of mandible	Lack of ossification of mandible
+Lack of ossification of mandible	Lack of bone formation:Lack of ossification of mandible
+Lack of ossification of maxilla	Lack of ossification of maxilla
+Lack of ossification of maxilla	Lack of bone formation:Lack of ossification of maxilla
+Lack of ossification of metacarpal bone	Lack of ossification of metacarpal bone
+Lack of ossification of metacarpal bone	Lack of bone formation:Lack of ossification of metacarpal bone
+Lack of ossification of metatarsal bone	Lack of ossification of metatarsal bone
+Lack of ossification of metatarsal bone	Lack of bone formation:Lack of ossification of metatarsal bone
+Lack of ossification of nasal bone	Lack of ossification of nasal bone
+Lack of ossification of nasal bone	Lack of bone formation:Lack of ossification of nasal bone
+Lack of ossification of palatine bone	Lack of ossification of palatine bone
+Lack of ossification of palatine bone	Lack of bone formation:Lack of ossification of palatine bone
+Lack of ossification of parietal bone	Lack of ossification of parietal bone
+Lack of ossification of parietal bone	Lack of bone formation:Lack of ossification of parietal bone
+Lack of ossification of premaxilla	Lack of ossification of premaxilla
+Lack of ossification of premaxilla	Lack of bone formation:Lack of ossification of premaxilla
+Lack of ossification of presphenoid bone	Lack of ossification of presphenoid bone
+Lack of ossification of presphenoid bone	Lack of bone formation:Lack of ossification of presphenoid bone
+Lack of ossification of pubis	Lack of ossification of pubis
+Lack of ossification of pubis	Lack of bone formation:Lack of ossification of pubis
+Lack of ossification of radius	Lack of ossification of radius
+Lack of ossification of radius	Lack of bone formation:Lack of ossification of radius
+Lack of ossification of rib	Lack of ossification of rib
+Lack of ossification of rib	Lack of bone formation:Lack of ossification of rib
+Lack of ossification of scapula	Lack of ossification of scapula
+Lack of ossification of scapula	Lack of bone formation:Lack of ossification of scapula
+Lack of ossification of squamosal bone	Lack of ossification of squamosal bone
+Lack of ossification of squamosal bone	Lack of bone formation:Lack of ossification of squamosal bone
+Lack of ossification of sternebra	Lack of ossification of sternebra
+Lack of ossification of sternebra	Lack of bone formation:Lack of ossification of sternebra
+Lack of ossification of supraoccipital bone	Lack of ossification of supraoccipital bone
+Lack of ossification of supraoccipital bone	Lack of bone formation:Lack of ossification of supraoccipital bone
+Lack of ossification of talus	Lack of ossification of talus
+Lack of ossification of talus	Lack of bone formation:Lack of ossification of talus
+Lack of ossification of tarsal bone	Lack of ossification of tarsal bone
+Lack of ossification of tarsal bone	Lack of bone formation:Lack of ossification of tarsal bone
+Lack of ossification of tibia	Lack of ossification of tibia
+Lack of ossification of tibia	Lack of bone formation:Lack of ossification of tibia
+Lack of ossification of tympanic anulus	Lack of ossification of tympanic anulus
+Lack of ossification of tympanic anulus	Lack of bone formation:Lack of ossification of tympanic anulus
+Lack of ossification of ulna	Lack of ossification of ulna
+Lack of ossification of ulna	Lack of bone formation:Lack of ossification of ulna
+Lack of ossification of vomer	Lack of ossification of vomer
+Lack of ossification of vomer	Lack of bone formation:Lack of ossification of vomer
+Lack of ossification of zygomatic bone	Lack of ossification of zygomatic bone
+Lack of ossification of zygomatic bone	Lack of bone formation:Lack of ossification of zygomatic bone
+Lambda light chain myeloma	Lambda light chain myeloma
+Lambda light chain myeloma	Monoclonal free lambda light chain present:Lambda light chain myeloma
+Leontiasis	Leontiasis
+Leontiasis	Leonine facies:Leontiasis
+Leukocytosis	Leukocytosis
+Leukocytosis	Increased blood leukocyte number:Leukocytosis
+Leukopenia	Leukopenia
+Leukopenia	Decreased blood leukocyte number:Leukopenia
+Light chain monoclonal gammopathy of uncertain significance	Light chain monoclonal gammopathy of uncertain significance
+Light chain monoclonal gammopathy of uncertain significance	Monoclonal free light chain present:Light chain monoclonal gammopathy of uncertain significance
+Light chain myeloma	Light chain myeloma
+Light chain myeloma	Monoclonal free light chain present:Light chain myeloma
+Lymphocytosis	Lymphocytosis
+Lymphocytosis	Increased blood lymphocyte number:Lymphocytosis
+Male homosexual (finding)	Male homosexual (finding)
+Male homosexual (finding)	Sexually attracted to male gender:Male homosexual (finding)
+Male infertility	Male infertility
+Male infertility	Infertile:Male infertility
+Masquerade syndrome	Masquerade syndrome
+Masquerade syndrome	Vitreous cells:Masquerade syndrome
+Medulloadrenal hyperfunction	Medulloadrenal hyperfunction
+Medulloadrenal hyperfunction	Increased hormone production:Medulloadrenal hyperfunction
+Metaphyseal chondrodysplasia, McKusick type with associated immunodeficiency	Metaphyseal chondrodysplasia, McKusick type with associated immunodeficiency
+Metaphyseal chondrodysplasia, McKusick type with associated immunodeficiency	Immunodeficiency disorder:Metaphyseal chondrodysplasia, McKusick type with associated immunodeficiency
+Microcytic anemia	Microcytic anemia
+Microcytic anemia	Microcytosis, red cells:Microcytic anemia
+Migraine variant with headache	Migraine variant with headache
+Migraine variant with headache	Headache:Migraine variant with headache
+Monoclonal gammopathy	Monoclonal gammopathy
+Monoclonal gammopathy	Monoclonal band present:Monoclonal gammopathy
+Monocytosis	Monocytosis
+Monocytosis	Increased blood monocyte number:Monocytosis
+Mu heavy chain disease	Mu heavy chain disease
+Mu heavy chain disease	Monoclonal mu heavy chain present:Mu heavy chain disease
+Myoclonic dystonia	Myoclonic dystonia
+Myoclonic dystonia	Myoclonus:Myoclonic dystonia
+Neonatal thrombocytopenia	Neonatal thrombocytopenia
+Neonatal thrombocytopenia	Platelet count below reference range:Neonatal thrombocytopenia
+Neoplastic masquerade syndrome	Neoplastic masquerade syndrome
+Neoplastic masquerade syndrome	Vitreous cells:Neoplastic masquerade syndrome
+Neovascular glaucoma	Neovascular glaucoma
+Neovascular glaucoma	Neovascularization of angle:Neovascular glaucoma
+Neurofibromatosis, type 2	Neurofibromatosis, type 2
+Neurofibromatosis, type 2	Acoustic neuroma:Neurofibromatosis, type 2
+Neutropenic disorder	Neutropenic disorder
+Neutropenic disorder	Neutropenia:Neutropenic disorder
+Neutrophilia	Neutrophilia
+Neutrophilia	Neutrophilia:Neutrophilia
+Non-pregnancy related A-G syndrome	Non-pregnancy related A-G syndrome
+Non-pregnancy related A-G syndrome	Amenorrhea:Non-pregnancy related A-G syndrome
+Numbness of tongue	Numbness of tongue
+Numbness of tongue	Numbness:Numbness of tongue
+Nystagmus	Nystagmus
+Nystagmus	Nystagmus present:Nystagmus
+Obesity	Obesity
+Obesity	Obese:Obesity
+Oliguria following molar AND/OR ectopic pregnancy	Oliguria following molar AND/OR ectopic pregnancy
+Oliguria following molar AND/OR ectopic pregnancy	Oliguria:Oliguria following molar AND/OR ectopic pregnancy
+Optic disc edema	Optic disc edema
+Optic disc edema	Optic disc swelling:Optic disc edema
+Ovarian hyperfunction	Ovarian hyperfunction
+Ovarian hyperfunction	Increased hormone secretion:Ovarian hyperfunction
+Ovarian hypersecretion	Ovarian hypersecretion
+Ovarian hypersecretion	Increased hormone secretion:Ovarian hypersecretion
+Ovarian masculinization syndrome	Ovarian masculinization syndrome
+Ovarian masculinization syndrome	Increased hormone secretion:Ovarian masculinization syndrome
+Ovary or testis hyperfunction	Ovary or testis hyperfunction
+Ovary or testis hyperfunction	Increased hormone secretion:Ovary or testis hyperfunction
+Pain at rest due to peripheral vascular disease	Pain at rest due to peripheral vascular disease
+Pain at rest due to peripheral vascular disease	Rest pain:Pain at rest due to peripheral vascular disease
+Panic disorder	Panic disorder
+Panic disorder	Panic:Panic disorder
+Paraneoplastic ectopic secretion of adrenocorticotropic hormone	Paraneoplastic ectopic secretion of adrenocorticotropic hormone
+Paraneoplastic ectopic secretion of adrenocorticotropic hormone	Ectopic adrenocorticotropic hormone secretion:Paraneoplastic ectopic secretion of adrenocorticotropic hormone
+Pelger-Huët anomaly	Pelger-Huët anomaly
+Pelger-Huët anomaly	Pelger-Huët cell:Pelger-Huët anomaly
+Perinatal cyanotic attacks	Perinatal cyanotic attacks
+Perinatal cyanotic attacks	Cyanosis:Perinatal cyanotic attacks
+Periodic limb movement disorder	Periodic limb movement disorder
+Periodic limb movement disorder	Periodic leg movements of sleep:Periodic limb movement disorder
+Phobic disorder	Phobic disorder
+Phobic disorder	Phobia:Phobic disorder
+Phobic fear of skin cancer	Phobic fear of skin cancer
+Phobic fear of skin cancer	Fear of getting cancer:Phobic fear of skin cancer
+Photoaggravation of disorder	Photoaggravation of disorder
+Photoaggravation of disorder	Photosensitivity:Photoaggravation of disorder
+Postablative hypoparathyroidism	Postablative hypoparathyroidism
+Postablative hypoparathyroidism	Decreased hormone production:Postablative hypoparathyroidism
+Postablative hypothyroidism	Postablative hypothyroidism
+Postablative hypothyroidism	Decreased hormone production:Postablative hypothyroidism
+Posteruptive color change of tooth	Posteruptive color change of tooth
+Posteruptive color change of tooth	Abnormal color:Posteruptive color change of tooth
+Postirradiation ovarian failure	Postirradiation ovarian failure
+Postirradiation ovarian failure	Decreased hormone secretion:Postirradiation ovarian failure
+Postirradiation testicular hypofunction	Postirradiation testicular hypofunction
+Postirradiation testicular hypofunction	Decreased hormone secretion:Postirradiation testicular hypofunction
+Pregnancy-related A-G syndrome	Pregnancy-related A-G syndrome
+Pregnancy-related A-G syndrome	Amenorrhea:Pregnancy-related A-G syndrome
+Protein-losing nephropathy	Protein-losing nephropathy
+Protein-losing nephropathy	Proteinuria:Protein-losing nephropathy
+Pruritic disorders	Pruritic disorders
+Pruritic disorders	Itching of skin:Pruritic disorders
+Pseudophakia	Pseudophakia
+Pseudophakia	Finding of artificial lens:Pseudophakia
+Psychogenic back pain	Psychogenic back pain
+Psychogenic back pain	Backache:Psychogenic back pain
+Pulmonary cyanosis	Pulmonary cyanosis
+Pulmonary cyanosis	Cyanosis:Pulmonary cyanosis
+Purpuric disorder	Purpuric disorder
+Purpuric disorder	Purpura:Purpuric disorder
+Remitting seronegative symmetrical synovitis with pitting edema	Remitting seronegative symmetrical synovitis with pitting edema
+Remitting seronegative symmetrical synovitis with pitting edema	Pitting edema:Remitting seronegative symmetrical synovitis with pitting edema
+Seizure disorder	Seizure disorder
+Seizure disorder	Seizure:Seizure disorder
+Somatosensory epilepsy	Somatosensory epilepsy
+Somatosensory epilepsy	Somatosensory seizure:Somatosensory epilepsy
+Somnolence syndrome	Somnolence syndrome
+Somnolence syndrome	Excessive somnolence:Somnolence syndrome
+Staining of tooth	Staining of tooth
+Staining of tooth	Abnormal color:Staining of tooth
+Stokvis' disease	Stokvis' disease
+Stokvis' disease	Cyanosis:Stokvis' disease
+Sun-induced wrinkles	Sun-induced wrinkles
+Sun-induced wrinkles	Wrinkled skin:Sun-induced wrinkles
+Systolic heart failure	Systolic heart failure
+Systolic heart failure	Systolic dysfunction:Systolic heart failure
+Tachyarrhythmia	Tachyarrhythmia
+Tachyarrhythmia	Tachycardia:Tachyarrhythmia
+Testicular hyperfunction	Testicular hyperfunction
+Testicular hyperfunction	Increased hormone production:Testicular hyperfunction
+Testicular hypofunction	Testicular hypofunction
+Testicular hypofunction	Decreased hormone production:Testicular hypofunction
+Thrombocytopenic disorder	Thrombocytopenic disorder
+Thrombocytopenic disorder	Platelet count below reference range:Thrombocytopenic disorder
+Thrombocytosis	Thrombocytosis
+Thrombocytosis	Platelet count above reference range:Thrombocytosis
+Tic disorder	Tic disorder
+Tic disorder	Tic:Tic disorder
+Transient respiratory distress with sepsis	Transient respiratory distress with sepsis
+Transient respiratory distress with sepsis	Respiratory distress:Transient respiratory distress with sepsis
+Traumatic hypotonia	Traumatic hypotonia
+Traumatic hypotonia	Decreased muscle tone:Traumatic hypotonia
+Trichoschisis	Trichoschisis
+Trichoschisis	Weathered hair:Trichoschisis
+Vascular headache	Vascular headache
+Vascular headache	Headache:Vascular headache
+Venous intermittent claudication	Venous intermittent claudication
+Venous intermittent claudication	Claudication:Venous intermittent claudication
+Vertiginous syndrome	Vertiginous syndrome
+Vertiginous syndrome	Vertigo:Vertiginous syndrome
+Viral disease characterized by exanthem	Viral disease characterized by exanthem
+Viral disease characterized by exanthem	Exanthematous disorder:Viral disease characterized by exanthem
+Visual epilepsy	Visual epilepsy
+Visual epilepsy	Visual seizure:Visual epilepsy
+Vomiting	Vomiting
+Vomiting	Finding of vomiting:Vomiting
+Wandering pacemaker	Wandering pacemaker
+Wandering pacemaker	Wandering atrial pacemaker:Wandering pacemaker
+White blood cell disorder	White blood cell disorder
+White blood cell disorder	White blood cell finding:White blood cell disorder

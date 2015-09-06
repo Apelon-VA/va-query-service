@@ -25,15 +25,15 @@ public class TaxonomyWalkCollector implements
 
     private static final int MAX_PRINT_COUNT = 10;
 
-    final TaxonomyCoordinate<?> taxonomyCoordinate;
+    final TaxonomyCoordinate taxonomyCoordinate;
     final int taxonomyFlags;
     final OpenIntHashSet watchSequences = new OpenIntHashSet();
     int errorCount = 0;
     int printCount = 0;
 
     public TaxonomyWalkCollector(ViewCoordinate viewCoordinate) {
-        this.taxonomyCoordinate = viewCoordinate;
-        taxonomyFlags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(viewCoordinate);
+        this.taxonomyCoordinate = viewCoordinate.getTaxonomyCoordinate();
+        taxonomyFlags = TaxonomyFlags.getFlagsFromTaxonomyCoordinate(viewCoordinate.getTaxonomyCoordinate());
         int watchNid = Get.identifierService().getNidForUuids(UUID.fromString("df79ab93-4436-35b8-be3f-2a8e5849d732"));
         watchSequences.add(Get.identifierService().getConceptSequence(watchNid));
     }

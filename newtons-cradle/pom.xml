@@ -4,7 +4,7 @@
     <parent>
         <groupId>gov.vha.isaac.newtons-cradle</groupId>
         <artifactId>newtons-cradle-parent</artifactId>
-        <version>1.20</version>
+        <version>1.21</version>
     </parent>
     
     <groupId>gov.vha.isaac.newtons-cradle.modules</groupId>
@@ -31,6 +31,10 @@
         <dependency>
             <groupId>gov.vha.isaac.isaac-metadata.modules</groupId>
             <artifactId>isaac-metadata-coordinates</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>gov.vha.isaac.isaac-metadata.modules</groupId>
+            <artifactId>isaac-ochre-impl</artifactId>
         </dependency>
     </dependencies>
 </project>

@@ -44,8 +44,6 @@ public class DescriptionBuilderProvider implements DescriptionBuilderService {
         switch (getConceptModel()) {
             case OCHRE_CONCEPT_MODEL:
                 return new DescriptionBuilderOchreImpl(descriptionText, conceptSequence, descriptionType, languageForDescription);
-            case OTF_CONCEPT_MODEL:
-                return new DescriptionBuilderOtfImpl(descriptionText, conceptSequence, descriptionType, languageForDescription);
             default:
                 throw new UnsupportedOperationException("Can't handle: " + conceptModel);
         }
@@ -56,8 +54,6 @@ public class DescriptionBuilderProvider implements DescriptionBuilderService {
         switch (getConceptModel()) {
             case OCHRE_CONCEPT_MODEL:
                 return new DescriptionBuilderOchreImpl(descriptionText, conceptBuilder, descriptionType, languageForDescription);
-            case OTF_CONCEPT_MODEL:
-                return new DescriptionBuilderOtfImpl(descriptionText, conceptBuilder, descriptionType, languageForDescription);
             default:
                 throw new UnsupportedOperationException("Can't handle: " + conceptModel);
         }

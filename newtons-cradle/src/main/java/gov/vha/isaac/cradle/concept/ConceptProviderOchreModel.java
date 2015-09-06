@@ -101,7 +101,7 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
 
             Path ochreConceptPath = folderPath.resolve("ochre");
 
-            conceptMap = new CasSequenceObjectMap(new OchreConceptSerializer(),
+            conceptMap = new CasSequenceObjectMap<>(new OchreConceptSerializer(),
                     ochreConceptPath, "seg.", ".ochre-concepts.map");
         } catch (Exception e) {
             LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure("ChRonicled Assertion Database of Logical Expressions (OCHRE)", e);
@@ -150,7 +150,13 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
 
     @Override
     public Optional<? extends ConceptChronology<? extends ConceptVersion<?>>> getOptionalConcept(UUID... conceptUuids) {
-        return getOptionalConcept(Get.identifierService().getConceptSequenceForUuids(conceptUuids));
+        //check hasUuid first, because getOptionalConcept adds the UUID to the index if it doesn't exist...
+        if (Get.identifierService().hasUuid(conceptUuids)) {
+            return getOptionalConcept(Get.identifierService().getConceptSequenceForUuids(conceptUuids));
+        }
+        else {
+            return Optional.empty();
+        }
     }
 
     @Override
@@ -218,9 +224,9 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
             return languageCoordinate.getPreferredDescription(getDescriptionList(conceptId), stampCoordinate);
         }
 
-        private List<SememeChronology<DescriptionSememe<?>>> getDescriptionList(int conceptId) {
-            conceptId = Get.identifierService().getConceptNid(conceptId);
-            return Get.sememeService().getDescriptionsForComponent(conceptId).collect(Collectors.toList());
+        private List<SememeChronology<? extends DescriptionSememe<?>>> getDescriptionList(int conceptId) {
+            int conceptNid = Get.identifierService().getConceptNid(conceptId);
+            return Get.sememeService().getDescriptionsForComponent(conceptNid).collect(Collectors.toList());
         }
 
         @Override
@@ -237,6 +243,11 @@ public class ConceptProviderOchreModel implements ConceptService, DelegateServic
             }
             return "No desc for: " + conceptId;
         }
+
+		@Override
+		public String toString() {
+			return "ConceptSnapshotProvider{" + "stampCoordinate=" + stampCoordinate + ", languageCoordinate=" + languageCoordinate + '}';
+		}
 
     }
 

@@ -173,14 +173,6 @@ public class ImportEConceptFile extends TimedTask<Integer> {
                             "converted",
                             (TtkConceptChronicle eConcept) -> new ConvertOtfToOchreModel(eConcept, stampPathUuid, this));
                     break;
-                case OTF_CONCEPT_MODEL:
-                    doImport(conceptCount, bytesProcessedForLoad, bytesToProcessForLoad, completionCount, conversionService,
-                            "loaded",
-                            (TtkConceptChronicle eConcept) -> new ImportEConceptOtfModel(eConcept, stampPathUuid));
-                    doImport(conceptCount, bytesProcessedForLoad, bytesToProcessForLoad, completionCount, conversionService,
-                            "converted",
-                            (TtkConceptChronicle eConcept) -> new ConvertOtfToOchreModel(eConcept, stampPathUuid, this));
-                    break;
                 default:
                     throw new UnsupportedOperationException("Can't handle: " + conceptModel);
             }

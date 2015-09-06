@@ -187,14 +187,9 @@ public class CommitTask extends TimedTask<Optional<CommitRecord>> {
                         ConceptSequenceSet.of(conceptsToCheck).or(conceptsToCommit),
                         SememeSequenceSet.of(sememesToCheck).or(sememesToCommit),
                         commitComment);
-                commitProvider.changeListeners.forEach((listenerRef) -> {
-                    ChronologyChangeListener listener = listenerRef.get();
-                    if (listener == null) {
-                        commitProvider.changeListeners.remove(listenerRef);
-                    } else {
-                        listener.handleCommit(commitRecord);
-                    }
-                });
+		
+		commitProvider.handleCommitNotification(commitRecord);
+		
 // TODO change set writers need to be change listeners...
 //                ChangeSetWriterHandler handler
 //                        = new ChangeSetWriterHandler(conceptsToCommit, commitTime,
@@ -206,7 +201,7 @@ public class CommitTask extends TimedTask<Optional<CommitRecord>> {
 // TODO Indexers need to be change listeners
             //            notifyCommit();
             //            if (indexers != null) {
-//                for (IndexerBI i : indexers) {
+//                for (IndexService i : indexers) {
 //                    i.commitWriter();
 //                }
 //            }

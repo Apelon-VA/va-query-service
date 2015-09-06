@@ -19,6 +19,7 @@ import gov.vha.isaac.ochre.api.commit.Alert;
 import gov.vha.isaac.ochre.api.commit.ChangeChecker;
 import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.util.NamedThreadFactory;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutionException;
@@ -38,8 +39,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class WriteConceptCompletionService implements Runnable {
     private static final Logger log = LogManager.getLogger();
-    private final ExecutorService writeConceptPool = Executors.newFixedThreadPool(2);
-    //TODO use the shared thread pool?  Not sure if the limit of 2 here was for a particular reason, or if it was just to prevent having a large pool wasting threads..
+    private final ExecutorService writeConceptPool = Executors.newFixedThreadPool(2, new NamedThreadFactory("WriteConceptPool", false));
     private boolean run = true;
 
     ExecutorCompletionService<Void> conversionService = new ExecutorCompletionService(writeConceptPool);

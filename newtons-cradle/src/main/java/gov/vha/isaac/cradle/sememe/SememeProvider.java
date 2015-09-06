@@ -33,7 +33,6 @@ import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
 import gov.vha.isaac.ochre.collections.NidSet;
 import gov.vha.isaac.ochre.collections.SememeSequenceSet;
 import gov.vha.isaac.ochre.model.sememe.SememeChronologyImpl;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -45,16 +44,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.NavigableSet;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.glassfish.hk2.runlevel.RunLevel;
@@ -74,6 +72,7 @@ public class SememeProvider implements SememeService {
     final ConcurrentSkipListSet<AssemblageSememeKey> assemblageSequenceSememeSequenceMap = new ConcurrentSkipListSet<>();
     final ConcurrentSkipListSet<ReferencedNidAssemblageSequenceSememeSequenceKey> referencedNidAssemblageSequenceSememeSequenceMap = new ConcurrentSkipListSet<>();
     final Path sememePath;
+    private transient HashSet<Integer> inUseAssemblages = new HashSet<>();
     private AtomicBoolean loadRequired = new AtomicBoolean();
 
     //For HK2
@@ -108,6 +107,7 @@ public class SememeProvider implements SememeService {
                         int assemblageSequence = in.readInt();
                         int sequence = in.readInt();
                         assemblageSequenceSememeSequenceMap.add(new AssemblageSememeKey(assemblageSequence, sequence));
+                        inUseAssemblages.add(assemblageSequence);
                     }
                 }
                 try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(sememePath.toFile(), "component-sememe.keys"))))) {
@@ -163,7 +163,7 @@ public class SememeProvider implements SememeService {
     }
 
     @Override
-    public <V extends SememeVersion> SememeSnapshotService<V> getSnapshot(Class<V> versionType, StampCoordinate<? extends StampCoordinate<?>> stampCoordinate) {
+    public <V extends SememeVersion> SememeSnapshotService<V> getSnapshot(Class<V> versionType, StampCoordinate stampCoordinate) {
         return new SememeSnapshotProvider<>(versionType, stampCoordinate, this);
     }
 
@@ -286,6 +286,7 @@ public class SememeProvider implements SememeService {
         assemblageSequenceSememeSequenceMap.add(
                 new AssemblageSememeKey(sememeChronicle.getAssemblageSequence(),
                         sememeChronicle.getSememeSequence()));
+        inUseAssemblages.add(sememeChronicle.getAssemblageSequence());
         referencedNidAssemblageSequenceSememeSequenceMap.add(
                 new ReferencedNidAssemblageSequenceSememeSequenceKey(sememeChronicle.getReferencedComponentNid(),
                         sememeChronicle.getAssemblageSequence(),
@@ -333,19 +334,14 @@ public class SememeProvider implements SememeService {
     int descriptionAssemblageSequence = Integer.MIN_VALUE;
 
     @Override
-    public Stream<SememeChronology<DescriptionSememe<?>>> getDescriptionsForComponent(int componentNid) {
+    public Stream<SememeChronology<? extends DescriptionSememe<?>>> getDescriptionsForComponent(int componentNid) {
         if (descriptionAssemblageSequence == Integer.MIN_VALUE) {
             descriptionAssemblageSequence = Get.identifierService().getConceptSequenceForUuids(IsaacMetadataAuxiliaryBinding.DESCRIPTION_ASSEMBLAGE.getUuids());
         }
         SememeSequenceSet sequences = getSememeSequencesForComponentFromAssemblage(componentNid, descriptionAssemblageSequence);
-        IntFunction<SememeChronology<DescriptionSememe<?>>> mapper = new IntFunction<SememeChronology<DescriptionSememe<?>>>() {
-			@Override
-			public SememeChronology<DescriptionSememe<?>> apply(int sememeSequence) {
-				// TODO Auto-generated method stub
-				return (SememeChronology<DescriptionSememe<?>>)getSememe(sememeSequence);
-			}
-        };
-        return sequences.stream().mapToObj(mapper);
+        IntFunction<SememeChronology<? extends DescriptionSememe<?>>> mapper = (int sememeSequence) -> 
+            (SememeChronology<? extends DescriptionSememe<?>>)getSememe(sememeSequence);
+        return sequences.stream().filter((int sememeSequence) -> getOptionalSememe(sememeSequence).isPresent()).mapToObj(mapper);
     }
 
     @Override
@@ -359,4 +355,9 @@ public class SememeProvider implements SememeService {
         return sememeMap.getOptional(sememeSequence);
     }
 
+	@Override
+	public Stream<Integer> getAssemblageTypes()
+	{
+		return inUseAssemblages.stream();
+	}
 }

@@ -52,11 +52,6 @@ public class ConceptBuilderProvider implements ConceptBuilderService {
                defaultLanguageForDescriptions, 
                defaultDialectAssemblageForDescriptions, 
                defaultLogicCoordinate);
-            case OTF_CONCEPT_MODEL:
-       return new ConceptBuilderOtfImpl(conceptName, semanticTag, logicalExpression, 
-               defaultLanguageForDescriptions, 
-               defaultDialectAssemblageForDescriptions, 
-               defaultLogicCoordinate);
             default:
                 throw new UnsupportedOperationException("Can't handle: " + conceptModel);
         }
@@ -106,11 +101,6 @@ public class ConceptBuilderProvider implements ConceptBuilderService {
         switch (getConceptModel()) {
             case OCHRE_CONCEPT_MODEL:
        return new ConceptBuilderOchreImpl(conceptName, semanticTag, logicalExpression, 
-               languageForDescriptions, 
-               dialectAssemblageForDescriptions, 
-               logicCoordinate);
-            case OTF_CONCEPT_MODEL:
-       return new ConceptBuilderOtfImpl(conceptName, semanticTag, logicalExpression, 
                languageForDescriptions, 
                dialectAssemblageForDescriptions, 
                logicCoordinate);

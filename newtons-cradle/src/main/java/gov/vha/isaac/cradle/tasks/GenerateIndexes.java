@@ -5,32 +5,27 @@
  */
 package gov.vha.isaac.cradle.tasks;
 
-import gov.vha.isaac.ochre.api.Get;
-import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
-import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
-import gov.vha.isaac.ochre.api.task.TimedTask;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ihtsdo.otf.lookup.contracts.contracts.ActiveTaskSet;
-import org.ihtsdo.otf.tcc.api.refexDynamic.RefexDynamicChronicleBI;
-import org.ihtsdo.otf.tcc.model.cc.refex.RefexService;
-import org.ihtsdo.otf.tcc.model.index.service.IndexStatusListenerBI;
-import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
+import gov.vha.isaac.ochre.api.Get;
+import gov.vha.isaac.ochre.api.LookupService;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.api.index.IndexServiceBI;
+import gov.vha.isaac.ochre.api.index.IndexStatusListenerBI;
+import gov.vha.isaac.ochre.api.task.TimedTask;
 
 /**
  *
  * @author kec
  */
 public class GenerateIndexes extends TimedTask<Void> {
-    private final static RefexService refexProvider = LookupService.getService(RefexService.class);
-
     private static final Logger log = LogManager.getLogger();
 
-    List<IndexerBI> indexers;
+    List<IndexServiceBI> indexers;
     long componentCount;
     AtomicLong processed = new AtomicLong(0);
 
@@ -39,18 +34,18 @@ public class GenerateIndexes extends TimedTask<Void> {
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         if (indexersToReindex == null || indexersToReindex.length == 0)
         {
-            indexers = LookupService.get().getAllServices(IndexerBI.class);
+            indexers = LookupService.get().getAllServices(IndexServiceBI.class);
         }
         else
         {
             indexers = new ArrayList<>();
             for (Class<?> clazz : indexersToReindex)
             {
-                if (!IndexerBI.class.isAssignableFrom(clazz))
+                if (!IndexServiceBI.class.isAssignableFrom(clazz))
                 {
-                    throw new RuntimeException("Invalid Class passed in to the index generator.  Classes must implement IndexerBI ");
+                    throw new RuntimeException("Invalid Class passed in to the index generator.  Classes must implement IndexService ");
                 }
-                IndexerBI temp = (IndexerBI)LookupService.get().getService(clazz);
+                IndexServiceBI temp = (IndexServiceBI)LookupService.get().getService(clazz);
                 if (temp != null)
                 {
                     indexers.add(temp);
@@ -78,52 +73,19 @@ public class GenerateIndexes extends TimedTask<Void> {
         LookupService.get().getService(ActiveTaskSet.class).get().add(this);
         try {
             //TODO performance problem... all of these count methods are incredibly slow
-            int conceptCount = Get.conceptService().getConceptCount();
-            log.info("Concepts to index: " + conceptCount);
-            long refexCount = (int) Get.identifierService().getRefexSequenceStream().count();
-            log.info("Refexes to index: " + refexCount);
+            //We only need to indexes sememes now
+            //In the future, there may be a need for indexing Concepts from the concept service - for instance, if we wanted to index the concepts
+            //by user, or by some other attribute that is attached to the concept.  But there simply isn't much on the concept at present, and I have
+            //no use case for indexing the concepts.  The IndexService APIs would need enhancement if we allowed indexing things other than sememes.
             long sememeCount = (int) Get.identifierService().getSememeSequenceStream().count();
             log.info("Sememes to index: " + sememeCount);
-            componentCount = conceptCount + refexCount + sememeCount;
-            log.info("Total components to index: " + componentCount);
-            Get.conceptService().getParallelConceptChronologyStream().forEach((ConceptChronology<?> conceptChronology) -> {
-                    indexers.stream().forEach((i) -> {
-                        //Currently, our indexers expect descriptions, not concepts... though we might want to re-evaluate this...
-                        //I assume that in the future - we will have a description service, rather than embedded descriptions, so leaving as is, for now.
-                        conceptChronology.getConceptDescriptionList().forEach((description) -> {
-                            i.index(description);
-                        });
-                    });
-                updateProcessedCount();
-            });
-            
-            //TODO Keith - I don't think we have any old-style refexes any longer, do we?  SCTIDs seem to be coming through the sememe
-            //provider below.
-//            refexProvider.getParallelRefexStream().forEach((RefexMember<?, ?> refex) -> {
-//                indexers.stream().forEach((i) -> {
-//                    i.index(refex);
-//                });
-//                updateProcessedCount();
-//            });
-            
-            //TODO Keith - but I don't understand this bit - this seems to be the only place I can find the dynamic sememes, they aren't coming
-            //through the sememe iteration below.
-            refexProvider.getParallelDynamicRefexStream().forEach((RefexDynamicChronicleBI<?> refex) -> {
+            componentCount = sememeCount;
+             
+            Get.sememeService().getParallelSememeStream().forEach((SememeChronology<?> sememe) -> {
                 indexers.stream().forEach((i) -> {
-                    i.index(refex);
+                        i.index(sememe);
                 });
                 updateProcessedCount();
-            });
-            
-            //TODO Keith - why isn't this returning dynamic sememes?
-            Get.sememeService().getParallelSememeStream().forEach((SememeChronology sememe) -> {
-                if (sememe != null)  //TODO Keith -  this IF should not be necessary, but is at the moment, to deal with another bug in sememe provider
-                {
-                    indexers.stream().forEach((i) -> {
-                        i.index(sememe);
-                    });
-                    updateProcessedCount();
-                }
             });
             
             List<IndexStatusListenerBI> islList = LookupService.get().getAllServices(IndexStatusListenerBI.class);

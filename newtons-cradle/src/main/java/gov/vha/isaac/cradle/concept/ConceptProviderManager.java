@@ -17,6 +17,7 @@ package gov.vha.isaac.cradle.concept;
 
 import gov.vha.isaac.ochre.api.ConfigurationService;
 import gov.vha.isaac.ochre.api.DelegateService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
 import gov.vha.isaac.ochre.api.component.concept.ConceptService;
@@ -111,10 +112,6 @@ public class ConceptProviderManager implements ConceptService {
         switch (LookupService.getService(ConfigurationService.class).getConceptModel()) {
             case OCHRE_CONCEPT_MODEL:
                 delegate = new ConceptProviderOchreModel();
-                break;
-
-            case OTF_CONCEPT_MODEL:
-                delegate = new ConceptProviderOtfModel();
                 break;
 
             default:
