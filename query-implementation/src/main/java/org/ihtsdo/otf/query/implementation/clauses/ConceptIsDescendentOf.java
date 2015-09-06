@@ -17,6 +17,7 @@ package org.ihtsdo.otf.query.implementation.clauses;
 
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
 import java.io.IOException;
@@ -28,7 +29,6 @@ import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.WhereClause;
 import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
-
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -64,10 +64,10 @@ public class ConceptIsDescendentOf extends LeafClause {
     @Override
     public NidSet computePossibleComponents(NidSet incomingPossibleComponents) {
         try {
-            ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+            TaxonomyCoordinate taxonomyCoordinate = (TaxonomyCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
             ConceptSpec descendentOfSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(descendentOfSpecKey);
-            int parentNid = descendentOfSpec.getNid(viewCoordinate);
-            ConceptSequenceSet descendentOfSequenceSet = Get.taxonomyService().getChildOfSequenceSet(parentNid, viewCoordinate);
+            int parentNid = descendentOfSpec.getNid(taxonomyCoordinate.getStampCoordinate());
+            ConceptSequenceSet descendentOfSequenceSet = Get.taxonomyService().getChildOfSequenceSet(parentNid, taxonomyCoordinate);
             descendentOfSequenceSet.remove(parentNid);
             getResultsCache().or(NidSet.of(descendentOfSequenceSet));
             return getResultsCache();

@@ -15,7 +15,9 @@ package org.ihtsdo.otf.query.integration.tests;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
+import gov.vha.isaac.metadata.coordinates.StampCoordinates;
+import gov.vha.isaac.metadata.coordinates.TaxonomyCoordinates;
+import gov.vha.isaac.ochre.api.Get;
 import java.io.IOException;
 import org.ihtsdo.otf.query.implementation.Clause;
 import org.ihtsdo.otf.query.implementation.ComponentCollectionTypes;
@@ -31,7 +33,8 @@ import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 public class OrTest extends QueryClauseTest {
 
     public OrTest() throws IOException {
-        this.q = new Query(ViewCoordinates.getDevelopmentInferredLatestActiveOnly()) {
+        this.q =new Query(TaxonomyCoordinates.getInferredTaxonomyCoordinate(StampCoordinates.getDevelopmentLatestActiveOnly(), 
+                Get.configurationService().getDefaultLanguageCoordinate())) {
             @Override
             protected ForSetSpecification ForSetSpecification() {
                 return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);

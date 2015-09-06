@@ -15,7 +15,10 @@
  */
 package org.ihtsdo.otf.query.integration.tests;
 
+import gov.vha.isaac.metadata.coordinates.StampCoordinates;
+import gov.vha.isaac.metadata.coordinates.TaxonomyCoordinates;
 import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
+import gov.vha.isaac.ochre.api.Get;
 import java.io.IOException;
 import java.util.EnumSet;
 import org.ihtsdo.otf.query.implementation.Clause;
@@ -34,9 +37,8 @@ import org.ihtsdo.otf.tcc.api.metadata.binding.Snomed;
 public class RelRestrictionTest extends QueryClauseTest {
 
     public RelRestrictionTest() throws IOException {
-        ViewCoordinate vc = ViewCoordinates.getDevelopmentInferredLatestActiveOnly();
-        vc.setAllowedStatus(EnumSet.of(Status.ACTIVE));
-        this.q = new Query(vc) {
+        this.q = new Query(TaxonomyCoordinates.getInferredTaxonomyCoordinate(StampCoordinates.getDevelopmentLatestActiveOnly(), 
+                Get.configurationService().getDefaultLanguageCoordinate())) {
             @Override
             protected ForSetSpecification ForSetSpecification() {
                 return new ForSetSpecification(ComponentCollectionTypes.ALL_CONCEPTS);

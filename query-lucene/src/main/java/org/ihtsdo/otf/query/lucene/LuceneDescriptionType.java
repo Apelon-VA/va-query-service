@@ -25,5 +25,17 @@ package org.ihtsdo.otf.query.lucene;
  */
 public enum LuceneDescriptionType
 {
-	FSN, SYNONYM, DEFINITION
+	FSN, SYNONYM, DEFINITION;
+	
+	public static LuceneDescriptionType fromOrdinal(int ordinal)
+	{
+		for (LuceneDescriptionType ldt : LuceneDescriptionType.values())
+		{
+			if (ordinal == ldt.ordinal())
+			{
+				return ldt;
+			}
+		}
+		throw new RuntimeException("No Match!");
+	}
 }

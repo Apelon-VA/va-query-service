@@ -15,9 +15,6 @@
  */
 package org.ihtsdo.otf.query.implementation;
 
-import gov.vha.isaac.metadata.coordinates.LanguageCoordinates;
-import gov.vha.isaac.metadata.coordinates.LogicCoordinates;
-import gov.vha.isaac.metadata.coordinates.StampCoordinates;
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
@@ -125,8 +122,6 @@ public abstract class Query {
 
     private PremiseType premiseType = PremiseType.INFERRED;
 
-    private LogicCoordinate logicCoordinate = LogicCoordinates.getStandardElProfile();
-
     /**
      * Retrieves what type of iterations are required to compute the clause.
      *
@@ -152,9 +147,6 @@ public abstract class Query {
      */
     public Query(TaxonomyCoordinate taxonomyCoordinate) {
         this.taxonomyCoordinate = taxonomyCoordinate;
-        if (taxonomyCoordinate != null) {
-            this.logicCoordinate = taxonomyCoordinate.getLogicCoordinate();
-        }
     }
 
     /**
@@ -254,11 +246,10 @@ public abstract class Query {
     }
 
     public LogicCoordinate getLogicCoordinate() {
-        return logicCoordinate;
+        return taxonomyCoordinate.getLogicCoordinate();
     }
 
     public void setTaxonomyCoordinate(TaxonomyCoordinate taxonomyCoordinate) {
-        this.logicCoordinate = taxonomyCoordinate.getLogicCoordinate();
         this.taxonomyCoordinate = taxonomyCoordinate;
     }
 

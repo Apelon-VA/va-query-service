@@ -15,12 +15,39 @@
  */
 package org.ihtsdo.otf.query.implementation;
 
+import gov.vha.isaac.ochre.collections.IntSet;
+import gov.vha.isaac.ochre.model.coordinate.LanguageCoordinateImpl;
+import gov.vha.isaac.ochre.model.coordinate.LogicCoordinateImpl;
+import gov.vha.isaac.ochre.model.coordinate.LogicCoordinateLazyBinding;
+import gov.vha.isaac.ochre.model.coordinate.StampCoordinateImpl;
+import gov.vha.isaac.ochre.model.coordinate.StampPositionImpl;
+import gov.vha.isaac.ochre.model.coordinate.TaxonomyCoordinateImpl;
+import gov.vha.isaac.ochre.observable.model.coordinate.ObservableLanguageCoordinateImpl;
+import gov.vha.isaac.ochre.observable.model.coordinate.ObservableLogicCoordinateImpl;
+import java.util.HashMap;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
-
-import org.ihtsdo.otf.query.implementation.clauses.*;
+import org.ihtsdo.otf.query.implementation.clauses.ChangedFromPreviousVersion;
+import org.ihtsdo.otf.query.implementation.clauses.ComponentsFromSnomedIds;
+import org.ihtsdo.otf.query.implementation.clauses.ConceptForComponent;
+import org.ihtsdo.otf.query.implementation.clauses.ConceptIs;
+import org.ihtsdo.otf.query.implementation.clauses.ConceptIsChildOf;
+import org.ihtsdo.otf.query.implementation.clauses.ConceptIsDescendentOf;
+import org.ihtsdo.otf.query.implementation.clauses.ConceptIsKindOf;
+import org.ihtsdo.otf.query.implementation.clauses.DescriptionActiveLuceneMatch;
+import org.ihtsdo.otf.query.implementation.clauses.DescriptionActiveRegexMatch;
+import org.ihtsdo.otf.query.implementation.clauses.DescriptionLuceneMatch;
+import org.ihtsdo.otf.query.implementation.clauses.DescriptionRegexMatch;
+import org.ihtsdo.otf.query.implementation.clauses.FullySpecifiedNameForConcept;
+import org.ihtsdo.otf.query.implementation.clauses.PreferredNameForConcept;
+import org.ihtsdo.otf.query.implementation.clauses.RefsetContainsConcept;
+import org.ihtsdo.otf.query.implementation.clauses.RefsetContainsKindOfConcept;
+import org.ihtsdo.otf.query.implementation.clauses.RefsetContainsString;
+import org.ihtsdo.otf.query.implementation.clauses.RefsetLuceneMatch;
+import org.ihtsdo.otf.query.implementation.clauses.RelRestriction;
 import org.ihtsdo.otf.tcc.api.contradiction.strategy.IdentifyAllConflict;
 import org.ihtsdo.otf.tcc.api.contradiction.strategy.LastCommitWins;
+import org.ihtsdo.otf.tcc.api.coordinate.LanguagePreferenceList;
 import org.ihtsdo.otf.tcc.api.coordinate.Path;
 import org.ihtsdo.otf.tcc.api.coordinate.Position;
 import org.ihtsdo.otf.tcc.api.coordinate.SimplePath;
@@ -37,9 +64,6 @@ import org.ihtsdo.otf.tcc.ddo.concept.component.description.DescriptionVersionDd
 import org.ihtsdo.otf.tcc.ddo.concept.component.description.SimpleDescriptionVersionDdo;
 import org.ihtsdo.otf.tcc.model.cc.LanguageSortPrefs;
 
-import java.util.HashMap;
-import org.ihtsdo.otf.tcc.api.coordinate.LanguagePreferenceList;
-
 /**
  *
  * @author kec
@@ -53,7 +77,16 @@ public class JaxbForQuery {
             singleton = JAXBContext.newInstance(
                     And.class,
                     AndNot.class,
+                    IntSet.class,
                     ViewCoordinate.class,
+                    LanguageCoordinateImpl.class,
+                    StampCoordinateImpl.class,
+                    StampPositionImpl.class,
+                    TaxonomyCoordinateImpl.class,
+                    LogicCoordinateImpl.class,
+                    LogicCoordinateLazyBinding.class,
+                    ObservableLogicCoordinateImpl.class,
+                    ObservableLanguageCoordinateImpl.class,
                     IdentifyAllConflict.class, 
                     LastCommitWins.class,
                     Where.class,

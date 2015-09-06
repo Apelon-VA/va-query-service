@@ -15,27 +15,19 @@
  */
 package org.ihtsdo.otf.query.implementation.clauses;
 
-import gov.vha.isaac.metadata.coordinates.ViewCoordinates;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.collections.NidSet;
-import java.io.IOException;
 import java.util.EnumSet;
-import org.ihtsdo.otf.query.implementation.ClauseComputeType;
-import org.ihtsdo.otf.query.implementation.LeafClause;
-import org.ihtsdo.otf.tcc.api.nid.NativeIdSetBI;
-import org.ihtsdo.otf.query.implementation.Query;
-import org.ihtsdo.otf.tcc.api.concept.ConceptVersionBI;
-import org.ihtsdo.otf.tcc.api.contradiction.ContradictionException;
-import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
-import org.ihtsdo.otf.tcc.api.nid.ConcurrentBitSet;
-import org.ihtsdo.otf.query.implementation.ClauseSemantic;
-import org.ihtsdo.otf.query.implementation.WhereClause;
-import org.ihtsdo.otf.tcc.api.description.DescriptionVersionBI;
-
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import org.ihtsdo.otf.query.implementation.ClauseComputeType;
+import org.ihtsdo.otf.query.implementation.ClauseSemantic;
+import org.ihtsdo.otf.query.implementation.LeafClause;
+import org.ihtsdo.otf.query.implementation.Query;
+import org.ihtsdo.otf.query.implementation.WhereClause;
 
 /**
  * Computes the components that have been modified since the version specified
@@ -91,7 +83,7 @@ public class ChangedFromPreviousVersion extends LeafClause {
 
     @Override
     public void getQueryMatches(ConceptVersion conceptVersion) {
-        ViewCoordinate previousViewCoordinate = (ViewCoordinate) enclosingQuery.getLetDeclarations().get(previousViewCoordinateKey);
+        TaxonomyCoordinate previousViewCoordinate = (TaxonomyCoordinate) enclosingQuery.getLetDeclarations().get(previousViewCoordinateKey);
         throw new UnsupportedOperationException();
         //TODO FIX BACK UP
 //        for (DescriptionVersionBI desc : conceptVersion.getDescriptionsActive()) {

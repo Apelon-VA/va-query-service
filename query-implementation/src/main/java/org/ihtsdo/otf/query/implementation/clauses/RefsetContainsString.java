@@ -20,6 +20,7 @@ package org.ihtsdo.otf.query.implementation.clauses;
  * @author dylangrald
  */
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.EnumSet;
 import org.ihtsdo.otf.query.implementation.ClauseComputeType;
@@ -38,7 +39,6 @@ import org.ihtsdo.otf.tcc.api.refex.RefexVersionBI;
 import org.ihtsdo.otf.tcc.api.refex.type_string.RefexStringVersionBI;
 import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
 import org.ihtsdo.otf.tcc.api.store.Ts;
-
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -83,7 +83,7 @@ public class RefsetContainsString extends LeafClause {
 
         throw new UnsupportedOperationException();
         //TODO FIX BACK UP
-//        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+//        TaxonomyCoordinate taxonomyCoordinate = (TaxonomyCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
 //        ConceptSpec refsetSpec = (ConceptSpec) this.enclosingQuery.getLetDeclarations().get(refsetSpecKey);
 //
 //        int refsetNid = refsetSpec.getNid();

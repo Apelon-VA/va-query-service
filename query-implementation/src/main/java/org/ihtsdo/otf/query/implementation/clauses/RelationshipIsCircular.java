@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 International Health Terminology Standards Development Organisation.
+ * Copyright 2015 U.S. Department of Veterans Affairs.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,10 @@ import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.collections.ConceptSequenceSet;
 import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.EnumSet;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
 import org.ihtsdo.otf.query.implementation.ClauseComputeType;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.LeafClause;
@@ -28,58 +32,44 @@ import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.WhereClause;
 import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
 import org.ihtsdo.otf.tcc.api.spec.ConceptSpec;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
 
 /**
- * Allows the user to define a restriction on the destination set of a
- * relationship query. Also allows the user to specify subsumption on the
- * destination restriction and relType.
- *
- * @author dylangrald
+ * Allows the user specify a search for circular relationships. Also allows the user to limit the identification
+ * of circular relationships to specify types, and also to allow subsumption on the relationship type.
+ * 
+ * @author kec
  */
 @XmlRootElement
 @XmlAccessorType(value = XmlAccessType.NONE)
-public class RelRestriction extends LeafClause {
+public class RelationshipIsCircular extends LeafClause {
 
     @XmlElement
     String relTypeKey;
     @XmlElement
-    String destinationSpecKey;
-    @XmlElement
     String viewCoordinateKey;
-    @XmlElement
-    String destinationSubsumptionKey;
     @XmlElement
     String relTypeSubsumptionKey;
 
-    ConceptSequenceSet destinationSet;
     ConceptSequenceSet relTypeSet;
 
-    public RelRestriction(Query enclosingQuery, String relTypeKey, String destinationSpecKey,
-            String viewCoordinateKey, String destinationSubsumptionKey, String relTypeSubsumptionKey) {
+    public RelationshipIsCircular(Query enclosingQuery, String relTypeKey, 
+            String viewCoordinateKey, String relTypeSubsumptionKey) {
         super(enclosingQuery);
-        this.destinationSpecKey = destinationSpecKey;
         this.relTypeKey = relTypeKey;
         this.viewCoordinateKey = viewCoordinateKey;
         this.relTypeSubsumptionKey = relTypeSubsumptionKey;
-        this.destinationSubsumptionKey = destinationSubsumptionKey;
 
     }
 
-    protected RelRestriction() {
+    protected RelationshipIsCircular() {
     }
 
     @Override
     public WhereClause getWhereClause() {
         WhereClause whereClause = new WhereClause();
-        whereClause.setSemantic(ClauseSemantic.REL_RESTRICTION);
+        whereClause.setSemantic(ClauseSemantic.RELATIONSHIP_IS_CIRCULAR);
         whereClause.getLetKeys().add(relTypeKey);
-        whereClause.getLetKeys().add(destinationSpecKey);
         whereClause.getLetKeys().add(viewCoordinateKey);
-        whereClause.getLetKeys().add(destinationSubsumptionKey);
         whereClause.getLetKeys().add(relTypeSubsumptionKey);
         System.out.println("Where clause size: " + whereClause.getLetKeys().size());
         return whereClause;
@@ -95,17 +85,12 @@ public class RelRestriction extends LeafClause {
     public NidSet computePossibleComponents(NidSet incomingPossibleComponents) {
         System.out.println("Let declerations: " + enclosingQuery.getLetDeclarations());
         TaxonomyCoordinate taxonomyCoordinate = (TaxonomyCoordinate) enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
-        ConceptSpec destinationSpec = (ConceptSpec) enclosingQuery.getLetDeclarations().get(destinationSpecKey);
         ConceptSpec relType = (ConceptSpec) enclosingQuery.getLetDeclarations().get(relTypeKey);
         Boolean relTypeSubsumption = (Boolean) enclosingQuery.getLetDeclarations().get(relTypeSubsumptionKey);
-        Boolean destinationSubsumption = (Boolean) enclosingQuery.getLetDeclarations().get(destinationSubsumptionKey);
 
         //The default is to set relTypeSubsumption and destinationSubsumption to true.
         if (relTypeSubsumption == null) {
             relTypeSubsumption = true;
-        }
-        if (destinationSubsumption == null) {
-            destinationSubsumption = true;
         }
 
         relTypeSet = new ConceptSequenceSet();
@@ -114,24 +99,20 @@ public class RelRestriction extends LeafClause {
             relTypeSet.or(Get.taxonomyService().getKindOfSequenceSet(relType.getConceptSequence(), taxonomyCoordinate));
         }
 
-        destinationSet = new ConceptSequenceSet();
-        destinationSet.add(destinationSpec.getConceptSequence());
-        if (destinationSubsumption) {
-            destinationSet.or(Get.taxonomyService().getKindOfSequenceSet(destinationSpec.getConceptSequence(), taxonomyCoordinate));
-        }
-
         return incomingPossibleComponents;
     }
 
     @Override
     public void getQueryMatches(ConceptVersion conceptVersion) {
-        TaxonomyCoordinate taxonomyCoordinate = (TaxonomyCoordinate) enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+        throw new UnsupportedOperationException();
+        /*TaxonomyCoordinate taxonomyCoordinate = (TaxonomyCoordinate) enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
         Get.taxonomyService().getAllRelationshipDestinationSequencesOfType(
-                conceptVersion.getChronology().getConceptSequence(), relTypeSet, taxonomyCoordinate)
+                conceptVersion.getChronology().getConceptSequence(), relTypeSet, viewCoordinate)
                 .forEach((destinationSequence) -> {
                     if (destinationSet.contains(destinationSequence)) {
                         getResultsCache().add(conceptVersion.getChronology().getNid());
                     }
                 });
+                */
     }
 }

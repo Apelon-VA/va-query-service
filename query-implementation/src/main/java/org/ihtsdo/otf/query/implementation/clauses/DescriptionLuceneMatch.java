@@ -17,28 +17,25 @@ package org.ihtsdo.otf.query.implementation.clauses;
 
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
-import gov.vha.isaac.ochre.api.chronicle.LatestVersion;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
 import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
 import gov.vha.isaac.ochre.api.component.concept.ConceptVersion;
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
+import gov.vha.isaac.ochre.api.index.IndexServiceBI;
+import gov.vha.isaac.ochre.api.index.SearchResult;
+import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.EnumSet;
 import java.util.List;
-import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
+import java.util.Optional;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
 import org.ihtsdo.otf.query.implementation.ClauseComputeType;
 import org.ihtsdo.otf.query.implementation.ClauseSemantic;
 import org.ihtsdo.otf.query.implementation.LeafClause;
 import org.ihtsdo.otf.query.implementation.Query;
 import org.ihtsdo.otf.query.implementation.WhereClause;
-import org.ihtsdo.otf.tcc.api.blueprint.ComponentProperty;
-import org.ihtsdo.otf.tcc.model.index.service.IndexerBI;
-import gov.vha.isaac.ochre.api.index.SearchResult;
-import gov.vha.isaac.ochre.collections.NidSet;
-import java.util.Optional;
-
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  * Returns descriptions matching the input string using Lucene.
@@ -70,13 +67,13 @@ public class DescriptionLuceneMatch extends LeafClause {
     public final NidSet computePossibleComponents(NidSet incomingPossibleComponents) {
         String luceneMatch = (String) enclosingQuery.getLetDeclarations().get(luceneMatchKey);
 
-        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+        TaxonomyCoordinate taxonomyCoordinate = (TaxonomyCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
 
 
         NidSet nids = new NidSet();
-        List<IndexerBI> indexers = LookupService.get().getAllServices(IndexerBI.class);
-        IndexerBI descriptionIndexer = null;
-        for (IndexerBI li : indexers) {
+        List<IndexServiceBI> indexers = LookupService.get().getAllServices(IndexServiceBI.class);
+        IndexServiceBI descriptionIndexer = null;
+        for (IndexServiceBI li : indexers) {
             if (li.getIndexerName().equals("descriptions")) {
                 descriptionIndexer = li;
             }
@@ -84,7 +81,7 @@ public class DescriptionLuceneMatch extends LeafClause {
         if (descriptionIndexer == null) {
             throw new IllegalStateException("No description indexer found in: " + indexers);
         }
-        List<SearchResult> queryResults = descriptionIndexer.query(luceneMatch, ComponentProperty.DESCRIPTION_TEXT, 1000);
+        List<SearchResult> queryResults = descriptionIndexer.query(luceneMatch, 1000);
         queryResults.stream().forEach((s) -> {
             nids.add(s.nid);
         });
@@ -93,7 +90,7 @@ public class DescriptionLuceneMatch extends LeafClause {
             Optional<? extends ObjectChronology<? extends StampedVersion>> chronology = 
                     Get.identifiedObjectService().getIdentifiedObjectChronology(nid);
             if (chronology.isPresent()) {
-                if (!chronology.get().isLatestVersionActive(viewCoordinate)) {
+                if (!chronology.get().isLatestVersionActive(taxonomyCoordinate.getStampCoordinate())) {
                     getResultsCache().remove(nid);
                 }
             } else {

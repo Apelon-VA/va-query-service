@@ -18,18 +18,17 @@ package org.ihtsdo.otf.query.implementation.clauses;
 import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
 import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
+import gov.vha.isaac.ochre.api.coordinate.TaxonomyCoordinate;
 import gov.vha.isaac.ochre.collections.NidSet;
 import java.util.EnumSet;
 import java.util.Optional;
-import org.ihtsdo.otf.query.implementation.ClauseComputeType;
-import org.ihtsdo.otf.query.implementation.Query;
-import org.ihtsdo.otf.query.implementation.ClauseSemantic;
-import org.ihtsdo.otf.query.implementation.WhereClause;
-import org.ihtsdo.otf.tcc.api.coordinate.ViewCoordinate;
-
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+import org.ihtsdo.otf.query.implementation.ClauseComputeType;
+import org.ihtsdo.otf.query.implementation.ClauseSemantic;
+import org.ihtsdo.otf.query.implementation.Query;
+import org.ihtsdo.otf.query.implementation.WhereClause;
 
 /**
  *
@@ -52,14 +51,14 @@ public class DescriptionActiveLuceneMatch extends DescriptionLuceneMatch {
 
     @Override
     public final NidSet computeComponents(NidSet incomingComponents) {
-        ViewCoordinate viewCoordinate = (ViewCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
+        TaxonomyCoordinate taxonomyCoordinate = (TaxonomyCoordinate) this.enclosingQuery.getLetDeclarations().get(viewCoordinateKey);
         getResultsCache().and(incomingComponents);
         
         incomingComponents.stream().forEach((nid) -> {
             Optional<? extends ObjectChronology<? extends StampedVersion>> chronology = 
                     Get.identifiedObjectService().getIdentifiedObjectChronology(nid);
             if (chronology.isPresent()) {
-                if (!chronology.get().isLatestVersionActive(viewCoordinate)) {
+                if (!chronology.get().isLatestVersionActive(taxonomyCoordinate.getStampCoordinate())) {
                     getResultsCache().remove(nid);
                 }
             } else {

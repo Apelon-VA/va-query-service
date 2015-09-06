@@ -101,6 +101,11 @@ public enum ClauseSemantic {
      */
     REFSET_LUCENE_MATCH,
     /**
+     * Test to see if a relationship has a restriction that is a kind of the concept from which 
+     * the relationship originates. A circular or tautological relationship. 
+     */
+    RELATIONSHIP_IS_CIRCULAR,
+    /**
      * Test to see if a relationship matches a specified relationship type.
      */
     REL_TYPE,
