@@ -266,6 +266,7 @@ public abstract class LuceneIndexer implements IndexServiceBI {
      * @return a List of {@link SearchResult} that contains the nid of the component that matched, and the score of that match relative 
      * to other matches.
      */
+    @Override
     public final List<SearchResult> query(String query, boolean prefixSearch, Integer sememeConceptSequence, int sizeLimit, Long targetGeneration) {
         try {
             return search(
