@@ -22,6 +22,8 @@ import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.component.concept.ConceptBuilder;
 import gov.vha.isaac.ochre.api.component.concept.description.DescriptionBuilder;
 import gov.vha.isaac.ochre.api.component.concept.description.DescriptionBuilderService;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.model.sememe.version.DescriptionSememeImpl;
 import org.jvnet.hk2.annotations.Service;
 
 /**
@@ -40,7 +42,7 @@ public class DescriptionBuilderProvider implements DescriptionBuilderService {
     }
 
     @Override
-    public DescriptionBuilder getDescriptionBuilder(String descriptionText, int conceptSequence, ConceptProxy descriptionType, ConceptProxy languageForDescription) {
+    public DescriptionBuilder<? extends SememeChronology<?>, DescriptionSememeImpl> getDescriptionBuilder(String descriptionText, int conceptSequence, ConceptProxy descriptionType, ConceptProxy languageForDescription) {
         switch (getConceptModel()) {
             case OCHRE_CONCEPT_MODEL:
                 return new DescriptionBuilderOchreImpl(descriptionText, conceptSequence, descriptionType, languageForDescription);
@@ -50,7 +52,7 @@ public class DescriptionBuilderProvider implements DescriptionBuilderService {
     }
 
     @Override
-    public DescriptionBuilder getDescriptionBuilder(String descriptionText, ConceptBuilder conceptBuilder, ConceptProxy descriptionType, ConceptProxy languageForDescription) {
+    public DescriptionBuilder<? extends SememeChronology<?>, DescriptionSememeImpl> getDescriptionBuilder(String descriptionText, ConceptBuilder conceptBuilder, ConceptProxy descriptionType, ConceptProxy languageForDescription) {
         switch (getConceptModel()) {
             case OCHRE_CONCEPT_MODEL:
                 return new DescriptionBuilderOchreImpl(descriptionText, conceptBuilder, descriptionType, languageForDescription);
