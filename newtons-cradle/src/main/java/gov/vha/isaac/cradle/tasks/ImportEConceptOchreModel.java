@@ -170,13 +170,9 @@ public class ImportEConceptOchreModel implements Callable<Void> {
                             Get.sememeService().writeSememe(stringSememe);
                             break;
                         case UUID:
-                            //TODO Keith - is this the right thing to do?
-                            if (id.getAuthorityUuid().equals(IsaacMetadataAuxiliaryBinding.GENERATED_UUID.getPrimodialUuid()))
-                            {
-                                conceptChronology.addAdditionalUuids((UUID)id.getDenotation());
-                                break;
-                            }
-                            
+                            //TODO Keith, where do we put the authority?
+                            conceptChronology.addAdditionalUuids((UUID)id.getDenotation());
+                            break;
                         default :
                             throw new UnsupportedOperationException("Unhandled case - id attribute " + id.toString() + " on concept " + conceptChronology.toExternalString());
                     }
