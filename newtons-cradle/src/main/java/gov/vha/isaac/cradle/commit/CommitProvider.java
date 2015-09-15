@@ -778,13 +778,18 @@ public class CommitProvider implements CommitService {
 		sb.append("⦙");
 		sb.append(stampSequence);
 		sb.append("::");
-		sb.append(getStatusForStamp(stampSequence));
+		State status = getStatusForStamp(stampSequence);
+		sb.append(status);
+		if (status == State.ACTIVE) {
+			sb.append("  ");
+		}
 		sb.append(" ");
+		
 		long time = getTimeForStamp(stampSequence);
 		if (time == Long.MAX_VALUE) {
 			sb.append("UNCOMMITTED:");
 		} else if (time == Long.MIN_VALUE) {
-			sb.append("CANCELED:");
+			sb.append("CANCELED:  ");
 		} else {
 			sb.append(Instant.ofEpochMilli(time));
 		}
