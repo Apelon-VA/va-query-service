@@ -713,19 +713,30 @@ public class CradleIntegrationTests {
         System.out.println("Cornea is a " + vc.getTaxonomyType() + " kind-of of disorder of eye: " + isKind);
     }
     
+    /**
+     * Description Optional Test / Stamp Coordinate + Position Test
+     * This test verifies that the Stamp Coordinate System is working for Description Optionals.
+     * To use this:
+     * 1) Set a date BEFORE the description was created. So the description should not have existed on that date.
+     * 2) Set the UUID or Sequence of the Concept that contains the descriptions we want to test
+     * 3) If the Description is currently active, uncomment out #3 and this will verify that it currently exists also
+     * @throws ParseException
+     * @throws ValidationException
+     */
     private void testDescriptionOptional() throws ParseException, ValidationException {
         LanguageCoordinate lc = LanguageCoordinates.getUsEnglishLanguageFullySpecifiedNameCoordinate();
         
         //Release Export Date
-        DateFormat formatter = new SimpleDateFormat("MM/dd/yy");
-        Date date = formatter.parse("09/01/02");
+        DateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
+        Date date = formatter.parse("01/01/2000"); //(1) DATE BEFORE DESCRIPTION WAS CREATED
         long previousReleaseTime = date.getTime();
         
-        // ISAAC Dev Path
+        // PATH
         int pathSequence = Get.identifierService().getConceptSequenceForUuids(UUID.fromString("32d7e06d-c8ae-516d-8a33-df5bcc9c9ec7")); 
         
-        // Sequence - Enterohemorrhagic Escherichia coli, serotype O113:H21 (organism)
-        int sequence = Get.identifierService().getConceptSequenceForUuids(UUID.fromString("47d9be00-7309-3fbf-88a3-4711fcf6be48")); 
+        //(2) SET UUID OR SEQUENCE OF CONCEPT THAT CONTAINS DESCRIPTIONS TO TEST
+        int sequence = Get.identifierService().getConceptSequenceForUuids(UUID.fromString("5f29f2bf-86f1-39dd-940b-28c852f6f6fc")); // Cerebral Artery Occlusion
+        //int sequence = Get.identifierService().getConceptSequenceForUuids(UUID.fromString("47d9be00-7309-3fbf-88a3-4711fcf6be48")); // Enterohemorrhagic Escherichia coli, serotype O113:H21 (organism)
         
         StampPosition spLatest = new StampPositionImpl(System.currentTimeMillis(), pathSequence);
         StampPosition spInitial = new StampPositionImpl(previousReleaseTime, pathSequence);
@@ -744,15 +755,12 @@ public class CradleIntegrationTests {
         
         ArrayList<DescriptionSememe> descriptions = new ArrayList<>();
         for(SememeChronology sc : chronology.getConceptDescriptionList()) { 
-            Optional<? extends LatestVersion<? extends DescriptionSememe>> lvO = sc.getLatestVersion(DescriptionSememe.class, scLatestAll);
-            if(lvO.isPresent()) {
-                LatestVersion<? extends DescriptionSememe> lvd = lvO.get();
-                descriptions.add(lvd.value());
-            }
-        }
-        
-        for(DescriptionSememe d : descriptions) {
-		findInitialAndLatest(scLatestActive, lc, chronology, scInitialActive);
+        	
+        	Optional<? extends LatestVersion<? extends DescriptionSememe>> dsLatest = sc.getLatestVersion(DescriptionSememe.class, scLatestActive);
+			Optional<? extends LatestVersion<? extends DescriptionSememe>> dsInitial = sc.getLatestVersion(DescriptionSememe.class, scInitialActive);
+  		
+			assertFalse(dsInitial.isPresent());
+//			assertTrue(dsLatest.isPresent()) // (3) Uncomment this if we expect the description to exist at present time
         }
     }
 
