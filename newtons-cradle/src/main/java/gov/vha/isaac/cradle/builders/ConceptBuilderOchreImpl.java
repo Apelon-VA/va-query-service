@@ -60,7 +60,10 @@ public class ConceptBuilderOchreImpl extends ComponentBuilder<ConceptChronology<
         this.defaultLanguageForDescriptions = defaultLanguageForDescriptions;
         this.defaultDialectAssemblageForDescriptions = defaultDialectAssemblageForDescriptions;
         this.defaultLogicCoordinate = defaultLogicCoordinate;
-        this.logicalExpressions.add(logicalExpression);
+        if (logicalExpression != null) {  //Dan allowed null, so that rather than having to use this call, I can call addLogicalDefinition(SememeBuilder)
+            //and specify the UUID of the logic graph being created.
+            this.logicalExpressions.add(logicalExpression);
+        }
     }
 
     @Override
