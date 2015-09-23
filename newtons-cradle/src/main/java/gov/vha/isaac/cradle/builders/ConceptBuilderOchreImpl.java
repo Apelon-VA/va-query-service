@@ -129,6 +129,11 @@ public class ConceptBuilderOchreImpl extends ComponentBuilder<ConceptChronology<
                 getLogicalExpressionSememeBuilder(logicalExpression, this, defaultLogicCoordinate.getStatedAssemblageSequence()));
         }
         logicalConceptDefinitionBuilders.forEach((builder) -> builder.build(editCoordinate, changeCheckerMode, builtObjects));
+        if (changeCheckerMode == ChangeCheckerMode.ACTIVE) {
+            Get.commitService().addUncommitted(conceptChronology);
+        } else {
+            Get.commitService().addUncommittedNoChecks(conceptChronology);
+        }
         return conceptChronology;
     }
 
