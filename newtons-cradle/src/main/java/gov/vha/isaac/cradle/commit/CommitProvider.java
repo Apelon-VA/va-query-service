@@ -563,21 +563,12 @@ public class CommitProvider implements CommitService {
 			ConceptSequenceSet conceptsInCommit = new ConceptSequenceSet();
 			SememeSequenceSet sememesInCommit = new SememeSequenceSet();
 
-			for (Object rawVersion : chronicle.getVersionList()) {
-				ObjectVersionImpl<?, ?> version = (ObjectVersionImpl<?, ?>)rawVersion;
-				
-				if (version.isUncommitted()
-						&& version.getAuthorSequence() == editCoordinate.getAuthorSequence()) {
-					version.setTime(commitTime);
+			chronicle.getVersionList().forEach((version) -> {
+				if (((ObjectVersionImpl) version).isUncommitted() && version.getAuthorSequence() == editCoordinate.getAuthorSequence()) {
+					((ObjectVersionImpl) version).setTime(commitTime);
 					stampsInCommit.add(version.getStampSequence());
 				}
-			}
-//			chronicle.getVersionList().forEach((version) -> {
-//				if (((ObjectVersionImpl) version).isUncommitted() && version.getAuthorSequence() == editCoordinate.getAuthorSequence()) {
-//					((ObjectVersionImpl) version).setTime(commitTime);
-//					stampsInCommit.add(version.getStampSequence());
-//				}
-//			});
+			});
 
 			if (chronicle instanceof ConceptChronology) {
 				ConceptChronology conceptChronology = (ConceptChronology) chronicle;
