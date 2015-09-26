@@ -266,6 +266,7 @@ public abstract class LuceneIndexer implements IndexServiceBI {
      * @return a List of {@link SearchResult} that contains the nid of the component that matched, and the score of that match relative 
      * to other matches.
      */
+    @Override
     public final List<SearchResult> query(String query, boolean prefixSearch, Integer sememeConceptSequence, int sizeLimit, Long targetGeneration) {
         try {
             return search(
@@ -348,7 +349,7 @@ public abstract class LuceneIndexer implements IndexServiceBI {
             
             try 
             {
-                log.debug("Running query: {0}", q.toString());
+                log.debug("Running query: {}", q.toString());
                 
                 //Since the index carries some duplicates by design, which we will remove - get a few extra results up front.
                 //so we are more likely to come up with the requested number of results
@@ -362,7 +363,7 @@ public abstract class LuceneIndexer implements IndexServiceBI {
                 
                 for (ScoreDoc hit : topDocs.scoreDocs)
                 {
-                    log.debug("Hit: {0} Score: {1}", new Object[]{hit.doc, hit.score});
+                    log.debug("Hit: {} Score: {}", new Object[]{hit.doc, hit.score});
                     
                     Document doc = searcher.doc(hit.doc);
                     int componentNid = doc.getField(FIELD_COMPONENT_NID).numericValue().intValue();
@@ -380,7 +381,7 @@ public abstract class LuceneIndexer implements IndexServiceBI {
                         }
                     }
                 }
-                log.debug("Returning {0} results from query", results.size());
+                log.debug("Returning {} results from query", results.size());
                 return results;
             } finally {
                 searcherManager.release(searcher);

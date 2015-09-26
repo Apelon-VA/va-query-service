@@ -161,7 +161,7 @@ public class DynamicSememeIndexer extends LuceneIndexer
 		}
 		else if (dataCol instanceof DynamicSememeByteArrayBI)
 		{
-			log.warn("Dynamic Sememe Indexer configured to index a field that isn''t indexable (byte array) in {0}", dsv.toUserString());
+			log.warn("Dynamic Sememe Indexer configured to index a field that isn''t indexable (byte array) in {}", dsv.toUserString());
 		}
 		else if (dataCol instanceof DynamicSememeDoubleBI)
 		{
@@ -223,7 +223,7 @@ public class DynamicSememeIndexer extends LuceneIndexer
 		}
 		else
 		{
-			log.error("This should have been impossible (no match on col type) {0}", dataCol);
+			log.error("This should have been impossible (no match on col type) {}", dataCol);
 		}
 	}
 
@@ -326,7 +326,7 @@ public class DynamicSememeIndexer extends LuceneIndexer
 						queryString = "\\" + queryString;
 					}
 					queryString = queryString.replaceAll("\\s-", " \\\\-");
-					log.debug("Modified search string is: ''{0}''", queryString);
+					log.debug("Modified search string is: ''{}''", queryString);
 					return buildTokenizedStringQuery(queryString, columnName, prefixSearch);
 				}
 			}.buildColumnHandlingQuery(searchColumns), Occur.MUST);
