@@ -216,4 +216,8 @@ Just ignore that… It will self heal.
    [13]: http://code.google.com/p/docbkx-tools/
    [14]: http://blog.sonatype.com/people/2008/04/writing-a-book-with-maven-part-i/
    [15]: https://www.jboss.org/pressgang/jdg
+   
+   
+Release Note
+mvn jgitflow:release-start jgitflow:release-finish -DreleaseVersion=2.17 -DdevelopmentVersion=2.18-SNAPSHOT -DaltDeploymentRepository=maestro::default::https://va.maestrodev.com/archiva/repository/va-releases  -DdefaultOriginUrl=https://github.com/Apelon-VA/va-query-service.git
   
