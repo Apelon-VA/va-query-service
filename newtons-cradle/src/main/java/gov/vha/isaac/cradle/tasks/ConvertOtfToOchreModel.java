@@ -131,8 +131,11 @@ public class ConvertOtfToOchreModel implements Callable<Void> {
                 StampCoordinateImpl stampCoordinate
                         = new StampCoordinateImpl(StampPrecedence.PATH, stampPosition, ConceptSequenceSet.EMPTY, State.ANY_STATE_SET);
                 RelativePositionCalculator calc = RelativePositionCalculator.getCalculator(stampCoordinate);
-                Optional<LatestVersion<TtkConceptAttributesVersion>> latestAttributeVersion
-                        = calc.getLatestVersion(eConcept.getConceptAttributes());
+                
+                //TODO Keith - bug here - US Extension isn't providing concept attributes on stub concepts - can't read this - I assume we need to read 
+                //from the existing concepts, but not sure how to extract "isDefined()" in an easy way... so not processing these rels at the moment....
+                Optional<LatestVersion<TtkConceptAttributesVersion>> latestAttributeVersion = eConcept.getConceptAttributes() == null ? Optional.empty() : 
+                    calc.getLatestVersion(eConcept.getConceptAttributes());
                 if (latestAttributeVersion.isPresent()) {
                     int moduleSequence = latestAttributeVersion.get().value().getModuleSequence();
                     LogicalExpressionBuilder inferredBuilder = parentTask.expressionBuilderService.getLogicalExpressionBuilder();
