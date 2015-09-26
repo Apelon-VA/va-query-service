@@ -45,9 +45,9 @@ public class ConceptBuilderOchreImpl extends ComponentBuilder<ConceptChronology<
     private final ConceptProxy defaultLanguageForDescriptions;
     private final ConceptProxy defaultDialectAssemblageForDescriptions;
     private final LogicCoordinate defaultLogicCoordinate;
-    private final LogicalExpression logicalExpression;
     private final List<DescriptionBuilder> descriptionBuilders = new ArrayList<>();
     private final List<SememeBuilder> logicalConceptDefinitionBuilders = new ArrayList<>();
+    private final List<LogicalExpression> logicalExpressions = new ArrayList<>();
 
     public ConceptBuilderOchreImpl(String conceptName,
             String semanticTag,
@@ -60,7 +60,10 @@ public class ConceptBuilderOchreImpl extends ComponentBuilder<ConceptChronology<
         this.defaultLanguageForDescriptions = defaultLanguageForDescriptions;
         this.defaultDialectAssemblageForDescriptions = defaultDialectAssemblageForDescriptions;
         this.defaultLogicCoordinate = defaultLogicCoordinate;
-        this.logicalExpression = logicalExpression;
+        if (logicalExpression != null) {  //Dan allowed null, so that rather than having to use this call, I can call addLogicalDefinition(SememeBuilder)
+            //and specify the UUID of the logic graph being created.
+            this.logicalExpressions.add(logicalExpression);
+        }
     }
 
     @Override
@@ -99,6 +102,13 @@ public class ConceptBuilderOchreImpl extends ComponentBuilder<ConceptChronology<
         this.logicalConceptDefinitionBuilders.add(logicalDefinitionBuilder);
         return this;
     }
+    
+
+    @Override
+    public ConceptBuilder addLogicalExpression(LogicalExpression logicalExpression) {
+        this.logicalExpressions.add(logicalExpression);
+        return this;
+    }
 
     @Override
     public ConceptChronology build(EditCoordinate editCoordinate, ChangeCheckerMode changeCheckerMode,
@@ -114,9 +124,16 @@ public class ConceptBuilderOchreImpl extends ComponentBuilder<ConceptChronology<
             builder.build(editCoordinate, changeCheckerMode, builtObjects);
         });
         SememeBuilderService builderService = LookupService.getService(SememeBuilderService.class);
-        logicalConceptDefinitionBuilders.add(builderService.
+        for (LogicalExpression logicalExpression : logicalExpressions) {
+            logicalConceptDefinitionBuilders.add(builderService.
                 getLogicalExpressionSememeBuilder(logicalExpression, this, defaultLogicCoordinate.getStatedAssemblageSequence()));
+        }
         logicalConceptDefinitionBuilders.forEach((builder) -> builder.build(editCoordinate, changeCheckerMode, builtObjects));
+        if (changeCheckerMode == ChangeCheckerMode.ACTIVE) {
+            Get.commitService().addUncommitted(conceptChronology);
+        } else {
+            Get.commitService().addUncommittedNoChecks(conceptChronology);
+        }
         return conceptChronology;
     }
 
@@ -134,8 +151,10 @@ public class ConceptBuilderOchreImpl extends ComponentBuilder<ConceptChronology<
             builder.build(stampCoordinate, builtObjects);
         });
         SememeBuilderService builderService = LookupService.getService(SememeBuilderService.class);
-        logicalConceptDefinitionBuilders.add(builderService.
+        for (LogicalExpression logicalExpression : logicalExpressions) {
+            logicalConceptDefinitionBuilders.add(builderService.
                 getLogicalExpressionSememeBuilder(logicalExpression, this, defaultLogicCoordinate.getStatedAssemblageSequence()));
+        }
         logicalConceptDefinitionBuilders.forEach((builder) -> builder.build(stampCoordinate, builtObjects));
         return conceptChronology;
     }

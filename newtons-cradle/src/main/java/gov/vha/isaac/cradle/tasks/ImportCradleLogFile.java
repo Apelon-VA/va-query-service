@@ -84,7 +84,7 @@ public class ImportCradleLogFile extends TimedTask<Integer> {
                                 break;
                             case CONCEPT:
                                 TtkConceptChronicle eConcept = new TtkConceptChronicle(dis);
-                                conversionService.submit(new ImportEConceptOtfModel(eConcept));
+                                conversionService.submit(new ImportEConceptOchreModel(eConcept));
                                 break;
                             default:
                                 throw new UnsupportedOperationException("Can't handle: " + logEntry);

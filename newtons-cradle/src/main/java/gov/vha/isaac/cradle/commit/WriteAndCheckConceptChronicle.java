@@ -54,7 +54,9 @@ public class WriteAndCheckConceptChronicle extends Task<Void> implements Callabl
         this.writeSemaphore = writeSemaphore;
         this.changeListeners = changeListeners;
         updateTitle("Write and check concept");
-        updateMessage(Get.conceptDescriptionText(cc.getConceptSequence()));
+        //TODO dan disabled this, cause it keeps causing a timing based (randomly occurring) null pointer exception when it tries to read the descriptions 
+        //for this new concept.  see https://slack-files.com/T04QD7FHW-F0B2PQL87-4d6e82e985
+        updateMessage("writing nid " + cc.getNid()); // Get.conceptDescriptionText(cc.getConceptSequence()));
         updateProgress(-1, Long.MAX_VALUE); // Indeterminate progress
         LookupService.getService(ActiveTaskSet.class).get().add(this);
     }
@@ -64,7 +66,8 @@ public class WriteAndCheckConceptChronicle extends Task<Void> implements Callabl
         try {
             Get.conceptService().writeConcept(cc);
             updateProgress(1, 3);
-            updateMessage("checking: " + Get.conceptDescriptionText(cc.getConceptSequence()));
+            //TODO dan disabled for the same reason as above.
+            updateMessage("checking nid: " + cc.getNid());// Get.conceptDescriptionText(cc.getConceptSequence()));
             
             if (cc.isUncommitted()) {
                 checkers.stream().forEach((check) -> {

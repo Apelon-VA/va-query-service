@@ -83,7 +83,7 @@ import org.jvnet.hk2.annotations.Service;
 @RunLevel(value = 1)
 public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveService, ChronologyChangeListener {
 
-    private static final Logger log = LogManager.getLogger();
+    private static final Logger LOG = LogManager.getLogger();
 
     /**
      * The {@code taxonomyMap} associates concept sequence keys with a primitive
@@ -111,15 +111,15 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
         originDestinationTaxonomyRecordMap
                 = new CasSequenceObjectMap<>(new TaxonomyRecordSerializer(),
                         taxonomyProviderFolder, "seg.", ".taxonomy.map");
-        log.info("CradleTaxonomyProvider constructed");
+        LOG.info("CradleTaxonomyProvider constructed");
     }
 
     @PostConstruct
     private void startMe() throws IOException {
         try {
-            log.info("Starting TaxonomyService post-construct");
+            LOG.info("Starting TaxonomyService post-construct");
             if (!loadRequired.get()) {
-                log.info("Reading taxonomy.");
+                LOG.info("Reading taxonomy.");
                 originDestinationTaxonomyRecordMap.initialize();
                 File inputFile = new File(taxonomyProviderFolder.toFile(), ORIGIN_DESTINATION_MAP);
                 try (DataInputStream in = new DataInputStream(new BufferedInputStream(
@@ -141,7 +141,7 @@ public class CradleTaxonomyProvider implements TaxonomyService, ConceptActiveSer
 
     @PreDestroy
     private void stopMe() throws IOException {
-        log.info("Writing taxonomy.");
+        LOG.info("Writing taxonomy.");
         originDestinationTaxonomyRecordMap.write();
         File outputFile = new File(taxonomyProviderFolder.toFile(), ORIGIN_DESTINATION_MAP);
         outputFile.getParentFile().mkdirs();

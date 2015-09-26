@@ -56,7 +56,6 @@ public class UpdateTaxonomyAfterCommitTask extends TimedTask<Void> {
      * @param commitRecord the commitRecord to process
      * @param unhandledChanges the changes to look for
      * @param lock write lock for the update
-     * @param stamp stamp to use to release lock in the finally clause of the call method
      * @return a task, submitted to an executor, and added to the active task set. 
      * 
      */

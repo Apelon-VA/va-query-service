@@ -609,36 +609,38 @@ public class CommitProvider implements CommitService {
 	@Override
 	public Task<Optional<CommitRecord>> commit(EditCoordinate editCoordinate, String commitComment) {
 		// TODO, make this only commit those components with changes from the provided edit coordinate. 
-		Semaphore pendingWrites = writePermitReference.getAndSet(new Semaphore(WRITE_POOL_SIZE));
-		pendingWrites.acquireUninterruptibly(WRITE_POOL_SIZE);
-		alertCollection.clear();
-		lastCommit = databaseSequence.incrementAndGet();
-
-		Map<UncommittedStamp, Integer> pendingStampsForCommit = new HashMap<>();
-		UNCOMMITTED_STAMP_TO_STAMP_SEQUENCE_MAP.forEach((uncommittedStamp, stampSequence) -> {
-			if (uncommittedStamp.authorSequence == editCoordinate.getAuthorSequence()) {
-				Stamp stamp = new Stamp(Status.getStatusFromState(uncommittedStamp.status),
-						  Long.MIN_VALUE,
-						  Get.identifierService().getConceptNid(uncommittedStamp.authorSequence),
-						  Get.identifierService().getConceptNid(uncommittedStamp.moduleSequence),
-						  Get.identifierService().getConceptNid(uncommittedStamp.pathSequence));
-				addStamp(stamp, stampSequence);
-				UNCOMMITTED_STAMP_TO_STAMP_SEQUENCE_MAP.remove(uncommittedStamp);
-			}
-		});
-		UNCOMMITTED_STAMP_TO_STAMP_SEQUENCE_MAP.clear();
-
-		CommitTask task = CommitTask.get(commitComment,
-				  uncommittedConceptsWithChecksSequenceSet,
-				  uncommittedConceptsNoChecksSequenceSet,
-				  uncommittedSememesWithChecksSequenceSet,
-				  uncommittedSememesNoChecksSequenceSet,
-				  lastCommit,
-				  checkers,
-				  alertCollection,
-				  pendingStampsForCommit,
-				  this);
-		return task;
+		throw new UnsupportedOperationException("This implementation is broken");
+		//TODO this needs repair... pendingStampsForCommit, for example, is never populated.  
+//		Semaphore pendingWrites = writePermitReference.getAndSet(new Semaphore(WRITE_POOL_SIZE));
+//		pendingWrites.acquireUninterruptibly(WRITE_POOL_SIZE);
+//		alertCollection.clear();
+//		lastCommit = databaseSequence.incrementAndGet();
+//
+//		Map<UncommittedStamp, Integer> pendingStampsForCommit = new HashMap<>();
+//		UNCOMMITTED_STAMP_TO_STAMP_SEQUENCE_MAP.forEach((uncommittedStamp, stampSequence) -> {
+//			if (uncommittedStamp.authorSequence == editCoordinate.getAuthorSequence()) {
+//				Stamp stamp = new Stamp(Status.getStatusFromState(uncommittedStamp.status),
+//						  Long.MIN_VALUE,
+//						  Get.identifierService().getConceptNid(uncommittedStamp.authorSequence),
+//						  Get.identifierService().getConceptNid(uncommittedStamp.moduleSequence),
+//						  Get.identifierService().getConceptNid(uncommittedStamp.pathSequence));
+//				addStamp(stamp, stampSequence);
+//				UNCOMMITTED_STAMP_TO_STAMP_SEQUENCE_MAP.remove(uncommittedStamp);
+//			}
+//		});
+//		UNCOMMITTED_STAMP_TO_STAMP_SEQUENCE_MAP.clear();
+//
+//		CommitTask task = CommitTask.get(commitComment,
+//				  uncommittedConceptsWithChecksSequenceSet,
+//				  uncommittedConceptsNoChecksSequenceSet,
+//				  uncommittedSememesWithChecksSequenceSet,
+//				  uncommittedSememesNoChecksSequenceSet,
+//				  lastCommit,
+//				  checkers,
+//				  alertCollection,
+//				  pendingStampsForCommit,
+//				  this);
+//		return task;
 	}
 
 	@Override
@@ -778,13 +780,18 @@ public class CommitProvider implements CommitService {
 		sb.append("⦙");
 		sb.append(stampSequence);
 		sb.append("::");
-		sb.append(getStatusForStamp(stampSequence));
+		State status = getStatusForStamp(stampSequence);
+		sb.append(status);
+		if (status == State.ACTIVE) {
+			sb.append("  ");
+		}
 		sb.append(" ");
+		
 		long time = getTimeForStamp(stampSequence);
 		if (time == Long.MAX_VALUE) {
 			sb.append("UNCOMMITTED:");
 		} else if (time == Long.MIN_VALUE) {
-			sb.append("CANCELED:");
+			sb.append("CANCELED:  ");
 		} else {
 			sb.append(Instant.ofEpochMilli(time));
 		}
