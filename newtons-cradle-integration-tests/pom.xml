@@ -49,7 +49,7 @@
                                 <artifact>
                                     <groupId>gov.vha.isaac.terminology.converters</groupId>
                                     <artifactId>term-convert-rf2-econcept-sct</artifactId>
-                                    <version>20150731-loader-2.1-S</version>
+                                    <version>20150731-loader-2.2-S</version>
                                     <type>jbin.zip</type>
                                     <classifier>Snapshot</classifier>
                                 </artifact>
