@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -75,13 +76,21 @@ import org.ihtsdo.otf.query.lucene.indexers.DynamicSememeIndexer;
 import org.ihtsdo.otf.query.lucene.indexers.SememeIndexer;
 import gov.vha.isaac.metadata.source.IsaacMetadataAuxiliaryBinding;
 import gov.vha.isaac.ochre.api.ConfigurationService;
+import gov.vha.isaac.ochre.api.Get;
 import gov.vha.isaac.ochre.api.LookupService;
 import gov.vha.isaac.ochre.api.SystemStatusService;
 import gov.vha.isaac.ochre.api.chronicle.ObjectChronology;
+import gov.vha.isaac.ochre.api.chronicle.StampedVersion;
+import gov.vha.isaac.ochre.api.commit.ChronologyChangeListener;
+import gov.vha.isaac.ochre.api.commit.CommitRecord;
+import gov.vha.isaac.ochre.api.component.concept.ConceptChronology;
+import gov.vha.isaac.ochre.api.component.sememe.SememeChronology;
+import gov.vha.isaac.ochre.api.component.sememe.version.SememeVersion;
 import gov.vha.isaac.ochre.api.index.IndexServiceBI;
 import gov.vha.isaac.ochre.api.index.IndexedGenerationCallable;
 import gov.vha.isaac.ochre.api.index.SearchResult;
 import gov.vha.isaac.ochre.util.NamedThreadFactory;
+import gov.vha.isaac.ochre.util.UuidT5Generator;
 import gov.vha.isaac.ochre.util.WorkExecutors;
 
 // See example for help with the Controlled Real-time indexing...
@@ -178,6 +187,44 @@ public abstract class LuceneIndexer implements IndexServiceBI {
             reopenThread = new ControlledRealTimeReopenThread<>(trackingIndexWriter, searcherManager, 60.00, 0.1);
    
             this.startThread();
+            
+            //Register for commits:
+            
+            log.info("Registering indexer " + getIndexerName() + " for commits");
+            Get.commitService().addChangeListener(new ChronologyChangeListener()
+            {
+                
+                @Override
+                public void handleCommit(CommitRecord commitRecord)
+                {
+                    commitRecord.getSememesInCommit().stream().forEach(sememeId -> 
+                    {
+                        handleChange(Get.sememeService().getSememe(sememeId));
+                    });
+                    
+                }
+                
+                @Override
+                public void handleChange(SememeChronology<? extends SememeVersion<?>> sc)
+                {
+                    log.info("submitting sememe " + sc.toUserString() + " to indexer " + getIndexerName() + " due to commit");
+                    index(sc);
+                    
+                }
+                
+                @Override
+                public void handleChange(ConceptChronology<? extends StampedVersion> cc)
+                {
+                    // noop
+                }
+                
+                @Override
+                public UUID getListenerUuid()
+                {
+                    return UuidT5Generator.get(getIndexerName());
+                }
+            });
+            
         }
         catch (Exception e) {
             LookupService.getService(SystemStatusService.class).notifyServiceConfigurationFailure(indexName, e);
