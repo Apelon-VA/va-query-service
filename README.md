@@ -219,5 +219,5 @@ Just ignore that… It will self heal.
    
    
 Release Note
-mvn jgitflow:release-start jgitflow:release-finish -DreleaseVersion=2.17 -DdevelopmentVersion=2.18-SNAPSHOT -DaltDeploymentRepository=maestro::default::https://va.maestrodev.com/archiva/repository/va-releases  -DdefaultOriginUrl=https://github.com/Apelon-VA/va-query-service.git
+mvn jgitflow:release-start jgitflow:release-finish -DreleaseVersion=2.18 -DdevelopmentVersion=2.19-SNAPSHOT -DaltDeploymentRepository=maestro::default::https://va.maestrodev.com/archiva/repository/va-releases  -DdefaultOriginUrl=https://github.com/Apelon-VA/va-query-service.git
   

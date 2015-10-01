@@ -9,7 +9,7 @@
     
     <groupId>gov.vha.isaac.query-service</groupId>
     <artifactId>query-parent</artifactId>
-    <version>2.17</version>
+    <version>2.18</version>
     <packaging>pom</packaging>
     <name>${project.artifactId}: (MMP)</name>
 
@@ -22,9 +22,9 @@
     <properties>
         <branch>QS ${project.scm.tag}</branch>
         <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>
-        <ochre.version>2.33</ochre.version>
-        <isaac-metadata.version>1.36</isaac-metadata.version>
-        <newtons-cradle.version>1.22</newtons-cradle.version>
+        <ochre.version>2.34</ochre.version>
+        <isaac-metadata.version>1.37</isaac-metadata.version>
+        <newtons-cradle.version>1.24</newtons-cradle.version>
         <org.apache.lucene.version>4.10.3</org.apache.lucene.version>
     </properties>
 
